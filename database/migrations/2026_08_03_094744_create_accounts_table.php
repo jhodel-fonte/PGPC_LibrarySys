@@ -49,6 +49,7 @@ return new class extends Migration
 
             $table->rememberToken();//remember me token
             $table->timestamps();
+            $table->softDeletes();
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {
@@ -64,6 +65,8 @@ return new class extends Migration
             $table->text('user_agent')->nullable();
             $table->longText('payload');
             $table->integer('last_activity')->index();
+            $table->timestamps();
+            $table->softDeletes();
         });
     }
 

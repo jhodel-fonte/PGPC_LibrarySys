@@ -11,17 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('authors', function (Blueprint $table) {
+        Schema::create('fine_types', function (Blueprint $table) {
             $table->id();
-
-            $table->string('first_name');
-            $table->string('last_name');
-            $table->string('initials')->nullable();
-            $table->string('pseudonym')->nullable();
+            $table->string('name');
             $table->timestamps();
-            $table->softDeletes();
+        });
 
-
+        Schema::create('borrow_types', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->timestamps();
         });
     }
 
@@ -30,6 +29,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('authors');
+        Schema::dropIfExists('borrow_types');
+        Schema::dropIfExists('fine_types');
     }
 };

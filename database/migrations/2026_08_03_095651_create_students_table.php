@@ -11,6 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
+        Schema::create('library_statuses', function (Blueprint $table) {
+            $table->id();
+            $table->string('status');
+
+            $table->timestamps();
+        });
+
+        //students table
         Schema::create('students', function (Blueprint $table) {
             $table->id();
             $table->foreignId('account_id')->constrained('accounts')->cascadeOnDelete();//account id
@@ -22,9 +30,14 @@ return new class extends Migration
 
             $table->string('contact_num')->nullable();
 
+            //for violation tracking
+            $table->foreignId('library_status_id')->constrained('library_statuses')->restrictOnDelete();
+            $table->string('note')->nullable();
+
             $table->string('program')->nullable();
             $table->string('year_level')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 
@@ -34,5 +47,6 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('students');
+        Schema::dropIfExists('library_statuses');
     }
 };
