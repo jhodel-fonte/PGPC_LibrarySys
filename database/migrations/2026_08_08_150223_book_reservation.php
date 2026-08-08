@@ -17,10 +17,9 @@ return new class extends Migration
             $table->foreignId('book_id')->constrained('books')->cascadeOnDelete();
             $table->foreignId('reservation_status_id')->constrained('reservation_statuses')->restrictOnDelete();
             $table->dateTime('reservation_date');
-            $table->dateTime('approval_date')->nullable();
             $table->dateTime('due_date');
 
-            $table->dateTime('approve_date')->nullable();
+            $table->dateTime('approved_date')->nullable();
             $table->dateTime('fulfilled_date')->nullable();
             $table->dateTime('cancelled_date')->nullable();
 
