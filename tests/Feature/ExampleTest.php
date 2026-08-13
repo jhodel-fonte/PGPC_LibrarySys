@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 // use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use App\Models\Account;
 
 class ExampleTest extends TestCase
 {
@@ -16,4 +17,12 @@ class ExampleTest extends TestCase
 
         $response->assertStatus(200);
     }
+    
+    public function test_users_can_login_as_student(): void
+    {
+        $user = Account::factory()->create();
+        $response = $this->actingAs($user)->get('/dashboard');
+        $response->assertStatus(200);
+    }
+    
 }

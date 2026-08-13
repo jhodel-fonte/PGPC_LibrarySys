@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Librarian extends Model
 {
     use HasFactory, SoftDeletes;
+    protected $table = 'librarian';
 
     protected $fillable = [
         'account_id',
@@ -21,9 +22,9 @@ class Librarian extends Model
         'contact_num',
     ];
 
-    public function account(): BelongsTo
+    public function account()
     {
-        return $this->belongsTo(Account::class);
+        return $this->belongsTo(Account::class, 'account_id');
     }
 
     public function issuedTransactions(): HasMany

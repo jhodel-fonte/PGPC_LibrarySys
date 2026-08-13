@@ -4,12 +4,16 @@ use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome');
 
-Route::view('dashboard', 'dashboard')
-    ->middleware(['auth', 'verified'])
-    ->name('dashboard');
+Route::middleware(['auth', 'verified', 'role:superadmin'])->prefix('admin')->name('admin.')->group(function () {
+        
+        Route::view('/dashboard', 'livewire.pages.admin.dashboard')->name('dashboard');
+        Route::view('/profile', 'livewire.pages.admin.profile')->name('profile');
+});
 
-Route::view('profile', 'profile')
-    ->middleware(['auth'])
-    ->name('profile');
+Route::view('/test', 'test')->name('test');
+
+
+
+
 
 require __DIR__.'/auth.php';

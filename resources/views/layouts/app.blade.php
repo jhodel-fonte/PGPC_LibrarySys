@@ -1,36 +1,50 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="csrf-token" content="{{ csrf_token() }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>{{ config('app.name', 'Laravel') }}</title>
+    <title>{{ config('app.name', 'PGPC Library') }}</title>
 
-        <!-- Fonts -->
-        <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+    <!-- 1. PRELOAD THE LOGO FIRST -->
+    <link rel="preload" as="image" href="{{ asset('logo.webp') }}">
 
-        <!-- Scripts -->
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
-    </head>
-    <body class="font-sans antialiased">
-        <div class="min-h-screen bg-gray-100">
-            <livewire:layout.navigation />
+    <!-- 2. Favicons (Will reuse the preloaded image) -->
+    <link rel="icon" href="{{ asset('logo.webp') }}" type="image/webp">
 
-            <!-- Page Heading -->
-            @if (isset($header))
-                <header class="bg-white shadow">
-                    <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-                        {{ $header }}
-                    </div>
-                </header>
-            @endif
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
-            <!-- Page Content -->
-            <main>
-                {{ $slot }}
-            </main>
+    <!-- Scripts -->
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <tallstackui:script />
+    @livewireStyles
+</head>
+
+<!-- 1. Removed opacity-0 and portal-content ID from the body -->
+<body class="antialiased font-sans min-h-dvh flex flex-col relative overflow-x-hidden bg-gray-50">
+    
+    <!-- 2. Preloader is now visible because the body is not hidden -->
+    <x-preloader />
+    
+    <!-- 3. Wrapped ALL page content inside the hidden portal-content div -->
+    <div id="portal-content" class="opacity-0 transition-opacity duration-700 ease-in-out flex flex-col flex-1 w-full relative">
+        
+        <div class="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat pointer-events-none"
+             {{-- style="background-image: url('{{ asset('images/pgpc-ng.webp') }}')" --}}>
         </div>
-    </body>
+            
+        <div class="fixed inset-0 z-10 bg-gradient-hero backdrop-blur-sm pointer-events-none"></div>
+
+        <div id="main-app-wrapper" class="relative z-20 flex flex-col min-h-dvh w-full">
+            <div class="flex-1 flex items-center justify-center w-full px-4 py-12 sm:px-6 lg:px-8">
+                {{ $slot }}
+            </div>
+        </div>
+
+    </div>
+    @livewireScripts
+</body>
 </html>

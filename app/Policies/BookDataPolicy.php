@@ -3,7 +3,7 @@
 namespace App\Policies;
 
 use App\Models\BookData;
-use App\Models\User;
+use App\Models\Account;
 use Illuminate\Auth\Access\Response;
 
 class BookDataPolicy
@@ -11,7 +11,7 @@ class BookDataPolicy
     /**
      * Determine whether the user can view any models.
      */
-    public function viewAny(User $user): bool
+    public function viewAny(Account $user): bool
     {
         return false;
     }
@@ -19,7 +19,7 @@ class BookDataPolicy
     /**
      * Determine whether the user can view the model.
      */
-    public function view(User $user, BookData $bookData): bool
+    public function view(Account $user, BookData $bookData): bool
     {
         return false;
     }
@@ -27,7 +27,7 @@ class BookDataPolicy
     /**
      * Determine whether the user can create models.
      */
-    public function create(User $user): bool
+    public function create(Account $user): bool
     {
         return false;
     }
@@ -35,7 +35,7 @@ class BookDataPolicy
     /**
      * Determine whether the user can update the model.
      */
-    public function update(User $user, BookData $bookData): bool
+    public function update(Account $user, BookData $bookData): bool
     {
         return false;
     }
@@ -43,7 +43,7 @@ class BookDataPolicy
     /**
      * Determine whether the user can delete the model.
      */
-    public function delete(User $user, BookData $bookData): bool
+    public function delete(Account $user, BookData $bookData): bool
     {
         return false;
     }
@@ -51,7 +51,7 @@ class BookDataPolicy
     /**
      * Determine whether the user can restore the model.
      */
-    public function restore(User $user, BookData $bookData): bool
+    public function restore(Account $user, BookData $bookData): bool
     {
         return false;
     }
@@ -59,7 +59,7 @@ class BookDataPolicy
     /**
      * Determine whether the user can permanently delete the model.
      */
-    public function forceDelete(User $user, BookData $bookData): bool
+    public function forceDelete(Account $user, BookData $bookData): bool
     {
         return false;
     }

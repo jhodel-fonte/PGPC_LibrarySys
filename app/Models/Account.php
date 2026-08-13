@@ -2,16 +2,22 @@
 
 namespace App\Models;
 
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
-class Account extends Model
+
+#[Fillable(['username', 'email', 'password_hash'])]
+#[Hidden(['password_hash', 'remember_token'])]
+class Account extends Authenticatable
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, Notifiable;
 
     protected $fillable = [
         'role_id',
@@ -46,6 +52,16 @@ class Account extends Model
         return $this->belongsTo(Role::class);
     }
 
+    public function getAuthPassword()
+    {
+        return $this->password_hash;
+    }
+
+    public function librarian()
+    {
+        return $this->hasOne(Librarian::class, 'account_id');
+    }
+
     public function status(): BelongsTo
     {
         return $this->belongsTo(AccountStatus::class, 'status_id');
@@ -56,15 +72,15 @@ class Account extends Model
         return $this->hasOne(Student::class);
     }
 
-    public function librarian(): HasOne
-    {
-        return $this->hasOne(Librarian::class);
-    }
-
     public function permissions(): BelongsToMany
     {
         return $this->belongsToMany(Permission::class, 'account_permissions')
             ->withPivot('is_allowed')
             ->withTimestamps();
+    }
+
+    public function getNameAttribute(): string
+    {
+        return $this->username;
     }
 }

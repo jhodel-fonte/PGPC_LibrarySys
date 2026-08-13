@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('librarians', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('account_id')->unique()->constrained('accounts')->cascadeOnDelete();//account id
+            $table->foreignId('account_id')->unique()->constrained()->cascadeOnDelete();//account id
 
             $table->string('school_id_number')->unique();
             $table->string('first_name');
