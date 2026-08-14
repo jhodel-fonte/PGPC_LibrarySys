@@ -56,6 +56,11 @@ class DatabaseSeeder extends Seeder
             // 10. Fines & Payments (Depends on borrowing_transactions, students, fine_types, librarians)
             FineSeeder::class,
             FinePaymentSeeder::class,
+            
+            // 11. Notifications and Preferences
+            NotifTemplateSeeder::class,
+            UserPreferenceSeeder::class,
+            UserNotificationSeeder::class,
         ]);
     }
 }

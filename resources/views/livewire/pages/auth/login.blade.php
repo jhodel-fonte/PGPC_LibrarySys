@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Session;
 use Livewire\Attributes\Layout;
 use Livewire\Volt\Component;
 
-new #[Layout('layouts.guest')] class extends Component
+new #[Layout('layouts.app')] class extends Component
 {
     public LoginForm $form;
 
@@ -24,50 +24,91 @@ new #[Layout('layouts.guest')] class extends Component
     }
 }; ?>
 
-<div>
+<div class="w-full">
+    <!-- Header/Title Area -->
+    <div class="mb-8 text-center">
+        <h2 class="text-2xl font-bold text-[#0F172A] tracking-tight">Welcome back</h2>
+        <p class="text-sm text-[#64748B] mt-2">Please enter your details to sign in.</p>
+    </div>
+
     <!-- Session Status -->
     @if (session('status'))
-        <div class="mb-4 font-medium text-sm text-green-600">
+        <div class="mb-6 p-4 rounded-2xl bg-[#EFF6FF] border border-[#102B70]/10 text-sm text-[#102B70] font-medium flex items-center gap-3">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
             {{ session('status') }}
         </div>
     @endif
 
-    <form wire:submit="login">
+    <form wire:submit="login" class="space-y-5">
         <!-- Email Address -->
-        <div>
-            <label for="email" class="block font-medium text-sm text-gray-700">{{ __('Email') }}</label>
-            <input wire:model="form.email" id="email" class="block mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" type="email" name="email" required autofocus autocomplete="username" />
+        <div class="space-y-1.5">
+            <label for="email" class="block font-semibold text-sm text-[#334155]">{{ __('Email Address') }}</label>
+            <div class="relative group">
+                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#94A3B8] group-focus-within:text-[#102B70] transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                </div>
+                <input wire:model="form.email" id="email" type="email" name="email" required autofocus autocomplete="username" 
+                    class="block w-full h-[56px] pl-11 pr-4 bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] rounded-[16px] focus:bg-white focus:border-[#102B70] focus:ring-[4px] focus:ring-[#EFF6FF] transition-all duration-200 outline-none hover:border-[#CBD5E1]" 
+                    placeholder="Enter your email" />
+            </div>
             @error('form.email')
-                <p class="text-sm text-red-600 mt-2">{{ $message }}</p>
+                <p class="text-[13px] font-medium text-[#EF4444] mt-1 flex items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    {{ $message }}
+                </p>
             @enderror
         </div>
 
         <!-- Password -->
-        <div class="mt-4">
-            <label for="password" class="block font-medium text-sm text-gray-700">{{ __('Password') }}</label>
-            <input wire:model="form.password" id="password" class="block mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" type="password" name="password" required autocomplete="current-password" />
+        <div class="space-y-1.5">
+            <label for="password" class="block font-semibold text-sm text-[#334155]">{{ __('Password') }}</label>
+            <div class="relative group">
+                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#94A3B8] group-focus-within:text-[#102B70] transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                </div>
+                <input wire:model="form.password" id="password" type="password" name="password" required autocomplete="current-password" 
+                    class="block w-full h-[56px] pl-11 pr-4 bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] rounded-[16px] focus:bg-white focus:border-[#102B70] focus:ring-[4px] focus:ring-[#EFF6FF] transition-all duration-200 outline-none hover:border-[#CBD5E1]" 
+                    placeholder="Enter your password" />
+            </div>
             @error('form.password')
-                <p class="text-sm text-red-600 mt-2">{{ $message }}</p>
+                <p class="text-[13px] font-medium text-[#EF4444] mt-1 flex items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    {{ $message }}
+                </p>
             @enderror
         </div>
 
-        <!-- Remember Me -->
-        <div class="block mt-4">
-            <label for="remember" class="inline-flex items-center">
-                <input wire:model="form.remember" id="remember" type="checkbox" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" name="remember">
-                <span class="ms-2 text-sm text-gray-600">{{ __('Remember me') }}</span>
+        <!-- Remember Me & Forgot Password -->
+        <div class="flex items-center justify-between pt-1">
+            <label for="remember" class="inline-flex items-center cursor-pointer group">
+                <div class="relative flex items-center justify-center">
+                    <input wire:model="form.remember" id="remember" type="checkbox" name="remember" class="peer appearance-none w-5 h-5 rounded-[6px] border-2 border-[#E2E8F0] bg-[#F8FAFC] checked:bg-[#102B70] checked:border-[#102B70] focus:outline-none focus:ring-2 focus:ring-[#EFF6FF] focus:ring-offset-1 transition-all cursor-pointer">
+                    <svg class="absolute w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 pointer-events-none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                </div>
+                <span class="ms-2.5 text-[13px] font-medium text-[#64748B] group-hover:text-[#334155] transition-colors">{{ __('Remember me') }}</span>
             </label>
-        </div>
 
-        <div class="flex items-center justify-end mt-4">
             @if (Route::has('password.request'))
-                <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" href="{{ route('password.request') }}" wire:navigate>
-                    {{ __('Forgot your password?') }}
+                <a class="text-[13px] font-semibold text-[#102B70] hover:text-[#FCC719] transition-colors focus:outline-none focus:underline" href="{{ route('password.request') }}" wire:navigate>
+                    {{ __('Forgot password?') }}
                 </a>
             @endif
+        </div>
 
-            <button type="submit" class="ms-3 inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                {{ __('Log in') }}
+        <div class="pt-4">
+            <button type="submit" class="w-full h-[56px] flex items-center justify-center gap-2 bg-[#102B70] text-white rounded-[16px] font-bold text-sm tracking-wide shadow-[0_4px_14px_rgba(16,43,112,0.25)] hover:bg-[#0B225E] hover:shadow-[0_6px_20px_rgba(16,43,112,0.35)] hover:-translate-y-0.5 focus:outline-none focus:ring-[4px] focus:ring-[#EFF6FF] active:scale-[0.98] transition-all duration-200">
+                {{ __('Sign In') }}
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
             </button>
         </div>
     </form>

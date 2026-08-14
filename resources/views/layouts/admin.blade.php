@@ -21,24 +21,19 @@
     </head>
     <body class="font-sans antialiased">
         <x-preloader />
+        {{-- <livewire:components.top-loader /> --}}
 
-        <div class="min-h-screen bg-gray-100">
-            <livewire:layout.topbar />
+        <div x-data="{ sidebarOpen: false, sidebarMinimized: false }" class="min-h-screen bg-gray-100 flex overflow-hidden relative">
             <livewire:layout.sidebar-nav />
-            {{-- <!-- Page Heading -->
-            @if (isset($header))
-                <header class="bg-white shadow">
-                    <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-                        {{ $header }}
-                    </div>
-                </header>//will replace possible just dont move this comments
-            @endif --}}
-            {{-- sidepanel --}}
-
+            
             <!-- Page Content -->
-            <main>
-                {{ $slot }}
-            </main>
+            <div :class="sidebarMinimized ? 'md:ml-[80px]' : 'md:ml-[280px]'" class="flex-1 flex flex-col min-w-0 min-h-screen transition-all duration-300 ease-in-out w-full">
+                <livewire:layout.topbar />
+                
+                <main class="flex-1">
+                    {{ $slot }}
+                </main>
+            </div>
         </div>
         @livewireScripts
     </body>

@@ -5,18 +5,9 @@
     $dashboardUrl = '#';
 @endphp
 
-<div x-data="{ sidebarOpen: false }" class="relative z-50">
-    
-    <!-- Mobile Hamburger Menu Button (Only visible on small screens) -->
-    <div class="md:hidden fixed top-4 left-4 z-40">
-        <button @click="sidebarOpen = true" class="p-2 rounded-lg bg-[#102b70] text-white shadow-md focus:outline-none hover:bg-[#0b1e4f] transition-colors" aria-label="Open Sidebar">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-        </button>
-    </div>
-
-    <!-- Mobile Overlay (Click to close sidebar) -->
+<!-- Single Root Element for Livewire -->
+<div class="relative z-50">
+    <!-- Sidebar Overlay (Click to close sidebar on mobile) -->
     <div 
         x-show="sidebarOpen" 
         @click="sidebarOpen = false" 
@@ -27,16 +18,19 @@
 
     <!-- Main Vertical Sidebar -->
     <aside 
-        :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
-        class="fixed inset-y-0 left-0 w-[280px] bg-[#102b70] text-white flex flex-col transition-transform duration-300 ease-in-out md:translate-x-0 z-50 shadow-[4px_0_24px_rgba(0,0,0,0.15)] overflow-hidden h-dvh"
+        :class="[
+            sidebarOpen ? 'translate-x-0' : '-translate-x-full',
+            sidebarMinimized ? 'md:w-[80px]' : 'md:w-[280px]'
+        ]"
+        class="fixed inset-y-0 left-0 w-[280px] bg-navy-primary text-white flex flex-col transition-all duration-300 ease-in-out md:translate-x-0 z-50 shadow-[4px_0_24px_rgba(0,0,0,0.15)] overflow-hidden h-dvh"
     >
         
         <!-- Header / Logo Area -->
-        <div class="h-[80px] px-6 border-b border-white/10 flex items-center justify-between shrink-0">
+        <div class="min-h-[60px] py-4 px-4 border-b border-white/10 flex items-center justify-between shrink-0" :class="sidebarMinimized ? 'justify-center' : ''">
             <x-brand-title />
             
             <!-- Close Button for Mobile -->
-            <button @click="sidebarOpen = false" class="md:hidden p-1.5 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+            <button @click="sidebarOpen = false" class="md:hidden p-1.5 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors focus:outline-none shrink-0">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -44,7 +38,7 @@
         </div>
 
         <!-- Scrollable Navigation Links -->
-        <nav class="flex-1 overflow-y-auto py-6 px-4 space-y-1 custom-scrollbar">
+        <nav class="flex-1 overflow-y-auto py-6 px-3 space-y-1 custom-scrollbar">
             
             <!-- Dashboard Link (Active State Example) -->
             <x-sidebar-button href="#" :active="true" class="mb-6">
@@ -57,18 +51,18 @@
             </x-sidebar-button>
 
             <!-- CIRCULATION SECTION -->
-            <div class="px-2 mt-6 mb-2">
+            <div class="px-2 mt-6 mb-2" x-show="!sidebarMinimized" x-transition.opacity.duration.300ms>
                 <span class="text-[11px] font-bold text-white/40 uppercase tracking-widest">Circulation</span>
             </div>
             
-            <x-sidebar-button href="#">
+            {{-- <x-sidebar-button href="#">
                 <x-slot:icon>
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                 </x-slot:icon>
                 Reservations
-            </x-sidebar-button>
+            </x-sidebar-button> --}}
 
             <x-sidebar-button href="#">
                 <x-slot:icon>
@@ -79,17 +73,17 @@
                 Circulation Desk
             </x-sidebar-button>
 
-            <x-sidebar-button href="#">
+            {{-- <x-sidebar-button href="#">
                 <x-slot:icon>
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                     </svg>
                 </x-slot:icon>
                 Borrows
-            </x-sidebar-button>
+            </x-sidebar-button> --}}
 
             <!-- CATALOG SECTION -->
-            <div class="px-2 mt-6 mb-2">
+            <div class="px-2 mt-6 mb-2" x-show="!sidebarMinimized" x-transition.opacity.duration.300ms>
                 <span class="text-[11px] font-bold text-white/40 uppercase tracking-widest">Catalog</span>
             </div>
 
@@ -100,15 +94,30 @@
                     </svg>
                 </x-slot:icon>
                 Books
-                <x-slot:trailing>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                <x-slot:subitems>
+                    <x-sidebar-subitem href="#">Cataloging</x-sidebar-subitem>
+                    <x-sidebar-subitem href="#">Add New Book</x-sidebar-subitem>
+                    <x-sidebar-subitem href="#">Book Import</x-sidebar-subitem>
+                    <x-sidebar-subitem href="#">Categories</x-sidebar-subitem>
+                </x-slot:subitems>
+            </x-sidebar-button>
+
+            <x-sidebar-button href="#">
+                <x-slot:icon>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                     </svg>
-                </x-slot:trailing>
+                </x-slot:icon>
+                Digital Collections
+                <x-slot:subitems>
+                    <x-sidebar-subitem href="#">E-Resource</x-sidebar-subitem>
+                    <x-sidebar-subitem href="#">Add New E-Resource</x-sidebar-subitem>
+                    <x-sidebar-subitem href="#">E-Resource Collections</x-sidebar-subitem>
+                </x-slot:subitems>
             </x-sidebar-button>
 
             <!-- USERS SECTION -->
-            <div class="px-2 mt-6 mb-2">
+            <div class="px-2 mt-6 mb-2" x-show="!sidebarMinimized" x-transition.opacity.duration.300ms>
                 <span class="text-[11px] font-bold text-white/40 uppercase tracking-widest">Users</span>
             </div>
 
@@ -122,7 +131,7 @@
             </x-sidebar-button>
 
             <!-- SYSTEM SECTION -->
-            <div class="px-2 mt-6 mb-2">
+            <div class="px-2 mt-6 mb-2" x-show="!sidebarMinimized" x-transition.opacity.duration.300ms>
                 <span class="text-[11px] font-bold text-white/40 uppercase tracking-widest">System</span>
             </div>
 
@@ -136,37 +145,7 @@
                 Settings
             </x-sidebar-button>
         </nav>
-
-        <!-- Bottom User Profile Area -->
-        <div class="p-4 border-t border-white/10 shrink-0 bg-[#0b225e]/30">
-            @if($signedInUser)
-                <div class="flex items-center justify-between px-2">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-full bg-[#fcc719] text-[#102b70] flex items-center justify-center font-bold text-lg shadow-sm">
-                            {{ strtoupper(substr($signedInUser->username ?? 'AS', 0, 1)) }}{{ strtoupper(substr($signedInUser->username ?? 'AS', 1, 1)) }}
-                        </div>
-                        <div class="flex flex-col min-w-0">
-                            <span class="text-sm font-bold text-white truncate">{{ $signedInUser->username ?? 'Admin System' }}</span>
-                            <span class="text-[11px] text-white/50 capitalize">{{ $accountType ?: 'Administrator' }}</span>
-                        </div>
-                    </div>
-                    <form action="#" method="POST">
-                        @csrf
-                        <button type="submit" class="p-2 text-white/50 hover:text-white transition-colors" title="Log Out">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                            </svg>
-                        </button>
-                    </form>
-                </div>
-            @else
-                <div class="flex flex-col gap-2">
-                    <p class="text-xs text-white/60 text-center mb-1">Access your account</p>
-                    <a href="#" class="px-4 py-2 rounded-lg border border-white/20 text-white text-sm font-semibold text-center hover:bg-white hover:text-[#102b70] transition-colors">Log in</a>
-                </div>
-            @endif
-        </div>
-        
+            
     </aside>
 
     <!-- Custom Scrollbar Styles for the Sidebar -->
