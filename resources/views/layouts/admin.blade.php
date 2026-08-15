@@ -41,6 +41,7 @@
                 <livewire:layout.topbar />
                 
                 <main class="flex-1 overflow-y-auto">
+                    <livewire:global-announcement-banner />
                     {{ $slot }}
                 </main>
             </div>

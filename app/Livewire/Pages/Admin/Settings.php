@@ -26,16 +26,6 @@ class Settings extends Component
         // Fetch all key-value pairs from database
         $dbSettings = SystemSetting::pluck('setting_value', 'setting_key')->toArray();
 
-        // Load legal content securely from public storage
-        $termsPath = $dbSettings['terms_and_conditions'] ?? 'settings/terms_and_conditions.txt';
-        $privacyPath = $dbSettings['data_privacy_policy'] ?? 'settings/privacy_policy.txt';
-        
-        $termsContent = \Illuminate\Support\Facades\Storage::disk('public')->exists($termsPath) 
-            ? \Illuminate\Support\Facades\Storage::disk('public')->get($termsPath) : '';
-            
-        $privacyContent = \Illuminate\Support\Facades\Storage::disk('public')->exists($privacyPath) 
-            ? \Illuminate\Support\Facades\Storage::disk('public')->get($privacyPath) : '';
-
         // Load system logs from private storage (local disk root is already storage/app/private in Laravel 11)
         $logsPath = 'system_logs.json';
         $systemLogs = \Illuminate\Support\Facades\Storage::disk('local')->exists($logsPath) 
@@ -70,9 +60,24 @@ class Settings extends Component
             ],
             
             'content_legal' => [
-                'terms_and_conditions' => $termsContent,
-                'data_privacy_policy' => $privacyContent,
-                'announcements' => json_decode($dbSettings['announcements'] ?? '[]', true) ?: config('pgpc.content_legal.announcements'),
+                'terms' => [
+                    'content' => $dbSettings['terms_content'] ?? '',
+                    'version' => $dbSettings['terms_version'] ?? 1,
+                    'updated_at' => $dbSettings['terms_updated_at'] ?? now()->toDateTimeString(),
+                    'require_acknowledgement' => filter_var($dbSettings['terms_require_acknowledgement'] ?? true, FILTER_VALIDATE_BOOLEAN),
+                ],
+                'privacy' => [
+                    'content' => $dbSettings['privacy_content'] ?? '',
+                    'version' => $dbSettings['privacy_version'] ?? 1,
+                    'updated_at' => $dbSettings['privacy_updated_at'] ?? now()->toDateTimeString(),
+                    'require_acknowledgement' => filter_var($dbSettings['privacy_require_acknowledgement'] ?? false, FILTER_VALIDATE_BOOLEAN),
+                ],
+                'cookie' => [
+                    'content' => $dbSettings['cookie_content'] ?? '',
+                    'version' => $dbSettings['cookie_version'] ?? 1,
+                    'updated_at' => $dbSettings['cookie_updated_at'] ?? now()->toDateTimeString(),
+                    'require_acknowledgement' => filter_var($dbSettings['cookie_require_acknowledgement'] ?? false, FILTER_VALIDATE_BOOLEAN),
+                ]
             ],
             
             'notifications' => [
@@ -178,8 +183,7 @@ class Settings extends Component
             'fine_rate_per_day' => $this->settings['circulation']['fine_rules']['daily_fine'],
             'max_renewals' => $this->settings['circulation']['renewal_limits']['max_consecutive'],
             
-            'announcements' => json_encode($this->settings['content_legal']['announcements']),
-            
+
             'notification_channels' => json_encode($this->settings['notifications']['channels']),
             'notification_templates' => json_encode($this->settings['notifications']['templates']),
             'daily_cron_time' => $this->settings['notifications']['daily_cron'],
@@ -194,20 +198,50 @@ class Settings extends Component
             SystemSetting::where('setting_key', $key)->update(['setting_value' => $value]);
         }
 
-        // Save physical files for Legal Content
-        // We get the file path from the database so we know where to save the text in public storage
-        $dbSettings = SystemSetting::pluck('setting_value', 'setting_key')->toArray();
-        $termsPath = $dbSettings['terms_and_conditions'] ?? 'settings/terms_and_conditions.txt';
-        $privacyPath = $dbSettings['data_privacy_policy'] ?? 'settings/privacy_policy.txt';
-
-        \Illuminate\Support\Facades\Storage::disk('public')->put($termsPath, $this->settings['content_legal']['terms_and_conditions']);
-        \Illuminate\Support\Facades\Storage::disk('public')->put($privacyPath, $this->settings['content_legal']['data_privacy_policy']);
-
         // Update the snapshot so dirty state is instantly reset
         $this->originalSettings = $this->settings;
 
         $this->dispatch('toast', message: 'Settings saved successfully.');
         $this->dispatch('settings-saved');
+    }
+
+    public function updatePolicy($policyType, $isImmediate, $requireAcknowledgement, $scheduledDate = null)
+    {
+        $validTypes = ['terms', 'privacy', 'cookie'];
+        if (!in_array($policyType, $validTypes)) {
+            return;
+        }
+
+        $newContent = $this->settings['content_legal'][$policyType]['content'];
+        $currentVersion = (int)SystemSetting::where('setting_key', "{$policyType}_version")->value('setting_value');
+        $newVersion = $currentVersion + 1;
+
+        if ($isImmediate) {
+            SystemSetting::updateOrCreate(['setting_key' => "{$policyType}_content"], ['setting_value' => $newContent, 'setting_type' => 'html']);
+            SystemSetting::updateOrCreate(['setting_key' => "{$policyType}_version"], ['setting_value' => $newVersion, 'setting_type' => 'integer']);
+            SystemSetting::updateOrCreate(['setting_key' => "{$policyType}_updated_at"], ['setting_value' => now()->toDateTimeString(), 'setting_type' => 'string']);
+            SystemSetting::updateOrCreate(['setting_key' => "{$policyType}_require_acknowledgement"], ['setting_value' => $requireAcknowledgement, 'setting_type' => 'boolean']);
+            
+            // Clean up any pending updates
+            SystemSetting::whereIn('setting_key', [
+                "pending_{$policyType}_content",
+                "pending_{$policyType}_version",
+                "pending_{$policyType}_effective_at",
+                "pending_{$policyType}_require_acknowledgement",
+            ])->delete();
+
+            $this->dispatch('toast', message: ucfirst($policyType) . ' Policy updated successfully.');
+        } else {
+            // Schedule it
+            SystemSetting::updateOrCreate(['setting_key' => "pending_{$policyType}_content"], ['setting_value' => $newContent, 'setting_type' => 'html']);
+            SystemSetting::updateOrCreate(['setting_key' => "pending_{$policyType}_version"], ['setting_value' => $newVersion, 'setting_type' => 'integer']);
+            SystemSetting::updateOrCreate(['setting_key' => "pending_{$policyType}_effective_at"], ['setting_value' => $scheduledDate, 'setting_type' => 'string']);
+            SystemSetting::updateOrCreate(['setting_key' => "pending_{$policyType}_require_acknowledgement"], ['setting_value' => $requireAcknowledgement, 'setting_type' => 'boolean']);
+
+            $this->dispatch('toast', message: ucfirst($policyType) . ' Policy update scheduled.');
+        }
+
+        $this->loadSettings(); // Reload to refresh state and clear dirty flag
     }
 
     public function render()

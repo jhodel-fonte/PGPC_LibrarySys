@@ -13,14 +13,10 @@ class SystemSettingSeeder extends Seeder
      */
     public function run(): void
     {
-        // 1. Create Legal Files in Storage
+        // 1. Define Policy Content
         $termsContent = "Terms and Conditions...\n\nBy using the PGPC Library System, you agree to abide by the institution's rules.";
         $privacyContent = "Privacy Policy...\n\nYour data is securely stored and used only for library transactional purposes.";
         $cookiesContent = "Cookie Policy...\n\nWe use essential cookies to maintain your active login session.";
-
-        Storage::disk('public')->put('settings/terms_and_conditions.txt', $termsContent);
-        Storage::disk('public')->put('settings/privacy_policy.txt', $privacyContent);
-        Storage::disk('public')->put('settings/cookie_policy.txt', $cookiesContent);
 
         // 2. Define Settings Array
         $settings = [
@@ -41,11 +37,23 @@ class SystemSettingSeeder extends Seeder
             ['setting_key' => 'max_renewals', 'setting_value' => '2', 'setting_type' => 'integer', 'allowed_role' => 'admin', 'is_critical' => false],
             ['setting_key' => 'reservation_validity_days', 'setting_value' => '3', 'setting_type' => 'integer', 'allowed_role' => 'admin', 'is_critical' => false],
 
-            // Legal Documents
-            ['setting_key' => 'terms_and_conditions', 'setting_value' => 'settings/terms_and_conditions.txt', 'setting_type' => 'file_path', 'allowed_role' => 'head_admin', 'is_critical' => true],
-            ['setting_key' => 'data_privacy_policy', 'setting_value' => 'settings/privacy_policy.txt', 'setting_type' => 'file_path', 'allowed_role' => 'head_admin', 'is_critical' => true],
-            ['setting_key' => 'cookie_policy', 'setting_value' => 'settings/cookie_policy.txt', 'setting_type' => 'file_path', 'allowed_role' => 'head_admin', 'is_critical' => true],
-            ['setting_key' => 'announcements', 'setting_value' => json_encode(config('pgpc.content_legal.announcements', [])), 'setting_type' => 'json', 'allowed_role' => 'admin', 'is_critical' => false],
+            // Legal Documents - Terms & Conditions
+            ['setting_key' => 'terms_content', 'setting_value' => $termsContent, 'setting_type' => 'html', 'allowed_role' => 'head_admin', 'is_critical' => true],
+            ['setting_key' => 'terms_version', 'setting_value' => '1', 'setting_type' => 'integer', 'allowed_role' => 'head_admin', 'is_critical' => true],
+            ['setting_key' => 'terms_updated_at', 'setting_value' => now()->toDateTimeString(), 'setting_type' => 'string', 'allowed_role' => 'head_admin', 'is_critical' => true],
+            ['setting_key' => 'terms_require_acknowledgement', 'setting_value' => '1', 'setting_type' => 'boolean', 'allowed_role' => 'head_admin', 'is_critical' => true],
+
+            // Legal Documents - Privacy Policy
+            ['setting_key' => 'privacy_content', 'setting_value' => $privacyContent, 'setting_type' => 'html', 'allowed_role' => 'head_admin', 'is_critical' => true],
+            ['setting_key' => 'privacy_version', 'setting_value' => '1', 'setting_type' => 'integer', 'allowed_role' => 'head_admin', 'is_critical' => true],
+            ['setting_key' => 'privacy_updated_at', 'setting_value' => now()->toDateTimeString(), 'setting_type' => 'string', 'allowed_role' => 'head_admin', 'is_critical' => true],
+            ['setting_key' => 'privacy_require_acknowledgement', 'setting_value' => '0', 'setting_type' => 'boolean', 'allowed_role' => 'head_admin', 'is_critical' => true],
+
+            // Legal Documents - Cookie Policy
+            ['setting_key' => 'cookie_content', 'setting_value' => $cookiesContent, 'setting_type' => 'html', 'allowed_role' => 'head_admin', 'is_critical' => true],
+            ['setting_key' => 'cookie_version', 'setting_value' => '1', 'setting_type' => 'integer', 'allowed_role' => 'head_admin', 'is_critical' => true],
+            ['setting_key' => 'cookie_updated_at', 'setting_value' => now()->toDateTimeString(), 'setting_type' => 'string', 'allowed_role' => 'head_admin', 'is_critical' => true],
+            ['setting_key' => 'cookie_require_acknowledgement', 'setting_value' => '0', 'setting_type' => 'boolean', 'allowed_role' => 'head_admin', 'is_critical' => true],
 
             // Notifications
             ['setting_key' => 'notification_channels', 'setting_value' => json_encode(config('pgpc.notifications.channels', [])), 'setting_type' => 'json', 'allowed_role' => 'admin', 'is_critical' => false],

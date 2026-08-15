@@ -78,8 +78,7 @@
     "extra": {
         "laravel": {
             "dont-discover": [
-                "laravel/pail",
-                "laravel/telescope"
+                "laravel/pail"
             ]
         }
     },

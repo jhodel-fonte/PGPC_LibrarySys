@@ -138,9 +138,12 @@
             @endforeach
         </div>
     </div>
-    
     <hr class="my-10 border-slate-200">
     
+    <!-- Global Announcements -->
+    <livewire:admin.global-announcements-manager />
+    
+    <hr class="my-10 border-slate-200">
     <!-- Daily Processing Schedule -->
     <div>
         <div class="flex items-center gap-3 mb-4">
@@ -161,7 +164,7 @@
             
             <div class="flex items-center gap-3">
                 <span class="text-sm text-slate-600">Run every day at</span>
-                <input type="time" wire:model.live="settings.notifications.daily_cron" class="h-10 w-32 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-[#17357A] focus:ring-[3px] focus:ring-[#17357A]/10 transition-shadow outline-none text-center">
+                <x-time format="24" wire:model.live="settings.notifications.daily_cron" />
             </div>
             
             <p class="mt-4 text-xs font-medium text-slate-500 flex items-center gap-1.5">

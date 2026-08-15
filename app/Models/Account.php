@@ -32,6 +32,12 @@ class Account extends Authenticatable
         'password_changed_at',
         'provider',
         'provider_id',
+        'terms_acknowledged_version',
+        'terms_acknowledged_at',
+        'privacy_acknowledged_version',
+        'privacy_acknowledged_at',
+        'cookie_acknowledged_version',
+        'cookie_acknowledged_at',
     ];
 
     protected $hidden = [
@@ -45,6 +51,9 @@ class Account extends Authenticatable
         'last_login' => 'datetime',
         'password_changed_at' => 'datetime',
         'password_hash' => 'hashed',
+        'terms_acknowledged_at' => 'datetime',
+        'privacy_acknowledged_at' => 'datetime',
+        'cookie_acknowledged_at' => 'datetime',
     ];
 
     public function role(): BelongsTo

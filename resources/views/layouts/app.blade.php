@@ -39,6 +39,7 @@
         <div class="fixed inset-0 z-10 bg-gradient-hero backdrop-blur-sm pointer-events-none"></div>
 
         <div id="main-app-wrapper" class="relative z-20 flex flex-col min-h-dvh w-full">
+            <livewire:global-announcement-banner />
             <div class="flex-1 flex items-center justify-center w-full px-4 py-12 sm:px-6 lg:px-8">
                 {{ $slot }}
             </div>
