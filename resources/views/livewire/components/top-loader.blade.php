@@ -25,8 +25,8 @@
             }, 300);
         }
     }"
-    @livewire:navigating.window="startLoading()"
-    @livewire:navigated.window="stopLoading()"
+    x-on:livewire:navigating.window="startLoading()"
+    x-on:livewire:navigated.window="stopLoading()"
 >
     <div 
         class="fixed top-0 left-0 h-[3px] bg-gradient-to-r from-[#fcc719] via-[#3b82f6] to-[#fcc719] z-[999999] pointer-events-none transition-all ease-out shadow-[0_0_10px_rgba(252,199,25,0.7)]"
@@ -34,4 +34,4 @@
     >
         <div class="absolute right-0 w-[120px] h-full opacity-100 rotate-3 -translate-y-1 shadow-[0_0_12px_#fcc719,0_0_6px_#fcc719]"></div>
     </div>
-</div>s
+</div>

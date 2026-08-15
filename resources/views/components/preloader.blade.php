@@ -1,6 +1,6 @@
 <div 
     x-data="{ 
-        isLoading: false,
+        isLoading: true,
         barProgress: 'w-0', // Starts at 0% width
         minDelay: 1000, // Minimum time in milliseconds (1.5 seconds)
         init() {
@@ -64,3 +64,5 @@
 
     </div>
 </div>
+
+

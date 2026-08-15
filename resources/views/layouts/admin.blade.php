@@ -12,7 +12,10 @@
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700,800,900&display=swap" rel="stylesheet" />
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -20,17 +23,24 @@
         @livewireStyles
     </head>
     <body class="font-sans antialiased">
-        <x-preloader />
-        {{-- <livewire:components.top-loader /> --}}
+        @persist('preloader')
+            <x-preloader />
+        @endpersist
+        <livewire:components.top-loader />
 
-        <div x-data="{ sidebarOpen: false, sidebarMinimized: false }" class="min-h-screen bg-gray-100 flex overflow-hidden relative">
+        <div x-data="{ 
+            sidebarOpen: false, 
+            sidebarMinimized: localStorage.getItem('sidebarMinimized') === 'true' 
+        }" 
+        x-effect="localStorage.setItem('sidebarMinimized', sidebarMinimized)"
+        class="h-screen bg-gray-100 flex overflow-hidden relative">
             <livewire:layout.sidebar-nav />
             
             <!-- Page Content -->
-            <div :class="sidebarMinimized ? 'md:ml-[80px]' : 'md:ml-[280px]'" class="flex-1 flex flex-col min-w-0 min-h-screen transition-all duration-300 ease-in-out w-full">
+            <div :class="sidebarMinimized ? 'md:ml-[80px]' : 'md:ml-[280px]'" class="flex-1 flex flex-col min-w-0 h-screen transition-all duration-300 ease-in-out w-full">
                 <livewire:layout.topbar />
                 
-                <main class="flex-1">
+                <main class="flex-1 overflow-y-auto">
                     {{ $slot }}
                 </main>
             </div>

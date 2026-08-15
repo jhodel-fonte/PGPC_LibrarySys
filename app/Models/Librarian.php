@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Librarian extends Model
 {
     use HasFactory, SoftDeletes;
-    protected $table = 'librarian';
+    protected $table = 'librarians';
 
     protected $fillable = [
         'account_id',
