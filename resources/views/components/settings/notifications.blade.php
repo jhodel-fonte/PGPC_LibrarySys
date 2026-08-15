@@ -5,8 +5,18 @@
     <div class="max-w-[960px] w-full">
         <!-- Delivery Channels -->
     <div class="mt-8">
-        <h3 class="text-sm font-semibold text-slate-900 tracking-wide uppercase">Delivery Channels</h3>
-        <p class="mt-1 text-xs text-slate-500 mb-4">Master switches for system notification methods.</p>
+        <div class="flex items-center gap-3 mb-4">
+            <div>
+                <h3 class="text-sm font-semibold text-slate-900 tracking-wide uppercase">Delivery Channels</h3>
+                <p class="mt-1 text-xs text-slate-500">Master switches for system notification methods.</p>
+            </div>
+            @if($this->dirtyState['sections']['notifications.channels'] ?? false)
+                <div class="flex items-center gap-1.5 text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-200">
+                    <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+                    Modified
+                </div>
+            @endif
+        </div>
         
         <div class="w-full grid grid-cols-1 md:grid-cols-2 gap-4">
             <!-- Email Switch -->
@@ -31,7 +41,7 @@
                 <!-- Toggle Switch -->
                 <button 
                     type="button" 
-                    wire:click="$toggle('settings.notifications.channels.email'); markAsDirty()"
+                    wire:click="$toggle('settings.notifications.channels.email')"
                     class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#17357A] focus:ring-offset-2 {{ $settings['notifications']['channels']['email'] ? 'bg-emerald-500' : 'bg-slate-200' }}" 
                     role="switch" 
                     aria-checked="{{ $settings['notifications']['channels']['email'] ? 'true' : 'false' }}">
@@ -54,7 +64,7 @@
                 <!-- Toggle Switch -->
                 <button 
                     type="button" 
-                    wire:click="$toggle('settings.notifications.channels.in_app'); markAsDirty()"
+                    wire:click="$toggle('settings.notifications.channels.in_app')"
                     class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#17357A] focus:ring-offset-2 {{ $settings['notifications']['channels']['in_app'] ? 'bg-emerald-500' : 'bg-slate-200' }}" 
                     role="switch" 
                     aria-checked="{{ $settings['notifications']['channels']['in_app'] ? 'true' : 'false' }}">
@@ -69,8 +79,18 @@
     
     <!-- Notification Templates -->
     <div>
-        <h3 class="text-sm font-semibold text-slate-900 tracking-wide uppercase">Notification Templates</h3>
-        <p class="mt-1 text-xs text-slate-500 mb-4">Manage the content and formatting of system messages.</p>
+        <div class="flex items-center gap-3 mb-4">
+            <div>
+                <h3 class="text-sm font-semibold text-slate-900 tracking-wide uppercase">Notification Templates</h3>
+                <p class="mt-1 text-xs text-slate-500">Manage the content and formatting of system messages.</p>
+            </div>
+            @if($this->dirtyState['sections']['notifications.templates'] ?? false)
+                <div class="flex items-center gap-1.5 text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-200">
+                    <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+                    Modified
+                </div>
+            @endif
+        </div>
         
         <div class="w-full border border-slate-200 rounded-xl overflow-hidden hidden sm:block">
             <table class="w-full text-left text-sm">
@@ -123,15 +143,25 @@
     
     <!-- Daily Processing Schedule -->
     <div>
-        <h3 class="text-sm font-semibold text-slate-900 tracking-wide uppercase">Daily Processing Schedule</h3>
-        <p class="mt-1 text-xs text-slate-500 mb-4">Used for scheduled overdue checks and related daily library processing.</p>
+        <div class="flex items-center gap-3 mb-4">
+            <div>
+                <h3 class="text-sm font-semibold text-slate-900 tracking-wide uppercase">Daily Processing Schedule</h3>
+                <p class="mt-1 text-xs text-slate-500">Used for scheduled overdue checks and related daily library processing.</p>
+            </div>
+            @if($this->dirtyState['sections']['notifications.daily_cron'] ?? false)
+                <div class="flex items-center gap-1.5 text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-200">
+                    <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+                    Modified
+                </div>
+            @endif
+        </div>
         
         <div class="w-full p-5 rounded-xl border border-slate-200 bg-white">
             <h4 class="text-sm font-medium text-slate-900 mb-3">Daily System Check</h4>
             
             <div class="flex items-center gap-3">
                 <span class="text-sm text-slate-600">Run every day at</span>
-                <input type="time" wire:model.live="settings.notifications.daily_cron" wire:change="markAsDirty" class="h-10 w-32 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-[#17357A] focus:ring-[3px] focus:ring-[#17357A]/10 transition-shadow outline-none text-center">
+                <input type="time" wire:model.live="settings.notifications.daily_cron" class="h-10 w-32 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-[#17357A] focus:ring-[3px] focus:ring-[#17357A]/10 transition-shadow outline-none text-center">
             </div>
             
             <p class="mt-4 text-xs font-medium text-slate-500 flex items-center gap-1.5">

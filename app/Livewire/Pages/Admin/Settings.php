@@ -12,11 +12,9 @@ class Settings extends Component
 {
     public $activeTab = 'general'; // general, circulation, content, notifications, ai, backup
     
-    // Track unsaved changes
-    public $isDirty = false;
-    
     // Hold settings values loaded from config/DB
     public $settings = [];
+    public $originalSettings = [];
 
     public function mount()
     {
@@ -38,8 +36,8 @@ class Settings extends Component
         $privacyContent = \Illuminate\Support\Facades\Storage::disk('public')->exists($privacyPath) 
             ? \Illuminate\Support\Facades\Storage::disk('public')->get($privacyPath) : '';
 
-        // Load system logs from private storage
-        $logsPath = 'private/system_logs.json';
+        // Load system logs from private storage (local disk root is already storage/app/private in Laravel 11)
+        $logsPath = 'system_logs.json';
         $systemLogs = \Illuminate\Support\Facades\Storage::disk('local')->exists($logsPath) 
             ? json_decode(\Illuminate\Support\Facades\Storage::disk('local')->get($logsPath), true) : [];
 
@@ -98,6 +96,9 @@ class Settings extends Component
 
             'system_logs' => $systemLogs
         ];
+
+        // Store snapshot for deep comparison dirty state tracking
+        $this->originalSettings = $this->settings;
     }
 
     public function setTab($tab)
@@ -107,17 +108,56 @@ class Settings extends Component
         $this->activeTab = $tab;
     }
     
-    public function markAsDirty()
-    {
-        $this->isDirty = true;
-    }
-
     public function discardChanges()
     {
-        $this->loadSettings();
-        $this->isDirty = false;
+        $this->settings = $this->originalSettings; // Revert immediately to snapshot
         
         $this->dispatch('toast', message: 'Changes discarded.');
+    }
+
+    #[\Livewire\Attributes\Computed]
+    public function dirtyState()
+    {
+        $state = [
+            'is_dirty' => false,
+            'categories' => [],
+            'sections' => []
+        ];
+
+        foreach ($this->settings as $category => $categoryData) {
+            // Do not track dirty state for logs or backup components
+            if (in_array($category, ['system_logs', 'backup'])) {
+                $state['categories'][$category] = false;
+                continue;
+            }
+
+            $categoryDirty = false;
+            
+            if (is_array($categoryData)) {
+                foreach ($categoryData as $section => $value) {
+                    $originalValue = $this->originalSettings[$category][$section] ?? null;
+                    
+                    // Deep comparison
+                    $isSectionDirty = json_encode($value) !== json_encode($originalValue);
+                    
+                    $state['sections']["{$category}.{$section}"] = $isSectionDirty;
+                    
+                    if ($isSectionDirty) {
+                        $categoryDirty = true;
+                    }
+                }
+            } else {
+                $categoryDirty = json_encode($categoryData) !== json_encode($this->originalSettings[$category] ?? null);
+            }
+
+            $state['categories'][$category] = $categoryDirty;
+            
+            if ($categoryDirty) {
+                $state['is_dirty'] = true;
+            }
+        }
+
+        return $state;
     }
 
     public function saveChanges()
@@ -163,7 +203,9 @@ class Settings extends Component
         \Illuminate\Support\Facades\Storage::disk('public')->put($termsPath, $this->settings['content_legal']['terms_and_conditions']);
         \Illuminate\Support\Facades\Storage::disk('public')->put($privacyPath, $this->settings['content_legal']['data_privacy_policy']);
 
-        $this->isDirty = false;
+        // Update the snapshot so dirty state is instantly reset
+        $this->originalSettings = $this->settings;
+
         $this->dispatch('toast', message: 'Settings saved successfully.');
         $this->dispatch('settings-saved');
     }

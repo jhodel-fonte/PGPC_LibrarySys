@@ -6,9 +6,17 @@
         <!-- Terms and Conditions -->
     <div class="mt-8">
         <div class="flex items-center justify-between mb-4">
-            <div>
-                <h3 class="text-sm font-semibold text-slate-900 tracking-wide uppercase">Terms and Conditions</h3>
-                <p class="mt-1 text-xs text-slate-500">Legal terms governing library membership and usage.</p>
+            <div class="flex items-center gap-3">
+                <div>
+                    <h3 class="text-sm font-semibold text-slate-900 tracking-wide uppercase">Terms and Conditions</h3>
+                    <p class="mt-1 text-xs text-slate-500">Legal terms governing library membership and usage.</p>
+                </div>
+                @if($this->dirtyState['sections']['content_legal.terms_and_conditions'] ?? false)
+                    <div class="flex items-center gap-1.5 text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-200">
+                        <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+                        Modified
+                    </div>
+                @endif
             </div>
             <span class="text-xs text-slate-400">Last updated: Aug 15, 2026</span>
         </div>
@@ -26,7 +34,7 @@
                 <div class="w-px h-4 bg-slate-300 mx-1"></div>
                 <button class="p-1.5 text-slate-600 hover:bg-slate-200 rounded transition-colors" title="Link"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>
             </div>
-            <textarea wire:model.live="settings.content_legal.terms_and_conditions" wire:change="markAsDirty" class="w-full min-h-[280px] p-4 text-sm text-slate-900 bg-transparent resize-y outline-none leading-relaxed"></textarea>
+            <textarea wire:model.live="settings.content_legal.terms_and_conditions" class="w-full min-h-[280px] p-4 text-sm text-slate-900 bg-transparent resize-y outline-none leading-relaxed"></textarea>
         </div>
     </div>
     
@@ -35,9 +43,17 @@
     <!-- Data Privacy Policy -->
     <div>
         <div class="flex items-center justify-between mb-4">
-            <div>
-                <h3 class="text-sm font-semibold text-slate-900 tracking-wide uppercase">Data Privacy Policy</h3>
-                <p class="mt-1 text-xs text-slate-500">Information describing how member and account data is collected, stored, and processed.</p>
+            <div class="flex items-center gap-3">
+                <div>
+                    <h3 class="text-sm font-semibold text-slate-900 tracking-wide uppercase">Data Privacy Policy</h3>
+                    <p class="mt-1 text-xs text-slate-500">Information describing how member and account data is collected, stored, and processed.</p>
+                </div>
+                @if($this->dirtyState['sections']['content_legal.data_privacy_policy'] ?? false)
+                    <div class="flex items-center gap-1.5 text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-200">
+                        <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+                        Modified
+                    </div>
+                @endif
             </div>
             <span class="text-xs text-slate-400">Last updated: Aug 15, 2026</span>
         </div>
@@ -53,7 +69,7 @@
                 <button class="p-1.5 text-slate-600 hover:bg-slate-200 rounded transition-colors" title="Bulleted List"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg></button>
                 <button class="p-1.5 text-slate-600 hover:bg-slate-200 rounded transition-colors" title="Numbered List"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="10" x2="21" y1="6" y2="6"/><line x1="10" x2="21" y1="12" y2="12"/><line x1="10" x2="21" y1="18" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg></button>
             </div>
-            <textarea wire:model.live="settings.content_legal.data_privacy_policy" wire:change="markAsDirty" class="w-full min-h-[280px] p-4 text-sm text-slate-900 bg-transparent resize-y outline-none leading-relaxed"></textarea>
+            <textarea wire:model.live="settings.content_legal.data_privacy_policy" class="w-full min-h-[280px] p-4 text-sm text-slate-900 bg-transparent resize-y outline-none leading-relaxed"></textarea>
         </div>
     </div>
     
@@ -61,8 +77,18 @@
     
     <!-- Global Announcements -->
     <div>
-        <h3 class="text-sm font-semibold text-slate-900 tracking-wide uppercase">Global Announcements</h3>
-        <p class="mt-1 text-xs text-slate-500 mb-4">Display system-wide notices at the top of the user portal.</p>
+        <div class="flex items-center gap-3 mb-4">
+            <div>
+                <h3 class="text-sm font-semibold text-slate-900 tracking-wide uppercase">Global Announcements</h3>
+                <p class="mt-1 text-xs text-slate-500">Display system-wide notices at the top of the user portal.</p>
+            </div>
+            @if($this->dirtyState['sections']['content_legal.announcements'] ?? false)
+                <div class="flex items-center gap-1.5 text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-200">
+                    <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+                    Modified
+                </div>
+            @endif
+        </div>
         
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 w-full">
             <!-- Form -->
@@ -70,7 +96,7 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1.5">Status</label>
-                        <select wire:model.live="settings.content_legal.announcements.status" wire:change="markAsDirty" class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-[#17357A] focus:ring-[3px] focus:ring-[#17357A]/10 transition-shadow outline-none">
+                        <select wire:model.live="settings.content_legal.announcements.status" class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-[#17357A] focus:ring-[3px] focus:ring-[#17357A]/10 transition-shadow outline-none">
                             <option value="Enabled">Enabled</option>
                             <option value="Disabled">Disabled</option>
                         </select>
@@ -78,7 +104,7 @@
                     
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1.5">Display Style</label>
-                        <select wire:model.live="settings.content_legal.announcements.style" wire:change="markAsDirty" class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-[#17357A] focus:ring-[3px] focus:ring-[#17357A]/10 transition-shadow outline-none">
+                        <select wire:model.live="settings.content_legal.announcements.style" class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-[#17357A] focus:ring-[3px] focus:ring-[#17357A]/10 transition-shadow outline-none">
                             <option value="Information">Information</option>
                             <option value="Notice">Notice</option>
                             <option value="Warning">Warning</option>
@@ -89,12 +115,12 @@
                 
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1.5">Title</label>
-                    <input type="text" wire:model.live="settings.content_legal.announcements.title" wire:change="markAsDirty" class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-[#17357A] focus:ring-[3px] focus:ring-[#17357A]/10 transition-shadow outline-none">
+                    <input type="text" wire:model.live="settings.content_legal.announcements.title" class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-[#17357A] focus:ring-[3px] focus:ring-[#17357A]/10 transition-shadow outline-none">
                 </div>
                 
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1.5">Message</label>
-                    <textarea wire:model.live="settings.content_legal.announcements.message" wire:change="markAsDirty" rows="3" class="w-full rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-900 focus:border-[#17357A] focus:ring-[3px] focus:ring-[#17357A]/10 transition-shadow outline-none resize-none"></textarea>
+                    <textarea wire:model.live="settings.content_legal.announcements.message" rows="3" class="w-full rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-900 focus:border-[#17357A] focus:ring-[3px] focus:ring-[#17357A]/10 transition-shadow outline-none resize-none"></textarea>
                 </div>
                 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">

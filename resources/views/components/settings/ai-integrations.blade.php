@@ -5,8 +5,18 @@
     <div class="max-w-[850px] w-full">
         <!-- Machine Learning Endpoints -->
     <div class="mt-8">
-        <h3 class="text-sm font-semibold text-slate-900 tracking-wide uppercase">Machine Learning Service</h3>
-        <p class="mt-1 text-xs text-slate-500 mb-4">Connection parameters for the recommendation engine.</p>
+        <div class="flex items-center gap-3 mb-4">
+            <div>
+                <h3 class="text-sm font-semibold text-slate-900 tracking-wide uppercase">Machine Learning Service</h3>
+                <p class="mt-1 text-xs text-slate-500">Connection parameters for the recommendation engine.</p>
+            </div>
+            @if($this->dirtyState['sections']['ai_integrations.recommendation_service'] ?? false)
+                <div class="flex items-center gap-1.5 text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-200">
+                    <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+                    Modified
+                </div>
+            @endif
+        </div>
         
         <div class="w-full rounded-xl border border-slate-200 bg-white p-5 lg:p-6 shadow-sm">
             <h4 class="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
@@ -17,11 +27,11 @@
             <div class="grid grid-cols-1 sm:grid-cols-[1fr_120px] gap-4 mb-6">
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1.5">Service URL</label>
-                    <input type="text" wire:model.live="settings.ai_integrations.recommendation_service.url" wire:change="markAsDirty" class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-[#17357A] focus:ring-[3px] focus:ring-[#17357A]/10 transition-shadow outline-none">
+                    <input type="text" wire:model.live="settings.ai_integrations.recommendation_service.url" class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-[#17357A] focus:ring-[3px] focus:ring-[#17357A]/10 transition-shadow outline-none">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1.5">Port</label>
-                    <input type="text" wire:model.live="settings.ai_integrations.recommendation_service.port" wire:change="markAsDirty" class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-[#17357A] focus:ring-[3px] focus:ring-[#17357A]/10 transition-shadow outline-none">
+                    <input type="text" wire:model.live="settings.ai_integrations.recommendation_service.port" class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-[#17357A] focus:ring-[3px] focus:ring-[#17357A]/10 transition-shadow outline-none">
                 </div>
             </div>
             
@@ -58,8 +68,18 @@
     
     <!-- Predictive Confidence -->
     <div>
-        <h3 class="text-sm font-semibold text-slate-900 tracking-wide uppercase">Predictive Confidence</h3>
-        <p class="mt-1 text-xs text-slate-500 mb-4">Recommendations below this confidence level will not be surfaced to users.</p>
+        <div class="flex items-center gap-3 mb-4">
+            <div>
+                <h3 class="text-sm font-semibold text-slate-900 tracking-wide uppercase">Predictive Confidence Threshold</h3>
+                <p class="mt-1 text-xs text-slate-500">Minimum confidence score required before applying AI recommendations.</p>
+            </div>
+            @if($this->dirtyState['sections']['ai_integrations.confidence_threshold'] ?? false)
+                <div class="flex items-center gap-1.5 text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-200">
+                    <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+                    Modified
+                </div>
+            @endif
+        </div>
         
         <div class="w-full p-5 lg:p-6 rounded-xl border border-slate-200 bg-white shadow-sm">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
@@ -73,7 +93,7 @@
             <div class="flex items-center gap-4 mb-2">
                 <span class="text-xs font-medium text-slate-400">0%</span>
                 <input type="range" min="0" max="100" step="1" 
-                    wire:model.live="settings.ai_integrations.confidence_threshold" wire:change="markAsDirty"
+                    wire:model.live="settings.ai_integrations.confidence_threshold"
                     class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#17357A]">
                 <span class="text-xs font-medium text-slate-400">100%</span>
             </div>

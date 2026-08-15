@@ -5,25 +5,35 @@
     <div class="max-w-[960px] w-full">
         <!-- Institution Information -->
     <div class="mt-8">
-        <h3 class="text-sm font-semibold text-slate-900 tracking-wide uppercase">Institution Information</h3>
-        <p class="mt-1 text-xs text-slate-500 mb-4">Basic public information displayed throughout the library system.</p>
+        <div class="flex items-center gap-3 mb-4">
+            <div>
+                <h3 class="text-sm font-semibold text-slate-900 tracking-wide uppercase">Institution Information</h3>
+                <p class="mt-1 text-xs text-slate-500">Basic public information displayed throughout the library system.</p>
+            </div>
+            @if($this->dirtyState['sections']['general.library_name'] ?? false || $this->dirtyState['sections']['general.email'] ?? false || $this->dirtyState['sections']['general.phone'] ?? false)
+                <div class="flex items-center gap-1.5 text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-200">
+                    <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+                    Modified
+                </div>
+            @endif
+        </div>
         
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-5 w-full">
             <div class="md:col-span-2">
                 <label class="block text-sm font-medium text-slate-700 mb-1.5">
                     Library Name <span class="text-red-500">*</span>
                 </label>
-                <input type="text" wire:model.live="settings.general.library_name" wire:change="markAsDirty" class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-[#17357A] focus:ring-[3px] focus:ring-[#17357A]/10 transition-shadow outline-none">
+                <input type="text" wire:model.live="settings.general.library_name" class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-[#17357A] focus:ring-[3px] focus:ring-[#17357A]/10 transition-shadow outline-none">
             </div>
             
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1.5">Official Email</label>
-                <input type="email" wire:model.live="settings.general.email" wire:change="markAsDirty" class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-[#17357A] focus:ring-[3px] focus:ring-[#17357A]/10 transition-shadow outline-none">
+                <input type="email" wire:model.live="settings.general.email" class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-[#17357A] focus:ring-[3px] focus:ring-[#17357A]/10 transition-shadow outline-none">
             </div>
             
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1.5">Phone Number</label>
-                <input type="text" wire:model.live="settings.general.phone" wire:change="markAsDirty" class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-[#17357A] focus:ring-[3px] focus:ring-[#17357A]/10 transition-shadow outline-none">
+                <input type="text" wire:model.live="settings.general.phone" class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-[#17357A] focus:ring-[3px] focus:ring-[#17357A]/10 transition-shadow outline-none">
             </div>
         </div>
     </div>
@@ -32,8 +42,18 @@
     
     <!-- Operating Hours -->
     <div class="mt-6">
-        <h3 class="text-sm font-semibold text-slate-900 tracking-wide uppercase">Operating Hours</h3>
-        <p class="mt-1 text-xs text-slate-500 mb-4">Set the normal opening and closing schedule.</p>
+        <div class="flex items-center gap-3 mb-4">
+            <div>
+                <h3 class="text-sm font-semibold text-slate-900 tracking-wide uppercase">Operating Hours</h3>
+                <p class="mt-1 text-xs text-slate-500">Set the normal opening and closing schedule.</p>
+            </div>
+            @if($this->dirtyState['sections']['general.operating_hours'] ?? false)
+                <div class="flex items-center gap-1.5 text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-200">
+                    <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+                    Modified
+                </div>
+            @endif
+        </div>
         
         <div class="w-full overflow-hidden rounded-xl border border-slate-200 hidden sm:block">
             <table class="w-full text-left text-sm">
@@ -50,18 +70,18 @@
                         <tr class="hover:bg-slate-50/50 transition-colors">
                             <td class="px-4 py-3 font-medium text-slate-700 capitalize">{{ $day }}</td>
                             <td class="px-4 py-3">
-                                <select wire:model.live="settings.general.operating_hours.{{ $day }}.status" wire:change="markAsDirty" class="h-8 w-full rounded-md border border-slate-200 bg-white px-2 text-xs font-medium text-slate-700 focus:border-[#17357A] outline-none">
+                                <select wire:model.live="settings.general.operating_hours.{{ $day }}.status" class="h-8 w-full rounded-md border border-slate-200 bg-white px-2 text-xs font-medium text-slate-700 focus:border-[#17357A] outline-none">
                                     <option value="Open">Open</option>
                                     <option value="Closed">Closed</option>
                                 </select>
                             </td>
                             <td class="px-4 py-3">
-                                <input type="time" wire:model.live="settings.general.operating_hours.{{ $day }}.opens" wire:change="markAsDirty" 
+                                <input type="time" wire:model.live="settings.general.operating_hours.{{ $day }}.opens" 
                                     class="h-8 w-full rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-700 outline-none disabled:opacity-50 disabled:bg-slate-50"
                                     {{ $settings['general']['operating_hours'][$day]['status'] === 'Closed' ? 'disabled' : '' }}>
                             </td>
                             <td class="px-4 py-3">
-                                <input type="time" wire:model.live="settings.general.operating_hours.{{ $day }}.closes" wire:change="markAsDirty" 
+                                <input type="time" wire:model.live="settings.general.operating_hours.{{ $day }}.closes" 
                                     class="h-8 w-full rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-700 outline-none disabled:opacity-50 disabled:bg-slate-50"
                                     {{ $settings['general']['operating_hours'][$day]['status'] === 'Closed' ? 'disabled' : '' }}>
                             </td>
@@ -77,7 +97,7 @@
                 <div class="w-full border border-slate-200 rounded-xl p-4 bg-white">
                     <div class="flex items-center justify-between mb-3">
                         <span class="font-medium text-slate-700 capitalize">{{ $day }}</span>
-                        <select wire:model.live="settings.general.operating_hours.{{ $day }}.status" wire:change="markAsDirty" class="h-8 rounded-md border border-slate-200 bg-white px-2 text-xs font-medium text-slate-700 focus:border-[#17357A] outline-none">
+                        <select wire:model.live="settings.general.operating_hours.{{ $day }}.status" class="h-8 rounded-md border border-slate-200 bg-white px-2 text-xs font-medium text-slate-700 focus:border-[#17357A] outline-none">
                             <option value="Open">Open</option>
                             <option value="Closed">Closed</option>
                         </select>
@@ -86,11 +106,11 @@
                         <div class="flex gap-3">
                             <div class="flex-1">
                                 <label class="block text-xs text-slate-500 mb-1">Opens</label>
-                                <input type="time" wire:model.live="settings.general.operating_hours.{{ $day }}.opens" wire:change="markAsDirty" class="h-9 w-full rounded-md border border-slate-200 bg-white px-2 text-sm text-slate-700 outline-none">
+                                <input type="time" wire:model.live="settings.general.operating_hours.{{ $day }}.opens" class="h-9 w-full rounded-md border border-slate-200 bg-white px-2 text-sm text-slate-700 outline-none">
                             </div>
                             <div class="flex-1">
                                 <label class="block text-xs text-slate-500 mb-1">Closes</label>
-                                <input type="time" wire:model.live="settings.general.operating_hours.{{ $day }}.closes" wire:change="markAsDirty" class="h-9 w-full rounded-md border border-slate-200 bg-white px-2 text-sm text-slate-700 outline-none">
+                                <input type="time" wire:model.live="settings.general.operating_hours.{{ $day }}.closes" class="h-9 w-full rounded-md border border-slate-200 bg-white px-2 text-sm text-slate-700 outline-none">
                             </div>
                         </div>
                     @else
@@ -105,8 +125,18 @@
     
     <!-- Holiday Calendar -->
     <div class="mt-6">
-        <h3 class="text-sm font-semibold text-slate-900 tracking-wide uppercase">Holiday & Closure Dates</h3>
-        <p class="mt-1 text-xs text-slate-500 mb-4">Fine accumulation and due-date processing will follow the configured non-operating-day rules.</p>
+        <div class="flex items-center gap-3 mb-4">
+            <div>
+                <h3 class="text-sm font-semibold text-slate-900 tracking-wide uppercase">Scheduled Closures & Holidays</h3>
+                <p class="mt-1 text-xs text-slate-500">Dates when the library will be exceptionally closed.</p>
+            </div>
+            @if($this->dirtyState['sections']['general.closures'] ?? false)
+                <div class="flex items-center gap-1.5 text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-200">
+                    <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+                    Modified
+                </div>
+            @endif
+        </div>
         
         <div class="w-full space-y-3">
             <button class="flex items-center gap-2 h-9 px-3 rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 text-sm font-medium transition-colors">

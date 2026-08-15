@@ -1,58 +1,91 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# PGPC Library System
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+The Padre Garcia Polytechnic College (PGPC) Library System is a modern, web-based application designed to manage library operations, circulation rules, and member resources efficiently. 
 
-## About Laravel
+Built on a robust Laravel foundation, this system provides administrators with granular control over library policies, legal content, notifications, and AI-driven integrations.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Technology Stack
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- Backend: Laravel 11 (PHP)
+- Frontend Framework: Livewire 3
+- UI Styling: Tailwind CSS
+- Interactivity: Alpine.js
+- Database: Postgresql
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Installation and Setup
 
-## Learning Laravel
+Follow these steps to set up the PGPC Library System in your local development environment.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### Prerequisites
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+- PHP 8.2 or higher
+- Composer
+- Node.js and npm
+- MySQL or MariaDB database
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+### Setup Instructions
 
-## Agentic Development
+1. Clone the repository and navigate to the project directory:
+   ```bash
+   git clone <repository-url>
+   cd pgpc-lib
+   ```
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+2. Install PHP dependencies:
+   ```bash
+   composer install
+   ```
 
-```bash
-composer require laravel/boost --dev
+3. Install Node.js dependencies and build the frontend assets:
+   ```bash
+   npm install
+   npm run build
+   ```
 
-php artisan boost:install
-```
+4. Create a copy of the environment file:
+   ```bash
+   cp .env.example .env
+   ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+5. Generate an application key:
+   ```bash
+   php artisan key:generate
+   ```
 
-## Contributing
+6. Configure your database connection in the `.env` file:
+   ```ini
+   DB_CONNECTION=mysql
+   DB_HOST=127.0.0.1
+   DB_PORT=3306
+   DB_DATABASE=pgpc_lib
+   DB_USERNAME=root
+   DB_PASSWORD=
+   ```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+7. Run database migrations and seeders:
+   ```bash
+   php artisan migrate:fresh --seed
+   ```
 
-## Code of Conduct
+8. Link the storage directory (required for public legal documents and logs):
+   ```bash
+   php artisan storage:link
+   ```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+9. Start the local development server:
+   ```bash
+   php artisan serve
+   ```
+   The application will be accessible at `http://localhost:8000`.
 
-## Security Vulnerabilities
+## Directory Structure Highlights
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+- `app/Livewire/Pages/Admin/Settings.php`: Core logic for the unified system settings module, featuring deep-comparison unsaved changes tracking.
+- `resources/views/livewire/pages/admin/`: Contains the main blade templates for the admin dashboard.
+- `resources/views/components/settings/`: Houses the modular blade components for each settings category (e.g., circulation, notifications, general).
+- `storage/app/public/settings/`: Publicly accessible storage for dynamic content like Terms and Conditions and Privacy Policies.
+- `storage/app/private/`: Secure storage for system logs and backups.
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+The PGPC Library System is proprietary software designed specifically for Padre Garcia Polytechnic College. All rights reserved.
