@@ -28,6 +28,9 @@
     
     <!-- 2. Preloader is now visible because the body is not hidden -->
     <x-preloader />
+    @persist('top-loader')
+        <livewire:components.top-loader />
+    @endpersist
     
     <!-- 3. Wrapped ALL page content inside the hidden portal-content div -->
     <div id="portal-content" class="opacity-0 transition-opacity duration-700 ease-in-out flex flex-col flex-1 w-full relative">

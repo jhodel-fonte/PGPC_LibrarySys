@@ -1,7 +1,7 @@
 <div x-data="{
         isLoading: false,
         barProgress: 'w-0',
-        transitionSpeed: 'duration-300',
+        transitionSpeed: 'duration-500',
         
         startLoading() {
             this.isLoading = true;
@@ -25,7 +25,7 @@
             }, 300);
         }
     }"
-    x-on:livewire:navigating.window="startLoading()"
+    x-on:livewire:navigate.window="startLoading()"
     x-on:livewire:navigated.window="stopLoading()"
 >
     <div 

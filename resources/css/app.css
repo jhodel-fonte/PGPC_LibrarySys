@@ -1,3 +1,8 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Hide Livewire's default NProgress bar to prevent conflicts with custom top-loader */
+#nprogress {
+    display: none !important;
+}

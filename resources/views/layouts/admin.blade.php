@@ -26,8 +26,9 @@
         @persist('preloader')
             <x-preloader />
         @endpersist
-        <livewire:components.top-loader />
-
+        @persist('top-loader')
+            <livewire:components.top-loader />
+        @endpersist
         <div x-data="{ 
             sidebarOpen: false, 
             sidebarMinimized: localStorage.getItem('sidebarMinimized') === 'true' 
