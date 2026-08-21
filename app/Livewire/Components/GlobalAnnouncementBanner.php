@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire;
+namespace App\Livewire\Components;
 
 use Livewire\Component;
 use App\Models\GlobalAnnouncement;
@@ -9,8 +9,7 @@ use Carbon\Carbon;
 class GlobalAnnouncementBanner extends Component
 {
     public $announcements = [];
-    public $dismissed = []; // Store dismissed announcement IDs in session or local
-
+    public $dismissed = [];
     public function mount()
     {
         $this->loadAnnouncements();
@@ -38,6 +37,6 @@ class GlobalAnnouncementBanner extends Component
 
     public function render()
     {
-        return view('livewire.global-announcement-banner');
+        return view('livewire.components.global-announcement-banner');
     }
 }

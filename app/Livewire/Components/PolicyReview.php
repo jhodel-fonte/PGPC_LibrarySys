@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire;
+namespace App\Components\Livewire;
 
 use Livewire\Component;
 use App\Models\SystemSetting;
@@ -102,6 +102,6 @@ class PolicyReview extends Component
 
     public function render()
     {
-        return view('livewire.policy-review')->layout('layouts.guest'); // Assuming guest layout for simple review page, or app layout.
+        return view('livewire.components.policy-review')->layout('layouts.guest'); // Assuming guest layout for simple review page, or app layout.
     }
 }

@@ -8,7 +8,7 @@
         <title>{{ config('app.name', 'PGPC Library') }}</title>
 
         <!-- Logo -->
-        <link rel="icon" href="{{ asset('logo.webp') }}" type="image/webp">
+        <link rel="icon" href="{{ asset('logo.ico') }}" type="image/x-icon">
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
@@ -42,7 +42,7 @@
                 <livewire:layout.topbar />
                 
                 <main class="flex-1 overflow-y-auto">
-                    <livewire:global-announcement-banner />
+                    <livewire:components.global-announcement-banner />
                     {{ $slot }}
                 </main>
             </div>

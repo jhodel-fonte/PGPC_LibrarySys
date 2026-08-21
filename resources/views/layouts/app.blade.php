@@ -7,11 +7,8 @@
 
     <title>{{ config('app.name', 'PGPC Library') }}</title>
 
-    <!-- 1. PRELOAD THE LOGO FIRST -->
-    <link rel="preload" as="image" href="{{ asset('logo.webp') }}">
-
-    <!-- 2. Favicons (Will reuse the preloaded image) -->
-    <link rel="icon" href="{{ asset('logo.webp') }}" type="image/webp">
+    <!-- icon-->
+    <link rel="icon" href="{{ asset('logo.ico') }}" type="image/x-icon">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
@@ -23,20 +20,19 @@
     @livewireStyles
 </head>
 
-<!-- 1. Removed opacity-0 and portal-content ID from the body -->
 <body class="antialiased font-sans min-h-dvh flex flex-col relative overflow-x-hidden bg-gray-50">
     
-    <!-- 2. Preloader is now visible because the body is not hidden -->
+    <!-- Preloader -->
     <x-preloader />
     @persist('top-loader')
         <livewire:components.top-loader />
     @endpersist
     
-    <!-- 3. Wrapped ALL page content inside the hidden portal-content div -->
+
     <div id="portal-content" class="opacity-0 transition-opacity duration-700 ease-in-out flex flex-col flex-1 w-full relative">
         
         <div class="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat pointer-events-none"
-             {{-- style="background-image: url('{{ asset('images/pgpc-ng.webp') }}')" --}}>
+             {{-- style="background-image: url('{{ asset('images/pgpc-ng.webp') }}')"> --}}
         </div>
             
         <div class="fixed inset-0 z-10 bg-gradient-hero backdrop-blur-sm pointer-events-none"></div>

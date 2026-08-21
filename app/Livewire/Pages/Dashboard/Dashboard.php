@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire\Pages\Admin;
+namespace App\Livewire\Pages\dashboard;
 
 use App\Models\Book;
 use App\Models\BookData;
@@ -14,6 +14,7 @@ use Livewire\Attributes\Layout;
 #[Layout('layouts.admin')]
 class Dashboard extends Component
 {
+    
     public function render()
     {
         $activeMembers = Student::whereHas('libraryStatus', function ($query) {
