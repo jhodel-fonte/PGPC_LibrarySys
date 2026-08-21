@@ -181,7 +181,7 @@ class UserManagement extends Component
             $q->whereIn('status_name', ['Locked', 'Suspended']); 
         })->count();
 
-        return view('livewire.pages.admin.user-management', [
+        return view('livewire.pages.dashboard.user-management', [
             'users' => $users,
             'totalStudents' => $totalStudents,
             'totalLibrarians' => $totalLibrarians,

@@ -41,7 +41,7 @@
         <nav class="flex-1 overflow-y-auto py-6 px-3 space-y-1 custom-scrollbar">
             
             <!-- Dashboard Link (Active State Example) -->
-            <x-sidebar-button href="{{ route('admin.dashboard') }}" :active="request()->routeIs('admin.dashboard')" class="mb-6" wire:navigate>
+            <x-sidebar-button href="{{ route('admin.dashboard') }}" :active="request()->routeIs('admin.dashboard')" class="mb-3" wire:navigate>
                 <x-slot:icon>
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
@@ -55,16 +55,7 @@
                 <span class="text-[11px] font-bold text-white/40 uppercase tracking-widest">Circulation</span>
             </div>
             
-            {{-- <x-sidebar-button href="#" wire:navigate>
-                <x-slot:icon>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                </x-slot:icon>
-                Reservations
-            </x-sidebar-button> --}}
-
-            <x-sidebar-button href="#" wire:navigate>
+            <x-sidebar-button href="{{ route('admin.circulation-desk') }}" :active="request()->routeIs('admin.circulation-desk')" class="mb-6" wire:navigate>
                 <x-slot:icon>
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
@@ -73,14 +64,14 @@
                 Circulation Desk
             </x-sidebar-button>
 
-            {{-- <x-sidebar-button href="#" wire:navigate>
+            <x-sidebar-button href="#" wire:navigate>
                 <x-slot:icon>
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                     </svg>
                 </x-slot:icon>
-                Borrows
-            </x-sidebar-button> --}}
+                Reservations
+            </x-sidebar-button>
 
             <!-- CATALOG SECTION -->
             <div class="px-2 mt-6 mb-2" x-show="!sidebarMinimized" x-transition.opacity.duration.300ms>

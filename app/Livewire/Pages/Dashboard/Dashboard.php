@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire\Pages\dashboard;
+namespace App\Livewire\Pages\Dashboard;
 
 use App\Models\Book;
 use App\Models\BookData;
@@ -11,7 +11,7 @@ use Livewire\Component;
 
 use Livewire\Attributes\Layout;
 
-#[Layout('layouts.admin')]
+#[Layout('layouts.admin', ['title' => 'Dashboard'])]
 class Dashboard extends Component
 {
     
@@ -43,7 +43,7 @@ class Dashboard extends Component
             }
         }
 
-        return view('livewire.pages.admin.dashboard', [
+        return view('livewire.pages.dashboard.index', [
             'totalTitles' => BookData::count(),
             'totalCopies' => Book::count(),
             'activeMembers' => $activeMembers,

@@ -1,0 +1,16 @@
+<?php
+
+namespace App\Livewire\Pages\Dashboard;
+
+use Livewire\Component;
+
+use Livewire\Attributes\Layout;
+
+#[Layout('layouts.admin', ['title' => 'Book Borrow'])]
+class CirculationDesk extends Component
+{
+    public function render()
+    {
+        return view('livewire.pages.dashboard.circulation-desk');
+    }
+}

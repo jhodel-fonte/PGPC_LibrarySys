@@ -1,7 +1,7 @@
+@props(['activepage' => 'Dashboard'])
 
 @php
     $staffRole = ucfirst(auth()->user()?->role?->name ?? 'Librarian');
-    // $activepage = 
 @endphp
 
 <div class="h-[70px] bg-navy-primary md:bg-white border-b border-white/5 md:border-gray-200 px-4 md:px-6 flex justify-between items-center w-full shrink-0 z-30 sticky top-0 transition-colors">
@@ -34,7 +34,7 @@
         <div class="hidden md:block">
             <span class="text-gray-500">{{ $staffRole }}</span>
             <span class="mx-1 text-gray-400">&gt;</span>
-            <span class="text-gray-800 font-bold capitalize">{{ $title ?? 'Dashboard' }}</span>
+            <span class="text-gray-800 font-bold capitalize">{{ $activepage }}</span>
         </div>
     </div>
 

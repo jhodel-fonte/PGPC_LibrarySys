@@ -4,21 +4,16 @@ namespace App\Models;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
-
-#[Fillable(['username', 'email', 'password_hash'])]
-#[Hidden(['password_hash', 'remember_token'])]
 class Account extends Authenticatable
 {
     use HasFactory, SoftDeletes, Notifiable;
-
+    protected $with = ['role'];
     protected $fillable = [
         'role_id',
         'status_id',

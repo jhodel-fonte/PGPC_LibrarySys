@@ -246,6 +246,6 @@ class Settings extends Component
 
     public function render()
     {
-        return view('livewire.pages.admin.settings');
+        return view('livewire.pages.dashboard.settings');
     }
 }
