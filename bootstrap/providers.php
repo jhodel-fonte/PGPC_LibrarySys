@@ -2,6 +2,6 @@
 
 return [
     App\Providers\AppServiceProvider::class,
-    // App\Providers\TelescopeServiceProvider::class,
+    env('APP_ENV') == 'local' ? App\Providers\TelescopeServiceProvider::class : null,
     App\Providers\VoltServiceProvider::class,
 ];
