@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 
 // Route::view('/', 'pages.homepage.index');
+Route::view('/', 'test')->name('test');
 
 
 
@@ -25,7 +26,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
         // Route::view('/profile', 'livewire.pages.admin.profile')->name('profile');
 });
 
-Route::view('/test', 'test')->name('test');
+
 
 
 
