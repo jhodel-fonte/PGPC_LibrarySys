@@ -1,14 +1,16 @@
 # Match the modern requirements of your Laravel 13 dependencies
 FROM php:8.4-fpm-alpine
 
-# Install system dependencies, PostgreSQL dev libraries, and libzip
+# Install system dependencies, PostgreSQL dev libraries, libzip, and Node.js
 RUN apk add --no-cache \
     nginx \
     supervisor \
     postgresql-dev \
     libxml2-dev \
     libzip-dev \
-    curl
+    curl \
+    nodejs \
+    npm
 
 # Install PHP extensions including zip (required by tallstackui)
 RUN docker-php-ext-install pdo pdo_pgsql bcmath zip
@@ -25,13 +27,15 @@ COPY . .
 # Install production dependencies and optimize Laravel
 RUN composer install --no-interaction --optimize-autoloader --no-dev --no-scripts
 
+# Build frontend assets using Vite
+RUN npm install && npm run build
 
 # Copy server configuration files
 COPY docker/nginx.conf /etc/nginx/nginx.conf
 COPY docker/supervisord.conf /etc/supervisord.conf
 
-# Setup permissions for Laravel storage and cache
-RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
+# Setup permissions for Laravel storage, cache, and public build files
+RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache /var/www/public/build
 
 # Expose port 80 for Render
 EXPOSE 80
