@@ -20,11 +20,11 @@
         
         <!-- Quick Action Buttons -->
         <div class="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-[14px] mt-auto">
-            <a href="" class="w-full sm:w-auto h-11 px-5 bg-[#05BF8F] hover:bg-emerald-500 text-white text-sm font-semibold rounded-xl transition-colors flex items-center justify-center gap-2">
+            <a href="{{ route('admin.circulation-desk.check-in') }}" wire:navigate class="w-full sm:w-auto h-11 px-5 bg-[#05BF8F] hover:bg-emerald-500 text-white text-sm font-semibold rounded-xl transition-colors flex items-center justify-center gap-2">
                 <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 Quick Check-In (Return)
             </a>
-            <a href="" class="w-full sm:w-auto h-11 px-5 bg-[#FFC61A] hover:bg-[#e6b217] text-[#102B70] text-sm font-semibold rounded-xl transition-colors flex items-center justify-center gap-2">
+            <a href="{{ route('admin.circulation-desk.check-out') }}" wire:navigate class="w-full sm:w-auto h-11 px-5 bg-[#FFC61A] hover:bg-[#e6b217] text-[#102B70] text-sm font-semibold rounded-xl transition-colors flex items-center justify-center gap-2">
                 <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
                 Quick Check-Out (Borrow)
             </a>

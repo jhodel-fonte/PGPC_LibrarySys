@@ -14,9 +14,9 @@ class RoleSeeder extends Seeder
 
         $roles = [
             ['name' => 'Super Admin', 'description' => 'Has full access to all system features.'],
-            ['name' => 'Librarian', 'description' => 'Manages catalog, users, and circulation.'],
-            ['name' => 'Assistant Librarian', 'description' => 'Handles basic circulation and catalog viewing.'],
-            ['name' => 'Patron', 'description' => 'Standard library user/student.'],
+            ['name' => 'Head Librarian', 'description' => 'Manages catalog, users, and circulation.'],
+            ['name' => 'Librarian', 'description' => 'Handles basic circulation and catalog viewing.'],
+            ['name' => 'Student', 'description' => 'Standard library user/student.'],
         ];
 
         $rolesWithTimestamps = array_map(function ($role) use ($now) {

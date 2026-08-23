@@ -26,8 +26,8 @@
     >
         
         <!-- Header / Logo Area -->
-        <div class="min-h-[60px] py-4 px-4 border-b border-white/10 flex items-center justify-between shrink-0" :class="sidebarMinimized ? 'justify-center' : ''">
-            <x-brand-title />
+        <div class="min-h-[60px] pt-6 px-4 flex items-center justify-between shrink-0" :class="sidebarMinimized ? 'justify-center' : ''">
+            <x-brand-title href="{{ route('admin.dashboard') }}" />
             
             <!-- Close Button for Mobile -->
             <button @click="sidebarOpen = false" class="md:hidden p-1.5 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors focus:outline-none shrink-0">
@@ -55,7 +55,7 @@
                 <span class="text-[11px] font-bold text-white/40 uppercase tracking-widest">Circulation</span>
             </div>
             
-            <x-sidebar-button href="{{ route('admin.circulation-desk') }}" :active="request()->routeIs('admin.circulation-desk')" class="mb-6" wire:navigate>
+            <x-sidebar-button href="{{ route('admin.circulation-desk.index') }}" :active="request()->routeIs('admin.circulation-desk.*')" class="mb-6" wire:navigate>
                 <x-slot:icon>
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />

@@ -2,18 +2,27 @@
 
 use Illuminate\Support\Facades\Route;
 
-Route::view('/', 'pages.homepage.index');
+// Route::view('/', 'pages.homepage.index');
 
-Route::middleware(['auth', 'verified', 'role:superadmin'])->prefix('admin')->name('admin.')->group(function () {
+
+
+Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
         
+        Route::get('/', function () {
+            return redirect()->route('admin.dashboard');
+        });
         Route::get('/dashboard', \App\Livewire\Pages\Dashboard\Dashboard::class)->name('dashboard');
         Route::get('/user-management', \App\Livewire\Pages\Dashboard\UserManagement::class)->name('user-management');
+            
+        Route::prefix('circulation-desk')->name('circulation-desk.')->group(function () {
+            Route::get('/', \App\Livewire\Pages\Dashboard\CirculationDesk::class)->name('index');
+            Route::get('/return', \App\Livewire\Pages\Dashboard\CheckInBook::class)->name('return');
+            Route::get('/borrow', \App\Livewire\Pages\Dashboard\CheckOutBook::class)->name('borrow');
+        });
+        
         Route::get('/settings', \App\Livewire\Pages\Dashboard\Settings::class)->name('settings');
-        
-        Route::get('/transaction', \App\Livewire\Pages\dashboard\CirculationDesk::class)->name('circulation-desk');
-        
-        Route::view('/profile', 'livewire.pages.admin.profile')->name('profile');
-        
+        // Route::get('/profile', \App\Livewire\Pages\Dashboard\Profile::class)->name('profile');
+        // Route::view('/profile', 'livewire.pages.admin.profile')->name('profile');
 });
 
 Route::view('/test', 'test')->name('test');

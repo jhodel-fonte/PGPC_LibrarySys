@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ config('app.name', 'PGPC Library') }}</title>
+    <title>{{ isset($title) ? "{$title} | PGPC Library" : config('app.name', 'PGPC Library') }}</title>
 
     <!-- icon-->
     <link rel="icon" href="{{ asset('logo.ico') }}" type="image/x-icon">
@@ -30,15 +30,11 @@
     
 
     <div id="portal-content" class="opacity-0 transition-opacity duration-700 ease-in-out flex flex-col flex-1 w-full relative">
-        
-        <div class="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat pointer-events-none"
-             {{-- style="background-image: url('{{ asset('images/pgpc-ng.webp') }}')"> --}}
-        </div>
             
         <div class="fixed inset-0 z-10 bg-gradient-hero backdrop-blur-sm pointer-events-none"></div>
 
         <div id="main-app-wrapper" class="relative z-20 flex flex-col min-h-dvh w-full">
-            <livewire:global-announcement-banner />
+
             <div class="flex-1 flex items-center justify-center w-full px-4 py-12 sm:px-6 lg:px-8">
                 {{ $slot }}
             </div>
