@@ -12,4 +12,7 @@ php artisan view:cache
 echo "Running database migrations..."
 php artisan migrate --force
 
+echo "Seeding the database..."
+php artisan db:seed --force
+
 exec "$@"
