@@ -23,7 +23,8 @@ WORKDIR /var/www
 COPY . .
 
 # Install production dependencies and optimize Laravel
-RUN composer install --no-interaction --optimize-autoloader --no-dev
+RUN composer install --no-interaction --optimize-autoloader --no-dev --no-scripts
+
 
 # Copy server configuration files
 COPY docker/nginx.conf /etc/nginx/nginx.conf
