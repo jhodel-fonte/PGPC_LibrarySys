@@ -137,6 +137,8 @@ class CheckInBook extends Component
                 })->implode(', ');
             }
 
+            $isPendingReturn = in_array($book->id, $this->returnedBooks);
+
             return [
                 'transaction_id' => $t->id,
                 'book_id' => $book ? $book->id : null,
@@ -146,7 +148,7 @@ class CheckInBook extends Component
                 'code' => $data ? ($data->subtitle ?: 'BOOK') : 'BOOK',
                 'borrowed_on' => $t->issued_date->format('M d, Y'),
                 'due_date' => $t->due_date->format('M d, Y'),
-                'status' => 'Borrowed'
+                'status' => $isPendingReturn ? 'Returned' : 'Borrowed'
             ];
         })->toArray();
 
@@ -156,6 +158,12 @@ class CheckInBook extends Component
     public function processBookReturn($book)
     {
         $this->errorMessage = '';
+
+        // Check if book is already in the pending returned books list
+        if (in_array($book->id, $this->returnedBooks)) {
+            $this->errorMessage = 'Book "' . $book->accession_number . '" is already scanned for return.';
+            return;
+        }
         
         // Find active borrow transaction for this book copy (globally, so return works regardless of who is loaded)
         $transaction = BorrowingTransaction::with(['student', 'book.bookDetail.bookData', 'book.bookDetail.bookData.authors'])
@@ -171,19 +179,13 @@ class CheckInBook extends Component
         // Auto load/switch member to the student who borrowed this book
         if (!$this->scannedMember || $this->scannedMember['id'] !== $transaction->school_id) {
             if ($transaction->student) {
+                $this->returnedBooks = []; // Reset queue for new student session
                 $this->loadMember($transaction->student);
             }
         }
 
-        // Process the return
-        $transaction->update([
-            'return_date' => Carbon::now(),
-            'received_by_id' => auth()->user() && auth()->user()->librarian ? auth()->user()->librarian->id : 1
-        ]);
-
-        $book->update([
-            'status' => 'available'
-        ]);
+        // Add to returned books in temporary queue
+        $this->returnedBooks[] = $book->id;
 
         // Get details of the returned book
         $detail = $book->bookDetail;
@@ -205,14 +207,13 @@ class CheckInBook extends Component
             'due_date' => $transaction->due_date->format('M d, Y')
         ];
 
-        // Add to returned books in session tracking
-        $this->returnedBooks[] = $book->id;
-
         // Re-load the member to update their borrowed books list
         $studentModel = Student::find($this->scannedMember['id']);
         if ($studentModel) {
             $this->loadMember($studentModel);
         }
+
+        $this->dispatch('clear-search-input');
     }
 
     public function undoReturn($accessionNumber)
@@ -220,37 +221,45 @@ class CheckInBook extends Component
         $this->errorMessage = '';
         $book = Book::where('accession_number', $accessionNumber)->first();
         if ($book) {
-            $transaction = BorrowingTransaction::where('book_id', $book->id)
-                ->whereNotNull('return_date')
-                ->orderBy('return_date', 'desc')
-                ->first();
+            // Reset lastReturnedBook if it matches
+            if ($this->lastReturnedBook && $this->lastReturnedBook['accession'] === $accessionNumber) {
+                $this->lastReturnedBook = null;
+            }
 
-            if ($transaction) {
-                $transaction->update([
-                    'return_date' => null,
-                    'received_by_id' => null
-                ]);
-                $book->update([
-                    'status' => 'borrowed'
-                ]);
+            // Remove from temporary list
+            $this->returnedBooks = array_diff($this->returnedBooks, [$book->id]);
 
-                // Reset lastReturnedBook if it matches
-                if ($this->lastReturnedBook && $this->lastReturnedBook['accession'] === $accessionNumber) {
-                    $this->lastReturnedBook = null;
-                }
-
-                // Remove from session list
-                $this->returnedBooks = array_diff($this->returnedBooks, [$book->id]);
-
-                // Re-load member
-                if ($this->scannedMember) {
-                    $studentModel = Student::find($this->scannedMember['id']);
-                    if ($studentModel) {
-                        $this->loadMember($studentModel);
-                    }
+            // Re-load member
+            if ($this->scannedMember) {
+                $studentModel = Student::find($this->scannedMember['id']);
+                if ($studentModel) {
+                    $this->loadMember($studentModel);
                 }
             }
         }
+    }
+
+    public function reviewReturn()
+    {
+        if (!$this->scannedMember || empty($this->returnedBooks)) {
+            return;
+        }
+
+        // Get the transaction IDs corresponding to the book IDs in our returnedBooks queue
+        $transactionIds = BorrowingTransaction::whereIn('book_id', $this->returnedBooks)
+            ->where('school_id', $this->scannedMember['id'])
+            ->whereNull('return_date')
+            ->pluck('id')
+            ->toArray();
+
+        // Save session data
+        session([
+            'confirm_return_student_id' => $this->scannedMember['id'],
+            'confirm_return_transaction_ids' => $transactionIds
+        ]);
+
+        // Redirect to confirm return page
+        return $this->redirect(route('admin.circulation-desk.return.confirm'));
     }
 
     public function clearMember()

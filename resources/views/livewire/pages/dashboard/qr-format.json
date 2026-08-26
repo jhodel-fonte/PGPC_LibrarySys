@@ -12,7 +12,7 @@
         "book": {
             "patterns": [
                 "^\\d+$",
-                "^(?:BK-|ISBN-)"
+                "^(?:BK-|ISBN-|ACC-)"
             ]
         }
     },

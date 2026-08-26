@@ -9,10 +9,10 @@ php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
-# echo "Running database migrations..."
-# php artisan migrate --force
+echo "Running database migrations..."
+php artisan migrate fresh --force
 
-# echo "Seeding the database..."
-# php artisan db:seed --force
+echo "Seeding the database..."
+php artisan db:seed --force
 
 exec "$@"

@@ -99,7 +99,7 @@
 
             <!-- Review Return Button -->
             <button type="button" 
-                    wire:click="$parent.clearMember" 
+                    wire:click="$parent.reviewReturn" 
                     class="w-full h-12 bg-[#102B70] hover:bg-[#0B225E] text-white rounded-xl font-bold flex items-center justify-between px-5 transition-colors shadow-sm group">
                 <span class="text-xs uppercase tracking-wider">Review Return</span>
                 <svg class="w-4 h-4 text-white transform transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -120,7 +120,7 @@
 
             <!-- Confirm Return Button -->
             <button type="button" 
-                    wire:click="$parent.clearMember" 
+                    wire:click="$parent.reviewReturn" 
                     class="w-full h-12 bg-[#102B70] hover:bg-[#0B225E] text-white rounded-xl font-bold flex items-center justify-between px-5 transition-colors shadow-sm group">
                 <span class="text-xs uppercase tracking-wider">Confirm Return</span>
                 <svg class="w-4 h-4 text-white transform transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -18,6 +18,7 @@ Route::middleware(['auth', 'verified', 'role:Admin'])->prefix('admin')->name('ad
         Route::prefix('circulation-desk')->name('circulation-desk.')->group(function () {
             Route::get('/', \App\Livewire\Pages\Dashboard\CirculationDesk::class)->name('index');
             Route::get('/return', \App\Livewire\Pages\Dashboard\CheckInBook::class)->name('return');
+            Route::get('/return/confirm', \App\Livewire\Components\Circulation\ConfirmReturn::class)->name('return.confirm');
             Route::get('/borrow', \App\Livewire\Pages\Dashboard\CheckOutBook::class)->name('borrow');
         });
 
