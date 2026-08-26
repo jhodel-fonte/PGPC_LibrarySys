@@ -27,7 +27,15 @@
                         Scan or enter member ID or book barcode to process returns.
                     </p>
                 </div>
-            
+                
+                @if(session()->has('success_message'))
+                    <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)" class="p-3 bg-[#F0FDF4] border border-[#BBF7D0] rounded-xl flex items-center gap-2 text-xs font-semibold text-[#15803D] transition-opacity duration-300">
+                        <svg class="w-4 h-4 text-[#10B981] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span>{{ session('success_message') }}</span>
+                    </div>
+                @endif
             </div>
         </div>
 
@@ -359,9 +367,9 @@
                                     <span class="text-[11px] text-[#EA580C] leading-normal font-semibold">{{ $stats['remaining'] }} {{ Str::plural('book', $stats['remaining']) }} will remain on the account</span>
                                 </div>
 
-                                <!-- Review Return Button -->
+                                 <!-- Review Return Button -->
                                 <button type="button" 
-                                        wire:click="clearMember" 
+                                        wire:click="reviewReturn" 
                                         class="w-full h-12 bg-[#102B70] hover:bg-[#0B225E] text-white rounded-xl font-bold flex items-center justify-between px-5 transition-colors shadow-sm group">
                                     <span class="text-xs uppercase tracking-wider">Review Return</span>
                                     <svg class="w-4 h-4 text-white transform transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -382,7 +390,7 @@
 
                                 <!-- Confirm Return Button -->
                                 <button type="button" 
-                                        wire:click="clearMember" 
+                                        wire:click="reviewReturn" 
                                         class="w-full h-12 bg-[#102B70] hover:bg-[#0B225E] text-white rounded-xl font-bold flex items-center justify-between px-5 transition-colors shadow-sm group">
                                     <span class="text-xs uppercase tracking-wider">Confirm Return</span>
                                     <svg class="w-4 h-4 text-white transform transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
