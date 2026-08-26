@@ -15,7 +15,8 @@ return new class extends Migration
             $table->id();
 
             $table->foreignId('book_id')->constrained('books');
-            $table->foreignId('student_id')->constrained('students');
+
+            $table->foreignId('school_id')->constrained('students');
 
             //librarian
             $table->foreignId('issued_by_id')->constrained('librarians');

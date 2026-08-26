@@ -7,8 +7,6 @@
 
         <title>{{ isset($title) ? "{$title} | PGPC Library" : config('app.name', 'PGPC Library') }}</title>
 
-
-
         <!-- Logo -->
         <link rel="icon" href="{{ asset('logo.ico') }}" type="image/x-icon">
 
@@ -42,7 +40,7 @@
             <!-- Page Content -->
             <div :class="sidebarMinimized ? 'md:ml-[80px]' : 'md:ml-[280px]'" class="flex-1 flex flex-col min-w-0 h-screen transition-all duration-300 ease-in-out w-full">
                 {{-- <livewire:layout.topbar :activepage="$title ?? 'Dashboard'" /> --}}
-                <x-top-navbar :activepage="$title ?? 'Dashboards'" />
+                <x-top-navbar :activepage="$title ?? 'Dashboards'" :subpage="$subpage ?? null" :activepageRoute="$activepageRoute ?? null" />
                 
                 <main class="flex-1 overflow-y-auto">
                     <livewire:components.global-announcement-banner />

@@ -3,12 +3,306 @@
 namespace App\Livewire\Pages\Dashboard;
 
 use Livewire\Component;
-
 use Livewire\Attributes\Layout;
-#[Layout('layouts.admin', ['title' => 'Circulation Desk'])]
+use Livewire\Attributes\On;
+use App\Models\Student;
+use App\Models\Book;
+use App\Models\BorrowingTransaction;
+use Carbon\Carbon;
 
+#[Layout('layouts.admin', ['title' => 'Circulation Desk', 'subpage' => 'Check-In / Return', 'activepageRoute' => 'admin.circulation-desk.index'])]
 class CheckInBook extends Component
 {
+    public $scannedMember = null;
+    public $borrowedBooks = [];
+    public $returnedBooks = [];
+    public $lastReturnedBook = null;
+    public $errorMessage = '';
+    public $stats = [
+        'total' => 0,
+        'returned' => 0,
+        'remaining' => 0,
+        'overdue' => 0,
+        'return_date' => ''
+    ];
+
+    public function mount()
+    {
+        $this->updateStats();
+    }
+
+    public function getQrConfig()
+    {
+        $path = resource_path('views/livewire/pages/dashboard/qr-format.json');
+        if (file_exists($path)) {
+            return json_decode(file_get_contents($path), true);
+        }
+        return [];
+    }
+
+    #[On('search-code')]
+    public function handleSearchCode($code)
+    {
+        $this->errorMessage = ''; // Clear previous error
+        
+        $code = trim($code);
+        if (empty($code)) return;
+
+        // Security Hardening: Protect against XSS, script tags, and long buffer injection payloads
+        $code = strip_tags($code);
+        $code = htmlspecialchars($code, ENT_QUOTES, 'UTF-8');
+        $code = substr($code, 0, 50); // Cap input length to prevent huge injection payloads
+
+        // 1. Check if the code matches a member ID (Student table)
+        $student = Student::with('libraryStatus')->where('school_id_number', $code)->first();
+
+        if ($student) {
+            $this->loadMember($student);
+            $this->dispatch('clear-search-input');
+            return;
+        }
+
+        // 2. Check if the code matches a book (barcode or accession_number)
+        $book = Book::where('barcode', $code)
+            ->orWhere('accession_number', $code)
+            ->first();
+
+        if ($book) {
+            $this->processBookReturn($book);
+            $this->dispatch('clear-search-input');
+            return;
+        }
+
+        // 3. Fallback: If it matches a member ID format but wasn't found in DB,
+        // we still display their information on the side card as "Unregistered Member"
+        $isMemberFormat = false;
+        $config = $this->getQrConfig();
+        if (!empty($config['accepted_formats'])) {
+            $memberConf = $config['accepted_formats']['member'];
+            if (!empty($memberConf['patterns'])) {
+                foreach ($memberConf['patterns'] as $pattern) {
+                    if (preg_match('/' . str_replace('/', '\/', $pattern) . '/i', $code)) {
+                        $isMemberFormat = true;
+                        break;
+                    }
+                }
+            }
+        } else {
+            $isMemberFormat = preg_match('/^(?:LIB-|SA-|20\d{2}-)/i', $code);
+        }
+
+        if ($isMemberFormat) {
+            $this->scannedMember = [
+                'id' => null,
+                'name' => 'Unregistered Member',
+                'school_id' => $code,
+                'course' => 'Not Registered',
+                'status' => 'Inactive'
+            ];
+            $this->borrowedBooks = [];
+            $this->updateStats();
+            $this->errorMessage = 'This member ID is not registered in the database.';
+            return;
+        }
+
+        // Set standard error message for unrecognized inputs
+        $this->errorMessage = 'No student profile or borrowed book found matching code: "' . $code . '"';
+    }
+
+    public function loadMember($student)
+    {
+        $this->errorMessage = '';
+        $this->scannedMember = [
+            'id' => $student->id,
+            'name' => trim($student->first_name . ' ' . ($student->middle_name ? $student->middle_name . ' ' : '') . $student->last_name),
+            'school_id' => $student->school_id_number,
+            'course' => trim(($student->program ?? '') . ' - ' . ($student->year_level ?? '')),
+            'status' => $student->libraryStatus ? $student->libraryStatus->status : 'Active'
+        ];
+
+        // Fetch their currently borrowed books (not yet returned)
+        $transactions = BorrowingTransaction::with(['book.bookDetail.bookData', 'book.bookDetail.bookData.authors'])
+            ->where('school_id', $student->id)
+            ->whereNull('return_date')
+            ->get();
+
+        $this->borrowedBooks = $transactions->map(function ($t) {
+            $book = $t->book;
+            $detail = $book ? $book->bookDetail : null;
+            $data = $detail ? $detail->bookData : null;
+            $authorName = 'Unknown Author';
+            if ($data && $data->authors->isNotEmpty()) {
+                $authorName = $data->authors->map(function($a) {
+                    return trim($a->first_name . ' ' . $a->last_name);
+                })->implode(', ');
+            }
+
+            return [
+                'transaction_id' => $t->id,
+                'book_id' => $book ? $book->id : null,
+                'book' => $data ? $data->book_title : 'Unknown Book',
+                'author' => $authorName,
+                'accession' => $book ? $book->accession_number : 'N/A',
+                'code' => $data ? ($data->subtitle ?: 'BOOK') : 'BOOK',
+                'borrowed_on' => $t->issued_date->format('M d, Y'),
+                'due_date' => $t->due_date->format('M d, Y'),
+                'status' => 'Borrowed'
+            ];
+        })->toArray();
+
+        $this->updateStats();
+    }
+
+    public function processBookReturn($book)
+    {
+        $this->errorMessage = '';
+        
+        // Find active borrow transaction for this book copy (globally, so return works regardless of who is loaded)
+        $transaction = BorrowingTransaction::with(['student', 'book.bookDetail.bookData', 'book.bookDetail.bookData.authors'])
+            ->where('book_id', $book->id)
+            ->whereNull('return_date')
+            ->first();
+
+        if (!$transaction) {
+            $this->errorMessage = 'Book "' . $book->accession_number . '" is not currently marked as borrowed.';
+            return;
+        }
+
+        // Auto load/switch member to the student who borrowed this book
+        if (!$this->scannedMember || $this->scannedMember['id'] !== $transaction->school_id) {
+            if ($transaction->student) {
+                $this->loadMember($transaction->student);
+            }
+        }
+
+        // Process the return
+        $transaction->update([
+            'return_date' => Carbon::now(),
+            'received_by_id' => auth()->user() && auth()->user()->librarian ? auth()->user()->librarian->id : 1
+        ]);
+
+        $book->update([
+            'status' => 'available'
+        ]);
+
+        // Get details of the returned book
+        $detail = $book->bookDetail;
+        $data = $detail ? $detail->bookData : null;
+        $authorName = 'Unknown Author';
+        if ($data && $data->authors->isNotEmpty()) {
+            $authorName = $data->authors->map(function($a) {
+                return trim($a->first_name . ' ' . $a->last_name);
+            })->implode(', ');
+        }
+
+        $this->lastReturnedBook = [
+            'title' => $data ? $data->book_title : 'Unknown Book',
+            'author' => $authorName,
+            'accession' => $book->accession_number,
+            'call_number' => $detail ? $detail->call_number : 'N/A',
+            'code' => $data ? ($data->subtitle ?: 'BOOK') : 'BOOK',
+            'borrowed_on' => $transaction->issued_date->format('M d, Y'),
+            'due_date' => $transaction->due_date->format('M d, Y')
+        ];
+
+        // Add to returned books in session tracking
+        $this->returnedBooks[] = $book->id;
+
+        // Re-load the member to update their borrowed books list
+        $studentModel = Student::find($this->scannedMember['id']);
+        if ($studentModel) {
+            $this->loadMember($studentModel);
+        }
+    }
+
+    public function undoReturn($accessionNumber)
+    {
+        $this->errorMessage = '';
+        $book = Book::where('accession_number', $accessionNumber)->first();
+        if ($book) {
+            $transaction = BorrowingTransaction::where('book_id', $book->id)
+                ->whereNotNull('return_date')
+                ->orderBy('return_date', 'desc')
+                ->first();
+
+            if ($transaction) {
+                $transaction->update([
+                    'return_date' => null,
+                    'received_by_id' => null
+                ]);
+                $book->update([
+                    'status' => 'borrowed'
+                ]);
+
+                // Reset lastReturnedBook if it matches
+                if ($this->lastReturnedBook && $this->lastReturnedBook['accession'] === $accessionNumber) {
+                    $this->lastReturnedBook = null;
+                }
+
+                // Remove from session list
+                $this->returnedBooks = array_diff($this->returnedBooks, [$book->id]);
+
+                // Re-load member
+                if ($this->scannedMember) {
+                    $studentModel = Student::find($this->scannedMember['id']);
+                    if ($studentModel) {
+                        $this->loadMember($studentModel);
+                    }
+                }
+            }
+        }
+    }
+
+    public function clearMember()
+    {
+        $this->errorMessage = '';
+        $this->scannedMember = null;
+        $this->borrowedBooks = [];
+        $this->returnedBooks = [];
+        $this->lastReturnedBook = null;
+        $this->updateStats();
+    }
+
+    public function updateStats()
+    {
+        if (!$this->scannedMember) {
+            $this->stats = [
+                'total' => 0,
+                'returned' => 0,
+                'remaining' => 0,
+                'overdue' => 0,
+                'return_date' => Carbon::now()->format('M d, Y')
+            ];
+            return;
+        }
+
+        $studentId = $this->scannedMember['id'] ?? null;
+        
+        $totalBorrowed = 0;
+        $overdue = 0;
+
+        if ($studentId) {
+            // Count active borrowed books
+            $totalBorrowed = BorrowingTransaction::where('school_id', $studentId)
+                ->whereNull('return_date')
+                ->count();
+
+            // Overdue count
+            $overdue = BorrowingTransaction::where('school_id', $studentId)
+                ->whereNull('return_date')
+                ->where('due_date', '<', Carbon::now())
+                ->count();
+        }
+
+        $this->stats = [
+            'total' => $totalBorrowed + count($this->returnedBooks),
+            'returned' => count($this->returnedBooks),
+            'remaining' => $totalBorrowed,
+            'overdue' => $overdue,
+            'return_date' => Carbon::now()->format('M d, Y')
+        ];
+    }
+
     public function render()
     {
         return view('livewire.pages.dashboard.check-in-book');

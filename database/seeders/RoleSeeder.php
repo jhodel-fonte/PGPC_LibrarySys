@@ -13,7 +13,7 @@ class RoleSeeder extends Seeder
         $now = Carbon::now();
 
         $roles = [
-            ['name' => 'Super Admin', 'description' => 'Has full access to all system features.'],
+            ['name' => 'Admin', 'description' => 'Has full access to all system features.'],
             ['name' => 'Head Librarian', 'description' => 'Manages catalog, users, and circulation.'],
             ['name' => 'Librarian', 'description' => 'Handles basic circulation and catalog viewing.'],
             ['name' => 'Student', 'description' => 'Standard library user/student.'],

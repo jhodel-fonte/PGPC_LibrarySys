@@ -129,11 +129,18 @@ class BookDataSeeder extends Seeder
         ];
 
         foreach ($books as $index => $book) {
-            // Insert book data
-            $bookDataId = DB::table('book_datas')->insertGetId(array_merge($book, [
-                'created_at' => $now,
-                'updated_at' => $now,
-            ]));
+            // Check if this book data already exists by ID
+            $existing = DB::table('book_datas')->where('id', $book['id'])->first();
+            
+            if (!$existing) {
+                // Insert book data
+                $bookDataId = DB::table('book_datas')->insertGetId(array_merge($book, [
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]));
+            } else {
+                $bookDataId = $existing->id;
+            }
 
             // Associate Author (using author index matching, offset by 1 for DB auto-increment ID)
             $authorId = $index + 1; 

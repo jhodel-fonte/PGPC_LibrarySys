@@ -1,4 +1,4 @@
-@props(['activepage' => 'Dashboard'])
+@props(['activepage' => 'Dashboard', 'subpage' => null, 'activepageRoute' => null])
 
 @php
     $staffRole = ucfirst(auth()->user()?->role?->name ?? 'Librarian');
@@ -34,7 +34,17 @@
         <div class="hidden md:block">
             <span class="text-gray-500">{{ $staffRole }}</span>
             <span class="mx-1 text-gray-400">&gt;</span>
-            <span class="text-gray-800 font-bold capitalize">{{ $activepage }}</span>
+            @if($subpage)
+                @if($activepageRoute)
+                    <a href="{{ route($activepageRoute) }}" wire:navigate class="text-gray-500 hover:text-[#102B70] hover:underline transition-colors capitalize">{{ $activepage }}</a>
+                @else
+                    <span class="text-gray-500 capitalize">{{ $activepage }}</span>
+                @endif
+                <span class="mx-1 text-gray-400">&gt;</span>
+                <span class="text-gray-800 font-bold capitalize">{{ $subpage }}</span>
+            @else
+                <span class="text-gray-800 font-bold capitalize">{{ $activepage }}</span>
+            @endif
         </div>
     </div>
 

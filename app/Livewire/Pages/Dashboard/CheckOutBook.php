@@ -5,7 +5,7 @@ namespace App\Livewire\Pages\Dashboard;
 use Livewire\Component;
 
 use Livewire\Attributes\Layout;
-#[Layout('layouts.admin', ['title' => 'Circulation Desk'])]
+#[Layout('layouts.admin', ['title' => 'Circulation Desk', 'subpage' => 'Check-Out / Borrow', 'activepageRoute' => 'admin.circulation-desk.index'])]
 
 class CheckOutBook extends Component
 {

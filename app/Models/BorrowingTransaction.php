@@ -13,7 +13,7 @@ class BorrowingTransaction extends Model
 
     protected $fillable = [
         'book_id',
-        'student_id',
+        'school_id', // foreign key pointing to students table
         'issued_by_id',
         'book_reservation_id',
         'borrow_type_id',
@@ -38,7 +38,7 @@ class BorrowingTransaction extends Model
 
     public function student(): BelongsTo
     {
-        return $this->belongsTo(Student::class);
+        return $this->belongsTo(Student::class, 'school_id');
     }
 
     public function issuedBy(): BelongsTo

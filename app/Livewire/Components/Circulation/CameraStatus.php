@@ -1,0 +1,13 @@
+<?php
+
+namespace App\Livewire\Components\Circulation;
+
+use Livewire\Component;
+
+class CameraStatus extends Component
+{
+    public function render()
+    {
+        return view('livewire.components.circulation.camera-status');
+    }
+}

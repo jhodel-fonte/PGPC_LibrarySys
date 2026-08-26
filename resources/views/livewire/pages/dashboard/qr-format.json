@@ -1,0 +1,37 @@
+{
+    "accepted_formats": {
+        "member": {
+            "patterns": [
+                "^(?:LIB-|SA-|20\\d{2}-)"
+            ],
+            "keywords": [
+                "member",
+                "student"
+            ]
+        },
+        "book": {
+            "patterns": [
+                "^\\d+$",
+                "^(?:BK-|ISBN-)"
+            ]
+        }
+    },
+    "qrcode_customization": {
+        "theme": {
+            "primary_color": "#102B70",
+            "background_color": "#FFFFFF",
+            "accent_color": "#FCC719"
+        },
+        "display": {
+            "size": 300,
+            "margin": 2,
+            "error_correction_level": "H",
+            "format": "png"
+        },
+        "branding": {
+            "embed_logo": true,
+            "logo_path": "logo.ico",
+            "logo_size_percent": 20
+        }
+    }
+}

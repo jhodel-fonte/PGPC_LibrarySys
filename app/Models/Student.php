@@ -37,7 +37,7 @@ class Student extends Model
 
     public function borrowingTransactions(): HasMany
     {
-        return $this->hasMany(BorrowingTransaction::class);
+        return $this->hasMany(BorrowingTransaction::class, 'school_id');
     }
 
     public function fines(): HasMany

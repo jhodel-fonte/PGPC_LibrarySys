@@ -8,10 +8,10 @@
     <!-- Header Area -->
     <div class="w-full max-w-6xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 mt-8 relative z-10">
         <div>
-            <h1 class="text-4xl md:text-[2.5rem] font-bold text-[#102B70] tracking-tight mb-2 leading-tight">
+            <h1 class="text-4xl md:text-[1.5rem] font-bold text-[#102B70] tracking-tight mb-2 leading-tight">
                 Circulation Desk
             </h1>
-            <p class="text-[#64748B] text-lg font-medium">
+            <p class="text-[#64748B] text-sm font-medium">
                 Process book loans and returns quickly and efficiently.
             </p>
         </div>
@@ -34,7 +34,7 @@
     <div class="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-6 relative z-10 mb-4">
         
         <!-- BORROW CARD -->
-        <a href="{{ $checkInRoute }}" class="group relative flex flex-col p-5 md:p-6 rounded-3xl bg-white border border-[#E2E8F0] shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgba(16,43,112,0.08)] hover:border-[#CBD5E1] hover:bg-[#F8FAFC] transition-all duration-300 cursor-pointer focus:outline-none focus:ring-4 focus:ring-[#3B82F6]/20">
+        <a href="{{ $checkOutRoute }}" wire:navigate class="group relative flex flex-col p-5 md:p-6 rounded-3xl bg-white border border-[#E2E8F0] shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgba(16,43,112,0.08)] hover:border-[#CBD5E1] hover:bg-[#F8FAFC] transition-all duration-300 cursor-pointer focus:outline-none focus:ring-4 focus:ring-[#3B82F6]/20">
 
             <!-- Card Header -->
             <div class="flex justify-between items-start mb-4 relative min-h-[112px]">
@@ -92,7 +92,7 @@
         </a>
 
         <!-- RETURN CARD -->
-        <a href="{{ $checkInRoute }}" class="group relative flex flex-col p-5 md:p-6 rounded-3xl bg-white border border-[#E2E8F0] shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgba(16,185,129,0.08)] hover:border-[#CBD5E1] hover:bg-[#F8FAF9] transition-all duration-300 cursor-pointer focus:outline-none focus:ring-4 focus:ring-[#10B981]/20">
+        <a href="{{ $checkInRoute }}" wire:navigate class="group relative flex flex-col p-5 md:p-6 rounded-3xl bg-white border border-[#E2E8F0] shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgba(16,185,129,0.08)] hover:border-[#CBD5E1] hover:bg-[#F8FAF9] transition-all duration-300 cursor-pointer focus:outline-none focus:ring-4 focus:ring-[#10B981]/20">
 
             <!-- Card Header -->
             <div class="flex justify-between items-start mb-4 relative min-h-[112px]">
