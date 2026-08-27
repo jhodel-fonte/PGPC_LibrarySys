@@ -91,24 +91,21 @@ class QrSearchBar extends Component
         }
     }
 
-    public function submit()
+    public function submit($manualCode = null)
     {
+        if ($manualCode !== null) {
+            $this->value = $manualCode;
+        }
+
         $code = trim($this->value);
         if (empty($code)) return;
 
-        // Security Hardening: Sanitize manual keydown submissions
         $code = strip_tags($code);
         $code = htmlspecialchars($code, ENT_QUOTES, 'UTF-8');
         $code = substr($code, 0, 50);
 
         $this->value = $code;
         $this->dispatch('search-code', code: $code);
-    }
-
-    #[On('set-search-value')]
-    public function setSearchValue($code)
-    {
-        $this->value = $code;
     }
 
     public function render()

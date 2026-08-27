@@ -1,4 +1,21 @@
-<div class="w-full flex flex-col gap-2" x-data="{ queryVal: @entangle('value') }" @clear-search-input.window="queryVal = ''; $nextTick(() => { $refs.checkinInput.focus(); });">
+<div class="w-full flex flex-col gap-2" 
+     x-data="{ queryVal: @entangle('value') }" 
+     @clear-search-input.window="queryVal = ''; $nextTick(() => { $refs.checkinInput.focus(); });"
+     @set-search-value.window="
+         let codeStr = $event.detail.code;
+         queryVal = '';
+         let index = 0;
+         let interval = setInterval(() => {
+             if (index < codeStr.length) {
+                 queryVal += codeStr[index];
+                 index++;
+             } else {
+                 clearInterval(interval);
+                 $wire.submit(queryVal);
+             }
+         }, 30);
+     "
+>
     <label class="block text-sm font-semibold text-[#102B70] tracking-wide">{{ $label }}</label>
     <div class="relative w-full flex items-center">
         <!-- Clickable Barcode/Scanner Icon Button on the Left -->
@@ -34,7 +51,7 @@
             </button>
 
             <!-- Search Icon Button -->
-            <button type="button" 
+            {{-- <button type="button" 
                     @click="$dispatch('open-search-modal')" 
                     class="h-8 w-8 flex items-center justify-center bg-white border border-[#E2E8F0] hover:border-[#102B70] text-[#64748B] hover:text-[#102B70] rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-[#102B70]/20"
                     title="Search member or book"
@@ -42,11 +59,11 @@
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                 </svg>
-            </button>
+            </button> --}}
 
             <!-- Clickable Blue/Navy Add/Submit Button -->
             <button type="button" 
-                    wire:click="submit" 
+                    @click="$dispatch('open-search-modal')" 
                     class="h-8 px-3.5 bg-[#102B70] hover:bg-[#0B225E] text-white rounded-lg text-[10px] font-bold tracking-wider uppercase flex items-center gap-1.5 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-[#102B70]/30">
                 <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path>

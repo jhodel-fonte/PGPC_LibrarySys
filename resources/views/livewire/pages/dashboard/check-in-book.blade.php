@@ -28,14 +28,6 @@
                     </p>
                 </div>
                 
-                @if(session()->has('success_message'))
-                    <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)" class="p-3 bg-[#F0FDF4] border border-[#BBF7D0] rounded-xl flex items-center gap-2 text-xs font-semibold text-[#15803D] transition-opacity duration-300">
-                        <svg class="w-4 h-4 text-[#10B981] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        <span>{{ session('success_message') }}</span>
-                    </div>
-                @endif
             </div>
         </div>
 
@@ -82,11 +74,11 @@
                             <!-- Header -->
                             <div class="flex justify-between items-center shrink-0 mb-3">
                                 <h3 class="text-xs font-bold text-[#102B70] uppercase tracking-wider">Scanned Book</h3>
-                                @if($lastReturnedBook)
+                                {{-- @if($lastReturnedBook)
                                     <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#DCFCE7] text-[#15803D] border border-[#BBF7D0]">
                                         Returned
                                     </span>
-                                @endif
+                                @endif --}}
                             </div>
 
                             @if($lastReturnedBook)

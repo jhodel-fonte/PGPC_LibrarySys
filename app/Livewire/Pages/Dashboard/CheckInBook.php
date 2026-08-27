@@ -177,11 +177,14 @@ class CheckInBook extends Component
         }
 
         // Auto load/switch member to the student who borrowed this book
-        if (!$this->scannedMember || $this->scannedMember['id'] !== $transaction->school_id) {
+        if (!$this->scannedMember) {
             if ($transaction->student) {
                 $this->returnedBooks = []; // Reset queue for new student session
                 $this->loadMember($transaction->student);
             }
+        } else if ($this->scannedMember['id'] !== $transaction->school_id) {
+            $this->errorMessage = 'This book was borrowed by other student.';
+            return;
         }
 
         // Add to returned books in temporary queue

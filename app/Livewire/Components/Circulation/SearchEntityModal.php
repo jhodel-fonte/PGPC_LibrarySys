@@ -22,6 +22,7 @@ class SearchEntityModal extends Component
     {
         $this->isOpen = true;
         $this->resetSearch();
+        $this->performSearch();
     }
 
     public function closeModal()
@@ -60,14 +61,84 @@ class SearchEntityModal extends Component
         $this->performSearch();
     }
 
+    public function loadInitialData()
+    {
+        $this->memberCount = Student::count();
+        $this->bookCount = Book::count();
+        $results = [];
+
+        // 1. Fetch Members ordered alphabetically by last_name, first_name
+        if ($this->activeTab === 'all' || $this->activeTab === 'members') {
+            $students = Student::with(['libraryStatus', 'account'])
+                ->orderBy('last_name')
+                ->orderBy('first_name')
+                ->limit($this->perPage)
+                ->get();
+
+            foreach ($students as $student) {
+                $results[] = [
+                    'type' => 'member',
+                    'id' => $student->id,
+                    'code' => $student->school_id_number,
+                    'title' => trim($student->first_name . ' ' . ($student->middle_name ? $student->middle_name . ' ' : '') . $student->last_name),
+                    'subtitle' => trim(($student->program ?? '') . ' - ' . ($student->year_level ?? '')),
+                    'email' => $student->account ? $student->account->email : '',
+                    'status' => $student->libraryStatus ? $student->libraryStatus->status : 'Active',
+                    'icon' => 'user'
+                ];
+            }
+        }
+
+        // 2. Fetch Books ordered alphabetically by title
+        if ($this->activeTab === 'all' || $this->activeTab === 'books') {
+            $books = Book::with(['bookDetail.bookData.authors'])
+                ->whereHas('bookDetail.bookData')
+                ->join('book_details', 'books.book_detail_id', '=', 'book_details.id')
+                ->join('book_datas', 'book_details.book_data_id', '=', 'book_datas.id')
+                ->orderBy('book_datas.book_title')
+                ->select('books.*')
+                ->limit($this->perPage)
+                ->get();
+
+            foreach ($books as $book) {
+                $detail = $book->bookDetail;
+                $data = $detail ? $detail->bookData : null;
+                $authorName = 'Unknown Author';
+                if ($data && $data->authors->isNotEmpty()) {
+                    $authorName = $data->authors->map(function($a) {
+                        return trim($a->first_name . ' ' . $a->last_name);
+                    })->implode(', ');
+                }
+
+                $titleWords = explode(' ', $data ? $data->book_title : 'BOOK');
+                $codeInitials = '';
+                foreach ($titleWords as $word) {
+                    $codeInitials .= strtoupper(substr($word, 0, 1));
+                    if (strlen($codeInitials) >= 4) break;
+                }
+
+                $results[] = [
+                    'type' => 'book',
+                    'id' => $book->id,
+                    'code' => $book->accession_number ?: $book->barcode,
+                    'title' => $data ? $data->book_title : 'Unknown Book',
+                    'subtitle' => trim($authorName . ' · Accession No. ' . ($book->accession_number ?? 'N/A')),
+                    'barcode' => $book->barcode,
+                    'code_tag' => $codeInitials ?: 'BOOK',
+                    'icon' => 'book-open'
+                ];
+            }
+        }
+
+        $this->results = $results;
+        $this->dispatch('search-completed');
+    }
+
     public function performSearch()
     {
         $rawQuery = trim($this->searchQuery);
-        if (strlen($rawQuery) < 2) {
-            $this->results = [];
-            $this->memberCount = 0;
-            $this->bookCount = 0;
-            $this->dispatch('search-completed');
+        if (strlen($rawQuery) < 1) {
+            $this->loadInitialData();
             return;
         }
 
@@ -147,10 +218,7 @@ class SearchEntityModal extends Component
 
     public function selectEntity($type, $code)
     {
-        // Dispatch search-code to parent CheckInBook controller
-        $this->dispatch('search-code', code: $code);
-        
-        // Also populate the QrSearchBar input so the user sees the code
+        // Populate the QrSearchBar input with animation
         $this->dispatch('set-search-value', code: $code);
 
         // Close the modal
