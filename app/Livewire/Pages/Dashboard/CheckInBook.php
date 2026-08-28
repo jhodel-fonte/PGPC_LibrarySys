@@ -18,6 +18,9 @@ class CheckInBook extends Component
     public $returnedBooks = [];
     public $lastReturnedBook = null;
     public $errorMessage = '';
+    public $showConfirmChangeMember = false;
+    public $pendingStudentId = null;
+    public $pendingStudentName = '';
     public $stats = [
         'total' => 0,
         'returned' => 0,
@@ -28,6 +31,64 @@ class CheckInBook extends Component
 
     public function mount()
     {
+        // Restore returning session state if librarian cancels/returns from confirmation page
+        if (session()->has('confirm_return_student_id')) {
+            $studentId = session('confirm_return_student_id');
+            $transactionIds = session('confirm_return_transaction_ids', []);
+
+            $student = Student::with('libraryStatus')->find($studentId);
+            if ($student) {
+                // Restore scannedMember details
+                $this->scannedMember = [
+                    'id' => $student->id,
+                    'name' => trim($student->first_name . ' ' . ($student->middle_name ? $student->middle_name . ' ' : '') . $student->last_name),
+                    'school_id' => $student->school_id_number,
+                    'course' => trim(($student->program ?? '') . ' - ' . ($student->year_level ?? '')),
+                    'status' => $student->libraryStatus ? $student->libraryStatus->status : 'Active'
+                ];
+
+                // Restore returnedBooks from transaction book IDs
+                $this->returnedBooks = BorrowingTransaction::whereIn('id', $transactionIds)
+                    ->pluck('book_id')
+                    ->toArray();
+
+                // Fetch their currently borrowed books (not yet returned)
+                $transactions = BorrowingTransaction::with(['book.bookDetail.bookData', 'book.bookDetail.bookData.authors'])
+                    ->where('school_id', $student->id)
+                    ->whereNull('return_date')
+                    ->get();
+
+                $this->borrowedBooks = $transactions->map(function ($t) {
+                    $book = $t->book;
+                    $detail = $book ? $book->bookDetail : null;
+                    $data = $detail ? $detail->bookData : null;
+                    $authorName = 'Unknown Author';
+                    if ($data && $data->authors->isNotEmpty()) {
+                        $authorName = $data->authors->map(function($a) {
+                            return trim($a->first_name . ' ' . $a->last_name);
+                        })->implode(', ');
+                    }
+
+                    $isPendingReturn = in_array($book->id, $this->returnedBooks);
+
+                    return [
+                        'transaction_id' => $t->id,
+                        'book_id' => $book ? $book->id : null,
+                        'book' => $data ? $data->book_title : 'Unknown Book',
+                        'author' => $authorName,
+                        'accession' => $book ? $book->accession_number : 'N/A',
+                        'code' => $data ? ($data->subtitle ?: 'BOOK') : 'BOOK',
+                        'borrowed_on' => $t->issued_date->format('M d, Y'),
+                        'due_date' => $t->due_date->format('M d, Y'),
+                        'status' => $isPendingReturn ? 'Returned' : 'Borrowed'
+                    ];
+                })->toArray();
+            }
+
+            // Forget session state to prevent infinite restoration loops
+            session()->forget(['confirm_return_student_id', 'confirm_return_transaction_ids']);
+        }
+
         $this->updateStats();
     }
 
@@ -40,7 +101,7 @@ class CheckInBook extends Component
     public function handleSearchCode($code)
     {
         $this->errorMessage = ''; // Clear previous error
-        
+
         $code = trim($code);
         if (empty($code)) return;
 
@@ -53,6 +114,15 @@ class CheckInBook extends Component
         $student = Student::with('libraryStatus')->where('school_id_number', $code)->first();
 
         if ($student) {
+            // Check if we need to confirm switching student due to active returns session
+            if ($this->scannedMember && $this->scannedMember['school_id'] !== $student->school_id_number && count($this->returnedBooks) > 0) {
+                $this->showConfirmChangeMember = true;
+                $this->pendingStudentId = $student->id;
+                $this->pendingStudentName = trim($student->first_name . ' ' . ($student->middle_name ? $student->middle_name . ' ' : '') . $student->last_name);
+                $this->dispatch('clear-search-input');
+                return;
+            }
+
             $this->loadMember($student);
             $this->dispatch('clear-search-input');
             return;
@@ -88,6 +158,15 @@ class CheckInBook extends Component
         }
 
         if ($isMemberFormat) {
+            // Check if we need to confirm switching student
+            if ($this->scannedMember && $this->scannedMember['school_id'] !== $code && count($this->returnedBooks) > 0) {
+                $this->showConfirmChangeMember = true;
+                $this->pendingStudentId = 'unregistered';
+                $this->pendingStudentName = 'Unregistered Member (' . $code . ')';
+                $this->dispatch('clear-search-input');
+                return;
+            }
+
             $this->scannedMember = [
                 'id' => null,
                 'name' => 'Unregistered Member',
@@ -160,7 +239,7 @@ class CheckInBook extends Component
             $this->errorMessage = 'Book "' . $book->accession_number . '" is already scanned for return.';
             return;
         }
-        
+
         // Find active borrow transaction for this book copy (globally, so return works regardless of who is loaded)
         $transaction = BorrowingTransaction::with(['student', 'book.bookDetail.bookData', 'book.bookDetail.bookData.authors'])
             ->where('book_id', $book->id)
@@ -285,7 +364,7 @@ class CheckInBook extends Component
         }
 
         $studentId = $this->scannedMember['id'] ?? null;
-        
+
         $totalBorrowed = 0;
         $overdueCount = 0;
 
@@ -322,7 +401,7 @@ class CheckInBook extends Component
 
     // public function showAlert()
     // {
-    //     $this->dispatch('open-modal', 
+    //     $this->dispatch('open-modal',
     //         title: 'Delete Borrow Transaction',
     //         message: 'This action is permanent and cannot be undone.',
     //         type: 'warning',
@@ -334,6 +413,45 @@ class CheckInBook extends Component
     //         ]
     //     );
     // }
+
+    public function confirmChangeMember()
+    {
+        $this->showConfirmChangeMember = false;
+        $this->returnedBooks = []; // Reset queue for new student session
+        $this->lastReturnedBook = null;
+
+        if ($this->pendingStudentId === 'unregistered') {
+            $code = str_replace('Unregistered Member (', '', $this->pendingStudentName);
+            $code = rtrim($code, ')');
+
+            $this->scannedMember = [
+                'id' => null,
+                'name' => 'Unregistered Member',
+                'school_id' => $code,
+                'course' => 'Not Registered',
+                'status' => 'Inactive'
+            ];
+            $this->borrowedBooks = [];
+            $this->updateStats();
+            $this->errorMessage = 'This member ID is not registered in the database.';
+        } else {
+            $student = Student::find($this->pendingStudentId);
+            if ($student) {
+                $this->loadMember($student);
+            }
+        }
+
+        $this->pendingStudentId = null;
+        $this->pendingStudentName = '';
+    }
+
+    public function cancelChangeMember()
+    {
+        $this->showConfirmChangeMember = false;
+        $this->pendingStudentId = null;
+        $this->pendingStudentName = '';
+        $this->errorMessage = 'Change student operation was cancelled. Scanned returns preserved.';
+    }
 
     public function render()
     {

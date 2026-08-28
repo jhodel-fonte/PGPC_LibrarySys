@@ -13,12 +13,12 @@
                     <span class="text-[#64748B]">Total Books to Return</span>
                     <span class="text-[#0F172A] font-bold">{{ $stats['total'] }}</span>
                 </div>
-                
+
                 <div class="flex justify-between items-center py-2.5 border-b border-[#F1F5F9]">
                     <span class="text-[#64748B]">Returned</span>
                     <span class="text-[#10B981] font-bold">{{ $stats['returned'] }}</span>
                 </div>
-                
+
                 <!-- Highlighted Remaining Row if > 0 -->
                 @if($stats['remaining'] > 0)
                     <div class="flex justify-between items-center py-2.5 border-b border-[#FFEDD5] bg-[#FFFBEB] px-2 -mx-2 rounded-md transition-all">
@@ -31,12 +31,12 @@
                         <span class="text-[#10B981] font-bold">{{ $stats['remaining'] }}</span>
                     </div>
                 @endif
-                
+
                 <div class="flex justify-between items-center py-2.5 border-b border-[#F1F5F9]">
                     <span class="text-[#64748B]">Overdue Items</span>
                     <span class="text-[#EF4444] font-bold">{{ $stats['overdue'] }}</span>
                 </div>
-                
+
                 <div class="flex justify-between items-center py-2.5">
                     <span class="text-[#64748B]">Return Date</span>
                     <div class="flex items-center gap-1.5 text-[#0F172A] font-bold">
@@ -59,7 +59,7 @@
                 <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex flex-col gap-0.5 text-center items-center justify-center">
                     <span class="text-[11px] text-[#64748B] font-semibold leading-normal">Load a member profile to start</span>
                 </div>
-                
+
                 <button disabled class="w-full h-12 bg-slate-100 text-slate-400 rounded-xl font-bold flex items-center justify-center cursor-not-allowed text-xs uppercase tracking-wider">
                     Waiting for Member
                 </button>
@@ -74,7 +74,7 @@
                     </span>
                     <span class="text-[11px] text-[#2563EB] leading-normal font-semibold">No active borrowed books on account</span>
                 </div>
-                
+
                 <button disabled class="w-full h-12 bg-slate-100 text-slate-400 rounded-xl font-bold flex items-center justify-center cursor-not-allowed text-xs uppercase tracking-wider">
                     No Action Required
                 </button>
@@ -83,7 +83,7 @@
                 <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex flex-col gap-0.5 text-center items-center justify-center">
                     <span class="text-[11px] text-[#64748B] font-semibold leading-normal">Scan a book barcode to begin return</span>
                 </div>
-                
+
                 <button disabled class="w-full h-12 bg-slate-100 text-slate-400 rounded-xl font-bold flex items-center justify-center cursor-not-allowed text-xs uppercase tracking-wider">
                     Waiting for Scans
                 </button>
@@ -100,11 +100,20 @@
                 </div>
 
                     <!-- Review Return Button -->
-                <button type="button" 
-                        wire:click="$parent.reviewReturn" 
-                        class="w-full h-12 bg-[#102B70] hover:bg-[#0B225E] text-white rounded-xl font-bold flex items-center justify-between px-5 transition-colors shadow-sm group">
-                    <span class="text-xs uppercase tracking-wider">Review Return</span>
-                    <svg class="w-4 h-4 text-white transform transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button type="button"
+                        wire:click="$parent.reviewReturn"
+                        wire:loading.attr="disabled"
+                        wire:target="$parent.reviewReturn"
+                        class="w-full h-12 bg-[#102B70] hover:bg-[#0B225E] text-white rounded-xl font-bold flex items-center justify-between px-5 transition-colors shadow-sm group disabled:opacity-65 disabled:cursor-not-allowed">
+                    <span wire:loading.remove wire:target="$parent.reviewReturn" class="text-xs uppercase tracking-wider">Review Return</span>
+                    <span wire:loading wire:target="$parent.reviewReturn" class="text-xs uppercase tracking-wider flex items-center gap-2">
+                        <svg class="animate-spin-custom h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Processing...
+                    </span>
+                    <svg wire:loading.remove wire:target="$parent.reviewReturn" class="w-4 h-4 text-white transform transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path>
                     </svg>
                 </button>
@@ -121,11 +130,20 @@
                 </div>
 
                 <!-- Confirm Return Button -->
-                <button type="button" 
-                        wire:click="$parent.reviewReturn" 
-                        class="w-full h-12 bg-[#102B70] hover:bg-[#0B225E] text-white rounded-xl font-bold flex items-center justify-between px-5 transition-colors shadow-sm group">
-                    <span class="text-xs uppercase tracking-wider">Confirm Return</span>
-                    <svg class="w-4 h-4 text-white transform transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button type="button"
+                        wire:click="$parent.reviewReturn"
+                        wire:loading.attr="disabled"
+                        wire:target="$parent.reviewReturn"
+                        class="w-full h-12 bg-[#102B70] hover:bg-[#0B225E] text-white rounded-xl font-bold flex items-center justify-between px-5 transition-colors shadow-sm group disabled:opacity-65 disabled:cursor-not-allowed">
+                    <span wire:loading.remove wire:target="$parent.reviewReturn" class="text-xs uppercase tracking-wider">Confirm Return</span>
+                    <span wire:loading wire:target="$parent.reviewReturn" class="text-xs uppercase tracking-wider flex items-center gap-2">
+                        <svg class="animate-spin-custom h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Completing...
+                    </span>
+                    <svg wire:loading.remove wire:target="$parent.reviewReturn" class="w-4 h-4 text-white transform transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path>
                     </svg>
                 </button>

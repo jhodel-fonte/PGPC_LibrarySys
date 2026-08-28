@@ -1,15 +1,34 @@
-<div class="relative w-full h-auto lg:h-[calc(100vh-70px)] flex flex-col items-center justify-start pt-4 px-3 md:px-6 xl:px-12 pb-5 font-sans bg-[#F8FAFC] overflow-y-auto lg:overflow-hidden">
+<div class="relative w-full h-auto lg:h-[calc(100vh-70px)] flex flex-col items-center justify-start pt-4 px-3 md:px-6 xl:px-12 pb-5 font-sans bg-[#F8FAFC] overflow-y-auto lg:overflow-hidden check-in-workstation">
 
-    <!-- Lock page layout scroll to prevent entire page scrolling on desktop -->
+    <!-- Lock page layout scroll to prevent entire page scrolling on desktop when screen size permits -->
     <style>
         @media (min-width: 1024px) {
-            main {
-                overflow: hidden !important;
-                display: flex;
-                flex-direction: column;
-                height: calc(100vh - 70px) !important;
+            @media (min-height: 800px) {
+                main {
+                    overflow: hidden !important;
+                    display: flex;
+                    flex-direction: column;
+                    height: calc(100vh - 70px) !important;
+                }
             }
         }
+
+        /* Zoom and Low Height Viewport Overrides */
+        @media (max-height: 799px) {
+            .check-in-workstation,
+            .check-in-workstation .lg\:overflow-hidden,
+            .check-in-workstation .lg\:h-full,
+            .check-in-workstation .lg\:h-\[calc\(100vh-70px\)\],
+            .check-in-workstation .lg\:h-\[calc\(100\%-80px\)\] {
+                height: auto !important;
+                overflow: visible !important;
+            }
+            main {
+                overflow: auto !important;
+                height: auto !important;
+            }
+        }
+
         @keyframes loading-pulse {
             0% { transform: translateX(-100%); }
             100% { transform: translateX(330%); }
@@ -53,6 +72,20 @@
 
             <!-- Left Section: Column 1 + Column 2 (col-span-9) -->
             <div class="lg:col-span-9 h-auto lg:h-full flex flex-col gap-4 lg:overflow-hidden">
+
+                <!-- Switch Student Confirmation Banner -->
+                @if($showConfirmChangeMember)
+                    <livewire:components.circulation.top-notification-banner
+                        type="warning"
+                        title="Unsaved Returns Session"
+                        :message="'You have already scanned ' . count($returnedBooks) . ' book(s) in this session. Switching student to <b>' . $pendingStudentName . '</b> will clear this return session. Proceed?'"
+                        confirm-action="confirmChangeMember"
+                        confirm-label="Yes, Switch Student"
+                        cancel-action="cancelChangeMember"
+                        cancel-label="Cancel"
+                    />
+                @endif
+
                 <div class="relative overflow-hidden shrink-0 bg-white rounded-3xl border border-[#E2E8F0] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
                     <!-- Indeterminate Top Progress Bar -->
                     <div wire:loading class="absolute top-0 left-0 right-0 h-1 bg-[#EFF6FF] overflow-hidden">
@@ -159,74 +192,10 @@
                     </div>
 
                     <!-- COLUMN 2: Borrowed Books (md:col-span-8) -->
-                    <div wire:loading.class="opacity-65 transition-opacity duration-300" class="md:col-span-8 bg-white rounded-3xl border border-[#E2E8F0] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.02)] h-[400px] md:h-full flex flex-col lg:overflow-hidden">
-                        <div class="flex flex-col gap-3 h-full overflow-hidden">
-                            <!-- Card Header (shrink-0) -->
-                            <h3 class="text-xs font-bold text-[#64748B] uppercase tracking-wider shrink-0">Borrowed Books ({{ count($borrowedBooks ?? []) }})</h3>
-
-                            <!-- Table Wrapper (flex-1 overflow-y-auto) -->
-                            <div class="overflow-x-auto flex-1 overflow-y-auto border border-[#E2E8F0] rounded-2xl bg-white shadow-inner">
-                                <table class="w-full text-left border-collapse min-w-[600px]">
-                                    <thead class="sticky top-0 bg-white z-10">
-                                        <tr class="border-b border-[#E2E8F0] text-[11px] font-bold text-[#64748B] uppercase tracking-wider">
-                                            <th class="py-3 px-5 w-[45%] bg-white">Book</th>
-                                            <th class="py-3 px-5 w-[20%] bg-white">Borrowed On</th>
-                                            <th class="py-3 px-5 w-[20%] bg-white">Due Date</th>
-                                            <th class="py-3 px-5 w-[15%] text-right bg-white">Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="divide-y divide-[#F1F5F9] text-sm text-[#0F172A]">
-                                        @forelse($borrowedBooks ?? [] as $item)
-                                            @php
-                                                $isReturned = ($item['status'] ?? '') === 'Returned';
-                                            @endphp
-                                            <tr class="align-middle transition-colors {{ $isReturned ? 'bg-[#EFF6FF]/30 hover:bg-[#EFF6FF]/55' : 'hover:bg-[#F8FAFC]' }}">
-                                                <td class="py-4 px-5">
-                                                    <div class="flex items-center gap-3.5">
-                                                        <!-- Miniature Cover representation -->
-                                                        <div class="w-10 h-14 bg-gradient-to-br {{ $isReturned ? 'from-[#102B70] to-[#3B82F6]' : 'from-[#64748B] to-[#94A3B8]' }} rounded-md shadow-sm overflow-hidden flex items-center justify-center shrink-0">
-                                                            <span class="text-[9px] text-white/50 font-bold uppercase tracking-wider text-center px-1 leading-tight">{{ $item['code'] ?? 'BOOK' }}</span>
-                                                        </div>
-                                                        <div class="flex flex-col min-w-0">
-                                                            <span class="font-bold text-[14.5px] leading-tight text-[#0F172A] truncate {{ $isReturned ? 'text-[#102B70]' : '' }}">{{ $item['book'] }}</span>
-                                                            <span class="text-[12.5px] text-[#64748B] mt-0.5 truncate">{{ $item['author'] ?? 'Unknown Author' }}</span>
-                                                            <span class="text-[11px] text-[#94A3B8] mt-0.5">Accession No. {{ $item['accession'] ?? 'N/A' }}</span>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td class="py-4 px-5 font-semibold text-[#64748B]">
-                                                    {{ $item['borrowed_on'] }}
-                                                </td>
-                                                <td class="py-4 px-5 font-semibold text-[#64748B]">
-                                                    {{ $item['due_date'] }}
-                                                </td>
-                                                <td class="py-4 px-5 text-right">
-                                                    @if($isReturned)
-                                                        <span class="inline-flex items-center gap-1.5 text-[12px] font-bold text-[#10B981]">
-                                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
-                                                            </svg>
-                                                            Returned
-                                                        </span>
-                                                    @else
-                                                        <span class="inline-flex items-center text-[12px] font-semibold text-[#EF4444]">
-                                                            Not Returned
-                                                        </span>
-                                                    @endif
-                                                </td>
-                                            </tr>
-                                        @empty
-                                            <tr>
-                                                <td colspan="4" class="py-16 text-center text-sm text-[#64748B] font-medium leading-relaxed bg-[#F8FAFC]/30">
-                                                    No active borrowed books on account.
-                                                </td>
-                                            </tr>
-                                        @endforelse
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
+                    <livewire:components.circulation.table
+                        :borrowed-books="$borrowedBooks"
+                        :scanned-member="$scannedMember"
+                    />
 
                 </div>
             </div>
@@ -250,7 +219,7 @@
                             <div class="bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl p-4 flex flex-col gap-4 shadow-inner flex-1 justify-between">
                                 <div class="flex items-center gap-3.5">
                                     <!-- Branded Initials Avatar -->
-                                    <div class="w-12 h-12 rounded-full bg-[#102B70] text-[#FCC719] border-2 flex items-center justify-center shrink-0 shadow-sm text-sm font-bold tracking-wider select-none">
+                                    <div class="w-12 h-12 rounded-full bg-[#102B70] text-[#FFFFFF] border-2 flex items-center justify-center shrink-0 shadow-sm text-sm font-bold tracking-wider select-none">
                                         {{ $initials ?: 'S' }}
                                     </div>
 
