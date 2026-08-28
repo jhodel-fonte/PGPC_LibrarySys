@@ -33,11 +33,7 @@ class CheckInBook extends Component
 
     public function getQrConfig()
     {
-        $path = resource_path('views/livewire/pages/dashboard/qr-format.json');
-        if (file_exists($path)) {
-            return json_decode(file_get_contents($path), true);
-        }
-        return [];
+        return config('pgpc', []);
     }
 
     #[On('search-code')]
@@ -262,7 +258,7 @@ class CheckInBook extends Component
         ]);
 
         // Redirect to confirm return page
-        return $this->redirect(route('admin.circulation-desk.return.confirm'));
+        return $this->redirect(route('admin.circulation-desk.return.confirm'), navigate: true);
     }
 
     public function clearMember()
@@ -291,29 +287,53 @@ class CheckInBook extends Component
         $studentId = $this->scannedMember['id'] ?? null;
         
         $totalBorrowed = 0;
-        $overdue = 0;
+        $overdueCount = 0;
 
         if ($studentId) {
-            // Count active borrowed books
+            // Count active borrowed books in database (which includes the ones in returnedBooks queue)
             $totalBorrowed = BorrowingTransaction::where('school_id', $studentId)
                 ->whereNull('return_date')
                 ->count();
 
-            // Overdue count
-            $overdue = BorrowingTransaction::where('school_id', $studentId)
+            // Get overdue transactions in database
+            $overdueTransactions = BorrowingTransaction::where('school_id', $studentId)
                 ->whereNull('return_date')
                 ->where('due_date', '<', Carbon::now())
-                ->count();
+                ->get();
+
+            // Count only those that are not yet scanned in returnedBooks queue
+            foreach ($overdueTransactions as $ot) {
+                if (!in_array($ot->book_id, $this->returnedBooks)) {
+                    $overdueCount++;
+                }
+            }
         }
 
+        $returnedCount = count($this->returnedBooks);
+
         $this->stats = [
-            'total' => $totalBorrowed + count($this->returnedBooks),
-            'returned' => count($this->returnedBooks),
-            'remaining' => $totalBorrowed,
-            'overdue' => $overdue,
+            'total' => $totalBorrowed,
+            'returned' => $returnedCount,
+            'remaining' => max(0, $totalBorrowed - $returnedCount),
+            'overdue' => $overdueCount,
             'return_date' => Carbon::now()->format('M d, Y')
         ];
     }
+
+    // public function showAlert()
+    // {
+    //     $this->dispatch('open-modal', 
+    //         title: 'Delete Borrow Transaction',
+    //         message: 'This action is permanent and cannot be undone.',
+    //         type: 'warning',
+    //         options: [
+    //             'confirmButtonText' => 'Delete Now',
+    //             'cancelButtonText' => 'Cancel',
+    //             'confirmEvent' => 'delete-transaction-id',
+    //             'confirmParams' => ['id' => 1]
+    //         ]
+    //     );
+    // }
 
     public function render()
     {

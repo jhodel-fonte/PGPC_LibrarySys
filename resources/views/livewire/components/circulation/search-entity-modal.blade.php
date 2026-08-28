@@ -1,9 +1,9 @@
-<div x-data="{ 
-         open: @entangle('isOpen'), 
-         isLoading: false, 
+<div x-data="{
+         open: @entangle('isOpen'),
+         isLoading: false,
          selectedIndex: -1,
          localQuery: '',
-         
+
          resultsCount() {
              let el = document.getElementById('search-results-container');
              return el ? parseInt(el.dataset.count || 0) : 0;
@@ -22,36 +22,38 @@
                  }
              });
          }
-     }" 
+     }"
      @search-completed.window="isLoading = false; selectedIndex = -1;"
      x-init="
-         $watch('open', value => { 
-             if (value) { 
-                 localQuery = ''; 
-                 selectedIndex = -1; 
-                 $nextTick(() => { $refs.searchInput.focus(); }); 
-             } 
+         $watch('open', value => {
+             if (value) {
+                 localQuery = '';
+                 selectedIndex = -1;
+                 $nextTick(() => { $refs.searchInput.focus(); });
+             } else {
+                 $dispatch('search-modal-closed');
+             }
          });
      "
      @keydown.arrow-down.prevent.window="if (open && !isLoading) { selectedIndex = (selectedIndex < resultsCount() - 1) ? selectedIndex + 1 : 0; scrollToActiveRow(); }"
      @keydown.arrow-up.prevent.window="if (open && !isLoading) { selectedIndex = (selectedIndex > 0) ? selectedIndex - 1 : resultsCount() - 1; scrollToActiveRow(); }"
      @keydown.enter.prevent.window="if (open && selectedIndex >= 0 && selectedIndex < resultsCount()) { selectRowAtIndex(selectedIndex); }"
-     x-show="open" 
+     x-show="open"
      x-cloak
      class="absolute inset-0 z-50 flex items-center justify-center overflow-x-hidden overflow-y-auto"
-     role="dialog" 
+     role="dialog"
      aria-modal="true"
 >
     <!-- Dimmed backdrop overlay covering ONLY the relative page body area -->
-    <div class="absolute inset-0 bg-[#071943]/60 backdrop-blur-sm transition-opacity" 
-         x-show="open" 
+    <div class="absolute inset-0 bg-[#071943]/60 backdrop-blur-sm transition-opacity"
+         x-show="open"
          x-transition:enter="ease-out duration-300"
          x-transition:enter-start="opacity-0"
          x-transition:enter-end="opacity-100"
          x-transition:leave="ease-in duration-200"
          x-transition:leave-start="opacity-100"
          x-transition:leave-end="opacity-0"
-         @click="$wire.closeModal()"
+         @click="open = false"
     ></div>
 
     <!-- Centered Modal Content Card (Width changed to max-w-2xl) -->
@@ -70,8 +72,8 @@
                 <h3 class="text-base font-bold text-[#102B70] tracking-tight">Search Member or Book</h3>
                 <p class="text-[11px] text-[#64748B] font-medium mt-0.5">Search by name, ID, email, barcode, title, author, or accession number</p>
             </div>
-            <button type="button" 
-                    @click="$wire.closeModal()" 
+            <button type="button"
+                    @click="open = false"
                     class="text-[#64748B] hover:text-[#0F172A] p-1.5 hover:bg-slate-200/50 rounded-xl transition-all focus:outline-none"
                     aria-label="Close modal"
             >
@@ -81,22 +83,28 @@
             </button>
         </div>
 
-        <!-- Modal Body -->
-        <div class="p-6 flex flex-col gap-4 overflow-y-auto flex-1">
+        <!-- Modal Search & Filters (Fixed) -->
+        <div class="px-6 pt-5 pb-3 border-b border-[#E2E8F0] bg-white flex flex-col gap-4 shrink-0">
             <!-- Search bar & Dropdown Selector -->
             <div class="flex gap-3">
                 <div class="relative flex-1">
                     <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-[#64748B]">
-                        <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <!-- Search Magnifying Glass (Hidden when loading) -->
+                        <svg wire:loading.remove wire:target="searchQuery, performSearch" class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                         </svg>
+                        <!-- Spinner (Shown when loading search queries) -->
+                        <svg wire:loading wire:target="searchQuery, performSearch" class="animate-spin-custom h-4.5 w-4.5 text-[#102B70]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
                     </span>
-                    <input type="text" 
+                    <input type="text"
                            x-ref="searchInput"
                            x-model="localQuery"
-                           wire:model.live.debounce.300ms="searchQuery" 
+                           wire:model.live.debounce.300ms="searchQuery"
                            @input="isLoading = true; selectedIndex = -1;"
-                           placeholder="Type to search..." 
+                           placeholder="Type to search..."
                            class="w-full pl-11 pr-10 h-11 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl text-[14px] font-semibold text-[#0F172A] placeholder-[#64748B] tracking-wide focus:outline-none focus:ring-2 focus:ring-[#102B70]/20 focus:border-[#102B70] transition-shadow"
                     >
                     <!-- Clear Input Button (Client-side instant toggle and focus retention) -->
@@ -114,27 +122,30 @@
             </div>
 
             <!-- Pill Tabs -->
-            <div class="flex items-center gap-2 border-b border-[#E2E8F0] pb-3">
-                <button type="button" 
-                        wire:click="setTab('all')" 
+            <div class="flex items-ceter gap-2 border-b border-[#E2E8F0] pb-3">
+                <button type="button"
+                        wire:click="setTab('all')"
                         @click="isLoading = true; selectedIndex = -1;"
                         class="px-4 py-2 rounded-full text-xs font-bold transition-all {{ $activeTab === 'all' ? 'bg-[#102B70] text-white shadow-sm' : 'bg-slate-50 border border-[#E2E8F0] text-[#64748B] hover:bg-slate-100 hover:text-[#0F172A]' }}">
                     All Results
                 </button>
-                <button type="button" 
-                        wire:click="setTab('members')" 
+                <button type="button"
+                        wire:click="setTab('members')"
                         @click="isLoading = true; selectedIndex = -1;"
                         class="px-4 py-2 rounded-full text-xs font-bold transition-all {{ $activeTab === 'members' ? 'bg-[#102B70] text-white shadow-sm' : 'bg-slate-50 border border-[#E2E8F0] text-[#64748B] hover:bg-slate-100 hover:text-[#0F172A]' }}">
                     Students ({{ $memberCount }})
                 </button>
-                <button type="button" 
-                        wire:click="setTab('books')" 
+                <button type="button"
+                        wire:click="setTab('books')"
                         @click="isLoading = true; selectedIndex = -1;"
                         class="px-4 py-2 rounded-full text-xs font-bold transition-all {{ $activeTab === 'books' ? 'bg-[#102B70] text-white shadow-sm' : 'bg-slate-50 border border-[#E2E8F0] text-[#64748B] hover:bg-slate-100 hover:text-[#0F172A]' }}">
                     Books ({{ $bookCount }})
                 </button>
             </div>
+        </div>
 
+        <!-- Scrollable Results Section -->
+        <div class="px-6 py-4 flex flex-col gap-4 overflow-y-auto flex-1 custom-scrollbar bg-slate-50/10">
             <!-- Alpine Skeletal Loading Design -->
             <div x-show="isLoading" class="flex flex-col gap-4" x-cloak>
                 @if($activeTab === 'all' || $activeTab === 'members')
@@ -190,7 +201,7 @@
                 @if($membersList->isNotEmpty())
                     <div class="flex flex-col gap-2">
                         <span class="text-[11px] font-bold text-[#94A3B8] uppercase tracking-wider pl-1">Students</span>
-                        
+
                         <div class="border border-[#E2E8F0] rounded-2xl bg-white overflow-hidden shadow-inner divide-y divide-[#F1F5F9]">
                             @foreach($membersList as $item)
                                 @php
@@ -232,8 +243,8 @@
                                     </div>
 
                                     <!-- Select Action -->
-                                    <button type="button" 
-                                            wire:click="selectEntity('member', '{{ $item['code'] }}')" 
+                                    <button type="button"
+                                            @click="open = false; $dispatch('set-search-value', { code: '{{ $item['code'] }}' })"
                                             class="h-8 px-4 border border-[#102B70] text-[#102B70] hover:bg-[#102B70] hover:text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm shrink-0"
                                     >
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -251,7 +262,7 @@
                 @if($booksList->isNotEmpty())
                     <div class="flex flex-col gap-2 {{ $membersList->isNotEmpty() ? 'mt-1' : '' }}">
                         <span class="text-[11px] font-bold text-[#94A3B8] uppercase tracking-wider pl-1">Books</span>
-                        
+
                         <div class="border border-[#E2E8F0] rounded-2xl bg-white overflow-hidden shadow-inner divide-y divide-[#F1F5F9]">
                             @foreach($booksList as $item)
                                 @php
@@ -268,10 +279,10 @@
                                         <!-- Book cover container (Fixed w-9 h-12) -->
                                         <div class="w-9 h-12 bg-slate-50 border border-[#E2E8F0] rounded overflow-hidden flex items-center justify-center shrink-0">
                                             @if(!empty($item['cover_image']))
-                                                <img src="{{ asset('storage/' . $item['cover_image']) }}" 
-                                                     alt="Cover" 
-                                                     class="w-full h-full object-cover"
-                                                     onerror="this.onerror=null; this.src=''; this.parentElement.innerHTML='<div class=\'w-full h-full bg-gradient-to-br from-[#102B70] to-[#F59E0B] flex items-center justify-center\'><span class=\'text-[8px] text-white/80 font-bold uppercase tracking-wider text-center px-1 leading-tight\'>{{ $item['code_tag'] }}</span></div>';"
+                                                <img src="{{ asset('storage/' . $item['cover_image']) }}"
+                                                     alt="Cover"
+                                                     clas="w-full h-full object-cover"
+                                                     onerror="this.onerror=null; this.src=''; this.prentElement.innerHTML='<div class=\'w-full h-full bg-gradient-to-br from-[#102B70] to-[#F59E0B] flex items-center justify-center\'><span class=\'text-[8px] text-white/80 font-bold uppercase tracking-wider text-center px-1 leading-tight\'>{{ $item['code_tag'] }}</span></div>';"
                                                 >
                                             @else
                                                 <div class="w-full h-full bg-gradient-to-br from-[#102B70] to-[#F59E0B] flex items-center justify-center">
@@ -288,8 +299,8 @@
                                     </div>
 
                                     <!-- Select Action -->
-                                    <button type="button" 
-                                            wire:click="selectEntity('book', '{{ $item['code'] }}')" 
+                                    <button type="button"
+                                            @click="open = false; $dispatch('set-search-value', { code: '{{ $item['code'] }}' })"
                                             class="h-8 px-4 border border-[#102B70] text-[#102B70] hover:bg-[#102B70] hover:text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm shrink-0"
                                     >
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -308,8 +319,8 @@
                     ($activeTab === 'members' && $memberCount > $perPage) ||
                     ($activeTab === 'books' && $bookCount > $perPage))
                     <div class="flex justify-center mt-2 shrink-0">
-                        <button type="button" 
-                                wire:click="loadMore" 
+                        <button type="button"
+                                wire:click="loadMore"
                                 @click="isLoading = true; selectedIndex = -1;"
                                 class="h-8 px-5 border border-[#E2E8F0] hover:border-[#102B70] text-[#102B70] hover:bg-[#EFF6FF] rounded-xl text-xs font-bold transition-all flex items-center gap-1 shadow-sm"
                         >
@@ -332,9 +343,10 @@
                     </div>
                 @endif
             </div>
+        </div>
 
-            <!-- Footer links block -->
-            <div class="mt-4 pt-4 border-t border-[#E2E8F0] flex items-center justify-center text-xs font-semibold text-[#64748B] gap-1.5 shrink-0">
+        <!-- Footer links block (Fixed) -->
+        <div class="mt-auto px-6 py-4 border-t border-[#E2E8F0] flex items-center justify-center text-xs font-semibold text-[#64748B] gap-1.5 shrink-0 bg-slate-50/50">
                 <span>Can't find what you're looking for?</span>
                 <a href="/admin/user-management" class="text-[#102B70] hover:text-[#0B225E] hover:underline flex items-center gap-1">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

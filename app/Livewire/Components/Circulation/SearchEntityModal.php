@@ -23,12 +23,14 @@ class SearchEntityModal extends Component
         $this->isOpen = true;
         $this->resetSearch();
         $this->performSearch();
+        $this->dispatch('search-modal-opened');
     }
 
     public function closeModal()
     {
         $this->isOpen = false;
         $this->resetSearch();
+        $this->dispatch('search-modal-closed');
     }
 
     public function resetSearch()
@@ -63,17 +65,40 @@ class SearchEntityModal extends Component
 
     public function loadInitialData()
     {
-        $this->memberCount = Student::count();
-        $this->bookCount = Book::count();
+        $this->memberCount = Student::whereHas('borrowingTransactions', function($q) {
+            $q->whereNull('return_date');
+        })->count();
+        if ($this->memberCount === 0) {
+            $this->memberCount = Student::count();
+        }
+
+        $this->bookCount = Book::whereHas('borrowingTransactions', function($q) {
+            $q->whereNull('return_date');
+        })->count();
+        if ($this->bookCount === 0) {
+            $this->bookCount = Book::count();
+        }
+
         $results = [];
 
         // 1. Fetch Members ordered alphabetically by last_name, first_name
         if ($this->activeTab === 'all' || $this->activeTab === 'members') {
             $students = Student::with(['libraryStatus', 'account'])
+                ->whereHas('borrowingTransactions', function($q) {
+                    $q->whereNull('return_date');
+                })
                 ->orderBy('last_name')
                 ->orderBy('first_name')
                 ->limit($this->perPage)
                 ->get();
+
+            if ($students->isEmpty()) {
+                $students = Student::with(['libraryStatus', 'account'])
+                    ->orderBy('last_name')
+                    ->orderBy('first_name')
+                    ->limit($this->perPage)
+                    ->get();
+            }
 
             foreach ($students as $student) {
                 $results[] = [
@@ -93,12 +118,26 @@ class SearchEntityModal extends Component
         if ($this->activeTab === 'all' || $this->activeTab === 'books') {
             $books = Book::with(['bookDetail.bookData.authors'])
                 ->whereHas('bookDetail.bookData')
+                ->whereHas('borrowingTransactions', function($q) {
+                    $q->whereNull('return_date');
+                })
                 ->join('book_details', 'books.book_detail_id', '=', 'book_details.id')
                 ->join('book_datas', 'book_details.book_data_id', '=', 'book_datas.id')
                 ->orderBy('book_datas.book_title')
                 ->select('books.*')
                 ->limit($this->perPage)
                 ->get();
+
+            if ($books->isEmpty()) {
+                $books = Book::with(['bookDetail.bookData.authors'])
+                    ->whereHas('bookDetail.bookData')
+                    ->join('book_details', 'books.book_detail_id', '=', 'book_details.id')
+                    ->join('book_datas', 'book_details.book_data_id', '=', 'book_datas.id')
+                    ->orderBy('book_datas.book_title')
+                    ->select('books.*')
+                    ->limit($this->perPage)
+                    ->get();
+            }
 
             foreach ($books as $book) {
                 $detail = $book->bookDetail;

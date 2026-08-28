@@ -19,11 +19,7 @@ class LiveCamera extends Component
 
     public function getQrConfig()
     {
-        $path = resource_path('views/livewire/pages/dashboard/qr-format.json');
-        if (file_exists($path)) {
-            return json_decode(file_get_contents($path), true);
-        }
-        return [];
+        return config('pgpc', []);
     }
 
     public function handleScan($code)

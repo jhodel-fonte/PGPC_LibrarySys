@@ -27,12 +27,12 @@ class ConfirmReturn extends Component
         $this->transactionIds = session('confirm_return_transaction_ids', []);
 
         if (!$this->studentId || empty($this->transactionIds)) {
-            return redirect()->route('admin.circulation-desk.return');
+            return $this->redirect(route('admin.circulation-desk.return'), navigate: true);
         }
 
         $this->student = Student::with('libraryStatus')->find($this->studentId);
         if (!$this->student) {
-            return redirect()->route('admin.circulation-desk.return');
+            return $this->redirect(route('admin.circulation-desk.return'), navigate: true);
         }
 
         $transactions = BorrowingTransaction::with([
@@ -148,7 +148,7 @@ class ConfirmReturn extends Component
         session()->flash('success_message', 'Books returned and transaction confirmed successfully!');
 
         // Redirect back to check-in return workstation page
-        return $this->redirect(route('admin.circulation-desk.return'));
+        return $this->redirect(route('admin.circulation-desk.return'), navigate: true);
     }
 
     public function render()

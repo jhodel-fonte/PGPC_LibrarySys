@@ -1,19 +1,36 @@
-<div class="relative w-full h-[calc(100vh-70px)] flex flex-col items-center justify-start pt-2 px-3 md:px-6 xl:px-12 pb-5 font-sans bg-[#F8FAFC] overflow-hidden">
-    
-    <!-- Lock page layout scroll to prevent entire page scrolling -->
+<div class="relative w-full h-auto lg:h-[calc(100vh-70px)] flex flex-col items-center justify-start pt-4 px-3 md:px-6 xl:px-12 pb-5 font-sans bg-[#F8FAFC] overflow-y-auto lg:overflow-hidden">
+
+    <!-- Lock page layout scroll to prevent entire page scrolling on desktop -->
     <style>
-        main {
-            overflow: hidden !important;
-            display: flex;
-            flex-direction: column;
-            height: calc(100vh - 70px) !important;
+        @media (min-width: 1024px) {
+            main {
+                overflow: hidden !important;
+                display: flex;
+                flex-direction: column;
+                height: calc(100vh - 70px) !important;
+            }
+        }
+        @keyframes loading-pulse {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(330%); }
+        }
+        .animate-loading-pulse {
+            animation: loading-pulse 1.5s infinite linear;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .animate-spin-custom {
+            animation: spin 1s linear infinite;
+            transform-origin: center;
         }
     </style>
 
-    <div class="w-full max-w-[1460px] flex flex-col h-full overflow-hidden">
+    <div class="w-full max-w-[1460px] flex flex-col h-auto lg:h-full lg:overflow-hidden">
         <!-- Header Area (Shrink-0 to keep fixed height) -->
         <div class="w-full flex flex-col mb-4 md:mt-2 relative z-10 shrink-0">
-            
+
             <!-- Top Row: Back Button & Tabs -->
             @include('livewire.components.circulation.circulation-tab')
 
@@ -27,30 +44,35 @@
                         Scan or enter member ID or book barcode to process returns.
                     </p>
                 </div>
-                
+
             </div>
         </div>
 
         <!-- Main Content Grid (Three Column Workstation Grid Layout) -->
-        <div class="w-full grid grid-cols-1 lg:grid-cols-12 gap-6 relative z-10 mb-2 flex-1 overflow-hidden h-[calc(100%-80px)]">
-            
+        <div class="w-full grid grid-cols-1 lg:grid-cols-12 gap-6 relative z-10 mb-2 flex-1 lg:overflow-hidden h-auto lg:h-[calc(100%-80px)]">
+
             <!-- Left Section: Column 1 + Column 2 (col-span-9) -->
-            <div class="lg:col-span-9 h-full flex flex-col gap-4 overflow-hidden">
-                <div class="shrink-0 bg-white rounded-3xl border border-[#E2E8F0] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
-                    <livewire:components.circulation.qr-search-bar 
+            <div class="lg:col-span-9 h-auto lg:h-full flex flex-col gap-4 lg:overflow-hidden">
+                <div class="relative overflow-hidden shrink-0 bg-white rounded-3xl border border-[#E2E8F0] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
+                    <!-- Indeterminate Top Progress Bar -->
+                    <div wire:loading class="absolute top-0 left-0 right-0 h-1 bg-[#EFF6FF] overflow-hidden">
+                        <div class="h-full w-1/3 bg-[#FCC719] animate-loading-pulse rounded-full"></div>
+                    </div>
+
+                    <livewire:components.circulation.qr-search-bar
                         label="Member ID / Barcode"
                         placeholder="Enter or scan member ID or book barcode"
                     />
 
                     @if($errorMessage)
-                        <div class="mt-3 p-3 bg-[#FEF2F2] border border-[#FCA5A5] rounded-xl flex items-center justify-between text-[11px] font-bold text-[#B91C1C] transition-all">
+                        <div x-data="{ showErr: true }" x-show="showErr" class="mt-3 p-3 bg-[#FEF2F2] border border-[#FCA5A5] rounded-xl flex items-center justify-between text-[11px] font-bold text-[#B91C1C] transition-all animate-fade-in">
                             <div class="flex items-center gap-2">
                                 <svg class="w-4 h-4 text-[#EF4444] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
                                 </svg>
                                 <span>{{ $errorMessage }}</span>
                             </div>
-                            <button type="button" wire:click="$set('errorMessage', '')" class="text-[#EF4444] hover:text-[#B91C1C] transition-colors focus:outline-none">
+                            <button type="button" @click="showErr = false" class="text-[#EF4444] hover:text-[#B91C1C] transition-colors focus:outline-none">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                                 </svg>
@@ -60,17 +82,17 @@
                 </div>
 
                 <!-- Sub Grid: Column 1 & Column 2 side-by-side (flex-1 overflow-hidden) -->
-                <div class="grid grid-cols-1 md:grid-cols-12 gap-4 flex-1 overflow-hidden">
-                    
-                    <!-- COLUMN 1: Scanner + Scanned Book Details (md:col-span-5) -->
-                    <div class="md:col-span-4 flex flex-col gap-4 h-full overflow-hidden">
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-4 flex-1 lg:overflow-hidden h-auto lg:h-full">
+
+                    <!-- COLUMN 1: Scanner + Scanned Book Details (md:col-span-4) -->
+                    <div class="md:col-span-4 flex flex-col gap-4 h-auto lg:h-full lg:overflow-hidden">
                         <!-- Scanner Card -->
                         <div class="bg-white rounded-3xl border border-[#E2E8F0] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.02)] shrink-0">
                             <livewire:components.circulation.live-camera />
                         </div>
 
                         <!-- Scanned Book Details Card (Flex-1) -->
-                        <div class="bg-white rounded-3xl border border-[#E2E8F0] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex-1 flex flex-col overflow-hidden">
+                        <div wire:loading.class="opacity-65 transition-opacity duration-300" class="bg-white rounded-3xl border border-[#E2E8F0] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.02)] min-h-[320px] lg:flex-1 flex flex-col lg:overflow-hidden">
                             <!-- Header -->
                             <div class="flex justify-between items-center shrink-0 mb-3">
                                 <h3 class="text-xs font-bold text-[#102B70] uppercase tracking-wider">Scanned Book</h3>
@@ -136,58 +158,58 @@
                         </div>
                     </div>
 
-                    <!-- COLUMN 2: Borrowed Books (md:col-span-7) -->
-                    <div class="md:col-span-8 bg-white rounded-3xl border border-[#E2E8F0] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.02)] h-full flex flex-col overflow-hidden">
+                    <!-- COLUMN 2: Borrowed Books (md:col-span-8) -->
+                    <div wire:loading.class="opacity-65 transition-opacity duration-300" class="md:col-span-8 bg-white rounded-3xl border border-[#E2E8F0] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.02)] h-[400px] md:h-full flex flex-col lg:overflow-hidden">
                         <div class="flex flex-col gap-3 h-full overflow-hidden">
                             <!-- Card Header (shrink-0) -->
                             <h3 class="text-xs font-bold text-[#64748B] uppercase tracking-wider shrink-0">Borrowed Books ({{ count($borrowedBooks ?? []) }})</h3>
-                            
+
                             <!-- Table Wrapper (flex-1 overflow-y-auto) -->
                             <div class="overflow-x-auto flex-1 overflow-y-auto border border-[#E2E8F0] rounded-2xl bg-white shadow-inner">
                                 <table class="w-full text-left border-collapse min-w-[600px]">
                                     <thead class="sticky top-0 bg-white z-10">
-                                        <tr class="border-b border-[#E2E8F0] text-xs font-bold text-[#64748B] uppercase tracking-wider">
-                                            <th class="py-2.5 px-4 w-[45%] bg-white">Book</th>
-                                            <th class="py-2.5 px-4 w-[20%] bg-white">Borrowed On</th>
-                                            <th class="py-2.5 px-4. w-[20%] bg-white">Due Date</th>
-                                            <th class="py-2.5 px-4 w-[15%] text-right bg-white">Status</th>
+                                        <tr class="border-b border-[#E2E8F0] text-[11px] font-bold text-[#64748B] uppercase tracking-wider">
+                                            <th class="py-3 px-5 w-[45%] bg-white">Book</th>
+                                            <th class="py-3 px-5 w-[20%] bg-white">Borrowed On</th>
+                                            <th class="py-3 px-5 w-[20%] bg-white">Due Date</th>
+                                            <th class="py-3 px-5 w-[15%] text-right bg-white">Status</th>
                                         </tr>
                                     </thead>
-                                    <tbody class="divide-y divide-[#F1F5F9] text-xs text-[#0F172A]">
+                                    <tbody class="divide-y divide-[#F1F5F9] text-sm text-[#0F172A]">
                                         @forelse($borrowedBooks ?? [] as $item)
                                             @php
                                                 $isReturned = ($item['status'] ?? '') === 'Returned';
                                             @endphp
                                             <tr class="align-middle transition-colors {{ $isReturned ? 'bg-[#EFF6FF]/30 hover:bg-[#EFF6FF]/55' : 'hover:bg-[#F8FAFC]' }}">
-                                                <td class="py-3 px-4">
-                                                    <div class="flex items-center gap-3">
+                                                <td class="py-4 px-5">
+                                                    <div class="flex items-center gap-3.5">
                                                         <!-- Miniature Cover representation -->
-                                                        <div class="w-8 h-11 bg-gradient-to-br {{ $isReturned ? 'from-[#102B70] to-[#3B82F6]' : 'from-[#64748B] to-[#94A3B8]' }} rounded shadow-sm overflow-hidden flex items-center justify-center shrink-0">
-                                                            <span class="text-[8px] text-white/50 font-bold uppercase tracking-wider text-center px-1">{{ $item['code'] ?? 'BOOK' }}</span>
+                                                        <div class="w-10 h-14 bg-gradient-to-br {{ $isReturned ? 'from-[#102B70] to-[#3B82F6]' : 'from-[#64748B] to-[#94A3B8]' }} rounded-md shadow-sm overflow-hidden flex items-center justify-center shrink-0">
+                                                            <span class="text-[9px] text-white/50 font-bold uppercase tracking-wider text-center px-1 leading-tight">{{ $item['code'] ?? 'BOOK' }}</span>
                                                         </div>
                                                         <div class="flex flex-col min-w-0">
-                                                            <span class="font-bold text-[13px] leading-tight text-[#0F172A] truncate {{ $isReturned ? 'text-[#102B70]' : '' }}">{{ $item['book'] }}</span>
-                                                            <span class="text-[11px] text-[#64748B] mt-0.5 truncate">{{ $item['author'] ?? 'Unknown Author' }}</span>
-                                                            <span class="text-[10px] text-[#94A3B8] mt-0.5">Accession No. {{ $item['accession'] ?? 'N/A' }}</span>
+                                                            <span class="font-bold text-[14.5px] leading-tight text-[#0F172A] truncate {{ $isReturned ? 'text-[#102B70]' : '' }}">{{ $item['book'] }}</span>
+                                                            <span class="text-[12.5px] text-[#64748B] mt-0.5 truncate">{{ $item['author'] ?? 'Unknown Author' }}</span>
+                                                            <span class="text-[11px] text-[#94A3B8] mt-0.5">Accession No. {{ $item['accession'] ?? 'N/A' }}</span>
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td class="py-3 px-4 font-semibold text-[#64748B]">
+                                                <td class="py-4 px-5 font-semibold text-[#64748B]">
                                                     {{ $item['borrowed_on'] }}
                                                 </td>
-                                                <td class="py-3 px-4 font-semibold text-[#64748B]">
+                                                <td class="py-4 px-5 font-semibold text-[#64748B]">
                                                     {{ $item['due_date'] }}
                                                 </td>
-                                                <td class="py-3 px-4 text-right">
+                                                <td class="py-4 px-5 text-right">
                                                     @if($isReturned)
-                                                        <span class="inline-flex items-center gap-1 text-[11px] font-bold text-[#10B981]">
+                                                        <span class="inline-flex items-center gap-1.5 text-[12px] font-bold text-[#10B981]">
                                                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
                                                             </svg>
                                                             Returned
                                                         </span>
                                                     @else
-                                                        <span class="inline-flex items-center text-[11px] font-semibold text-[#EF4444]">
+                                                        <span class="inline-flex items-center text-[12px] font-semibold text-[#EF4444]">
                                                             Not Returned
                                                         </span>
                                                     @endif
@@ -195,7 +217,7 @@
                                             </tr>
                                         @empty
                                             <tr>
-                                                <td colspan="4" class="py-12 text-center text-xs text-[#64748B] font-medium leading-relaxed bg-[#F8FAFC]/30">
+                                                <td colspan="4" class="py-16 text-center text-sm text-[#64748B] font-medium leading-relaxed bg-[#F8FAFC]/30">
                                                     No active borrowed books on account.
                                                 </td>
                                             </tr>
@@ -208,195 +230,97 @@
 
                 </div>
             </div>
-            
+
             <!-- Right Section: Column 3 (col-span-3 Return Summary Panel) -->
-            <div class="lg:col-span-3 h-full flex flex-col gap-4 overflow-hidden">
-                <!-- Current Member Card -->
-                <div class="bg-white rounded-3xl border border-[#E2E8F0] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.02)] shrink-0">
-                    <div class="flex flex-col gap-2.5">
-                        <span class="block text-xs font-bold text-[#64748B] uppercase tracking-wider">Current Member</span>
-                        
+            <div class="lg:col-span-3 h-auto lg:h-full flex flex-col gap-4 lg:overflow-hidden">
+                <!-- Student Card -->
+                <div wire:loading.class="opacity-65 transition-opacity duration-300" class="bg-white rounded-3xl border border-[#E2E8F0] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.02)] shrink-0 min-h-[220px] flex flex-col">
+                    <div class="flex flex-col gap-3 flex-1">
+                        <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-widest">Student</span>
+
                         @if($scannedMember)
-                            <div class="bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl p-3 flex flex-col gap-3 shadow-inner">
-                                <div class="flex items-center gap-3">
-                                    <!-- Profile Avatar -->
-                                    <div class="w-10 h-10 rounded-full bg-white flex items-center justify-center shrink-0 border border-[#E2E8F0] shadow-sm text-[#102B70]">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                                        </svg>
+                            @php
+                                $initials = '';
+                                if (!empty($scannedMember['name'])) {
+                                    $words = explode(' ', $scannedMember['name']);
+                                    $initials = strtoupper(substr($words[0], 0, 1) . (count($words) > 1 ? substr(end($words), 0, 1) : ''));
+                                }
+                                $isStatusActive = strtolower($scannedMember['status'] ?? 'active') === 'active';
+                            @endphp
+                            <div class="bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl p-4 flex flex-col gap-4 shadow-inner flex-1 justify-between">
+                                <div class="flex items-center gap-3.5">
+                                    <!-- Branded Initials Avatar -->
+                                    <div class="w-12 h-12 rounded-full bg-[#102B70] text-[#FCC719] border-2 flex items-center justify-center shrink-0 shadow-sm text-sm font-bold tracking-wider select-none">
+                                        {{ $initials ?: 'S' }}
                                     </div>
-                                    
-                                    <div class="min-w-0">
+
+                                    <div class="min-w-0 flex-1">
                                         <div class="flex items-center gap-2 flex-wrap">
-                                            <h3 class="text-[#0F172A] font-bold text-[14px] leading-tight truncate">{{ $scannedMember['name'] }}</h3>
-                                            <span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[8px] font-bold bg-[#DCFCE7] text-[#15803D] border border-[#BBF7D0]">
+                                            <h3 class="text-[#0F172A] font-bold text-[15px] leading-tight truncate max-w-[130px] xl:max-w-none" title="{{ $scannedMember['name'] }}">{{ $scannedMember['name'] }}</h3>
+                                            <span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[8.5px] font-bold border {{ $isStatusActive ? 'bg-[#DCFCE7] text-[#15803D] border-[#BBF7D0]' : 'bg-[#FEF2F2] text-[#B91C1C] border-[#FECACA]' }}">
                                                 {{ $scannedMember['status'] }}
                                             </span>
                                         </div>
-                                        <div class="text-[11px] text-[#64748B] font-medium mt-0.5">
+                                        <div class="text-[12px] text-[#64748B] font-semibold mt-0.5">
                                             <span>{{ $scannedMember['school_id'] }}</span>
                                             <span class="mx-1 text-slate-300">&bull;</span>
-                                            <span>{{ $scannedMember['course'] }}</span>
+                                            <span class="text-[11.5px] font-medium">{{ $scannedMember['course'] }}</span>
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <!-- Aligned Action Button -->
-                                <div class="flex justify-end">
-                                    <button type="button" 
-                                            wire:click="clearMember" 
-                                            class="h-8 px-3 border border-[#CBD5E1] bg-white text-[#64748B] hover:bg-slate-50 hover:text-[#0F172A] rounded-xl text-[11px] font-bold transition-all flex items-center gap-1.5 shadow-sm">
+                                <div class="flex justify-end" x-data="{ confirmChange: false }">
+                                    <!-- Normal State: Change Student -->
+                                    <button x-show="!confirmChange"
+                                            type="button"
+                                            @click="confirmChange = true"
+                                            class="h-8 px-3.5 border border-[#102B70] bg-white text-[#102B70] hover:bg-[#EFF6FF] rounded-xl text-[11px] font-bold transition-all flex items-center gap-1.5 shadow-sm">
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
                                         </svg>
-                                        Change Member
+                                        Change Student
                                     </button>
+
+                                    <!-- Confirmation choices (Inline) -->
+                                    <div x-show="confirmChange" class="flex items-center gap-1.5" style="display: none;">
+                                        <span class="text-[10px] font-bold text-[#EF4444] mr-1 select-none">Sure?</span>
+                                        <button type="button"
+                                                @click="confirmChange = false"
+                                                class="h-8 px-2.5 border border-[#CBD5E1] bg-white text-[#64748B] hover:bg-slate-50 hover:text-[#0F172A] rounded-xl text-[10px] font-bold transition-all shadow-sm">
+                                            Cancel
+                                        </button>
+                                        <button type="button"
+                                                wire:click="clearMember"
+                                                @click="confirmChange = false"
+                                                class="h-8 px-3 bg-[#EF4444] hover:bg-[#B91C1C] text-white rounded-xl text-[10px] font-bold transition-all shadow-sm">
+                                            Confirm
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         @else
-                            <div class="bg-[#F8FAFC] border border-dashed border-[#CBD5E1] rounded-2xl p-6 flex flex-col items-center justify-center text-center gap-2">
-                                <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                            <div class="bg-[#F8FAFC] border border-dashed border-[#CBD5E1] rounded-2xl p-6 flex flex-col items-center justify-center text-center gap-2.5 flex-1 mt-1 hover:border-[#102B70] transition-colors duration-200">
+                                <div class="w-12 h-12 rounded-full bg-[#EFF6FF] border border-[#DBEAFE] flex items-center justify-center text-[#102B70] shrink-0 shadow-sm">
+                                    <svg class="w-5.5 h-5.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.333 0 4 .667 4 2V17H5v-1c0-1.333 2.667-2 4-2z"></path>
                                     </svg>
                                 </div>
-                                <span class="text-xs font-bold text-[#64748B] uppercase tracking-wider">No Member Loaded</span>
-                                <p class="text-[10px] text-[#94A3B8] max-w-[180px] leading-normal">Scan or enter a member ID number to load their profile and books.</p>
+                                <span class="text-[13px] font-bold text-[#334155]">No Student Profile Loaded</span>
+                                <p class="text-[10.5px] text-[#64748B] max-w-[190px] leading-relaxed">Scan or enter a member ID number to load their profile and books.</p>
                             </div>
                         @endif
                     </div>
                 </div>
 
-                <!-- Return Summary Card (Flex-1) -->
-                <div class="flex-1 overflow-hidden">
-                    <div class="bg-white rounded-3xl border border-[#E2E8F0] p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col h-full overflow-hidden">
-                        <!-- Return Summary Panel Contents (Top Section - shrink-0) -->
-                        <div class="flex flex-col gap-3 shrink-0">
-                            <div>
-                                <h3 class="text-xs font-bold text-[#102B70] uppercase tracking-wider">Return Summary</h3>
-                            </div>
-
-                            <!-- Stats List -->
-                            <div class="flex flex-col gap-0.5 text-sm font-semibold">
-                                <div class="flex justify-between items-center py-2.5 border-b border-[#F1F5F9]">
-                                    <span class="text-[#64748B]">Total Books to Return</span>
-                                    <span class="text-[#0F172A] font-bold">{{ $stats['total'] }}</span>
-                                </div>
-                                
-                                <div class="flex justify-between items-center py-2.5 border-b border-[#F1F5F9]">
-                                    <span class="text-[#64748B]">Returned</span>
-                                    <span class="text-[#10B981] font-bold">{{ $stats['returned'] }}</span>
-                                </div>
-                                
-                                <!-- Highlighted Remaining Row if > 0 -->
-                                @if($stats['remaining'] > 0)
-                                    <div class="flex justify-between items-center py-2.5 border-b border-[#FFEDD5] bg-[#FFFBEB] px-2 -mx-2 rounded-md transition-all">
-                                        <span class="text-[#D97706] font-bold">Remaining</span>
-                                        <span class="text-[#D97706] font-extrabold text-[14px]">{{ $stats['remaining'] }}</span>
-                                    </div>
-                                @else
-                                    <div class="flex justify-between items-center py-2.5 border-b border-[#F1F5F9]">
-                                        <span class="text-[#64748B]">Remaining</span>
-                                        <span class="text-[#10B981] font-bold">{{ $stats['remaining'] }}</span>
-                                    </div>
-                                @endif
-                                
-                                <div class="flex justify-between items-center py-2.5 border-b border-[#F1F5F9]">
-                                    <span class="text-[#64748B]">Overdue Items</span>
-                                    <span class="text-[#EF4444] font-bold">{{ $stats['overdue'] }}</span>
-                                </div>
-                                
-                                <div class="flex justify-between items-center py-2.5">
-                                    <span class="text-[#64748B]">Return Date</span>
-                                    <div class="flex items-center gap-1.5 text-[#0F172A] font-bold">
-                                        <svg class="w-4 h-4 text-[#94A3B8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                                        </svg>
-                                        <span>{{ $stats['return_date'] }}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Flexible Whitespace Spacer (Middle spacer that expands dynamically) -->
-                        <div class="flex-1 min-h-[20px]"></div>
-
-                        <!-- Action Footer (Bottom Section - shrink-0) -->
-                        <div class="shrink-0 flex flex-col gap-3">
-                            @if(!$scannedMember)
-                                <!-- State when no member is scanned -->
-                                <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex flex-col gap-0.5 text-center items-center justify-center">
-                                    <span class="text-[11px] text-[#64748B] font-semibold leading-normal">Load a member profile to start</span>
-                                </div>
-                                
-                                <button disabled class="w-full h-12 bg-slate-100 text-slate-400 rounded-xl font-bold flex items-center justify-center cursor-not-allowed text-xs uppercase tracking-wider">
-                                    Waiting for Member
-                                </button>
-                            @elseif($stats['total'] == 0)
-                                <!-- Member has no borrows -->
-                                <div class="bg-[#EFF6FF] border border-[#DBEAFE] rounded-xl p-3 flex flex-col gap-0.5">
-                                    <span class="text-xs font-bold text-[#1E40AF] flex items-center gap-1.5">
-                                        <svg class="w-3.5 h-3.5 text-[#1E40AF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                        </svg>
-                                        Account Clear
-                                    </span>
-                                    <span class="text-[11px] text-[#2563EB] leading-normal font-semibold">No active borrowed books on account</span>
-                                </div>
-                                
-                                <button disabled class="w-full h-12 bg-slate-100 text-slate-400 rounded-xl font-bold flex items-center justify-center cursor-not-allowed text-xs uppercase tracking-wider">
-                                    No Action Required
-                                </button>
-                            @elseif($stats['remaining'] > 0)
-                                <!-- Informational Partial Return State Card -->
-                                <div class="bg-[#FFF7ED] border border-[#FFEDD5] rounded-xl p-3 flex flex-col gap-0.5">
-                                    <span class="text-xs font-bold text-[#C2410C] flex items-center gap-1.5">
-                                        <svg class="w-3.5 h-3.5 text-[#C2410C]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                                        </svg>
-                                        Partial Return
-                                    </span>
-                                    <span class="text-[11px] text-[#EA580C] leading-normal font-semibold">{{ $stats['remaining'] }} {{ Str::plural('book', $stats['remaining']) }} will remain on the account</span>
-                                </div>
-
-                                 <!-- Review Return Button -->
-                                <button type="button" 
-                                        wire:click="reviewReturn" 
-                                        class="w-full h-12 bg-[#102B70] hover:bg-[#0B225E] text-white rounded-xl font-bold flex items-center justify-between px-5 transition-colors shadow-sm group">
-                                    <span class="text-xs uppercase tracking-wider">Review Return</span>
-                                    <svg class="w-4 h-4 text-white transform transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path>
-                                    </svg>
-                                </button>
-                            @else
-                                <!-- Informational Complete Return State Card -->
-                                <div class="bg-[#EFF6FF] border border-[#DBEAFE] rounded-xl p-3 flex flex-col gap-0.5">
-                                    <span class="text-xs font-bold text-[#1E40AF] flex items-center gap-1.5">
-                                        <svg class="w-3.5 h-3.5 text-[#1E40AF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                        </svg>
-                                        All Books Returned
-                                    </span>
-                                    <span class="text-[11px] text-[#2563EB] leading-normal font-semibold">Ready to complete this transaction</span>
-                                </div>
-
-                                <!-- Confirm Return Button -->
-                                <button type="button" 
-                                        wire:click="reviewReturn" 
-                                        class="w-full h-12 bg-[#102B70] hover:bg-[#0B225E] text-white rounded-xl font-bold flex items-center justify-between px-5 transition-colors shadow-sm group">
-                                    <span class="text-xs uppercase tracking-wider">Confirm Return</span>
-                                    <svg class="w-4 h-4 text-white transform transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path>
-                                    </svg>
-                                </button>
-                            @endif
-                        </div>
-                    </div>
-                </div>
+                <livewire:components.circulation.summary-panel :stats="$stats" :scanned-member="$scannedMember" />
             </div>
-            
+
     </div>
 
     <!-- Search Entity Modal -->
     <livewire:components.circulation.search-entity-modal />
+
 </div>
+
+
