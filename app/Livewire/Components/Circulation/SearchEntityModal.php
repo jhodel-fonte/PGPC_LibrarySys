@@ -294,7 +294,6 @@ class SearchEntityModal extends Component
 
     public function selectEntity($type, $code)
     {
-        // Populate the QrSearchBar input with animation
         $this->dispatch('set-search-value', code: $code);
 
         // Close the modal
