@@ -37,6 +37,13 @@
                     <span class="text-[#EF4444] font-bold">{{ $stats['overdue'] }}</span>
                 </div>
 
+                @if(($stats['total_fine'] ?? 0) > 0)
+                    <div class="flex justify-between items-center py-2.5 border-b border-[#FEF2F2] bg-[#FEF2F2] px-2 -mx-2 rounded-md transition-all">
+                        <span class="text-[#B91C1C] font-bold">Accumulated Fine</span>
+                        <span class="text-[#EF4444] font-extrabold">₱{{ number_format($stats['total_fine'], 2) }}</span>
+                    </div>
+                @endif
+
                 <div class="flex justify-between items-center py-2.5">
                     <span class="text-[#64748B]">Return Date</span>
                     <div class="flex items-center gap-1.5 text-[#0F172A] font-bold">
@@ -106,8 +113,8 @@
                         wire:target="$parent.reviewReturn"
                         class="w-full h-12 bg-[#102B70] hover:bg-[#0B225E] text-white rounded-xl font-bold flex items-center justify-between px-5 transition-colors shadow-sm group disabled:opacity-65 disabled:cursor-not-allowed">
                     <span wire:loading.remove wire:target="$parent.reviewReturn" class="text-xs uppercase tracking-wider">Review Return</span>
-                    <span wire:loading wire:target="$parent.reviewReturn" class="text-xs uppercase tracking-wider flex items-center gap-2">
-                        <svg class="animate-spin-custom h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <span wire:loading.flex wire:target="$parent.reviewReturn" class="text-xs uppercase tracking-wider items-center gap-2">
+                        <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
@@ -136,8 +143,8 @@
                         wire:target="$parent.reviewReturn"
                         class="w-full h-12 bg-[#102B70] hover:bg-[#0B225E] text-white rounded-xl font-bold flex items-center justify-between px-5 transition-colors shadow-sm group disabled:opacity-65 disabled:cursor-not-allowed">
                     <span wire:loading.remove wire:target="$parent.reviewReturn" class="text-xs uppercase tracking-wider">Confirm Return</span>
-                    <span wire:loading wire:target="$parent.reviewReturn" class="text-xs uppercase tracking-wider flex items-center gap-2">
-                        <svg class="animate-spin-custom h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <span wire:loading.flex wire:target="$parent.reviewReturn" class="text-xs uppercase tracking-wider items-center gap-2">
+                        <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>

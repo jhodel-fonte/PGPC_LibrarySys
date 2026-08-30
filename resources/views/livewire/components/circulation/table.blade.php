@@ -8,10 +8,10 @@
             <table class="w-full text-left border-collapse min-w-[600px]">
                 <thead class="sticky top-0 bg-white z-10">
                     <tr class="border-b border-[#E2E8F0] text-[11px] font-bold text-[#64748B] uppercase tracking-wider">
-                        <th class="py-3 px-5 w-[45%] bg-white">Book</th>
+                        <th class="py-3 px-5 w-[40%] bg-white">Book</th>
                         <th class="py-3 px-5 w-[20%] bg-white">{{ $mode === 'check-out' ? 'Added On' : 'Borrowed On' }}</th>
                         <th class="py-3 px-5 w-[20%] bg-white">Due Date</th>
-                        <th class="py-3 px-5 w-[15%] text-right bg-white">{{ $mode === 'check-out' ? 'Action' : 'Status' }}</th>
+                        <th class="py-3 px-5 w-[20%] text-right bg-white">{{ $mode === 'check-out' ? 'Action' : 'Status' }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-[#F1F5F9] text-sm text-[#0F172A]">

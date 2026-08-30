@@ -288,8 +288,7 @@
     </div>
 
     <!-- Search Entity Modal -->
-    <livewire:components.circulation.search-entity-modal />
-
+    <livewire:components.circulation.search-entity-modal service="check-in" />
 </div>
 
 

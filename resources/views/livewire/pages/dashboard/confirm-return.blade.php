@@ -1,4 +1,7 @@
-<div class="relative w-full h-auto lg:h-[calc(100vh-70px)] flex flex-col items-center justify-start pt-4 px-3 md:px-6 xl:px-12 pb-5 font-sans bg-[#F8FAFC] overflow-y-auto lg:overflow-hidden check-in-workstation">
+<div class="relative w-full h-auto lg:h-[calc(100vh-70px)] flex flex-col items-center justify-start pt-4 px-3 md:px-6 xl:px-12 pb-5 font-sans bg-[#F8FAFC] overflow-y-auto lg:overflow-hidden check-in-workstation"
+     x-data="completedModalHandler()"
+     @return-completed.window="triggerModal($event.detail)"
+     @return-failed.window="triggerErrorModal($event.detail)">
     <style>
         @media (min-width: 1024px) {
             @media (min-height: 800px) {
@@ -31,9 +34,12 @@
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
         }
-        .animate-spin-custom {
-            animation: spin 1s linear infinite;
-            transform-origin: center;
+        .animate-spin {
+            animation: spin 1s linear infinite !important;
+            transform-origin: center !important;
+        }
+        [x-cloak] {
+            display: none !important;
         }
     </style>
 
@@ -159,9 +165,9 @@
                                             {{ $initials ?: 'S' }}
                                         </div>
                                         <div class="min-w-0 flex-1">
-                                            <h4 class="font-extrabold text-[17px] text-[#0F172A] leading-tight truncate" title="{{ $fullName }}">{{ $fullName }}</h4>
+                                            <h4 class="font-bold text-[17px] text-[#0F172A] leading-tight truncate" title="{{ $fullName }}">{{ $fullName }}</h4>
                                             <div class="flex items-center gap-2 mt-1.5 flex-wrap">
-                                                <span class="text-sm font-bold text-[#64748B]">{{ $student->school_id_number }}</span>
+                                                <span class="text-sm font-semibold text-[#64748B]">{{ $student->school_id_number }}</span>
                                                 <span class="text-slate-300 text-[10px] select-none">&bull;</span>
                                                 <span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[9.5px] font-bold border {{ $isStatusActive ? 'bg-[#DCFCE7] text-[#15803D] border-[#BBF7D0]' : 'bg-[#FEF2F2] text-[#B91C1C] border-[#FECACA]' }}">
                                                     {{ $student->libraryStatus->status ?? 'Active' }}
@@ -174,23 +180,23 @@
                                     <div class="grid grid-cols-2 gap-x-4 gap-y-3.5">
                                         <!-- Program / Course -->
                                         <div class="flex flex-col gap-0.5">
-                                            <span class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Program / Course</span>
-                                            <span class="text-[13.5px] font-bold text-[#0F172A] truncate" title="{{ $student->program }}">{{ $student->program }}</span>
+                                            <span class="text-[11px] font-semibold text-[#64748B] uppercase tracking-wider">Program / Course</span>
+                                            <span class="text-[13.5px] font-semibold text-[#0F172A] truncate" title="{{ $student->program }}">{{ $student->program }}</span>
                                         </div>
                                         <!-- Year Level -->
                                         <div class="flex flex-col gap-0.5">
-                                            <span class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Year Level</span>
-                                            <span class="text-[13.5px] font-bold text-[#0F172A]">{{ $student->year_level }}</span>
+                                            <span class="text-[11px] font-semibold text-[#64748B] uppercase tracking-wider">Year Level</span>
+                                            <span class="text-[13.5px] font-semibold text-[#0F172A]">{{ $student->year_level }}</span>
                                         </div>
                                         <!-- Email Address -->
                                         <div class="flex flex-col gap-0.5 col-span-2">
-                                            <span class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Email Address</span>
-                                            <span class="text-[13.5px] font-bold text-[#0F172A] truncate" title="{{ $student->account->email ?? 'N/A' }}">{{ $student->account->email ?? 'N/A' }}</span>
+                                            <span class="text-[11px] font-semibold text-[#64748B] uppercase tracking-wider">Email Address</span>
+                                            <span class="text-[13.5px] font-semibold text-[#0F172A] truncate" title="{{ $student->account->email ?? 'N/A' }}">{{ $student->account->email ?? 'N/A' }}</span>
                                         </div>
                                         <!-- Contact Number -->
                                         <div class="flex flex-col gap-0.5 col-span-2">
-                                            <span class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Contact Number</span>
-                                            <span class="text-[13.5px] font-bold text-[#0F172A] truncate" title="{{ $student->contact_num ?? 'N/A' }}">{{ $student->contact_num ?? 'N/A' }}</span>
+                                            <span class="text-[11px] font-semibold text-[#64748B] uppercase tracking-wider">Contact Number</span>
+                                            <span class="text-[13.5px] font-semibold text-[#0F172A] truncate" title="{{ $student->contact_num ?? 'N/A' }}">{{ $student->contact_num ?? 'N/A' }}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -208,8 +214,8 @@
                             @endphp
 
                             <div class="flex justify-between items-center">
-                                <span class="text-[#64748B] font-semibold text-[13px]">Scanned Books</span>
-                                <span class="text-[#0F172A] font-extrabold text-[15px]">{{ $totalBooks }} {{ Str::plural('book', $totalBooks) }}</span>
+                                <span class="text-[#64748B] font-bold text-[13px]">Scanned Books</span>
+                                <span class="text-[#0F172A] font-bold text-[14px]">{{ $totalBooks }} {{ Str::plural('book', $totalBooks) }}</span>
                             </div>
 
                             @if($totalFine > 0)
@@ -225,7 +231,7 @@
                                 </div>
                             @else
                                 <div class="mt-4 flex justify-between items-center">
-                                    <span class="text-[#64748B] font-semibold text-[13px]">Overdue Fines</span>
+                                    <span class="text-[#64748B] font-bold text-[13px]">Overdue Fines</span>
                                     <span class="font-extrabold text-base text-[#10B981]">₱0.00</span>
                                 </div>
                             @endif
@@ -245,8 +251,8 @@
                                 </svg>
                                 <span class="text-xs uppercase tracking-wider">Confirm Return</span>
                             </span>
-                            <span wire:loading wire:target="confirmReturn" class="text-xs uppercase tracking-wider flex items-center gap-2">
-                                <svg class="animate-spin-custom h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <span wire:loading.flex wire:target="confirmReturn" class="text-xs uppercase tracking-wider items-center gap-2">
+                                <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle>
                                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                 </svg>
@@ -268,4 +274,181 @@
             </div>
         </div>
     </div>
+
+    <!-- Transaction Completed Success Modal with Circular Countdown Progress -->
+    <div x-show="isOpen" 
+         x-cloak
+         class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0">
+         
+         <div class="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl flex flex-col items-center text-center gap-5 border border-slate-100 relative"
+              x-show="isOpen"
+              x-transition:enter="transition ease-out duration-300 transform"
+              x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+              x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+              x-transition:leave="transition ease-in duration-200 transform"
+              x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+              x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95">
+              
+              <!-- Success Indicator Icon -->
+              <div class="w-16 h-16 rounded-full bg-emerald-50 border-2 border-emerald-500 text-emerald-500 flex items-center justify-center shrink-0 shadow-md">
+                  <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                  </svg>
+              </div>
+
+              <!-- Content -->
+              <div class="flex flex-col gap-1.5">
+                  <h3 class="text-xl font-bold text-[#102B70]">Transaction Completed</h3>
+                  <p class="text-xs text-[#64748B] font-semibold leading-relaxed px-4">
+                      All books have been successfully returned and records updated in the system database.
+                  </p>
+              </div>
+
+              <!-- Circle Progress & Delay Countdown -->
+              <div class="flex flex-col items-center justify-center relative mt-2 gap-2">
+                  <div class="relative w-20 h-20 flex items-center justify-center">
+                      <!-- Circular Progress Ring SVG -->
+                      <svg class="w-20 h-20 transform -rotate-90">
+                          <!-- Track -->
+                          <circle cx="40" cy="40" r="34" class="stroke-slate-100" stroke-width="4.5" fill="transparent" />
+                          <!-- Progress indicator (circumference = 2 * pi * 34 = 213.6 -> approx 214) -->
+                          <circle cx="40" cy="40" r="34" 
+                                  class="stroke-[#102B70]" 
+                                  stroke-width="4.5" 
+                                  fill="transparent"
+                                  stroke-dasharray="214"
+                                  :stroke-dashoffset="dashOffset" 
+                                  stroke-linecap="round"
+                                  style="transition: stroke-dashoffset 0.1s linear;" />
+                      </svg>
+                      <!-- Countdown text inside circle -->
+                      <span class="absolute text-lg font-extrabold text-[#102B70]" x-text="countdown">3</span>
+                  </div>
+                  <span class="text-[11px] text-[#94A3B8] font-bold uppercase tracking-widest mt-1">Redirecting to start...</span>
+              </div>
+          </div>
+    </div>
+
+    <!-- TRANSACTION FAILURE ERROR MODAL -->
+    <div x-show="isErrorOpen" 
+         x-cloak
+         class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0">
+         
+         <div class="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl flex flex-col items-center text-center gap-5 border border-slate-100 relative"
+              x-show="isErrorOpen"
+              x-transition:enter="transition ease-out duration-300 transform"
+              x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+              x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+              x-transition:leave="transition ease-in duration-200 transform"
+              x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+              x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95">
+              
+              <!-- Error Icon -->
+              <div class="w-16 h-16 rounded-full bg-red-50 border-2 border-red-500 text-red-500 flex items-center justify-center shrink-0 shadow-md">
+                  <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                  </svg>
+              </div>
+
+              <!-- Content -->
+              <div class="flex flex-col gap-1.5">
+                  <h3 class="text-xl font-bold text-[#B91C1C]">Return Failed</h3>
+                  <p class="text-xs text-[#64748B] font-semibold leading-relaxed px-4" x-text="errorMessage">
+                      An error occurred during submission. Please check conditions and try again.
+                  </p>
+              </div>
+
+              <button type="button" 
+                      @click="isErrorOpen = false" 
+                      class="w-full h-11 bg-slate-100 hover:bg-slate-200 text-[#64748B] font-bold rounded-2xl text-xs uppercase tracking-wider transition-colors focus:outline-none">
+                  Dismiss
+              </button>
+         </div>
+    </div>
+
+    <script>
+        function completedModalHandler() {
+            return {
+                isOpen: false,
+                isErrorOpen: false,
+                errorMessage: '',
+                countdown: 3,
+                timeRemaining: 3.0,
+                dashOffset: 0,
+                redirectUrl: '',
+                timer: null,
+
+                triggerModal(detail) {
+                    this.redirectUrl = detail.redirectUrl;
+                    this.isOpen = true;
+                    this.countdown = 3;
+                    this.timeRemaining = 3.0;
+                    this.dashOffset = 0;
+
+                    // Clear any existing timer
+                    if (this.timer) clearInterval(this.timer);
+
+                    const intervalMs = 100;
+                    const totalDuration = 3000;
+                    let elapsed = 0;
+
+                    this.timer = setInterval(() => {
+                        elapsed += intervalMs;
+                        this.timeRemaining = Math.max(0, (totalDuration - elapsed) / 1000);
+                        this.countdown = Math.ceil(this.timeRemaining);
+                        // Progress ring offset goes from 0 (fully drawn) to 214 (fully empty)
+                        this.dashOffset = (elapsed / totalDuration) * 214;
+
+                        if (elapsed >= totalDuration) {
+                            clearInterval(this.timer);
+                            // SPA style redirect
+                            if (window.Livewire) {
+                                window.Livewire.navigate(this.redirectUrl);
+                            } else {
+                                window.location.href = this.redirectUrl;
+                            }
+                        }
+                    }, intervalMs);
+                },
+
+                triggerErrorModal(detail) {
+                    this.errorMessage = detail.message || 'An unexpected database error occurred.';
+                    this.isErrorOpen = true;
+                }
+            }
+        }
+
+        // Global network interceptor for client/server connection dropouts (supports wire:navigate)
+        function registerLivewireHooks() {
+            const hookCallback = ({ fail }) => {
+                fail(({ status, content, preventDefault }) => {
+                    window.dispatchEvent(new CustomEvent('return-failed', {
+                        detail: { message: 'A server connection or database error occurred (Status: ' + status + '). Please verify network status and try again.' }
+                    }));
+                    preventDefault();
+                });
+            };
+
+            if (window.Livewire) {
+                Livewire.hook('request', hookCallback);
+            } else {
+                document.addEventListener('livewire:init', () => {
+                    Livewire.hook('request', hookCallback);
+                });
+            }
+        }
+        registerLivewireHooks();
+    </script>
 </div>

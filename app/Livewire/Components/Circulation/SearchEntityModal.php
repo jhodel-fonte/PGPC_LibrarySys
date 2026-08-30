@@ -16,6 +16,12 @@ class SearchEntityModal extends Component
     public $memberCount = 0;
     public $bookCount = 0;
     public $perPage = 5;
+    public $service = 'check-in'; // check-in or check-out
+
+    public function mount($service = 'check-in')
+    {
+        $this->service = $service;
+    }
 
     #[On('open-search-modal')]
     public function openModal()
@@ -65,17 +71,29 @@ class SearchEntityModal extends Component
 
     public function loadInitialData()
     {
-        $this->memberCount = Student::whereHas('borrowingTransactions', function($q) {
-            $q->whereNull('return_date');
-        })->count();
-        if ($this->memberCount === 0) {
+        $isCheckIn = ($this->service === 'check-in');
+
+        // Count Members
+        if ($isCheckIn) {
+            $this->memberCount = Student::whereHas('borrowingTransactions', function($q) {
+                $q->whereNull('return_date');
+            })->count();
+            if ($this->memberCount === 0) {
+                $this->memberCount = Student::count();
+            }
+        } else {
             $this->memberCount = Student::count();
         }
 
-        $this->bookCount = Book::whereHas('borrowingTransactions', function($q) {
-            $q->whereNull('return_date');
-        })->count();
-        if ($this->bookCount === 0) {
+        // Count Books
+        if ($isCheckIn) {
+            $this->bookCount = Book::whereHas('borrowingTransactions', function($q) {
+                $q->whereNull('return_date');
+            })->count();
+            if ($this->bookCount === 0) {
+                $this->bookCount = Book::count();
+            }
+        } else {
             $this->bookCount = Book::count();
         }
 
@@ -83,16 +101,24 @@ class SearchEntityModal extends Component
 
         // 1. Fetch Members ordered alphabetically by last_name, first_name
         if ($this->activeTab === 'all' || $this->activeTab === 'members') {
-            $students = Student::with(['libraryStatus', 'account'])
-                ->whereHas('borrowingTransactions', function($q) {
-                    $q->whereNull('return_date');
-                })
-                ->orderBy('last_name')
-                ->orderBy('first_name')
-                ->limit($this->perPage)
-                ->get();
+            if ($isCheckIn) {
+                $students = Student::with(['libraryStatus', 'account'])
+                    ->whereHas('borrowingTransactions', function($q) {
+                        $q->whereNull('return_date');
+                    })
+                    ->orderBy('last_name')
+                    ->orderBy('first_name')
+                    ->limit($this->perPage)
+                    ->get();
 
-            if ($students->isEmpty()) {
+                if ($students->isEmpty()) {
+                    $students = Student::with(['libraryStatus', 'account'])
+                        ->orderBy('last_name')
+                        ->orderBy('first_name')
+                        ->limit($this->perPage)
+                        ->get();
+                }
+            } else {
                 $students = Student::with(['libraryStatus', 'account'])
                     ->orderBy('last_name')
                     ->orderBy('first_name')
@@ -116,19 +142,30 @@ class SearchEntityModal extends Component
 
         // 2. Fetch Books ordered alphabetically by title
         if ($this->activeTab === 'all' || $this->activeTab === 'books') {
-            $books = Book::with(['bookDetail.bookData.authors'])
-                ->whereHas('bookDetail.bookData')
-                ->whereHas('borrowingTransactions', function($q) {
-                    $q->whereNull('return_date');
-                })
-                ->join('book_details', 'books.book_detail_id', '=', 'book_details.id')
-                ->join('book_datas', 'book_details.book_data_id', '=', 'book_datas.id')
-                ->orderBy('book_datas.book_title')
-                ->select('books.*')
-                ->limit($this->perPage)
-                ->get();
+            if ($isCheckIn) {
+                $books = Book::with(['bookDetail.bookData.authors'])
+                    ->whereHas('bookDetail.bookData')
+                    ->whereHas('borrowingTransactions', function($q) {
+                        $q->whereNull('return_date');
+                    })
+                    ->join('book_details', 'books.book_detail_id', '=', 'book_details.id')
+                    ->join('book_datas', 'book_details.book_data_id', '=', 'book_datas.id')
+                    ->orderBy('book_datas.book_title')
+                    ->select('books.*')
+                    ->limit($this->perPage)
+                    ->get();
 
-            if ($books->isEmpty()) {
+                if ($books->isEmpty()) {
+                    $books = Book::with(['bookDetail.bookData.authors'])
+                        ->whereHas('bookDetail.bookData')
+                        ->join('book_details', 'books.book_detail_id', '=', 'book_details.id')
+                        ->join('book_datas', 'book_details.book_data_id', '=', 'book_datas.id')
+                        ->orderBy('book_datas.book_title')
+                        ->select('books.*')
+                        ->limit($this->perPage)
+                        ->get();
+                }
+            } else {
                 $books = Book::with(['bookDetail.bookData.authors'])
                     ->whereHas('bookDetail.bookData')
                     ->join('book_details', 'books.book_detail_id', '=', 'book_details.id')

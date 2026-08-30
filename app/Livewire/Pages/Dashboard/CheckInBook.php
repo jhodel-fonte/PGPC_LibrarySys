@@ -26,69 +26,12 @@ class CheckInBook extends Component
         'returned' => 0,
         'remaining' => 0,
         'overdue' => 0,
+        'total_fine' => 0.00,
         'return_date' => ''
     ];
 
     public function mount()
     {
-        // Restore returning session state if librarian cancels/returns from confirmation page
-        if (session()->has('confirm_return_student_id')) {
-            $studentId = session('confirm_return_student_id');
-            $transactionIds = session('confirm_return_transaction_ids', []);
-
-            $student = Student::with('libraryStatus')->find($studentId);
-            if ($student) {
-                // Restore scannedMember details
-                $this->scannedMember = [
-                    'id' => $student->id,
-                    'name' => trim($student->first_name . ' ' . ($student->middle_name ? $student->middle_name . ' ' : '') . $student->last_name),
-                    'school_id' => $student->school_id_number,
-                    'course' => trim(($student->program ?? '') . ' - ' . ($student->year_level ?? '')),
-                    'status' => $student->libraryStatus ? $student->libraryStatus->status : 'Active'
-                ];
-
-                // Restore returnedBooks from transaction book IDs
-                $this->returnedBooks = BorrowingTransaction::whereIn('id', $transactionIds)
-                    ->pluck('book_id')
-                    ->toArray();
-
-                // Fetch their currently borrowed books (not yet returned)
-                $transactions = BorrowingTransaction::with(['book.bookDetail.bookData', 'book.bookDetail.bookData.authors'])
-                    ->where('school_id', $student->id)
-                    ->whereNull('return_date')
-                    ->get();
-
-                $this->borrowedBooks = $transactions->map(function ($t) {
-                    $book = $t->book;
-                    $detail = $book ? $book->bookDetail : null;
-                    $data = $detail ? $detail->bookData : null;
-                    $authorName = 'Unknown Author';
-                    if ($data && $data->authors->isNotEmpty()) {
-                        $authorName = $data->authors->map(function($a) {
-                            return trim($a->first_name . ' ' . $a->last_name);
-                        })->implode(', ');
-                    }
-
-                    $isPendingReturn = in_array($book->id, $this->returnedBooks);
-
-                    return [
-                        'transaction_id' => $t->id,
-                        'book_id' => $book ? $book->id : null,
-                        'book' => $data ? $data->book_title : 'Unknown Book',
-                        'author' => $authorName,
-                        'accession' => $book ? $book->accession_number : 'N/A',
-                        'code' => $data ? ($data->subtitle ?: 'BOOK') : 'BOOK',
-                        'borrowed_on' => $t->issued_date->format('M d, Y'),
-                        'due_date' => $t->due_date->format('M d, Y'),
-                        'status' => $isPendingReturn ? 'Returned' : 'Borrowed'
-                    ];
-                })->toArray();
-            }
-
-            // Forget session state to prevent infinite restoration loops
-            session()->forget(['confirm_return_student_id', 'confirm_return_transaction_ids']);
-        }
-
         $this->updateStats();
     }
 
@@ -105,24 +48,22 @@ class CheckInBook extends Component
         $code = trim($code);
         if (empty($code)) return;
 
-        // Security Hardening: Protect against XSS, script tags, and long buffer injection payloads
+        // Protect against XSS, script tags, and long buffer injection payloads
         $code = strip_tags($code);
         $code = htmlspecialchars($code, ENT_QUOTES, 'UTF-8');
-        $code = substr($code, 0, 50); // Cap input length to prevent huge injection payloads
+        $code = substr($code, 0, 50);
 
         // 1. Check if the code matches a member ID (Student table)
         $student = Student::with('libraryStatus')->where('school_id_number', $code)->first();
 
         if ($student) {
-            // Check if we need to confirm switching student due to active returns session
-            if ($this->scannedMember && $this->scannedMember['school_id'] !== $student->school_id_number && count($this->returnedBooks) > 0) {
-                $this->showConfirmChangeMember = true;
+            if ($this->scannedMember && !empty($this->returnedBooks) && $this->scannedMember['id'] !== $student->id) {
                 $this->pendingStudentId = $student->id;
                 $this->pendingStudentName = trim($student->first_name . ' ' . ($student->middle_name ? $student->middle_name . ' ' : '') . $student->last_name);
+                $this->showConfirmChangeMember = true;
                 $this->dispatch('clear-search-input');
                 return;
             }
-
             $this->loadMember($student);
             $this->dispatch('clear-search-input');
             return;
@@ -158,15 +99,13 @@ class CheckInBook extends Component
         }
 
         if ($isMemberFormat) {
-            // Check if we need to confirm switching student
-            if ($this->scannedMember && $this->scannedMember['school_id'] !== $code && count($this->returnedBooks) > 0) {
-                $this->showConfirmChangeMember = true;
+            if ($this->scannedMember && !empty($this->returnedBooks)) {
                 $this->pendingStudentId = 'unregistered';
-                $this->pendingStudentName = 'Unregistered Member (' . $code . ')';
+                $this->pendingStudentName = "Unregistered Member ($code)";
+                $this->showConfirmChangeMember = true;
                 $this->dispatch('clear-search-input');
                 return;
             }
-
             $this->scannedMember = [
                 'id' => null,
                 'name' => 'Unregistered Member',
@@ -177,6 +116,7 @@ class CheckInBook extends Component
             $this->borrowedBooks = [];
             $this->updateStats();
             $this->errorMessage = 'This member ID is not registered in the database.';
+            $this->dispatch('clear-search-input');
             return;
         }
 
@@ -358,6 +298,7 @@ class CheckInBook extends Component
                 'returned' => 0,
                 'remaining' => 0,
                 'overdue' => 0,
+                'total_fine' => 0.00,
                 'return_date' => Carbon::now()->format('M d, Y')
             ];
             return;
@@ -367,6 +308,7 @@ class CheckInBook extends Component
 
         $totalBorrowed = 0;
         $overdueCount = 0;
+        $totalFine = 0.00;
 
         if ($studentId) {
             // Count active borrowed books in database (which includes the ones in returnedBooks queue)
@@ -384,6 +326,13 @@ class CheckInBook extends Component
             foreach ($overdueTransactions as $ot) {
                 if (!in_array($ot->book_id, $this->returnedBooks)) {
                     $overdueCount++;
+                } else {
+                    // For the books that ARE scanned, calculate their fine
+                    $due = Carbon::parse($ot->due_date);
+                    if ($due->isPast()) {
+                        $overdueDays = $due->diffInDays(Carbon::now());
+                        $totalFine += $overdueDays * 20.00;
+                    }
                 }
             }
         }
@@ -395,6 +344,7 @@ class CheckInBook extends Component
             'returned' => $returnedCount,
             'remaining' => max(0, $totalBorrowed - $returnedCount),
             'overdue' => $overdueCount,
+            'total_fine' => $totalFine,
             'return_date' => Carbon::now()->format('M d, Y')
         ];
     }
