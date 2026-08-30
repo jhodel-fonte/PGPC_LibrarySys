@@ -14,12 +14,12 @@
                 // Count total and available copies
                 $totalCopies = 0;
                 $availableCopies = 0;
-                
+
                 if ($title->bookDetails) {
                     foreach ($title->bookDetails as $detail) {
                         if ($detail->books) {
                             $totalCopies += $detail->books->count();
-                            $availableCopies += $detail->books->where('status', 'Available')->count();
+                            $availableCopies += $detail->books->whereIn('status', ['available', 'Available'])->count();
                         }
                     }
                 }

@@ -6,7 +6,7 @@ use Livewire\Component;
 
 use Livewire\Attributes\Layout;
 
-#[Layout('layouts.admin', ['title' => 'Circulation Desk'])]
+#[Layout('components.layouts.admin', ['title' => 'Circulation Desk'])]
 class CirculationDesk extends Component
 {
     public function render()

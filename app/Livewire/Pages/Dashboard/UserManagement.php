@@ -10,7 +10,7 @@ use Livewire\WithPagination;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Lazy;
 
-#[Layout('layouts.admin', ['title' => 'User Management'])]
+#[Layout('components.layouts.admin', ['title' => 'User Management'])]
 #[Lazy]
 class UserManagement extends Component
 {
@@ -18,7 +18,7 @@ class UserManagement extends Component
 
     public $search = '';
     public $activeTab = 'All Users'; // 'All Users', 'Students', 'Librarians'
-    
+
     public array $sort = [
         'column' => 'id',
         'direction' => 'desc',
@@ -177,8 +177,8 @@ class UserManagement extends Component
         $totalStudents = Account::whereHas('role', function($q) { $q->where('name', 'Member'); })->count();
         $totalLibrarians = Account::whereHas('role', function($q) { $q->where('name', 'Librarian'); })->count();
         $activeAccounts = Account::whereHas('status', function($q) { $q->where('status_name', 'Active'); })->count();
-        $lockedAccounts = Account::whereHas('status', function($q) { 
-            $q->whereIn('status_name', ['Locked', 'Suspended']); 
+        $lockedAccounts = Account::whereHas('status', function($q) {
+            $q->whereIn('status_name', ['Locked', 'Suspended']);
         })->count();
 
         return view('livewire.pages.dashboard.user-management', [

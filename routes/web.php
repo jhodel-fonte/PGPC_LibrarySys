@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Route;
 
 // Route::view('/', 'pages.homepage.index');
-Route::view('/', 'test')->name('test');
+Route::view('/', 'main.homepage')->name('index');
 
 
 

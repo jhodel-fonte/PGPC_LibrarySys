@@ -13,7 +13,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
-#[Layout('layouts.admin', ['title' => 'Circulation Desk', 'subpage' => 'Check-Out / Borrow', 'activepageRoute' => 'admin.circulation-desk.index'])]
+#[Layout('components.layouts.admin', ['title' => 'Circulation Desk', 'subpage' => 'Check-Out / Borrow', 'activepageRoute' => 'admin.circulation-desk.index'])]
 class CheckOutBook extends Component
 {
     public $scannedMember = null;

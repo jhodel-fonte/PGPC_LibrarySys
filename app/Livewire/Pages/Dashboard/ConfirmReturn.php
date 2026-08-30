@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
-#[Layout('layouts.admin', ['title' => 'Circulation Desk', 'subpage' => 'Confirm Return', 'activepageRoute' => 'admin.circulation-desk.index'])]
+#[Layout('components.layouts.admin', ['title' => 'Circulation Desk', 'subpage' => 'Confirm Return', 'activepageRoute' => 'admin.circulation-desk.index'])]
 class ConfirmReturn extends Component
 {
     public $studentId;

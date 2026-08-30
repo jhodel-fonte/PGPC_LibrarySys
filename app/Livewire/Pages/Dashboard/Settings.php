@@ -7,11 +7,11 @@ use Livewire\Attributes\Layout;
 
 use App\Models\SystemSetting;
 
-#[Layout('layouts.admin')]
+#[Layout('components.layouts.admin')]
 class Settings extends Component
 {
     public $activeTab = 'general'; // general, circulation, content, notifications, ai, backup
-    
+
     // Hold settings values loaded from config/DB
     public $settings = [];
     public $originalSettings = [];
@@ -28,7 +28,7 @@ class Settings extends Component
 
         // Load system logs from private storage (local disk root is already storage/app/private in Laravel 11)
         $logsPath = 'system_logs.json';
-        $systemLogs = \Illuminate\Support\Facades\Storage::disk('local')->exists($logsPath) 
+        $systemLogs = \Illuminate\Support\Facades\Storage::disk('local')->exists($logsPath)
             ? json_decode(\Illuminate\Support\Facades\Storage::disk('local')->get($logsPath), true) : [];
 
         // Map DB keys back to the nested array structure expected by the Blade files
@@ -40,7 +40,7 @@ class Settings extends Component
                 'operating_hours' => json_decode($dbSettings['operating_hours'] ?? '[]', true) ?: config('pgpc.general.operating_hours'),
                 'closures' => json_decode($dbSettings['closures'] ?? '[]', true) ?: config('pgpc.general.closures'),
             ],
-            
+
             'circulation' => [
                 'borrowing_limits' => [
                     'Student' => $dbSettings['borrowing_limit_student'] ?? 3,
@@ -58,7 +58,7 @@ class Settings extends Component
                     'max_consecutive' => $dbSettings['max_renewals'] ?? 2,
                 ]
             ],
-            
+
             'content_legal' => [
                 'terms' => [
                     'content' => $dbSettings['terms_content'] ?? '',
@@ -79,13 +79,13 @@ class Settings extends Component
                     'require_acknowledgement' => filter_var($dbSettings['cookie_require_acknowledgement'] ?? false, FILTER_VALIDATE_BOOLEAN),
                 ]
             ],
-            
+
             'notifications' => [
                 'channels' => json_decode($dbSettings['notification_channels'] ?? '[]', true) ?: config('pgpc.notifications.channels'),
                 'templates' => json_decode($dbSettings['notification_templates'] ?? '[]', true) ?: config('pgpc.notifications.templates'),
                 'daily_cron' => $dbSettings['daily_cron_time'] ?? '01:00',
             ],
-            
+
             'ai_integrations' => [
                 'recommendation_service' => [
                     'url' => $dbSettings['ai_recommendation_url'] ?? 'http://127.0.0.1',
@@ -94,7 +94,7 @@ class Settings extends Component
                 ],
                 'confidence_threshold' => $dbSettings['ai_confidence_threshold'] ?? 65,
             ],
-            
+
             'backup' => [
                 'last_backup' => '2026-08-14 23:30:00'
             ],
@@ -112,11 +112,11 @@ class Settings extends Component
         // For this frontend mockup, we'll just change the tab
         $this->activeTab = $tab;
     }
-    
+
     public function discardChanges()
     {
         $this->settings = $this->originalSettings; // Revert immediately to snapshot
-        
+
         $this->dispatch('toast', message: 'Changes discarded.');
     }
 
@@ -137,16 +137,16 @@ class Settings extends Component
             }
 
             $categoryDirty = false;
-            
+
             if (is_array($categoryData)) {
                 foreach ($categoryData as $section => $value) {
                     $originalValue = $this->originalSettings[$category][$section] ?? null;
-                    
+
                     // Deep comparison
                     $isSectionDirty = json_encode($value) !== json_encode($originalValue);
-                    
+
                     $state['sections']["{$category}.{$section}"] = $isSectionDirty;
-                    
+
                     if ($isSectionDirty) {
                         $categoryDirty = true;
                     }
@@ -156,7 +156,7 @@ class Settings extends Component
             }
 
             $state['categories'][$category] = $categoryDirty;
-            
+
             if ($categoryDirty) {
                 $state['is_dirty'] = true;
             }
@@ -174,7 +174,7 @@ class Settings extends Component
             'system_phone' => $this->settings['general']['phone'],
             'operating_hours' => json_encode($this->settings['general']['operating_hours']),
             'closures' => json_encode($this->settings['general']['closures']),
-            
+
             'borrowing_limit_student' => $this->settings['circulation']['borrowing_limits']['Student'],
             'borrowing_limit_faculty' => $this->settings['circulation']['borrowing_limits']['Faculty'],
             'loan_duration_textbooks' => $this->settings['circulation']['loan_durations']['Textbooks'],
@@ -182,12 +182,12 @@ class Settings extends Component
             'loan_duration_reference' => $this->settings['circulation']['loan_durations']['Reference Materials'],
             'fine_rate_per_day' => $this->settings['circulation']['fine_rules']['daily_fine'],
             'max_renewals' => $this->settings['circulation']['renewal_limits']['max_consecutive'],
-            
+
 
             'notification_channels' => json_encode($this->settings['notifications']['channels']),
             'notification_templates' => json_encode($this->settings['notifications']['templates']),
             'daily_cron_time' => $this->settings['notifications']['daily_cron'],
-            
+
             'ai_recommendation_url' => $this->settings['ai_integrations']['recommendation_service']['url'],
             'ai_recommendation_port' => $this->settings['ai_integrations']['recommendation_service']['port'],
             'ai_confidence_threshold' => $this->settings['ai_integrations']['confidence_threshold'],
@@ -221,7 +221,7 @@ class Settings extends Component
             SystemSetting::updateOrCreate(['setting_key' => "{$policyType}_version"], ['setting_value' => $newVersion, 'setting_type' => 'integer']);
             SystemSetting::updateOrCreate(['setting_key' => "{$policyType}_updated_at"], ['setting_value' => now()->toDateTimeString(), 'setting_type' => 'string']);
             SystemSetting::updateOrCreate(['setting_key' => "{$policyType}_require_acknowledgement"], ['setting_value' => $requireAcknowledgement, 'setting_type' => 'boolean']);
-            
+
             // Clean up any pending updates
             SystemSetting::whereIn('setting_key', [
                 "pending_{$policyType}_content",

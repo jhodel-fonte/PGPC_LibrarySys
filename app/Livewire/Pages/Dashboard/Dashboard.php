@@ -11,10 +11,10 @@ use Livewire\Component;
 
 use Livewire\Attributes\Layout;
 
-#[Layout('layouts.admin', ['title' => 'Dashboard'])]
+#[Layout('components.layouts.admin', ['title' => 'Dashboard'])]
 class Dashboard extends Component
 {
-    
+
     public function render()
     {
         $activeMembers = Student::whereHas('libraryStatus', function ($query) {
