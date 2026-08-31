@@ -11,7 +11,7 @@ use Livewire\Component;
 
 use Livewire\Attributes\Layout;
 
-#[Layout('components.layouts.admin', ['title' => 'Dashboard'])]
+#[Layout('livewire.layouts.admin', ['title' => 'Dashboard'])]
 class Dashboard extends Component
 {
 

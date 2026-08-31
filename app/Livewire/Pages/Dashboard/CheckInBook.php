@@ -10,7 +10,7 @@ use App\Models\Book;
 use App\Models\BorrowingTransaction;
 use Carbon\Carbon;
 
-#[Layout('components.layouts.admin', ['title' => 'Circulation Desk', 'subpage' => 'Check-In / Return', 'activepageRoute' => 'admin.circulation-desk.index'])]
+#[Layout('livewire.layouts.admin', ['title' => 'Circulation Desk', 'subpage' => 'Check-In / Return', 'activepageRoute' => 'admin.circulation-desk.index'])]
 class CheckInBook extends Component
 {
     public $scannedMember = null;

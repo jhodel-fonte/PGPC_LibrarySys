@@ -12,6 +12,7 @@ Route::middleware(['auth', 'verified', 'role:Admin'])->prefix('admin')->name('ad
         Route::get('/', function () {
             return redirect()->route('admin.dashboard');
         });
+
         Route::get('/dashboard', \App\Livewire\Pages\Dashboard\Dashboard::class)->name('dashboard');
         Route::get('/user-management', \App\Livewire\Pages\Dashboard\UserManagement::class)->name('user-management');
 

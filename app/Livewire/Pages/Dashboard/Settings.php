@@ -7,7 +7,7 @@ use Livewire\Attributes\Layout;
 
 use App\Models\SystemSetting;
 
-#[Layout('components.layouts.admin')]
+#[Layout('livewire.layouts.admin')]
 class Settings extends Component
 {
     public $activeTab = 'general'; // general, circulation, content, notifications, ai, backup

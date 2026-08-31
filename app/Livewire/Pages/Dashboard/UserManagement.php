@@ -10,7 +10,7 @@ use Livewire\WithPagination;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Lazy;
 
-#[Layout('components.layouts.admin', ['title' => 'User Management'])]
+#[Layout('livewire.layouts.admin', ['title' => 'User Management'])]
 #[Lazy]
 class UserManagement extends Component
 {
