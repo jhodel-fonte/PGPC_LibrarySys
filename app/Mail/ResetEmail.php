@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Models\Account;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -10,16 +11,20 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class TestEmail extends Mailable
+class ResetEmail extends Mailable
 {
     use Queueable, SerializesModels;
+
+    public string $url;
+    public ?Account $user;
 
     /**
      * Create a new message instance.
      */
-    public function __construct()
+    public function __construct(string $url, ?Account $user = null)
     {
-        //
+        $this->url = $url;
+        $this->user = $user;
     }
 
     /**
@@ -28,7 +33,7 @@ class TestEmail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Test Email',
+            subject: 'Padre Garcia Polytechnic College Library - Reset Your Password',
         );
     }
 
@@ -38,7 +43,11 @@ class TestEmail extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'emails.test',
+            view: 'emails.reset-password',
+            with: [
+                'url' => $this->url,
+                'user' => $this->user,
+            ],
         );
     }
 

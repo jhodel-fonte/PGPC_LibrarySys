@@ -14,6 +14,10 @@ return [
     | as required, but they're a perfect start for most applications.
     |
     */
+    'otp' => [
+        'length' => 6,
+        'expiry' => 10, // in minutes
+    ],
 
     'defaults' => [
         'guard' => env('AUTH_GUARD', 'web'),

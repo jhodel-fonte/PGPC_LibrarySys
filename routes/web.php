@@ -1,5 +1,7 @@
 <?php
 
+use App\Mail\WelcomeEmail;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 
 // Route::view('/', 'pages.homepage.index');
@@ -30,6 +32,17 @@ Route::middleware(['auth', 'verified', 'role:Admin'])->prefix('admin')->name('ad
         Route::get('/settings', \App\Livewire\Pages\Dashboard\Settings::class)->name('settings');
         // Route::get('/profile', \App\Livewire\Pages\Dashboard\Profile::class)->name('profile');
         // Route::view('/profile', 'livewire.pages.admin.profile')->name('profile');
+});
+
+Route::get('/send-test-email', function () {
+    $recipient = 'jhcyrene@gmail.com';
+
+    try {
+        Mail::to($recipient)->send(new WelcomeEmail());
+        return "Email sent successfully to {$recipient}!";
+    } catch (\Throwable $e) {
+        return "Failed to send email. Error: " . $e->getMessage();
+    }
 });
 
 

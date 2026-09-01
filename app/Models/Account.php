@@ -61,6 +61,19 @@ class Account extends Authenticatable
         return $this->password_hash;
     }
 
+    /**
+     * Send the password reset notification using ResetEmail mailable.
+     */
+    public function sendPasswordResetNotification($token): void
+    {
+        $url = url(route('password.reset', [
+            'token' => $token,
+            'email' => $this->getEmailForPasswordReset(),
+        ], false));
+
+        \Illuminate\Support\Facades\Mail::to($this->email)->send(new \App\Mail\ResetEmail($url, $this));
+    }
+
     public function librarian()
     {
         return $this->hasOne(Librarian::class, 'account_id');

@@ -15,7 +15,7 @@
     <link rel="icon" href="{{ asset('logo.ico') }}" type="image/x-icon" alt="Padre Garcia Polytechnic College Campus"
         loading="lazy"
         decoding="async"
-        fetchpriority="low">
+    fetchpriority="low">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -26,7 +26,7 @@
     @livewireStyles
 </head>
 
-<body class="min-h-dvh bg-slate-100 font-sans text-slate-900 antialiased select-none cursor-default">
+<body class="min-h-dvh bg-slate-100 font-sans text-slate-900 antialiased selection:bg-[#FCC719] selection:text-[#102B70] select-none cursor-default">
 
     <!-- Preloader -->
     <x-preloader />
