@@ -1,5 +1,5 @@
-<div 
-    x-data="{ 
+<div
+    x-data="{
         isLoading: true,
         barProgress: 'w-0', // Starts at 0% width
         minDelay: 1000, // Minimum time in milliseconds (1.5 seconds)
@@ -10,18 +10,18 @@
             }, 50);
 
             const startTime = Date.now();
-            
+
             const hidePreloader = () => {
                 const elapsedTime = Date.now() - startTime;
                 const remainingTime = Math.max(0, this.minDelay - elapsedTime);
-                
+
                 setTimeout(() => {
                     // 2. Zip to 100% width when loading is done
-                    this.barProgress = 'w-full'; 
-                    
+                    this.barProgress = 'w-full';
+
                     // 3. Trigger the 3D zoom and fade exit
-                    this.isLoading = false; 
-                    document.getElementById('portal-content')?.classList.replace('opacity-0', 'opacity-100'); 
+                    this.isLoading = false;
+                    document.getElementById('portal-content')?.classList.replace('opacity-0', 'opacity-100');
                 }, remainingTime);
             };
 
@@ -34,7 +34,7 @@
     }"
 >
     <!-- Top Navigation Progress Bar -->
-    <div 
+    <div
         class="fixed top-0 left-0 h-[3px] bg-gradient-to-r from-[#fcc719] via-[#3b82f6] to-[#fcc719] z-[999999] pointer-events-none transition-all ease-out shadow-[0_0_10px_rgba(252,199,25,0.7)]"
         :class="[isLoading ? 'opacity-100 duration-[2000ms]' : 'opacity-0 duration-300', barProgress]"
     >
@@ -42,22 +42,22 @@
     </div>
 
     <!-- Main Background (Handles only the fade out) -->
-    <div 
+    <div
         :class="isLoading ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'"
         class="fixed inset-0 z-[9999] flex items-center justify-center bg-[#102b70] transition-all duration-700 ease-in-out motion-reduce:transition-none"
-        role="status" 
-        aria-label="Loading PGPC Library"
+        role="status"
+        aria-label="Loading Padre Garcia Polytechnic College Library System"
     >
-        
+
         <!-- EXTREME 3D ZOOM WRAPPER (Handles the logo flying at the camera) -->
-        <div 
+        <div
             :class="isLoading ? 'scale-100' : 'scale-[2] opacity-0'"
             class="transition-all duration-700 ease-in-out origin-center flex items-center justify-center"
         >
             <!-- Logo -->
-            <img 
+            <img
                 src="{{ asset('logo.webp') }}"
-                alt="PGPC logo" 
+                alt="PGPC logo"
                 class="rounded-full object-cover shadow-[0_22px_55px_rgba(0,0,0,0.22)] animate-pgpc-pulse motion-reduce:animate-none w-[clamp(130px,18dvw,210px)] h-[clamp(130px,18dvw,210px)]"
             >
         </div>

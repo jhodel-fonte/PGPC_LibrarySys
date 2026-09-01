@@ -1,4 +1,4 @@
-<x-layouts.app title="PGPC Library | Home">
+<x-layouts.app>
     hello
 
 

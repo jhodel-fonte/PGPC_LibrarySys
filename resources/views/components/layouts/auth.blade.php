@@ -11,7 +11,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="theme-color" content="#102b70">
 
-    <title>{{ $isStaff ? 'Staff Login' : 'Student Login' }} | PGPC Library</title>
+    <title>{{ $isStaff ? 'Staff Login' : 'Student Login' }} | Padre Garcia Polytechnic College Library System</title>
     <link rel="icon" href="{{ asset('logo.ico') }}" type="image/x-icon">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -49,8 +49,8 @@
                     class="h-12 w-12 object-contain"
                     onerror="this.src='{{ asset('images/logo.webp') }}'">
                 <div>
-                    <span class="block text-xs font-bold uppercase tracking-[0.18em] text-[#fcc719]">PGPC Library System</span>
                     <span class="block text-base font-semibold leading-tight">Padre Garcia Polytechnic College</span>
+                    <span class="block text-xs font-bold uppercase tracking-[0.18em] text-[#fcc719]">Library System</span>
                 </div>
             </a>
 
