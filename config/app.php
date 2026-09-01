@@ -13,7 +13,7 @@ return [
     |
     */
 
-    'name' => env('APP_NAME', 'PGPC Library'),
+    'name' => env('APP_NAME', 'Padre Garcia Polytechnic College Library System'),
 
     /*
     |--------------------------------------------------------------------------

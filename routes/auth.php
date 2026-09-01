@@ -4,12 +4,23 @@ use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
 
-Route::middleware('guest')->group(function () {
+Route::middleware('unauthenticated')->group(function () {
     Volt::route('register', 'pages.auth.register')
         ->name('register');
 
-    Volt::route('login', 'pages.auth.login')
+    // Student login at the base portal URL
+    Volt::route('/libraryportal', 'pages.auth.student-login')
         ->name('login');
+
+    // Employee login at the portal employee URL
+    Volt::route('/portal/employee', 'pages.auth.employee-login')
+        ->name('employee.login');
+
+
+    // Redirects for direct /login and /staff/login visits
+    Route::redirect('login', '/portal/student');
+    Route::redirect('staff/login', '/portal/employee');
+    Route::redirect('portal/staff', '/portal/employee');
 
     Volt::route('forgot-password', 'pages.auth.forgot-password')
         ->name('password.request');

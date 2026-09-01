@@ -1,0 +1,2 @@
+<x-auth.responseCard {{ $attributes }} />
+
