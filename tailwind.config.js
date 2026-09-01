@@ -47,19 +47,19 @@ export default {
             fontFamily: {
                 sans: ['Open Sans', 'Figtree', ...defaultTheme.fontFamily.sans],
             },
-        },
-        animation: {
-            'pgpc-pulse': 'pgpc-pulse 1.8s cubic-bezier(.4, 0, .6, 1) infinite',
-            'pgpc-spin': 'pgpc-spin 1.2s linear infinite',
-        },
-        keyframes: {
-            'pgpc-pulse': {
-                '0%, 100%': { transform: 'scale(1)' },
-                '50%': { transform: 'scale(1.035)' },
+            animation: {
+                'pgpc-pulse': 'pgpc-pulse 1.8s cubic-bezier(.4, 0, .6, 1) infinite',
+                'pgpc-spin': 'pgpc-spin 1.2s linear infinite',
             },
-            'pgpc-spin': {
-                'to': { transform: 'rotate(360deg)' },
-            }
+            keyframes: {
+                'pgpc-pulse': {
+                    '0%, 100%': { transform: 'scale(1)' },
+                    '50%': { transform: 'scale(1.035)' },
+                },
+                'pgpc-spin': {
+                    'to': { transform: 'rotate(360deg)' },
+                }
+            },
         },
     },
 

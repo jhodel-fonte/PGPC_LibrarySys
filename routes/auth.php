@@ -9,24 +9,30 @@ Route::middleware('unauthenticated')->group(function () {
         ->name('register');
 
     // Student login at the base portal URL
-    Volt::route('/libraryportal', 'pages.auth.student-login')
+    Volt::route('/student/', 'pages.auth.student-login')
         ->name('login');
 
     // Employee login at the portal employee URL
-    Volt::route('/portal/employee', 'pages.auth.employee-login')
+    Volt::route('/employee/', 'pages.auth.employee-login')
         ->name('employee.login');
 
 
     // Redirects for direct /login and /staff/login visits
-    Route::redirect('login', '/portal/student');
-    Route::redirect('staff/login', '/portal/employee');
-    Route::redirect('portal/staff', '/portal/employee');
+    Route::redirect('login', '/student/');
+    Route::redirect('staff/login', '/employee/');
+    Route::redirect('portal/staff', '/employee/');
 
     Volt::route('forgot-password', 'pages.auth.forgot-password')
         ->name('password.request');
 
     Volt::route('reset-password/{token}', 'pages.auth.reset-password')
         ->name('password.reset');
+
+    // Google OAuth
+    Route::get('/auth/google', [\App\Http\Controllers\Auth\GoogleAuthController::class, 'redirect'])
+        ->name('auth.google');
+    Route::get('/auth/google/callback', [\App\Http\Controllers\Auth\GoogleAuthController::class, 'callback'])
+        ->name('auth.google.callback');
 });
 
 Route::middleware('auth')->group(function () {

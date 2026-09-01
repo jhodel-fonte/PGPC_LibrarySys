@@ -14,7 +14,7 @@ class StudentSeeder extends Seeder
     public function run(): void
     {
         $now = Carbon::now();
-        
+
         // Find Patron accounts that don't have profiles yet
         $studentAccounts = DB::table('accounts')
             ->where('role_id', 4) // Patron
@@ -27,14 +27,17 @@ class StudentSeeder extends Seeder
 
         $firstNames = ['John', 'Jane', 'Mark', 'Mary', 'David', 'Sarah', 'James', 'Patricia', 'Robert', 'Jennifer'];
         $lastNames = ['Cruz', 'Santos', 'Reyes', 'Ramos', 'Aquino', 'Dela Cruz', 'Garcia', 'Torres', 'Diaz', 'Bautista'];
-        $programs = ['BSIT', 'BSCS', 'BSCE', 'BSEE', 'BSBA', 'BSHM'];
+        $programs = ['BSCS - Bachelor of Science in Computer Science',
+            'BS Crim - Bachelor of Science in Criminology',
+            'BSMA - Bachelor of Science in Management Accounting',
+            'BPA - Bachelor of Public Administration'];
         $years = ['1st Year', '2nd Year', '3rd Year', '4th Year'];
 
         $students = [];
         foreach ($studentAccounts as $index => $account) {
             $firstName = $firstNames[$index % count($firstNames)];
             $lastName = $lastNames[$index % count($lastNames)];
-            
+
             $students[] = [
                 'account_id' => $account->id,
                 'school_id_number' => sprintf('2026-%04d', $index + 1001),

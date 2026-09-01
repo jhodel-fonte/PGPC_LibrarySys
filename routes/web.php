@@ -5,7 +5,6 @@ use Illuminate\Support\Facades\Route;
 // Route::view('/', 'pages.homepage.index');
 Route::view('/', 'main.index')->name('index');
 
-Route::view('/portal', 'main.portal')->name('portal');//
 
 
 Route::middleware(['auth', 'verified', 'role:Admin'])->prefix('admin')->name('admin.')->group(function () {

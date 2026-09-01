@@ -1,6 +1,21 @@
 <?php
 
 return [
+    'college' => [
+        'name' => 'Padre Garcia Polytechnic College',
+        'abbreviation' => 'PGPC',
+        'address' => 'Brgy. San Roque, Padre Garcia, Batangas, Philippines',
+
+        'programs' => [
+            'BSCS' => 'Bachelor of Science in Computer Science',
+            'BS Crim' => 'Bachelor of Science in Criminology',
+            'BSMA' => 'Bachelor of Science in Management Accounting',
+            'BPA' => 'Bachelor of Public Administration',
+        ],
+
+    ],
+
+
     'accepted_formats' => [
         'member' => [
             'patterns' => [
@@ -18,6 +33,7 @@ return [
             ],
         ],
     ],
+
     'qrcode_customization' => [
         'theme' => [
             'primary_color' => '#102B70',
