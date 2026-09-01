@@ -27,7 +27,7 @@ class BookSeeder extends Seeder
                 'book_detail_id' => $detail->id,
                 'book_condition_id' => 1, // New (corresponds to BookConditionSeeder ID 1)
                 'accession_number' => sprintf('ACC-%05d', $copyNum),
-                'barcode' => sprintf('978%010d', rand(1000000000, 9999999999)),
+                'code' => sprintf('978%010d', rand(1000000000, 9999999999)),
                 'location' => 'Shelf A-' . rand(1, 5),
                 'status' => 'available',
                 'date_acquired' => (clone $now)->subMonths(6)->toDateString(),
@@ -42,7 +42,7 @@ class BookSeeder extends Seeder
                 'book_detail_id' => $detail->id,
                 'book_condition_id' => 2, // Good (corresponds to BookConditionSeeder ID 2)
                 'accession_number' => sprintf('ACC-%05d', $copyNum),
-                'barcode' => sprintf('978%010d', rand(1000000000, 9999999999)),
+                'code' => sprintf('978%010d', rand(1000000000, 9999999999)),
                 'location' => 'Shelf B-' . rand(1, 5),
                 'status' => 'available',
                 'date_acquired' => (clone $now)->subMonths(12)->toDateString(),

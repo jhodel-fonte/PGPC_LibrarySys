@@ -16,7 +16,7 @@ class Book extends Model
         'book_detail_id',
         'book_condition_id',
         'accession_number',
-        'barcode',
+        'code',
         'location',
         'status',
         'date_acquired',

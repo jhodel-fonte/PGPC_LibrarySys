@@ -18,7 +18,7 @@ return new class extends Migration
 
             // Inventory Tracking Columns
             $table->string('accession_number')->unique();
-            $table->string('barcode')->unique()->nullable();
+            $table->string('code')->unique()->nullable();
 
             // Physical Location and Status
             $table->string('location')->nullable();

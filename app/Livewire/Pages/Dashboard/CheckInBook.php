@@ -69,9 +69,9 @@ class CheckInBook extends Component
             return;
         }
 
-        // 2. Check if the code matches a book (barcode or accession_number)
-        $book = Book::where('barcode', $code)
-            ->orWhere('accession_number', $code)
+        // 2. Check if the code matches a book accession number or unique code
+        $book = Book::where('accession_number', $code)
+            ->orWhere('code', $code)
             ->first();
 
         if ($book) {

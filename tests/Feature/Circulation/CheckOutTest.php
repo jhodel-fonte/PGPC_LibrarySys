@@ -58,7 +58,7 @@ class CheckOutTest extends TestCase
             'book_detail_id' => $bookDetail->id,
             'book_condition_id' => 2, // Good
             'accession_number' => 'ACC-999',
-            'barcode' => 'BAR-999',
+            'code' => 'BAR-999',
             'status' => 'available',
             'location' => 'Shelf A'
         ]);

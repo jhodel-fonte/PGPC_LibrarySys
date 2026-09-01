@@ -70,7 +70,7 @@
         <div class="flex items-start justify-between px-6 py-4 border-b border-[#E2E8F0] bg-slate-50 shrink-0">
             <div class="flex flex-col">
                 <h3 class="text-base font-bold text-[#102B70] tracking-tight">Search Member or Book</h3>
-                <p class="text-[11px] text-[#64748B] font-medium mt-0.5">Search by name, ID, email, barcode, title, author, or accession number</p>
+                <p class="text-[11px] text-[#64748B] font-medium mt-0.5">Search by name, ID, email, code, title, author, or accession number</p>
             </div>
             <button type="button"
                     @click="open = false"
@@ -294,7 +294,7 @@
                                         <div class="min-w-0">
                                             <h4 class="font-bold text-[14px] text-[#0F172A] leading-snug truncate">{{ $item['title'] }}</h4>
                                             <p class="text-xs text-[#64748B] font-medium mt-1 truncate">{{ $item['subtitle'] }}</p>
-                                            <p class="text-[11px] text-[#94A3B8] font-medium mt-0.5 truncate">Barcode: {{ $item['barcode'] }}</p>
+                                            <p class="text-[11px] text-[#94A3B8] font-medium mt-0.5 truncate">Code: {{ $item['barcode'] }}</p>
                                         </div>
                                     </div>
 

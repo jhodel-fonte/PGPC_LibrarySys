@@ -93,8 +93,8 @@
                     </div>
 
                     <livewire:components.circulation.qr-search-bar
-                        label="Member ID / Barcode"
-                        placeholder="Enter or scan member ID or book barcode"
+                        label="Member ID / Code"
+                        placeholder="Enter or scan member ID or book code"
                     />
 
                     @if($errorMessage)
@@ -185,7 +185,7 @@
                                         </svg>
                                     </div>
                                     <span class="text-xs font-bold text-[#64748B] uppercase tracking-wider">No Book Scanned</span>
-                                    <p class="text-[10px] text-[#94A3B8] max-w-[180px] leading-normal">Scan a book barcode to mark it as returned in this session.</p>
+                                    <p class="text-[10px] text-[#94A3B8] max-w-[180px] leading-normal">Scan a book code to mark it as returned in this session.</p>
                                 </div>
                             @endif
                         </div>

@@ -1,5 +1,5 @@
-@extends('errors::minimal')
-
-@section('title', __('Payment Required'))
-@section('code', '402')
-@section('message', __('Payment Required'))
+<x-layouts.error
+    code="402"
+    title="Payment Required"
+    message="Sorry, you need to make a payment to access this page."
+/>

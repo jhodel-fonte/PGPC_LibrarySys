@@ -12,6 +12,7 @@ use Livewire\Component;
 use Livewire\Attributes\Layout;
 
 #[Layout('livewire.layouts.admin', ['title' => 'Dashboard'])]
+#[LazyLoading]
 class Dashboard extends Component
 {
 

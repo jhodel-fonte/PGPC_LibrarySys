@@ -196,10 +196,10 @@ class SearchEntityModal extends Component
                 $results[] = [
                     'type' => 'book',
                     'id' => $book->id,
-                    'code' => $book->accession_number ?: $book->barcode,
+                    'code' => $book->accession_number ?: $book->code,
                     'title' => $data ? $data->book_title : 'Unknown Book',
                     'subtitle' => trim($authorName . ' · Accession No. ' . ($book->accession_number ?? 'N/A')),
-                    'barcode' => $book->barcode,
+                    'barcode' => $book->code,
                     'code_tag' => $codeInitials ?: 'BOOK',
                     'icon' => 'book-open'
                 ];
@@ -228,7 +228,7 @@ class SearchEntityModal extends Component
         $this->memberCount = $membersQuery->count();
 
         // Build book query to count matches
-        $booksQuery = Book::where('barcode', 'ilike', "%{$query}%")
+        $booksQuery = Book::where('code', 'ilike', "%{$query}%")
             ->orWhere('accession_number', 'ilike', "%{$query}%")
             ->orWhereHas('bookDetail.bookData', function($q) use ($query) {
                 $q->where('book_title', 'ilike', "%{$query}%");
@@ -278,10 +278,10 @@ class SearchEntityModal extends Component
                 $results[] = [
                     'type' => 'book',
                     'id' => $book->id,
-                    'code' => $book->accession_number ?: $book->barcode,
+                    'code' => $book->accession_number ?: $book->code,
                     'title' => $data ? $data->book_title : 'Unknown Book',
                     'subtitle' => trim($authorName . ' · Accession No. ' . ($book->accession_number ?? 'N/A')),
-                    'barcode' => $book->barcode,
+                    'barcode' => $book->code,
                     'code_tag' => $codeInitials ?: 'BOOK',
                     'icon' => 'book-open'
                 ];

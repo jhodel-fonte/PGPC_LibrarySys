@@ -8,27 +8,27 @@
 <!-- Single Root Element for Livewire -->
 <div class="relative z-50">
     <!-- Sidebar Overlay (Click to close sidebar on mobile) -->
-    <div 
-        x-show="sidebarOpen" 
-        @click="sidebarOpen = false" 
+    <div
+        x-show="sidebarOpen"
+        @click="sidebarOpen = false"
         x-transition.opacity.duration.300ms
         class="fixed inset-0 bg-black/60 backdrop-blur-sm md:hidden z-40"
         style="display: none;"
     ></div>
 
     <!-- Main Vertical Sidebar -->
-    <aside 
+    <aside
         :class="[
             sidebarOpen ? 'translate-x-0' : '-translate-x-full',
             sidebarMinimized ? 'md:w-[80px]' : 'md:w-[280px]'
         ]"
         class="fixed inset-y-0 left-0 w-[280px] bg-navy-primary text-white flex flex-col transition-all duration-300 ease-in-out md:translate-x-0 z-50 shadow-[4px_0_24px_rgba(0,0,0,0.15)] overflow-hidden h-dvh"
     >
-        
+
         <!-- Header / Logo Area -->
         <div class="min-h-[60px] pt-6 px-4 flex items-center justify-between shrink-0" :class="sidebarMinimized ? 'justify-center' : ''">
             <x-brand-title href="{{ route('admin.dashboard') }}" />
-            
+
             <!-- Close Button for Mobile -->
             <button @click="sidebarOpen = false" class="md:hidden p-1.5 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors focus:outline-none shrink-0">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -39,7 +39,7 @@
 
         <!-- Scrollable Navigation Links -->
         <nav class="flex-1 overflow-y-auto py-6 px-3 space-y-1 custom-scrollbar">
-            
+
             <!-- Dashboard Link (Active State Example) -->
             <x-sidebar-button href="{{ route('admin.dashboard') }}" :active="request()->routeIs('admin.dashboard')" class="mb-3" wire:navigate>
                 <x-slot:icon>
@@ -54,7 +54,7 @@
             <div class="px-2 mt-6 mb-2" x-show="!sidebarMinimized" x-transition.opacity.duration.300ms>
                 <span class="text-[11px] font-bold text-white/40 uppercase tracking-widest">Circulation</span>
             </div>
-            
+
             <x-sidebar-button href="{{ route('admin.circulation-desk.index') }}" :active="request()->routeIs('admin.circulation-desk.*')" class="mb-6" wire:navigate>
                 <x-slot:icon>
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -78,7 +78,7 @@
                 <span class="text-[11px] font-bold text-white/40 uppercase tracking-widest">Catalog</span>
             </div>
 
-            <x-sidebar-button href="#">
+            <x-sidebar-button href="{{ route('admin.book-management.index') }}" :active="request()->routeIs('admin.book-management.*')" class="mb-3" wire:navigate>
                 <x-slot:icon>
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
@@ -86,7 +86,7 @@
                 </x-slot:icon>
                 Books
                 <x-slot:subitems>
-                    <x-sidebar-subitem href="#" wire:navigate>Cataloging</x-sidebar-subitem>
+                    <x-sidebar-subitem href="{{ route('admin.book-management.index') }}" wire:navigate>Cataloging</x-sidebar-subitem>
                     <x-sidebar-subitem href="#" wire:navigate>Add New Book</x-sidebar-subitem>
                     <x-sidebar-subitem href="#" wire:navigate>Book Import</x-sidebar-subitem>
                     <x-sidebar-subitem href="#" wire:navigate>Categories</x-sidebar-subitem>
@@ -136,7 +136,7 @@
                 Settings
             </x-sidebar-button>
         </nav>
-            
+
     </aside>
 
     <!-- Custom Scrollbar Styles for the Sidebar -->

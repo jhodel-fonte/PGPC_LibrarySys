@@ -88,7 +88,7 @@
             @elseif($stats['returned'] == 0)
                 <!-- State when member is loaded but no books have been scanned yet -->
                 <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex flex-col gap-0.5 text-center items-center justify-center">
-                    <span class="text-[11px] text-[#64748B] font-semibold leading-normal">Scan a book barcode to begin return</span>
+                    <span class="text-[11px] text-[#64748B] font-semibold leading-normal">Scan a book code to begin return</span>
                 </div>
 
                 <button disabled class="w-full h-12 bg-slate-100 text-slate-400 rounded-xl font-bold flex items-center justify-center cursor-not-allowed text-xs uppercase tracking-wider">

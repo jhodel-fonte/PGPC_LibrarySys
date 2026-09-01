@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Route;
 
 // Route::view('/', 'pages.homepage.index');
-Route::view('/', 'main.homepage')->name('index');
+Route::view('/', 'main.index')->name('index');
 
 
 
@@ -21,6 +21,10 @@ Route::middleware(['auth', 'verified', 'role:Admin'])->prefix('admin')->name('ad
             Route::get('/return', \App\Livewire\Pages\Dashboard\CheckInBook::class)->name('return');
             Route::get('/return/confirm', \App\Livewire\Pages\Dashboard\ConfirmReturn::class)->name('return.confirm');
             Route::get('/borrow', \App\Livewire\Pages\Dashboard\CheckOutBook::class)->name('borrow');
+        });
+
+        Route::prefix('book-management')->name('book-management.')->group(function () {
+            Route::get('/', \App\Livewire\Pages\Dashboard\BookManager::class)->name('index');
         });
 
         Route::get('/settings', \App\Livewire\Pages\Dashboard\Settings::class)->name('settings');

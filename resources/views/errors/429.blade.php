@@ -1,5 +1,5 @@
-@extends('errors::minimal')
-
-@section('title', __('Too Many Requests'))
-@section('code', '429')
-@section('message', __('Too Many Requests'))
+<x-layouts.error
+    code="429"
+    title="Too Many Requests"
+    message="Sorry, you are making too many requests to this page."
+/>

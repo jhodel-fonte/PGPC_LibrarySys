@@ -68,8 +68,11 @@ class CheckOutBook extends Component
                 ->count();
 
             $maxLimit = 3;
-            $this->stats['remaining_slots'] = max(0, $maxLimit - $activeBorrowedCount);
-            $this->stats['borrow_limit_reached'] = ($activeBorrowedCount >= $maxLimit);
+            $currentQueuedCount = count($this->checkoutBooks);
+            $totalAssigned = $activeBorrowedCount + $currentQueuedCount;
+
+            $this->stats['remaining_slots'] = max(0, $maxLimit - $totalAssigned);
+            $this->stats['borrow_limit_reached'] = ($totalAssigned >= $maxLimit);
         } else {
             $this->stats['overdue_count'] = 0;
             $this->stats['unpaid_fines'] = 0.00;
@@ -107,9 +110,9 @@ class CheckOutBook extends Component
             return;
         }
 
-        // 2. Check if the code matches a book barcode or accession number
-        $book = Book::where('barcode', $code)
-            ->orWhere('accession_number', $code)
+        // 2. Check if the code matches a book accession number or unique code
+        $book = Book::where('accession_number', $code)
+            ->orWhere('code', $code)
             ->first();
 
         if ($book) {
@@ -195,9 +198,12 @@ class CheckOutBook extends Component
         }
 
         // Validation 6: Borrow slots limit capacity check
+        $activeBorrowedCount = BorrowingTransaction::where('school_id', $this->scannedMember['id'])
+            ->whereNull('return_date')
+            ->count();
         $totalQueued = count($this->checkoutBooks);
-        if ($totalQueued >= $this->stats['remaining_slots']) {
-            $this->errorMessage = 'Cannot add book: Max borrowing capacity reached. Remaining borrow slots: ' . $this->stats['remaining_slots'];
+        if (($activeBorrowedCount + $totalQueued) >= 3) {
+            $this->errorMessage = 'Cannot add book: Max borrowing capacity reached (limit is 3 active loans).';
             return;
         }
 

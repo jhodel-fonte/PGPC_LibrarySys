@@ -37,7 +37,7 @@ class getStudentBorrow extends TestCase
             'book_detail_id' => $bookDetail->id,
             'book_condition_id' => 2,
             'accession_number' => 'ACC-777',
-            'barcode' => 'BAR-777',
+            'code' => 'BAR-777',
             'status' => 'borrowed'
         ]);
 
