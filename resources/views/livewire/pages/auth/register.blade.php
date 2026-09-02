@@ -60,7 +60,11 @@ new #[Layout('components.layouts.register-auth')] class extends Component
 
             $this->redirect(url('/'), navigate: false);
         } catch (\Illuminate\Validation\ValidationException $e) {
+            $this->dispatch('registration-failed');
             $this->dispatch('scroll-to-error');
+            throw $e;
+        } catch (\Throwable $e) {
+            $this->dispatch('registration-failed');
             throw $e;
         }
     }
@@ -69,6 +73,7 @@ new #[Layout('components.layouts.register-auth')] class extends Component
 <!-- Elevated White Card Container (rounded-2xl matching Employee & Student portals) -->
 <div
     x-data="{
+        isRegistering: false,
         scrollToError() {
             setTimeout(() => {
                 const firstError = document.querySelector('[data-error-field], [data-error-for]:not(.hidden), .text-red-600:not(:empty)');
@@ -82,6 +87,8 @@ new #[Layout('components.layouts.register-auth')] class extends Component
             }, 80);
         }
     }"
+    @registration-failed.window="isRegistering = false"
+    x-on:livewire:error.window="isRegistering = false"
     @scroll-to-error.window="scrollToError()"
     class="w-full rounded-2xl border border-slate-200/80 bg-white p-7 sm:p-9 md:p-10 shadow-xl shadow-slate-200/70 select-none"
 >
@@ -113,7 +120,7 @@ new #[Layout('components.layouts.register-auth')] class extends Component
         </div>
     @endif
 
-    <form wire:submit="register" novalidate class="space-y-6">
+    <form wire:submit="register" @submit="isRegistering = true" novalidate class="space-y-6">
         <!-- Section 1: Student Information -->
         <fieldset class="space-y-4">
             <legend class="mb-3 flex w-full items-center gap-2.5 pb-2 text-[14px] font-bold text-slate-900 border-b border-slate-100">
@@ -443,17 +450,16 @@ new #[Layout('components.layouts.register-auth')] class extends Component
         <div class="pt-2">
             <button
                 type="submit"
-                wire:loading.attr="disabled"
-                wire:target="register"
+                :disabled="isRegistering"
                 class="group flex h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-[#102b70] px-5 text-[15px] font-semibold text-white shadow-md shadow-blue-900/10 transition hover:-translate-y-0.5 hover:bg-[#0b225e] hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-blue-200 active:translate-y-0 disabled:opacity-75 disabled:cursor-not-allowed"
             >
-                <span wire:loading.remove wire:target="register" class="inline-flex items-center gap-2">
+                <span x-show="!isRegistering" class="inline-flex items-center gap-2">
                     Create student account
                     <svg class="h-4 w-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                     </svg>
                 </span>
-                <span wire:loading.flex wire:target="register" class="items-center justify-center gap-2.5">
+                <span x-show="isRegistering" style="display: none;" class="inline-flex items-center justify-center gap-2.5">
                     <span class="inline-block h-4 w-4 animate-spin animate-pgpc-spin rounded-full border-2 border-white/30 border-t-white"></span>
                     <span>Creating account...</span>
                 </span>
@@ -484,8 +490,8 @@ new #[Layout('components.layouts.register-auth')] class extends Component
     </div>
 
     <!-- Bottom Link -->
-    <div class="mt-7 pt-6 border-t border-slate-200 text-center">
-        <p class="text-[14px] text-slate-500">
+    <div class="mt-3 text-center">
+        <p class="text-[14px] text-slate-600">
             Already have an account?
             <a href="{{ route('login') }}" class="ml-1 font-semibold text-[#102b70] underline underline-offset-4 transition hover:text-blue-800" wire:navigate>
                 Sign in

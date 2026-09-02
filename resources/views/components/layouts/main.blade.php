@@ -21,7 +21,7 @@
     @livewireStyles
 </head>
 
-<body class="antialiased font-sans min-h-dvh flex flex-col relative overflow-x-hidden bg-[#071943] text-slate-100 selection:bg-[#FCC719] selection:text-[#102B70]">
+<body class="antialiased font-sans min-h-dvh flex flex-col relative overflow-x-hidden bg-[#071943] text-slate-100">
 
     <!-- Preloader -->
     <x-preloader />

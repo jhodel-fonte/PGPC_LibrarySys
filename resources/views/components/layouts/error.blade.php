@@ -25,7 +25,7 @@
     <tallstackui:script />
 </head>
 
-<body class="antialiased font-sans h-full w-full overflow-hidden bg-slate-50 text-slate-900 selection:bg-[#FCC719] selection:text-[#102B70] flex items-center justify-center">
+<body class="antialiased font-sans h-full w-full overflow-hidden bg-slate-50 text-slate-900 flex items-center justify-center">
     <main class="relative flex h-full w-full flex-col items-center justify-center overflow-hidden px-4 py-6 text-center">
 
         <div class="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-blue-100/60 blur-3xl sm:h-96 sm:w-96"></div>

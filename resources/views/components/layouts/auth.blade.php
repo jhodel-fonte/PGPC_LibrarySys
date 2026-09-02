@@ -11,7 +11,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="theme-color" content="#102b70">
 
-    <title>{{ $isStaff ? 'Staff Login' : 'Student Login' }} | Padre Garcia Polytechnic College Library System</title>
+    <title>{{ $isStaff ? 'Staff Login' : 'Student Login' }} | PGPC Library</title>
     <link rel="icon" href="{{ asset('logo.ico') }}" type="image/x-icon" alt="Padre Garcia Polytechnic College Campus"
         loading="lazy"
         decoding="async"
@@ -26,7 +26,7 @@
     @livewireStyles
 </head>
 
-<body class="min-h-dvh bg-slate-100 font-sans text-slate-900 antialiased selection:bg-[#FCC719] selection:text-[#102B70] select-none cursor-default">
+<body class="min-h-dvh bg-slate-100 font-sans text-slate-900 antialiased select-none cursor-default">
 
     <!-- Preloader -->
     <x-preloader />

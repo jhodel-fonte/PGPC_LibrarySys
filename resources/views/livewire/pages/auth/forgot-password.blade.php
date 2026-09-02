@@ -92,11 +92,7 @@
         @else
             <!-- Sent State: Email Sent + Limit Display & 30s Countdown Resend Button -->
             <div class="mb-5 text-center sm:text-left">
-                <div class="mx-auto sm:mx-0 grid h-12 w-12 place-items-center rounded-xl bg-emerald-50 text-emerald-600 shadow-xs mb-4">
-                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
-                </div>
+
                 <h2 class="text-[24px] sm:text-[26px] font-bold tracking-tight text-[#102B70] leading-tight">
                     Check your email
                 </h2>
@@ -136,7 +132,7 @@
                     <div>
                         <p class="font-bold text-amber-900">Maximum email limit reached (3/3)</p>
                         <p class="mt-1 leading-relaxed text-amber-800">
-                            You have sent the maximum of 3 emails for this reset link. If you cannot find the email, please check your spam or junk folder, or wait for the link to expire (60 minutes) before requesting a new one.
+                            You have sent the maximum of 3 emails for this reset link. If you cannot find the email, please check your spam or junk folder, or wait for the link to expire (30 minutes) before requesting a new one.
                         </p>
                     </div>
                 </div>

@@ -17,5 +17,10 @@ class AppServiceProvider extends ServiceProvider
         if (config('app.env') === 'production') {
             URL::forceScheme('https');
         }
+
+        // Synchronize password reset token expiration with pgpc configuration
+        if ($expiration = config('pgpc.email.reset_link_expiration')) {
+            config(['auth.passwords.users.expire' => (int) $expiration]);
+        }
     }
 }

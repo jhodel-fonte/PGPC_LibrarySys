@@ -31,27 +31,37 @@ new #[Layout('components.layouts.auth')] class extends Component
      */
     public function login(): void
     {
-        // Enforce strict Student role filter
-        $this->form->authenticate(['Student']);
+        try {
+            // Enforce strict Student role filter
+            $this->form->authenticate(['Student']);
 
-        Session::regenerate();
+            Session::regenerate();
 
-        $this->redirectIntended(default: url('/'), navigate: false);
+            $this->redirectIntended(default: url('/'), navigate: false);
+        } catch (\Throwable $e) {
+            $this->dispatch('login-failed');
+            throw $e;
+        }
     }
 }; ?>
 
 <!-- Elevated White Card Container (rounded-2xl matching Employee portal) -->
-<div class="w-full rounded-2xl border border-slate-200/80 bg-white p-7 sm:p-9 md:p-10 shadow-xl shadow-slate-200/70 select-none">
+<div
+    x-data="{ isLoggingIn: false }"
+    @login-failed.window="isLoggingIn = false"
+    x-on:livewire:error.window="isLoggingIn = false"
+    class="w-full rounded-2xl border border-slate-200/80 bg-white p-7 sm:p-9 md:p-10 shadow-xl shadow-slate-200/70 select-none"
+>
     <!-- Title Area (Heading 32px/Bold, Subtitle 15px/Regular, 8px gap, 28-32px bottom spacing) -->
     <div class="mb-[30px]">
-        <h2 class="text-[32px] text-[#102B70] font-bold tracking-tight text-slate-900 leading-tight">Welcome back</h2>
+        <h2 class="text-[20px] text-[#102B70] font-bold tracking-tight text-slate-900 leading-tight">Welcome back</h2>
         <p class="mt-2 text-[15px] font-normal text-slate-500 leading-normal">Sign in to access your personal library account.</p>
     </div>
 
     <!-- Auth Response / Error Card (Alpine.js controlled) -->
     <x-auth.responseCard id="ajax-general-error" />
 
-    <form wire:submit="login" novalidate>
+    <form wire:submit="login" @submit="isLoggingIn = true" novalidate>
         <div class="space-y-5">
             <!-- Username or Student ID (Label 14px/Semibold, 8px gap, Input 52px height, 12px radius, Text 15px, Icon 20px) -->
             <div>
@@ -84,7 +94,7 @@ new #[Layout('components.layouts.auth')] class extends Component
                         Password <span class="text-red-500">*</span>
                     </label>
                     @if (Route::has('password.request'))
-                        <a href="{{ route('password.request') }}" class="text-[14px] font-semibold text-[#102b70] transition hover:text-blue-800" wire:navigate>Forgot password?</a>
+                        <a href="{{ route('password.request') }}" class="text-[12px] font-semibold text-[#102b70] transition hover:text-blue-800" wire:navigate>Forgot password?</a>
                     @endif
                 </div>
                 <div class="group relative">
@@ -125,23 +135,27 @@ new #[Layout('components.layouts.auth')] class extends Component
 
         <!-- Keep me signed in (16px top spacing, Checkbox 16px, Text 14px) -->
         <div class="mt-4">
-            <label class="inline-flex cursor-pointer items-center gap-2.5 text-[14px] text-slate-600 select-none">
+            <label class="inline-flex cursor-pointer items-center gap-2.5 text-[12px] text-slate-600 select-none">
                 <input wire:model="form.remember" type="checkbox" name="remember" class="h-4 w-4 rounded border-slate-300 text-[#102b70] focus:ring-[#102b70]">
                 Keep me signed in on this device
             </label>
         </div>
 
-        <!-- Primary Submit Button (20-24px top spacing, Height 52px, Radius 12px, Text 15px/Semibold) -->
+        <!-- Primary Submit Button (Stays loading even during redirect) -->
         <div class="mt-6">
-            <button type="submit" wire:loading.attr="disabled" class="group flex h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-[#102b70] px-5 text-[15px] font-semibold text-white shadow-md shadow-blue-900/10 transition hover:-translate-y-0.5 hover:bg-[#0b225e] hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-blue-200 active:translate-y-0 disabled:opacity-75 disabled:cursor-not-allowed">
-                <span wire:loading.remove wire:target="login" class="inline-flex items-center gap-2">
+            <button
+                type="submit"
+                :disabled="isLoggingIn"
+                class="group flex h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-[#102b70] px-5 text-[15px] font-semibold text-white shadow-md shadow-blue-900/10 transition hover:-translate-y-0.5 hover:bg-[#0b225e] hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-blue-200 active:translate-y-0 disabled:opacity-75 disabled:cursor-not-allowed"
+            >
+                <span x-show="!isLoggingIn" class="inline-flex items-center gap-2">
                     Sign in to your account
                     <svg class="h-4 w-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                     </svg>
                 </span>
-                <span wire:loading.flex wire:target="login" class="items-center justify-center gap-2.5">
-                    <span class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>
+                <span x-show="isLoggingIn" style="display: none;" class="inline-flex items-center justify-center gap-2.5">
+                    <span class="inline-block h-4 w-4 animate-spin animate-pgpc-spin rounded-full border-2 border-white/30 border-t-white"></span>
                     <span>Signing in...</span>
                 </span>
             </button>
@@ -160,7 +174,7 @@ new #[Layout('components.layouts.auth')] class extends Component
         </div>
 
         <div>
-            <a href="{{ route('auth.google') }}" class="flex h-[52px] w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white text-[15px] font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-100">
+            <a href="{{ route('auth.google') }}" class="flex h-[50px] w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white text-[15px] font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-100">
                 <svg class="h-5 w-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
                     <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
@@ -173,9 +187,9 @@ new #[Layout('components.layouts.auth')] class extends Component
     @endif
 
     <!-- Bottom Links & Policy Notice -->
-    <div class="mt-8 pt-6 border-t border-slate-200 text-center space-y-3">
+    <div class="mt-2 pt-2 text-center space-y-3">
         @if (Route::has('register'))
-            <p class="text-[14px] text-slate-500">
+            <p class="text-[12px] text-slate-500">
                 Don't have an account?
                 <a href="{{ route('register') }}" class="ml-1 font-semibold text-[#102b70] underline decoration-[#fcc719] decoration-2 underline-offset-4 transition hover:text-blue-800" wire:navigate>
                     Create an account

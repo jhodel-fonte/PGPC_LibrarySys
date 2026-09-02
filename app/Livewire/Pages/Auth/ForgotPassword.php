@@ -35,8 +35,11 @@ class ForgotPassword extends Component
             $emailKey = Str::lower(trim($savedEmail));
             $tokenRecord = DB::table('password_reset_tokens')->where('email', $savedEmail)->first();
 
-            // If token still exists in database and was requested within the 60-minute expiry window
-            if ($tokenRecord && (now()->timestamp - (int) $sentAt) < 3600) {
+            $expireMinutes = (int) config('pgpc.email.reset_link_expiration', 30);
+            $expireSeconds = $expireMinutes * 60;
+
+            // If token still exists in database and was requested within the expiration window
+            if ($tokenRecord && (now()->timestamp - (int) $sentAt) < $expireSeconds) {
                 $this->linkSent = true;
                 $this->sentEmail = $savedEmail;
                 $this->email = $savedEmail;
@@ -68,6 +71,7 @@ class ForgotPassword extends Component
         $email = Str::lower(trim($this->email));
 
         // 1. Check if user already reached the limit of 3 email sends for this link
+        $expireMinutes = (int) config('pgpc.email.reset_link_expiration', 30);
         $currentSends = (int) Cache::get('password_reset_send_count:' . $email, 0);
         if ($currentSends >= self::MAX_SEND_LIMIT) {
             $this->linkSent = true;
@@ -75,7 +79,7 @@ class ForgotPassword extends Component
             $this->sendCount = $currentSends;
             $this->maxAttemptsReached = true;
             $this->initialCountdown = 0;
-            $this->addError('email', "You have reached the limit of 3 email sends for this reset link. Please check your inbox or wait 60 minutes for it to expire.");
+            $this->addError('email', "You have reached the limit of 3 email sends for this reset link. Please check your inbox or wait {$expireMinutes} minutes for it to expire.");
 
             return;
         }
@@ -96,9 +100,9 @@ class ForgotPassword extends Component
             return;
         }
 
-        // 4. Increment and persist send count (valid for 60 minutes)
+        // 4. Increment and persist send count (valid for token expiration duration)
         $this->sendCount = $currentSends + 1;
-        Cache::put('password_reset_send_count:' . $email, $this->sendCount, now()->addMinutes(60));
+        Cache::put('password_reset_send_count:' . $email, $this->sendCount, now()->addMinutes($expireMinutes));
 
         // 5. Store in session so refreshing the page retains the active link state
         session([

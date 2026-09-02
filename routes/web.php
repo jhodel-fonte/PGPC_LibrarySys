@@ -4,9 +4,9 @@ use App\Mail\WelcomeEmail;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 
-// Route::view('/', 'pages.homepage.index');
 Route::view('/', 'main.index')->name('index');
-
+Route::get('opac', [\App\Http\Controllers\OpacController::class, 'index'])->name('opac.index');
+Route::post('opac/reserve/{bookId}', [\App\Http\Controllers\OpacController::class, 'reserve'])->name('opac.reserve');
 
 
 Route::middleware(['auth', 'verified', 'role:Admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -44,6 +44,12 @@ Route::get('/send-test-email', function () {
         return "Failed to send email. Error: " . $e->getMessage();
     }
 });
+
+Route::get('/preview-reset-email', function () {
+    return new \App\Mail\ResetEmail(url('/reset-password/sample-token?email=student@pgpc.edu.ph'));
+});
+
+
 
 
 

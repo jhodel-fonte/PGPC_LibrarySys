@@ -15,6 +15,13 @@ return [
 
     ],
 
+    'email' => [
+        'reset_link_expiration' => 30, // in minutes
+        'from_address' => env('MAIL_FROM_ADDRESS', 'noreply@pgpc.edu.ph'),
+        'from_name' => env('MAIL_FROM_NAME', 'PGPC Support'),
+    ],
+
+    'online_resources' => 'storage/public/online_resources/list.json',
 
     'accepted_formats' => [
         'member' => [
