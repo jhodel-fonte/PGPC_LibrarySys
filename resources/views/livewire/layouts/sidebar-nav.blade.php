@@ -63,7 +63,7 @@
                 </x-slot:icon>
                 Circulation Desk
             </x-sidebar-button>
-
+{{--
             <x-sidebar-button href="#" wire:navigate>
                 <x-slot:icon>
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -71,7 +71,7 @@
                     </svg>
                 </x-slot:icon>
                 Reservations
-            </x-sidebar-button>
+            </x-sidebar-button> --}}
 
             <!-- CATALOG SECTION -->
             <div class="px-2 mt-6 mb-2" x-show="!sidebarMinimized" x-transition.opacity.duration.300ms>
@@ -85,12 +85,12 @@
                     </svg>
                 </x-slot:icon>
                 Books
-                <x-slot:subitems>
+                {{-- <x-slot:subitems>
                     <x-sidebar-subitem href="{{ route('admin.book-management.index') }}" wire:navigate>Cataloging</x-sidebar-subitem>
                     <x-sidebar-subitem href="#" wire:navigate>Add New Book</x-sidebar-subitem>
                     <x-sidebar-subitem href="#" wire:navigate>Book Import</x-sidebar-subitem>
                     <x-sidebar-subitem href="#" wire:navigate>Categories</x-sidebar-subitem>
-                </x-slot:subitems>
+                </x-slot:subitems> --}}
             </x-sidebar-button>
 
             <x-sidebar-button href="#">
@@ -100,11 +100,11 @@
                     </svg>
                 </x-slot:icon>
                 Digital Collections
-                <x-slot:subitems>
+                {{-- <x-slot:subitems>
                     <x-sidebar-subitem href="#" wire:navigate>E-Resource</x-sidebar-subitem>
                     <x-sidebar-subitem href="#" wire:navigate>Add New E-Resource</x-sidebar-subitem>
                     <x-sidebar-subitem href="#" wire:navigate>E-Resource Collections</x-sidebar-subitem>
-                </x-slot:subitems>
+                </x-slot:subitems> --}}
             </x-sidebar-button>
 
             <!-- USERS SECTION -->
@@ -126,7 +126,7 @@
                 <span class="text-[11px] font-bold text-white/40 uppercase tracking-widest">System</span>
             </div>
 
-            <x-sidebar-button href="{{ route('admin.settings') }}" :active="request()->routeIs('admin.settings')" wire:navigate>
+            {{-- <x-sidebar-button href="{{ route('admin.settings') }}" :active="request()->routeIs('admin.settings')" wire:navigate>
                 <x-slot:icon>
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -134,7 +134,7 @@
                     </svg>
                 </x-slot:icon>
                 Settings
-            </x-sidebar-button>
+            </x-sidebar-button> --}}
         </nav>
 
     </aside>

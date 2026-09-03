@@ -7,9 +7,11 @@ use App\Models\BookData;
 use App\Models\BookDetail;
 use App\Models\BookReservation;
 use App\Models\Category;
+use App\Models\OpacCatalogView;
 use App\Models\ReservationStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class OpacController extends Controller
@@ -19,154 +21,203 @@ class OpacController extends Controller
      */
     public function index(Request $request)
     {
+        $data = $this->executeCatalogQuery($request);
+
+        // AJAX / Alpine.js dynamic response (No full page reload)
+        if ($request->ajax() || $request->wantsJson() || $request->header('X-Alpine-Request')) {
+            return response()->json([
+                'results' => is_array($data['items']) ? $data['items'] : (method_exists($data['items'], 'values') ? $data['items']->values()->toArray() : (array) $data['items']),
+                'totalResults' => $data['totalResults'],
+                'pagination' => $data['paginationData'],
+                'availabilities' => $data['availabilities'],
+                'resourceTypes' => $data['resourceTypes'],
+                'subjects' => $data['subjects'],
+                'search' => $data['search'],
+                'selectedType' => $data['selectedType'],
+                'selectedAvailabilities' => $data['selectedAvailabilities'],
+                'selectedSubjects' => $data['selectedSubjects'],
+                'yearFrom' => $data['yearFrom'],
+                'yearTo' => $data['yearTo'],
+                'sortBy' => $data['sortBy'],
+                'perPage' => $data['perPage'],
+            ]);
+        }
+
+        return view('main.opac-index', [
+            'search' => $data['search'],
+            'selectedType' => $data['selectedType'],
+            'selectedAvailabilities' => $data['selectedAvailabilities'],
+            'selectedSubjects' => $data['selectedSubjects'],
+            'yearFrom' => $data['yearFrom'],
+            'yearTo' => $data['yearTo'],
+            'sortBy' => $data['sortBy'],
+            'perPage' => $data['perPage'],
+            'results' => $data['items'],
+            'pagination' => $data['pagination'],
+            'totalResults' => $data['totalResults'],
+            'availabilities' => $data['availabilities'],
+            'resourceTypes' => $data['resourceTypes'],
+            'subjects' => $data['subjects'],
+            'isLoggedIn' => $data['isLoggedIn'],
+            'currentUser' => $data['currentUser'],
+        ]);
+    }
+
+    /**
+     * Display the Advanced Search page and process advanced criteria.
+     */
+    public function advancedSearch(Request $request)
+    {
+        $hasSearched = $request->hasAny([
+            'title', 'author', 'subject', 'isbn', 'type', 'availability', 'year_from', 'year_to', 'location'
+        ]) && (
+            filled($request->input('title')) ||
+            filled($request->input('author')) ||
+            filled($request->input('subject')) ||
+            filled($request->input('isbn')) ||
+            ($request->input('type') !== 'all' && filled($request->input('type'))) ||
+            ($request->input('availability') !== 'all' && filled($request->input('availability'))) ||
+            filled($request->input('year_from')) ||
+            filled($request->input('year_to')) ||
+            ($request->input('location') !== 'all' && filled($request->input('location')))
+        );
+
+        $data = $this->executeCatalogQuery($request, $hasSearched);
+
+        if ($request->ajax() || $request->wantsJson() || $request->header('X-Alpine-Request')) {
+            return response()->json([
+                'results' => is_array($data['items']) ? $data['items'] : (method_exists($data['items'], 'values') ? $data['items']->values()->toArray() : (array) $data['items']),
+                'totalResults' => $data['totalResults'],
+                'pagination' => $data['paginationData'],
+                'sortBy' => $data['sortBy'],
+                'perPage' => $data['perPage'],
+                'hasSearched' => $hasSearched,
+            ]);
+        }
+
+        return view('main.advance-search', array_merge($data, [
+            'hasSearched' => $hasSearched,
+            'title' => $data['advTitle'],
+            'author' => $data['advAuthor'],
+            'subject' => $data['advSubject'],
+            'isbn' => $data['advIsbn'],
+            'location' => $data['advLocation'],
+            'matchType' => $data['matchType'],
+        ]));
+    }
+
+    /**
+     * Execute catalog query for both Standard OPAC and Advanced Search.
+     */
+    protected function executeCatalogQuery(Request $request, bool $isAdvanced = false): array
+    {
         $search = trim($request->input('search', ''));
+        $advTitle = trim($request->input('title', ''));
+        $advAuthor = trim($request->input('author', ''));
+        $advSubject = trim($request->input('subject', ''));
+        $advIsbn = trim($request->input('isbn', ''));
+        $advLocation = trim($request->input('location', ''));
+        if ($advLocation === 'all') {
+            $advLocation = '';
+        }
+        $matchType = $request->input('match', 'all');
+
         $selectedType = $request->input('type', 'all');
-        $selectedAvailabilities = (array) $request->input('availability', []);
+        $rawAvail = $request->input('availability', []);
+        $selectedAvailabilities = array_values(array_filter(
+            is_array($rawAvail) ? $rawAvail : [$rawAvail],
+            fn($val) => filled($val) && $val !== 'all'
+        ));
         $selectedSubjects = (array) $request->input('subject', []);
         $yearFrom = $request->input('year_from');
         $yearTo = $request->input('year_to');
         $sortBy = $request->input('sort', 'relevance');
-        $perPage = (int) $request->input('per_page', 10);
-        if (!in_array($perPage, [10, 25, 50])) {
-            $perPage = 10;
+        $perPage = (int) $request->input('per_page', 5);
+        if (!in_array($perPage, [5, 10, 25, 50])) {
+            $perPage = 5;
         }
 
         $isLoggedIn = Auth::check();
         $currentUser = Auth::user();
 
-        // 1. Check if database has book records
-        $hasDbBooks = false;
+        $useView = false;
         try {
-            $hasDbBooks = BookDetail::count() > 0;
+            DB::table('opac_catalog_view')->limit(1)->get();
+            $useView = (OpacCatalogView::count() > 0);
         } catch (\Throwable $e) {
-            $hasDbBooks = false;
+            $useView = false;
         }
 
-        if ($hasDbBooks) {
-            // Query from real database tables
-            $query = BookDetail::with([
-                'bookData.authors',
-                'bookData.categories',
-                'bookType',
-                'publisher',
-                'books.condition',
-            ]);
+        if ($useView) {
+            $query = OpacCatalogView::query()
+                ->search($search)
+                ->advancedSearch([
+                    'title' => $advTitle,
+                    'author' => $advAuthor,
+                    'subject' => $advSubject,
+                    'isbn' => $advIsbn,
+                    'location' => $advLocation,
+                ], $matchType);
 
-            // Text search
-            if (!empty($search)) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('isbn', 'like', "%{$search}%")
-                      ->orWhere('call_number', 'like', "%{$search}%")
-                      ->orWhereHas('bookData', function ($dq) use ($search) {
-                          $dq->where('book_title', 'like', "%{$search}%")
-                             ->orWhere('subtitle', 'like', "%{$search}%")
-                             ->orWhere('description', 'like', "%{$search}%");
-                      })
-                      ->orWhereHas('bookData.authors', function ($aq) use ($search) {
-                          $aq->where('name', 'like', "%{$search}%");
-                      });
-                });
+            if ($selectedType !== 'all' && filled($selectedType)) {
+                $query->filterType($selectedType);
             }
 
-            // Resource type filter
-            if ($selectedType !== 'all') {
-                $query->whereHas('bookType', function ($tq) use ($selectedType) {
-                    $tq->where('name', 'like', "%{$selectedType}%");
-                });
+            if (!empty($selectedAvailabilities)) {
+                $query->filterAvailability($selectedAvailabilities);
             }
 
-            // Year range
-            if (!empty($yearFrom)) {
-                $query->where('publication_year', '>=', (int) $yearFrom);
-            }
-            if (!empty($yearTo)) {
-                $query->where('publication_year', '<=', (int) $yearTo);
+            if (!empty($yearFrom) || !empty($yearTo)) {
+                $query->filterYear($yearFrom, $yearTo);
             }
 
-            // Subject / Category filter
             if (!empty($selectedSubjects)) {
-                $query->whereHas('bookData.categories', function ($cq) use ($selectedSubjects) {
-                    $cq->whereIn('categories.id', $selectedSubjects)
-                       ->orWhereIn('categories.name', $selectedSubjects);
-                });
+                $query->filterSubject($selectedSubjects);
             }
 
-            // Sorting
             switch ($sortBy) {
                 case 'newest':
                 case 'year_desc':
                     $query->orderBy('publication_year', 'desc');
                     break;
                 case 'title_asc':
-                    $query->join('book_datas', 'book_details.book_data_id', '=', 'book_datas.id')
-                          ->select('book_details.*')
-                          ->orderBy('book_datas.book_title', 'asc');
+                    $query->orderBy('book_title', 'asc');
                     break;
                 default:
-                    $query->orderBy('book_details.id', 'desc');
+                    $query->orderBy('book_detail_id', 'desc');
                     break;
             }
 
             $paginator = $query->paginate($perPage)->appends($request->query());
 
-            // Transform Eloquent records to unified catalog item array
-            $results = $paginator->getCollection()->map(function ($detail) {
-                $title = $detail->bookData->book_title ?? 'Untitled Resource';
-                $authors = $detail->bookData->authors->pluck('name')->join(', ');
-                if (empty($authors)) {
-                    $authors = 'Unknown Author';
-                }
-
-                $copies = $detail->books;
-                $availableCopies = $copies->where('status', 'available')->count();
-                $firstCopy = $copies->first();
-
-                $status = 'available';
-                $statusLabel = 'Available';
-                $statusColor = 'text-emerald-700';
-                $dotColor = 'bg-emerald-500';
-                $canReserve = $availableCopies > 0;
-
-                if ($copies->isEmpty()) {
-                    $status = 'reference_only';
-                    $statusLabel = 'Reference Only';
-                    $statusColor = 'text-blue-600';
-                    $dotColor = 'bg-blue-500';
-                    $canReserve = false;
-                } elseif ($availableCopies === 0) {
-                    $status = 'checked_out';
-                    $statusLabel = 'Checked Out';
-                    $statusColor = 'text-rose-600';
-                    $dotColor = 'bg-rose-500';
-                    $canReserve = false;
-                }
-
+            $results = $paginator->getCollection()->map(function ($row) {
                 return [
-                    'id' => $detail->id,
-                    'title' => $title,
-                    'author' => $authors,
-                    'year' => $detail->publication_year ?? $detail->copyright_year ?? 'N/A',
-                    'format' => $detail->bookType->name ?? $detail->format ?? 'Book',
-                    'pages' => $detail->pages ? "{$detail->pages} p." : 'N/A',
-                    'call_no' => $detail->call_number ?? 'N/A',
-                    'location' => $firstCopy->location ?? 'Main Library',
-                    'status' => $status,
-                    'status_label' => $statusLabel,
-                    'status_color' => $statusColor,
-                    'dot_color' => $dotColor,
-                    'accession_no' => $firstCopy->accession_number ?? 'N/A',
-                    'cover' => $detail->cover_image ? asset($detail->cover_image) : null,
-                    'can_reserve' => $canReserve,
-                    'available_copies' => $availableCopies,
-                    'total_copies' => $copies->count(),
+                    'id' => $row->book_detail_id,
+                    'title' => $row->book_title,
+                    'author' => $row->authors,
+                    'year' => $row->publication_year ?? $row->copyright_year ?? 'N/A',
+                    'format' => $row->resource_type ?? $row->format ?? 'Book',
+                    'pages' => $row->pages ? "{$row->pages} p." : 'N/A',
+                    'call_no' => $row->call_number ?? 'N/A',
+                    'location' => $row->primary_location ?? 'Main Library',
+                    'status' => $row->catalog_status,
+                    'status_label' => $row->status_label,
+                    'status_color' => $row->status_color,
+                    'dot_color' => $row->dot_color,
+                    'accession_no' => $row->primary_accession_no ?? 'N/A',
+                    'cover' => $row->cover_url,
+                    'can_reserve' => $row->can_reserve,
+                    'available_copies' => $row->available_copies,
+                    'total_copies' => $row->total_copies,
+                    'available_book_id' => $row->available_book_id,
+                    'due_date' => $row->earliest_due_date ? 'Due on ' . $row->earliest_due_date->format('M d, Y') : null,
                 ];
             });
 
-            // Calculate filter sidebar counts from real DB
-            $totalCount = BookDetail::count();
-            $availableCount = Book::where('status', 'available')->count();
-            $checkedOutCount = Book::where('status', 'borrowed')->count();
-            $reservedCount = BookReservation::whereNull('fulfilled_date')->whereNull('cancelled_date')->count();
+            $totalCount = OpacCatalogView::count();
+            $availableCount = OpacCatalogView::where('catalog_status', 'available')->count();
+            $checkedOutCount = OpacCatalogView::where('catalog_status', 'checked_out')->count();
+            $reservedCount = OpacCatalogView::where('catalog_status', 'reserved')->count();
 
             $availabilities = [
                 ['id' => 'available', 'label' => 'Available', 'count' => $availableCount, 'color' => 'bg-emerald-500'],
@@ -175,98 +226,110 @@ class OpacController extends Controller
                 ['id' => 'reference_only', 'label' => 'Reference Only', 'count' => max(0, $totalCount - ($availableCount + $checkedOutCount + $reservedCount)), 'color' => 'bg-blue-500'],
             ];
 
-            $resourceTypes = [
-                ['id' => 'books', 'label' => 'Books', 'count' => BookDetail::whereHas('bookType', fn($q) => $q->where('name', 'like', '%book%'))->count()],
-                ['id' => 'theses', 'label' => 'Theses', 'count' => BookDetail::whereHas('bookType', fn($q) => $q->where('name', 'like', '%thes%'))->count()],
-                ['id' => 'journals', 'label' => 'Journals', 'count' => BookDetail::whereHas('bookType', fn($q) => $q->where('name', 'like', '%journal%'))->count()],
-                ['id' => 'reports', 'label' => 'Reports', 'count' => BookDetail::whereHas('bookType', fn($q) => $q->where('name', 'like', '%report%'))->count()],
-                ['id' => 'multimedia', 'label' => 'Multimedia', 'count' => BookDetail::whereHas('bookType', fn($q) => $q->where('name', 'like', '%multi%'))->count()],
-            ];
+            try {
+                $resourceTypes = DB::table('opac_catalog_view')
+                    ->select('resource_type', DB::raw('count(*) as count'))
+                    ->whereNotNull('resource_type')
+                    ->groupBy('resource_type')
+                    ->get()
+                    ->map(fn($r) => ['id' => strtolower($r->resource_type), 'label' => ucfirst($r->resource_type), 'count' => (int) $r->count])
+                    ->toArray();
+            } catch (\Throwable $e) {
+                $resourceTypes = [
+                    ['id' => 'books', 'label' => 'Books', 'count' => 128],
+                    ['id' => 'theses', 'label' => 'Theses', 'count' => 32],
+                    ['id' => 'journals', 'label' => 'Journals', 'count' => 24],
+                ];
+            }
 
-            $subjects = Category::withCount('bookDatas')
-                ->orderBy('book_datas_count', 'desc')
-                ->take(8)
-                ->get()
-                ->map(fn($cat) => [
-                    'id' => $cat->id,
-                    'label' => $cat->name,
-                    'count' => $cat->book_datas_count,
-                ])->toArray();
+            try {
+                $subjects = Category::take(10)->get()->map(function ($cat) {
+                    return [
+                        'id' => (string) $cat->id,
+                        'label' => $cat->name,
+                        'count' => DB::table('book_data_category')->where('category_id', $cat->id)->count(),
+                    ];
+                })->toArray();
+            } catch (\Throwable $e) {
+                $subjects = [
+                    ['id' => 'cs', 'label' => 'Computer Science', 'count' => 84],
+                    ['id' => 'prog', 'label' => 'Programming', 'count' => 62],
+                ];
+            }
 
-            $totalResults = $paginator->total();
             $items = $results;
             $pagination = $paginator;
-
+            $totalResults = $paginator->total();
         } else {
-            // Graceful Fallback: Rich realistic dataset matching OPAC specification
+            // 2. High-Fidelity Fallback Dataset
             $defaultBooks = collect([
                 [
                     'id' => 1,
+                    'title' => 'Introduction to Algorithms, Fourth Edition',
+                    'author' => 'Thomas H. Cormen, Charles E. Leiserson, Ronald L. Rivest, Clifford Stein',
+                    'year' => '2022',
+                    'format' => 'Book',
+                    'type_id' => 'books',
+                    'subject' => 'Computer Science',
+                    'pages' => '1312 p.',
+                    'call_no' => 'QA76.6 .I585 2022',
+                    'location' => 'Main Library – 3rd Floor',
+                    'status' => 'available',
+                    'status_label' => 'Available',
+                    'status_color' => 'text-emerald-700',
+                    'dot_color' => 'bg-emerald-500',
+                    'accession_no' => '00012450',
+                    'cover' => 'https://m.media-amazon.com/images/I/61Mw06x2A7L._SY466_.jpg',
+                    'can_reserve' => true,
+                    'available_copies' => 4,
+                    'total_copies' => 5,
+                ],
+                [
+                    'id' => 2,
                     'title' => 'Clean Code: A Handbook of Agile Software Craftsmanship',
                     'author' => 'Robert C. Martin',
                     'year' => '2008',
                     'format' => 'Book',
                     'type_id' => 'books',
-                    'subject' => 'Programming',
-                    'pages' => '1116 p.',
-                    'call_no' => 'QA76.73 .M37 2008',
-                    'location' => 'Main Library – 3rd Floor',
+                    'subject' => 'Software Engineering',
+                    'pages' => '464 p.',
+                    'call_no' => 'QA76.76.C64 M37 2008',
+                    'location' => 'Main Library – 2nd Floor',
                     'status' => 'available',
                     'status_label' => 'Available',
                     'status_color' => 'text-emerald-700',
                     'dot_color' => 'bg-emerald-500',
-                    'accession_no' => '00012567',
-                    'cover' => 'https://m.media-amazon.com/images/I/51E2055ZGUL._SX379_BO1,204,203,200_.jpg',
+                    'accession_no' => '00011822',
+                    'cover' => 'https://m.media-amazon.com/images/I/51E2055ZGUL._SY445_SX342_.jpg',
                     'can_reserve' => true,
                     'available_copies' => 2,
-                    'total_copies' => 3,
+                    'total_copies' => 4,
                 ],
                 [
-                    'id' => 2,
-                    'title' => 'Python Crash Course, 3rd Edition: A Hands-On, Project-Based Introduction to Programming',
-                    'author' => 'Eric Matthes',
-                    'year' => '2023',
+                    'id' => 3,
+                    'title' => 'Artificial Intelligence: A Modern Approach, Global Edition',
+                    'author' => 'Stuart Russell, Peter Norvig',
+                    'year' => '2021',
                     'format' => 'Book',
                     'type_id' => 'books',
-                    'subject' => 'Programming',
-                    'pages' => '552 p.',
-                    'call_no' => 'QA76.73 .P98 2023',
-                    'location' => 'Main Library – 2nd Floor',
+                    'subject' => 'Artificial Intelligence',
+                    'pages' => '1168 p.',
+                    'call_no' => 'Q335 .R87 2021',
+                    'location' => 'Main Library – 3rd Floor',
                     'status' => 'checked_out',
                     'status_label' => 'Checked Out',
                     'status_color' => 'text-rose-600',
                     'dot_color' => 'bg-rose-500',
-                    'accession_no' => '00012411',
-                    'due_date' => 'Due on May 22, 2025',
-                    'cover' => 'https://m.media-amazon.com/images/I/71sOUK0W6dL._SY466_.jpg',
+                    'accession_no' => '00013004',
+                    'due_date' => 'Due on Jun 12, 2025',
+                    'cover' => 'https://m.media-amazon.com/images/I/81s6DUyQCZL._SY466_.jpg',
                     'can_reserve' => false,
                     'available_copies' => 0,
                     'total_copies' => 2,
                 ],
                 [
-                    'id' => 3,
-                    'title' => 'Introduction to Algorithms, 4th Edition',
-                    'author' => 'Thomas H. Cormen, Charles E. Leiserson, Ronald L. Rivest, Clifford Stein',
-                    'year' => '2022',
-                    'format' => 'Book',
-                    'type_id' => 'books',
-                    'subject' => 'Algorithms',
-                    'pages' => '1312 p.',
-                    'call_no' => 'QA76.6 .C67 2022',
-                    'location' => 'Main Library – 3rd Floor',
-                    'status' => 'available',
-                    'status_label' => 'Available',
-                    'status_color' => 'text-emerald-700',
-                    'dot_color' => 'bg-emerald-500',
-                    'accession_no' => '00012602',
-                    'cover' => 'https://m.media-amazon.com/images/I/61Mw06x2XcL._SY466_.jpg',
-                    'can_reserve' => true,
-                    'available_copies' => 1,
-                    'total_copies' => 1,
-                ],
-                [
                     'id' => 4,
-                    'title' => 'The Pragmatic Programmer: Your Journey to Mastery (20th Anniversary Edition)',
+                    'title' => 'The Pragmatic Programmer: Your Journey To Mastery, 20th Anniversary Edition',
                     'author' => 'Andrew Hunt, David Thomas',
                     'year' => '2019',
                     'format' => 'Book',
@@ -286,52 +349,47 @@ class OpacController extends Controller
                     'available_copies' => 0,
                     'total_copies' => 1,
                 ],
-                [
-                    'id' => 5,
-                    'title' => 'Design Patterns: Elements of Reusable Object-Oriented Software',
-                    'author' => 'Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides',
-                    'year' => '1994',
-                    'format' => 'Book',
-                    'type_id' => 'books',
-                    'subject' => 'Computer Science',
-                    'pages' => '416 p.',
-                    'call_no' => 'QA76.64 .D47 1994',
-                    'location' => 'Reference Section – 2nd Floor',
-                    'status' => 'reference_only',
-                    'status_label' => 'Reference Only',
-                    'status_color' => 'text-blue-600',
-                    'dot_color' => 'bg-blue-500',
-                    'accession_no' => '00011984',
-                    'cover' => 'https://m.media-amazon.com/images/I/81gtKoapHFL._SY466_.jpg',
-                    'can_reserve' => false,
-                    'available_copies' => 0,
-                    'total_copies' => 1,
-                ],
-                [
-                    'id' => 6,
-                    'title' => 'Deep Learning: Adaptive Computation and Machine Learning series',
-                    'author' => 'Ian Goodfellow, Yoshua Bengio, Aaron Courville',
-                    'year' => '2016',
-                    'format' => 'Book',
-                    'type_id' => 'books',
-                    'subject' => 'Computer Science',
-                    'pages' => '800 p.',
-                    'call_no' => 'Q325.5 .G66 2016',
-                    'location' => 'Main Library – 3rd Floor',
-                    'status' => 'available',
-                    'status_label' => 'Available',
-                    'status_color' => 'text-emerald-700',
-                    'dot_color' => 'bg-emerald-500',
-                    'accession_no' => '00012710',
-                    'cover' => 'https://m.media-amazon.com/images/I/61qQtbyVDSL._SY466_.jpg',
-                    'can_reserve' => true,
-                    'available_copies' => 3,
-                    'total_copies' => 3,
-                ],
             ]);
 
             // Filter in-memory
             $filtered = $defaultBooks;
+
+            if ($matchType === 'any') {
+                $hasAdvCrit = filled($advTitle) || filled($advAuthor) || filled($advSubject) || filled($advIsbn) || filled($advLocation);
+                if ($hasAdvCrit) {
+                    $filtered = $filtered->filter(function ($b) use ($advTitle, $advAuthor, $advSubject, $advIsbn, $advLocation) {
+                        $match = false;
+                        if (filled($advTitle) && str_contains(strtolower($b['title']), strtolower($advTitle))) $match = true;
+                        if (filled($advAuthor) && str_contains(strtolower($b['author']), strtolower($advAuthor))) $match = true;
+                        if (filled($advSubject) && str_contains(strtolower($b['subject']), strtolower($advSubject))) $match = true;
+                        if (filled($advIsbn) && (str_contains(strtolower($b['call_no']), strtolower($advIsbn)) || str_contains(strtolower($b['accession_no']), strtolower($advIsbn)))) $match = true;
+                        if (filled($advLocation) && str_contains(strtolower($b['location']), strtolower($advLocation))) $match = true;
+                        return $match;
+                    });
+                }
+            } else {
+                // Match all (default)
+                if (filled($advTitle)) {
+                    $t = strtolower($advTitle);
+                    $filtered = $filtered->filter(fn($b) => str_contains(strtolower($b['title']), $t));
+                }
+                if (filled($advAuthor)) {
+                    $a = strtolower($advAuthor);
+                    $filtered = $filtered->filter(fn($b) => str_contains(strtolower($b['author']), $a));
+                }
+                if (filled($advSubject)) {
+                    $s = strtolower($advSubject);
+                    $filtered = $filtered->filter(fn($b) => str_contains(strtolower($b['subject']), $s));
+                }
+                if (filled($advIsbn)) {
+                    $i = strtolower($advIsbn);
+                    $filtered = $filtered->filter(fn($b) => str_contains(strtolower($b['call_no']), $i) || str_contains(strtolower($b['accession_no']), $i));
+                }
+                if (filled($advLocation)) {
+                    $l = strtolower($advLocation);
+                    $filtered = $filtered->filter(fn($b) => str_contains(strtolower($b['location']), $l));
+                }
+            }
 
             if (!empty($search)) {
                 $s = strtolower($search);
@@ -342,7 +400,7 @@ class OpacController extends Controller
                 });
             }
 
-            if ($selectedType !== 'all') {
+            if ($selectedType !== 'all' && filled($selectedType)) {
                 $filtered = $filtered->where('type_id', $selectedType);
             }
 
@@ -409,23 +467,45 @@ class OpacController extends Controller
             ];
         }
 
-        return view('main.opac-index', [
+        $paginationData = null;
+        if ($pagination instanceof LengthAwarePaginator) {
+            $paginationData = [
+                'currentPage' => $pagination->currentPage(),
+                'lastPage' => $pagination->lastPage(),
+                'hasMorePages' => $pagination->hasMorePages(),
+                'total' => $pagination->total(),
+                'perPage' => $pagination->perPage(),
+                'nextUrl' => $pagination->nextPageUrl(),
+                'prevUrl' => $pagination->previousPageUrl(),
+                'links' => $pagination->linkCollection()->toArray(),
+            ];
+        }
+
+        return [
             'search' => $search,
+            'advTitle' => $advTitle,
+            'advAuthor' => $advAuthor,
+            'advSubject' => $advSubject,
+            'advIsbn' => $advIsbn,
+            'advLocation' => $advLocation,
+            'matchType' => $matchType,
             'selectedType' => $selectedType,
             'selectedAvailabilities' => $selectedAvailabilities,
             'selectedSubjects' => $selectedSubjects,
             'yearFrom' => $yearFrom,
             'yearTo' => $yearTo,
             'sortBy' => $sortBy,
-            'results' => $items,
+            'perPage' => $perPage,
+            'items' => $items,
             'pagination' => $pagination,
             'totalResults' => $totalResults,
+            'paginationData' => $paginationData,
             'availabilities' => $availabilities,
             'resourceTypes' => $resourceTypes,
             'subjects' => $subjects,
             'isLoggedIn' => $isLoggedIn,
             'currentUser' => $currentUser,
-        ]);
+        ];
     }
 
     /**

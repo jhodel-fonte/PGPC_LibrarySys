@@ -1,6 +1,6 @@
 @props([
     'actionUrl' => Route::has('opac.index') ? route('opac.index') : url('/opac.index'),
-    'advancedSearchUrl' => '#advanced-search',
+    'advancedSearchUrl' => Route::has('opac.advanced') ? route('opac.advanced') : url('/opac/advanced-search'),
     'title' => 'Online Public Access Catalog',
     'eyebrow' => 'OPAC',
     'subtitle' => 'Search the library catalog to discover books, journals, theses and other resources available in PGPC Library.',
@@ -52,13 +52,10 @@
         <h1 class="text-5xl sm:text-5xl lg:text-[50px] font-extrabold tracking-tight text-[#FFFFFF] leading-tight mb-2.5">
             {{ $title }}
         </h1>
-
-        <!-- 3. Supporting Description (Muted White #D7E0F0) -->
         <p class="text-[14.5px] sm:text-[15px] leading-relaxed text-[#D7E0F0] max-w-2xl mb-6 font-normal">
             {{ $subtitle }}
         </p>
 
-        <!-- 4. Main Search Row (Search Bar + Advanced Search) -->
         <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 sm:gap-4 lg:gap-5 max-w-[960px]">
 
             <!-- Main Unified Search Component -->
@@ -83,8 +80,22 @@
                         this.selectedType = type.value;
                         this.selectedLabel = type.label;
                         this.openDropdown = false;
+                    },
+                    submitSearch(e) {
+                        if (window.location.pathname.includes('/opac') || window.location.pathname === '/opac') {
+                            e.preventDefault();
+                            const input = this.$el.querySelector('input[name=search]');
+                            window.dispatchEvent(new CustomEvent('opac-search-trigger', {
+                                detail: {
+                                    search: input ? input.value : '',
+                                    type: this.selectedType
+                                }
+                            }));
+                        }
                     }
                 }"
+                @submit="submitSearch($event)"
+                id="opacHeroSearchForm"
                 class="relative flex-1 max-w-[800px] w-full"
             >
                 <input type="hidden" name="type" :value="selectedType">
@@ -101,7 +112,7 @@
                             aria-haspopup="true"
                             :aria-expanded="openDropdown"
                         >
-                            <span x-text="selectedLabel" class="text-[15px] sm:text-[15.5px] font-semibold text-[#071A3D] truncate pr-1">All Resources</span>
+                            <span x-text="selectedLabel" class="text-[15px] sm:text-[15.5px] font-bold text-[#071A3D] truncate pr-1">All Resources</span>
                             <!-- Downward Chevron -->
                             <svg width="18" height="18" class="h-[18px] w-[18px] shrink-0 text-[#64748B] transition-transform duration-200" :class="openDropdown ? 'rotate-180 text-[#071A3D]' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
@@ -125,7 +136,7 @@
                                     type="button"
                                     @click="select(t)"
                                     class="flex w-full items-center justify-between px-4 py-2.5 text-left text-[14.5px] font-medium transition-colors hover:bg-slate-50 hover:text-[#0B2454] cursor-pointer"
-                                    :class="selectedType === t.value ? 'bg-[#EFF6FF] text-[#0B2454] font-semibold' : 'text-slate-700'"
+                                    :class="selectedType === t.value ? 'bg-[#EFF6FF] text-[#0B2454] font-bold' : 'text-slate-700'"
                                 >
                                     <span x-text="t.label"></span>
                                     <svg width="16" height="16" x-show="selectedType === t.value" class="h-4 w-4 shrink-0 text-[#0B2454]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
@@ -136,7 +147,7 @@
                         </div>
                     </div>
 
-                    <!-- Search Input Field (Clean font-medium with light font-normal placeholder) -->
+                    <!-- Search Input Field (Increased font size: 16px–17px, bold & readable) -->
                     <div class="flex flex-1 items-center px-4 h-full">
                         <svg width="20" height="20" class="h-5 w-5 shrink-0 text-[#94A3B8] mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -146,7 +157,7 @@
                             name="search"
                             value="{{ $searchValue }}"
                             placeholder="{{ $placeholder }}"
-                            class="w-full border-0 border-none bg-transparent p-0 text-[16px] sm:text-[16.5px] text-[#071A3D] placeholder:text-[#94A3B8] placeholder:font-normal placeholder:text-[15px] sm:placeholder:text-[15.5px] focus:border-0 focus:border-none focus:outline-none focus:ring-0 shadow-none font-medium"
+                            class="w-full border-0 border-none bg-transparent p-0 text-[16px] sm:text-[16.5px] text-[#071A3D] placeholder:text-[#94A3B8] placeholder:text-[15px] sm:placeholder:text-[15.5px] focus:border-0 focus:border-none focus:outline-none focus:ring-0 shadow-none font-semibold"
                         >
                     </div>
 

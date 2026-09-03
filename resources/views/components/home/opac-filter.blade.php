@@ -26,6 +26,7 @@
     }
     if (empty($resourceTypes)) {
         $resourceTypes = [
+            ['id' => 'all', 'label' => 'All Resources', 'count' => 200],
             ['id' => 'books', 'label' => 'Books', 'count' => 128],
             ['id' => 'theses', 'label' => 'Theses', 'count' => 32],
             ['id' => 'journals', 'label' => 'Journals', 'count' => 24],
@@ -49,11 +50,28 @@
     id="{{ $formId }}"
     action="{{ route('opac.index') }}"
     method="GET"
+    x-data="{
+        submitFilter() {
+            window.dispatchEvent(new CustomEvent('opac-filter-trigger', {
+                detail: new FormData(this.$el)
+            }));
+        },
+        resetFilter() {
+            this.$el.querySelectorAll('input[type=checkbox]').forEach(cb => cb.checked = false);
+            this.$el.querySelectorAll('input[type=radio]').forEach(rb => {
+                rb.checked = (rb.value === 'all');
+            });
+            this.$el.querySelectorAll('input[type=number]').forEach(num => num.value = '');
+            window.dispatchEvent(new CustomEvent('opac-filter-reset'));
+        }
+    }"
+    @submit.prevent="submitFilter()"
     class="w-full rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs select-none"
 >
-    <!-- Hidden Inputs to preserve search and type from hero bar -->
-    <input type="hidden" name="search" value="{{ $search }}">
-    <input type="hidden" name="type" value="{{ $selectedType }}">
+    <!-- Hidden Inputs to preserve search query from hero bar -->
+    @if (!empty($search))
+        <input type="hidden" name="search" value="{{ $search }}">
+    @endif
 
     <!-- Header / Filter Title -->
     <div class="flex items-center justify-between pb-4 border-b border-slate-100">
@@ -63,12 +81,13 @@
             </svg>
             <span>Filters</span>
         </h3>
-        <a
-            href="{{ route('opac.index', array_filter(['search' => $search, 'type' => $selectedType])) }}"
-            class="text-[12px] font-semibold text-slate-400 hover:text-[#0B2454] transition-colors"
+        <button
+            type="button"
+            @click="resetFilter()"
+            class="text-[12px] font-semibold text-slate-400 hover:text-[#0B2454] transition-colors cursor-pointer"
         >
             Reset
-        </a>
+        </button>
     </div>
 
     <!-- 1. Availability Filter Group -->
@@ -96,7 +115,6 @@
                             name="availability[]"
                             value="{{ $item['id'] }}"
                             {{ $isChecked ? 'checked' : '' }}
-                            @change="$el.form.submit()"
                             class="rounded border-slate-300 text-[#0B2454] focus:ring-[#0B2454]/20 h-4 w-4 cursor-pointer"
                         >
                         <span class="h-2 w-2 rounded-full {{ $item['color'] }} shrink-0"></span>
@@ -137,7 +155,6 @@
                             name="type"
                             value="{{ $item['id'] }}"
                             {{ $isTypeSelected ? 'checked' : '' }}
-                            @change="$el.form.submit()"
                             class="rounded-full border-slate-300 text-[#0B2454] focus:ring-[#0B2454]/20 h-4 w-4 cursor-pointer"
                         >
                         <span class="text-slate-700 group-hover:text-[#0B2454] transition-colors font-medium {{ $isTypeSelected ? 'font-bold text-[#0B2454]' : '' }}">
@@ -195,7 +212,6 @@
                                 name="subject[]"
                                 value="{{ $subj['id'] }}"
                                 {{ $isSubjSelected ? 'checked' : '' }}
-                                @change="$el.form.submit()"
                                 class="rounded border-slate-300 text-[#0B2454] focus:ring-[#0B2454]/20 h-3.5 w-3.5 cursor-pointer"
                             >
                             <span class="text-slate-600 group-hover:text-[#0B2454] transition-colors {{ $isSubjSelected ? 'font-bold text-[#0B2454]' : '' }}">
@@ -246,26 +262,31 @@
                     class="w-full rounded-xl border border-slate-200 bg-slate-50/80 py-2 px-2.5 text-center text-[13px] text-[#0B2454] placeholder:text-slate-400 focus:bg-white focus:border-[#0B2454] focus:outline-none focus:ring-1 focus:ring-[#0B2454]/20 font-medium"
                 >
             </div>
-            <button
-                type="submit"
-                class="mt-2.5 w-full py-1.5 rounded-lg bg-slate-100 hover:bg-[#0B2454] hover:text-white text-[12px] font-semibold text-slate-600 transition-colors cursor-pointer"
-            >
-                Apply Years
-            </button>
         </div>
     </div>
 
-    <!-- Clear All Filters Button -->
-    <div class="pt-3 border-t border-slate-100">
-        <a
-            href="{{ route('opac.index') }}"
-            class="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-slate-200 text-[13px] font-semibold text-slate-600 hover:text-[#0B2454] hover:bg-slate-50 hover:border-slate-300 transition-all cursor-pointer"
+    <!-- 5. Action Buttons: [ Apply Filters ] and [ Reset ] -->
+    <div class="pt-4 mt-2 border-t border-slate-100 space-y-2">
+        <button
+            type="submit"
+            class="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-[#0B2454] hover:bg-[#071943] active:scale-[0.98] text-white text-[13.5px] font-bold shadow-xs hover:shadow transition-all cursor-pointer group"
         >
-            <svg width="14" height="14" class="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <svg width="15" height="15" class="h-4 w-4 text-[#F9C000] group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
+            <span>Apply Filters</span>
+        </button>
+
+        <button
+            type="button"
+            @click="resetFilter()"
+            class="w-full flex items-center justify-center gap-1.5 py-2 px-4 rounded-xl border border-slate-200 bg-white text-[12.5px] font-semibold text-slate-500 hover:text-[#0B2454] hover:bg-slate-50 hover:border-slate-300 transition-all cursor-pointer"
+        >
+            <svg width="13" height="13" class="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-            <span>Clear all filters</span>
-        </a>
+            <span>Reset filters</span>
+        </button>
     </div>
 
 </form>

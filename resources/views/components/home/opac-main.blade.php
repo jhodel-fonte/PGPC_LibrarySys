@@ -9,6 +9,7 @@
     'yearFrom' => null,
     'yearTo' => null,
     'sortBy' => 'relevance',
+    'perPage' => 5,
     'availabilities' => [],
     'resourceTypes' => [],
     'subjects' => [],
@@ -19,35 +20,161 @@
 @php
     $searchTerm = $search ?: request('search', '');
     $totalCount = $totalResults ?: (is_countable($results) ? count($results) : 0);
+    $paginationData = null;
+    if ($pagination instanceof \Illuminate\Pagination\LengthAwarePaginator) {
+        $paginationData = [
+            'currentPage' => $pagination->currentPage(),
+            'lastPage' => $pagination->lastPage(),
+            'hasMorePages' => $pagination->hasMorePages(),
+            'total' => $totalResults,
+            'perPage' => $pagination->perPage(),
+            'nextUrl' => $pagination->nextPageUrl(),
+            'prevUrl' => $pagination->previousPageUrl(),
+            'links' => $pagination->linkCollection()->toArray(),
+        ];
+    }
 @endphp
 
-<!-- Results Area (Light background: #F8FAFC) -->
-<section
-    x-data="{
-        isLoading: true,
+<script>
+function opacCatalog() {
+    return {
+        results: @json($results),
+        totalCount: {{ (int) $totalCount }},
+        searchTerm: @json($searchTerm),
+        isLoading: false,
         mobileFilterOpen: false,
         reservationModalOpen: false,
         selectedBook: null,
         reserveStatus: null,
-        sortBy: '{{ $sortBy }}',
+        sortBy: @json($sortBy),
+        perPage: {{ (int) $perPage }},
+        pagination: @json($paginationData),
+        isLoggedIn: {{ $isLoggedIn ? 'true' : 'false' }},
+
         init() {
-            setTimeout(() => {
-                this.isLoading = false;
-            }, 350);
+            window.addEventListener('popstate', () => {
+                this.fetchResults(window.location.href, false);
+            });
         },
         openReserve(book) {
             this.selectedBook = book;
             this.reserveStatus = null;
             this.reservationModalOpen = true;
         },
-        changeSort(newSort) {
+        async fetchResults(url, updateHistory = true) {
             this.isLoading = true;
+            try {
+                const res = await fetch(url, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-Alpine-Request': 'true'
+                    }
+                });
+                if (!res.ok) throw new Error('Network response not ok');
+                const data = await res.json();
+                this.results = data.results || [];
+                this.totalCount = data.totalResults || 0;
+                this.pagination = data.pagination || null;
+                this.searchTerm = data.search || '';
+                this.sortBy = data.sortBy || this.sortBy;
+                this.perPage = data.perPage || this.perPage;
+                if (updateHistory) {
+                    window.history.pushState(null, '', url);
+                }
+                window.dispatchEvent(new CustomEvent('opac-updated', { detail: data }));
+            } catch (err) {
+                console.error('Failed to load OPAC results:', err);
+            } finally {
+                setTimeout(() => {
+                    this.isLoading = false;
+                }, 200);
+            }
+        },
+        changePerPage(val) {
+            this.perPage = val;
+            const url = new URL(window.location.href);
+            url.searchParams.set('per_page', val);
+            url.searchParams.delete('page');
+            this.fetchResults(url.toString());
+        },
+        changeSort(newSort) {
+            this.sortBy = newSort;
             const url = new URL(window.location.href);
             url.searchParams.set('sort', newSort);
-            window.location.href = url.toString();
+            url.searchParams.delete('page');
+            this.fetchResults(url.toString());
+        },
+        handleSearch(detail) {
+            const url = new URL('{{ route('opac.index') }}', window.location.origin);
+            if (detail.search) url.searchParams.set('search', detail.search);
+            if (detail.type && detail.type !== 'all') url.searchParams.set('type', detail.type);
+            this.fetchResults(url.toString());
+            this.scrollToTarget(true);
+        },
+        handleFilter(formData) {
+            const url = new URL('{{ route('opac.index') }}', window.location.origin);
+            const currentUrl = new URL(window.location.href);
+            if (currentUrl.searchParams.has('search') && !formData.has('search')) {
+                url.searchParams.set('search', currentUrl.searchParams.get('search'));
+            }
+            for (const [key, value] of formData.entries()) {
+                if (value) {
+                    if (key.endsWith('[]')) {
+                        url.searchParams.append(key, value);
+                    } else {
+                        url.searchParams.set(key, value);
+                    }
+                }
+            }
+            if (this.sortBy) url.searchParams.set('sort', this.sortBy);
+            this.mobileFilterOpen = false;
+            this.fetchResults(url.toString());
+        },
+        resetAllFilters() {
+            const url = new URL('{{ route('opac.index') }}', window.location.origin);
+            const currentUrl = new URL(window.location.href);
+            if (currentUrl.searchParams.has('search')) {
+                url.searchParams.set('search', currentUrl.searchParams.get('search'));
+            }
+            this.mobileFilterOpen = false;
+            this.fetchResults(url.toString());
+        },
+        goToPage(pageUrl) {
+            if (!pageUrl) return;
+            this.fetchResults(pageUrl);
+            this.scrollToTarget(false);
+        },
+        scrollToTarget(toSearchBar = false) {
+            const navbar = document.querySelector('header');
+            const navHeight = navbar ? navbar.offsetHeight : 76;
+
+            let targetElement = this.$el;
+            if (toSearchBar) {
+                const searchForm = document.getElementById('opacHeroSearchForm');
+                if (searchForm) {
+                    targetElement = searchForm;
+                }
+            }
+
+            const targetY = window.pageYOffset + targetElement.getBoundingClientRect().top - navHeight - 24;
+
+            window.scrollTo({
+                top: Math.max(0, Math.round(targetY)),
+                behavior: 'smooth'
+            });
         }
-    }"
-    class="relative w-full bg-[#F8FAFC] py-8 sm:py-10 lg:py-12 select-none min-h-[600px]"
+    };
+}
+</script>
+
+<!-- Results Area (Light background: #F8FAFC) -->
+<section
+    x-data="opacCatalog()"
+    @opac-search-trigger.window="handleSearch($event.detail)"
+    @opac-filter-trigger.window="handleFilter($event.detail)"
+    @opac-filter-reset.window="resetAllFilters()"
+    class="relative w-full bg-[#F8FAFC] py-8 sm:py-10 lg:py-12 select-none min-h-[600px] scroll-mt-28"
 >
     <div class="mx-auto max-w-[1380px] px-4 sm:px-6 lg:px-8">
 
@@ -159,7 +286,7 @@
         <div class="flex flex-col lg:flex-row items-start gap-6 lg:gap-8">
 
             <!-- Left: Filter Sidebar (Desktop) -->
-            <div class="hidden lg:block w-[270px] shrink-0 sticky top-[96px]">
+            <div class="hidden lg:block w-[270px] shrink-0">
                 <x-home.opac-filter
                     :availabilities="$availabilities"
                     :resourceTypes="$resourceTypes"
@@ -181,12 +308,13 @@
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
                     <div>
                         <h2 class="text-[17px] sm:text-[18px] font-extrabold text-[#0B2454] tracking-tight">
-                            <span>{{ $totalCount }}</span>
-                            @if (!empty($searchTerm))
-                                <span>results for</span> <span class="text-[#0B2454]">"{{ $searchTerm }}"</span>
-                            @else
+                            <span x-text="totalCount"></span>
+                            <template x-if="searchTerm">
+                                <span>results for "<span class="text-[#0B2454]" x-text="searchTerm"></span>"</span>
+                            </template>
+                            <template x-if="!searchTerm">
                                 <span>results in Catalog</span>
-                            @endif
+                            </template>
                         </h2>
                     </div>
 
@@ -266,289 +394,122 @@
                     style="display: none;"
                     class="space-y-4"
                 >
-                    @forelse ($results as $book)
-                        <!-- Book Result Card -->
-                        <article
-                            x-data="{ bookmarked: false }"
-                            class="rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xs hover:border-slate-300 transition-all duration-150"
-                        >
-                            <div class="flex flex-col sm:flex-row items-start gap-5">
+                    <template x-for="book in results" :key="book.id">
+                        <x-home.book-query-card :is-logged-in="$isLoggedIn" />
+                    </template>
 
-                                <!-- 9. Book Cover (110–125px wide × 150–175px high) -->
-                                <div class="w-[110px] sm:w-[120px] h-[155px] sm:h-[170px] shrink-0 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 shadow-xs relative">
-                                    @if (!empty($book['cover']))
-                                        <img
-                                            src="{{ $book['cover'] }}"
-                                            alt="{{ $book['title'] }}"
-                                            loading="lazy"
-                                            decoding="async"
-                                            class="h-full w-full object-cover"
-                                            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
-                                        >
-                                    @endif
-                                    <!-- Fallback Clean Cover Placeholder -->
-                                    <div style="{{ !empty($book['cover']) ? 'display: none;' : 'display: flex;' }}" class="h-full w-full flex-col items-center justify-center p-3 text-center bg-slate-100 text-slate-400">
-                                        <svg width="32" height="32" class="h-8 w-8 mb-1.5 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                                        </svg>
-                                        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Book Cover</span>
-                                    </div>
-                                </div>
-
-                                <!-- Middle: Book Metadata & Information Hierarchy -->
-                                <div class="flex-1 min-w-0 pr-0 sm:pr-2">
-
-                                    <!-- Level 1: Book Title -->
-                                    <h3 class="text-[16px] sm:text-[17.5px] font-bold text-[#0B2454] leading-snug tracking-tight">
-                                        <a
-                                            href="{{ route('opac.index', ['view' => $book['id']]) }}"
-                                            class="hover:text-[#3B82F6] transition-colors"
-                                        >
-                                            {{ $book['title'] }}
-                                        </a>
-                                    </h3>
-
-                                    <!-- Level 2: Author -->
-                                    <p class="mt-1 text-[13.5px] sm:text-[14px] font-medium text-slate-600">
-                                        {{ $book['author'] }}
-                                    </p>
-
-                                    <!-- Level 3: Year · Format · Pages -->
-                                    <div class="mt-3 flex flex-wrap items-center gap-3 text-[12.5px] sm:text-[13px] text-slate-500 font-medium">
-                                        <span class="inline-flex items-center gap-1.5">
-                                            <svg width="14" height="14" class="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                            </svg>
-                                            <span>{{ $book['year'] }}</span>
-                                        </span>
-
-                                        <span class="text-slate-300">•</span>
-
-                                        <span class="inline-flex items-center gap-1.5">
-                                            <svg width="14" height="14" class="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                                            </svg>
-                                            <span>{{ $book['format'] }}</span>
-                                        </span>
-
-                                        <span class="text-slate-300">•</span>
-
-                                        <span class="inline-flex items-center gap-1.5">
-                                            <svg width="14" height="14" class="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                            </svg>
-                                            <span>{{ $book['pages'] }}</span>
-                                        </span>
-                                    </div>
-
-                                    <!-- Level 4: Call Number & Location -->
-                                    <div class="mt-4 pt-3 border-t border-slate-100 space-y-1 text-[12.5px] sm:text-[13px]">
-                                        <div class="flex items-center gap-2">
-                                            <span class="font-bold text-slate-700 w-16 shrink-0">Call No.</span>
-                                            <span class="font-semibold text-slate-800 font-mono text-[12px] sm:text-[12.5px]">{{ $book['call_no'] }}</span>
-                                        </div>
-                                        <div class="flex items-center gap-2">
-                                            <span class="font-bold text-slate-700 w-16 shrink-0">Location</span>
-                                            <span class="text-slate-600">{{ $book['location'] }}</span>
-                                        </div>
-                                    </div>
-
-                                </div>
-
-                                <!-- Right Side: Availability Badge & Actions -->
-                                <div class="w-full sm:w-auto flex sm:flex-col items-start sm:items-end justify-between sm:justify-start gap-4 shrink-0 sm:self-stretch pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
-
-                                    <!-- Availability Status -->
-                                    <div class="text-left sm:text-right">
-                                        <div class="inline-flex items-center gap-1.5 font-bold text-[13px] {{ $book['status_color'] }}">
-                                            <span class="h-2 w-2 rounded-full {{ $book['dot_color'] }} shrink-0"></span>
-                                            <span>{{ $book['status_label'] }}</span>
-                                        </div>
-
-                                        <!-- Checkout & Accession Details (Role / Logged-in Conditional) -->
-                                        @if ($isLoggedIn)
-                                            @if (!empty($book['due_date']))
-                                                <p class="text-[11.5px] text-rose-600 mt-0.5 font-semibold">
-                                                    {{ $book['due_date'] }}
-                                                </p>
-                                            @elseif (!empty($book['pickup_date']))
-                                                <p class="text-[11.5px] text-amber-700 mt-0.5 font-semibold">
-                                                    {{ $book['pickup_date'] }}
-                                                </p>
-                                            @endif
-
-                                            <p class="text-[11px] text-slate-400 mt-0.5 font-mono">
-                                                Accession No. {{ $book['accession_no'] }}
-                                            </p>
-                                        @else
-                                            <!-- Subtle hint for guests -->
-                                            <p class="text-[11px] text-slate-400 mt-0.5">
-                                                Sign in for copy details
-                                            </p>
-                                        @endif
-                                    </div>
-
-                                    <!-- 11. Action Buttons Hierarchy: [ View Details ] [ Reserve ] [ ♡ ] -->
-                                    <div class="flex items-center gap-2 mt-auto">
-                                        <!-- Secondary: View Details (Always visible) -->
-                                        <a
-                                            href="{{ route('opac.index', ['view' => $book['id']]) }}"
-                                            class="inline-flex items-center justify-center py-2 px-3.5 rounded-xl border border-slate-300 bg-white text-[13px] font-semibold text-[#0B2454] shadow-2xs hover:bg-slate-50 hover:border-[#0B2454] transition-all cursor-pointer whitespace-nowrap"
-                                        >
-                                            View Details
-                                        </a>
-
-                                        <!-- Primary: Reserve Button (Determined by login state!) -->
-                                        @if ($isLoggedIn)
-                                            @if ($book['can_reserve'])
-                                                <!-- Logged-in & Available: Active Gold Reserve Button -->
-                                                <button
-                                                    type="button"
-                                                    @click="openReserve({{ json_encode($book) }})"
-                                                    class="inline-flex items-center gap-1.5 py-2 px-3.5 rounded-xl bg-[#F9C000] text-[13px] font-bold text-[#071A3D] shadow-xs hover:bg-[#e6b000] active:scale-95 transition-all cursor-pointer whitespace-nowrap"
-                                                >
-                                                    <svg width="14" height="14" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                                                    </svg>
-                                                    <span>Reserve</span>
-                                                </button>
-                                            @endif
-                                        @else
-                                            <!-- Not Logged In (Guest): Sign in to Reserve Gateway -->
-                                            <a
-                                                href="{{ route('login') }}"
-                                                class="inline-flex items-center gap-1.5 py-2 px-3 rounded-xl border border-amber-300/80 bg-amber-50/80 text-[12.5px] font-bold text-[#0B2454] hover:bg-amber-100 transition-all shadow-2xs whitespace-nowrap"
-                                                title="Sign in with your account to reserve this resource"
-                                            >
-                                                <svg width="13" height="13" class="h-3.5 w-3.5 text-amber-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                                </svg>
-                                                <span>Sign in to Reserve</span>
-                                            </a>
-                                        @endif
-
-                                        <!-- Tertiary: Bookmark Heart -->
-                                        <button
-                                            type="button"
-                                            @click="bookmarked = !bookmarked"
-                                            class="h-9 w-9 shrink-0 inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-400 hover:text-rose-500 hover:border-rose-200 shadow-2xs transition cursor-pointer"
-                                            :class="bookmarked ? 'text-rose-500 border-rose-200 bg-rose-50/50' : ''"
-                                            aria-label="Bookmark"
-                                        >
-                                            <svg width="16" height="16" class="h-4 w-4" :fill="bookmarked ? 'currentColor' : 'none'" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                                            </svg>
-                                        </button>
-                                    </div>
-
-                                </div>
-
-                            </div>
-                        </article>
-                    @empty
-                        <div class="rounded-2xl border border-slate-200/80 bg-white p-12 text-center">
-                            <div class="mx-auto w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-3">
-                                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                            </div>
-                            <h3 class="text-base font-bold text-[#0B2454]">No resources found</h3>
-                            <p class="text-sm text-slate-500 mt-1 max-w-sm mx-auto">
-                                We couldn't find any resources matching your search or filters. Try adjusting your search query or reset the filters.
-                            </p>
-                            <a
-                                href="{{ route('opac.index') }}"
-                                class="mt-4 inline-flex items-center gap-1.5 py-2 px-4 rounded-xl bg-[#0B2454] text-white text-xs font-semibold hover:bg-[#071943] transition"
-                            >
-                                Reset all filters
-                            </a>
+                    <!-- Empty State -->
+                    <div
+                        x-show="!isLoading && results.length === 0"
+                        class="rounded-2xl border border-slate-200/80 bg-white p-12 text-center"
+                    >
+                        <div class="mx-auto w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-3">
+                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
                         </div>
-                    @endforelse
+                        <h3 class="text-base font-bold text-[#0B2454]">No resources found</h3>
+                        <p class="text-sm text-slate-500 mt-1 max-w-sm mx-auto">
+                            We couldn't find any resources matching your search or filters. Try adjusting your search query or reset the filters.
+                        </p>
+                        <button
+                            type="button"
+                            @click="resetAllFilters()"
+                            class="mt-4 inline-flex items-center gap-1.5 py-2 px-4 rounded-xl bg-[#0B2454] text-white text-xs font-semibold hover:bg-[#071943] transition cursor-pointer"
+                        >
+                            Reset all filters
+                        </button>
+                    </div>
                 </div>
 
-                <!-- 13. Pagination Controls -->
-                @if ($pagination instanceof \Illuminate\Pagination\LengthAwarePaginator && $pagination->hasPages())
-                    <div class="mt-8 pt-6 border-t border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-4">
-
-                        <!-- Results Range Note -->
-                        <div class="text-[13px] text-slate-500 font-medium">
-                            Showing <span class="font-bold text-[#0B2454]">{{ $pagination->firstItem() }}</span> to <span class="font-bold text-[#0B2454]">{{ $pagination->lastItem() }}</span> of <span class="font-bold text-[#0B2454]">{{ $pagination->total() }}</span> results
-                        </div>
-
-                        <!-- Page Numbers -->
-                        <nav class="inline-flex items-center gap-1 text-[13px] font-semibold" aria-label="Pagination">
-                            <!-- Prev -->
-                            @if ($pagination->onFirstPage())
-                                <span class="h-9 w-9 rounded-xl border border-slate-200 bg-white text-slate-300 flex items-center justify-center cursor-not-allowed">
-                                    <svg width="16" height="16" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-                                    </svg>
-                                </span>
-                            @else
-                                <a
-                                    href="{{ $pagination->previousPageUrl() }}"
-                                    class="h-9 w-9 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 flex items-center justify-center transition"
-                                >
-                                    <svg width="16" height="16" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-                                    </svg>
-                                </a>
-                            @endif
-
-                            @foreach ($pagination->getUrlRange(1, min(5, $pagination->lastPage())) as $page => $url)
-                                @if ($page == $pagination->currentPage())
-                                    <span class="h-9 w-9 rounded-xl bg-[#0B2454] text-white flex items-center justify-center font-bold shadow-xs">
-                                        {{ $page }}
-                                    </span>
-                                @else
-                                    <a
-                                        href="{{ $url }}"
-                                        class="h-9 w-9 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 flex items-center justify-center transition"
-                                    >
-                                        {{ $page }}
-                                    </a>
-                                @endif
-                            @endforeach
-
-                            <!-- Next -->
-                            @if ($pagination->hasMorePages())
-                                <a
-                                    href="{{ $pagination->nextPageUrl() }}"
-                                    class="h-9 w-9 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 flex items-center justify-center transition"
-                                >
-                                    <svg width="16" height="16" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-                                    </svg>
-                                </a>
-                            @else
-                                <span class="h-9 w-9 rounded-xl border border-slate-200 bg-white text-slate-300 flex items-center justify-center cursor-not-allowed">
-                                    <svg width="16" height="16" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-                                    </svg>
-                                </span>
-                            @endif
-                        </nav>
-
-                        <!-- Results Per Page -->
-                        <div class="hidden sm:flex items-center gap-2 text-[13px] text-slate-500">
-                            <span>Results per page:</span>
-                            <div class="relative">
-                                <select
-                                    onchange="const u = new URL(window.location.href); u.searchParams.set('per_page', this.value); window.location.href = u.toString();"
-                                    class="appearance-none py-1.5 pl-3 pr-7 rounded-lg border border-slate-200 bg-white text-[13px] font-semibold text-[#0B2454] focus:outline-none cursor-pointer"
-                                >
-                                    <option value="10" {{ request('per_page') == 10 ? 'selected' : '' }}>10</option>
-                                    <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25</option>
-                                    <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50</option>
-                                </select>
-                                <svg width="12" height="12" class="h-3 w-3 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </div>
-                        </div>
-
+                <!-- 13. Pagination Controls (Alpine Dynamic) -->
+                <div
+                    x-show="!isLoading && results && results.length > 0"
+                    class="mt-8 pt-6 border-t border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-4"
+                >
+                    <!-- Left: Results Range Note -->
+                    <div class="text-[13px] text-slate-500 font-medium">
+                        Showing page <span class="font-bold text-[#102B70]" x-text="pagination ? pagination.currentPage : 1"></span> of <span class="font-bold text-[#102B70]" x-text="pagination ? pagination.lastPage : 1"></span> (<span class="font-bold text-[#102B70]" x-text="totalCount"></span> total results)
                     </div>
-                @endif
+
+                    <!-- Center: Page Numbers -->
+                    <nav class="inline-flex items-center gap-1.5 text-[13px] font-semibold" aria-label="Pagination">
+                        <!-- Prev -->
+                        <button
+                            type="button"
+                            :disabled="!pagination || pagination.currentPage <= 1"
+                            @click="goToPage(pagination ? pagination.prevUrl : null)"
+                            class="h-9 px-3 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300 flex items-center justify-center gap-1 transition shadow-2xs disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                            title="Previous page"
+                        >
+                            <svg width="15" height="15" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                            </svg>
+                            <span class="hidden sm:inline text-xs font-semibold">Prev</span>
+                        </button>
+
+                        <!-- Dynamic Page Number Buttons -->
+                        <template x-if="pagination && pagination.links && pagination.links.length > 3">
+                            <div class="inline-flex items-center gap-1">
+                                <template x-for="(link, idx) in pagination.links" :key="idx">
+                                    <template x-if="!isNaN(link.label)">
+                                        <button
+                                            type="button"
+                                            @click="goToPage(link.url)"
+                                            class="h-9 w-9 rounded-xl flex items-center justify-center text-xs font-bold transition shadow-2xs cursor-pointer"
+                                            :class="link.active ? 'bg-[#102B70] text-white shadow-xs' : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300'"
+                                            x-text="link.label"
+                                        ></button>
+                                    </template>
+                                </template>
+                            </div>
+                        </template>
+
+                        <!-- Fallback single page button if 1 page -->
+                        <template x-if="!pagination || !pagination.links || pagination.links.length <= 3">
+                            <button
+                                type="button"
+                                class="h-9 w-9 rounded-xl flex items-center justify-center text-xs font-bold bg-[#102B70] text-white shadow-xs"
+                            >
+                                1
+                            </button>
+                        </template>
+
+                        <!-- Next -->
+                        <button
+                            type="button"
+                            :disabled="!pagination || !pagination.hasMorePages"
+                            @click="goToPage(pagination ? pagination.nextUrl : null)"
+                            class="h-9 px-3 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300 flex items-center justify-center gap-1 transition shadow-2xs disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                            title="Next page"
+                        >
+                            <span class="hidden sm:inline text-xs font-semibold">Next</span>
+                            <svg width="15" height="15" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </button>
+                    </nav>
+
+                    <!-- Right: Per-Page Selector -->
+                    <div class="flex items-center gap-2 text-[12.5px] text-slate-500 font-medium">
+                        <span>Per page:</span>
+                        <div class="relative">
+                            <select
+                                :value="perPage"
+                                @change="changePerPage($event.target.value)"
+                                class="appearance-none py-1.5 pl-3 pr-7 rounded-xl border border-slate-200 bg-white text-[12.5px] font-bold text-[#102B70] focus:outline-none focus:ring-1 focus:ring-[#102B70] shadow-2xs cursor-pointer"
+                            >
+                                <option value="5">5</option>
+                                <option value="10">10</option>
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                            </select>
+                            <svg width="12" height="12" class="h-3 w-3 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
 
             </div>
 

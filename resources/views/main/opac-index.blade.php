@@ -12,6 +12,7 @@
         :yearFrom="$yearFrom ?? request('year_from')"
         :yearTo="$yearTo ?? request('year_to')"
         :sortBy="$sortBy ?? request('sort', 'relevance')"
+        :perPage="$perPage ?? (int) request('per_page', 5)"
         :results="$results ?? []"
         :pagination="$pagination ?? null"
         :totalResults="$totalResults ?? 0"
