@@ -9,7 +9,6 @@
     };
 @endphp
 
-
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
@@ -22,9 +21,7 @@
     <!-- icon-->
     <link rel="icon" href="{{ asset('logo.ico') }}" type="image/x-icon">
 
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+    <!-- Fonts: Open Sans Only -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -35,7 +32,7 @@
     @livewireStyles
 </head>
 
-<body class="antialiased font-sans min-h-dvh flex flex-col relative overflow-x-hidden bg-gray-90">
+<body class="antialiased font-sans min-h-dvh flex flex-col relative overflow-x-hidden bg-[#F8FAFC] text-[#0F172A] selection:bg-[#FCC719]/30 selection:text-[#102B70]">
 
     <!-- Preloader -->
     <x-preloader />
@@ -44,10 +41,8 @@
         <livewire:components.top-loader />
     @endpersist
 
-
     <div id="portal-content" class="opacity-0 transition-opacity duration-700 ease-in-out flex flex-col flex-1 w-full relative">
         <x-home.top-navigation :active="$active" />
-
 
         <div class="fixed inset-0 z-10 bg-gradient-hero backdrop-blur-sm pointer-events-none"></div>
 

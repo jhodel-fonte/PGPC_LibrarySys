@@ -22,7 +22,7 @@
             sidebarOpen ? 'translate-x-0' : '-translate-x-full',
             sidebarMinimized ? 'md:w-[80px]' : 'md:w-[280px]'
         ]"
-        class="fixed inset-y-0 left-0 w-[280px] bg-navy-primary text-white flex flex-col transition-all duration-300 ease-in-out md:translate-x-0 z-50 shadow-[4px_0_24px_rgba(0,0,0,0.15)] overflow-hidden h-dvh"
+        class="fixed inset-y-0 left-0 w-[280px] bg-navy-primary text-white flex flex-col transition-all duration-300 ease-in-out md:translate-x-0 z-50 shadow-[4px_0_24px_rgba(7,25,67,0.18)] overflow-hidden h-dvh"
     >
 
         <!-- Header / Logo Area -->
@@ -30,7 +30,7 @@
             <x-brand-title href="{{ route('admin.dashboard') }}" />
 
             <!-- Close Button for Mobile -->
-            <button @click="sidebarOpen = false" class="md:hidden p-1.5 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors focus:outline-none shrink-0">
+            <button @click="sidebarOpen = false" class="md:hidden p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-white/30 shrink-0" aria-label="Close Sidebar">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -52,7 +52,7 @@
 
             <!-- CIRCULATION SECTION -->
             <div class="px-2 mt-6 mb-2" x-show="!sidebarMinimized" x-transition.opacity.duration.300ms>
-                <span class="text-[11px] font-bold text-white/40 uppercase tracking-widest">Circulation</span>
+                <span class="text-xs font-bold text-white/50 uppercase tracking-wider">Circulation</span>
             </div>
 
             <x-sidebar-button href="{{ route('admin.circulation-desk.index') }}" :active="request()->routeIs('admin.circulation-desk.*')" class="mb-6" wire:navigate>
@@ -75,7 +75,7 @@
 
             <!-- CATALOG SECTION -->
             <div class="px-2 mt-6 mb-2" x-show="!sidebarMinimized" x-transition.opacity.duration.300ms>
-                <span class="text-[11px] font-bold text-white/40 uppercase tracking-widest">Catalog</span>
+                <span class="text-xs font-bold text-white/50 uppercase tracking-wider">Catalog</span>
             </div>
 
             <x-sidebar-button href="{{ route('admin.book-management.index') }}" :active="request()->routeIs('admin.book-management.*')" class="mb-3" wire:navigate>
@@ -109,7 +109,7 @@
 
             <!-- USERS SECTION -->
             <div class="px-2 mt-6 mb-2" x-show="!sidebarMinimized" x-transition.opacity.duration.300ms>
-                <span class="text-[11px] font-bold text-white/40 uppercase tracking-widest">Users</span>
+                <span class="text-xs font-bold text-white/50 uppercase tracking-wider">Users</span>
             </div>
 
             <x-sidebar-button href="{{ route('admin.user-management') }}" :active="request()->routeIs('admin.user-management')" wire:navigate>
@@ -123,7 +123,7 @@
 
             <!-- SYSTEM SECTION -->
             <div class="px-2 mt-6 mb-2" x-show="!sidebarMinimized" x-transition.opacity.duration.300ms>
-                <span class="text-[11px] font-bold text-white/40 uppercase tracking-widest">System</span>
+                <span class="text-xs font-bold text-white/50 uppercase tracking-wider">System</span>
             </div>
 
             {{-- <x-sidebar-button href="{{ route('admin.settings') }}" :active="request()->routeIs('admin.settings')" wire:navigate>

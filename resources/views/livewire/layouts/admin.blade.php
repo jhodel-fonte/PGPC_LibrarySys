@@ -10,9 +10,7 @@
         <!-- Logo -->
         <link rel="icon" href="{{ asset('logo.ico') }}" type="image/x-icon">
 
-        <!-- Fonts -->
-        <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700,800,900&display=swap" rel="stylesheet" />
+        <!-- Fonts: Open Sans Only -->
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -22,7 +20,7 @@
         <tallstackui:script />
         @livewireStyles
     </head>
-    <body class="font-sans antialiased">
+    <body class="font-sans antialiased bg-[#F8FAFC] text-[#0F172A] selection:bg-[#FCC719]/30 selection:text-[#102B70]">
         @persist('preloader')
             <x-preloader />
         @endpersist
@@ -34,15 +32,14 @@
             sidebarMinimized: localStorage.getItem('sidebarMinimized') === 'true'
         }"
         x-effect="localStorage.setItem('sidebarMinimized', sidebarMinimized)"
-        class="h-screen bg-gray-100 flex overflow-hidden relative">
+        class="h-screen bg-[#F8FAFC] flex overflow-hidden relative">
             <livewire:layouts.sidebar-nav />
 
             <!-- Page Content -->
-            <div :class="sidebarMinimized ? 'md:ml-[80px]' : 'md:ml-[280px]'" class="flex-1 flex flex-col min-w-0 h-screen transition-all duration-300 ease-in-out w-full">
-                {{-- <livewire:layout.topbar :activepage="$title ?? 'Dashboard'" /> --}}
+            <div :class="sidebarMinimized ? 'md:ml-[80px]' : 'md:ml-[280px]'" class="flex-1 flex flex-col min-w-0 h-screen transition-all duration-300 ease-in-out w-full bg-[#F8FAFC]">
                 <x-top-navbar :activepage="$title ?? 'Dashboards'" :subpage="$subpage ?? null" :activepageRoute="$activepageRoute ?? null" />
 
-                <main class="flex-1 overflow-y-auto">
+                <main class="flex-1 overflow-y-auto bg-[#F8FAFC]">
                     <livewire:components.global-announcement-banner />
                     {{ $slot }}
                 </main>

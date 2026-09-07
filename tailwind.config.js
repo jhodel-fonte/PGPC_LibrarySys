@@ -29,14 +29,15 @@ export default {
                 base: {
                     text: '#0F172A',
                     label: '#334155',
-                    secondary: '#64748B',
-                    muted: '#94A3B8',
+                    secondary: '#475569',
+                    muted: '#64748B',
                 },
                 border: {
                     DEFAULT: '#E2E8F0',
                     hover: '#CBD5E1',
                 },
                 soft: '#F8FAFC',
+                surface: '#FFFFFF',
                 error: {
                     bg: '#FEF2F2',
                     border: '#FECACA',
@@ -45,7 +46,7 @@ export default {
                 }
             },
             fontFamily: {
-                sans: ['Open Sans', 'Figtree', ...defaultTheme.fontFamily.sans],
+                sans: ['Open Sans', ...defaultTheme.fontFamily.sans],
             },
             animation: {
                 'pgpc-pulse': 'pgpc-pulse 1.8s cubic-bezier(.4, 0, .6, 1) infinite',
