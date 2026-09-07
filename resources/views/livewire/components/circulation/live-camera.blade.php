@@ -13,9 +13,11 @@
     inactivityTimeout: null,
     inactivityDelay: 60000, // 60 seconds before pausing automatically
 
+
     state: $wire.entangle('state'),
     message: $wire.entangle('message'),
     detail: $wire.entangle('detail'),
+
 
     async init() {
         // Use active polling to reliably detect Html5Qrcode module regardless of SPA navigation/load timings
@@ -52,11 +54,13 @@
         }
         this.isRequesting = true;
 
+
         // OPTIMIZATION: High FPS and native barcode detection for maximum speed at standard resolutions
         const config = {
             fps: 25,
             aspectRatio: 1.0,
             experimentalFeatures: {
+                useBarCodeDetectorIfSupported: true
                 useBarCodeDetectorIfSupported: true
             }
         };
@@ -68,12 +72,15 @@
                 let cameraId = devices[0].id;
                 const backCamera = devices.find(device =>
                     device.label.toLowerCase().includes('back') ||
+                const backCamera = devices.find(device =>
+                    device.label.toLowerCase().includes('back') ||
                     device.label.toLowerCase().includes('environment') ||
                     device.label.toLowerCase().includes('rear')
                 );
                 if (backCamera) {
                     cameraId = backCamera.id;
                 }
+
 
                 return this.scanner.start(
                     cameraId, // Using standard camera ID without forcing HD constraints
@@ -82,7 +89,9 @@
                         // The !this.hasActiveScan lock acts as a debounce to prevent flooding your Livewire backend
                         if (decodedText && !this.hasActiveScan) {
 
+
                             this.hasActiveScan = true; // Engage visual and request lock
+
 
                             // Send code to Livewire backend controller exactly once
                             $wire.handleScan(decodedText);
@@ -120,6 +129,7 @@
             this.isPaused = false;
             this.isRequesting = false;
             $wire.setScanState('scanning', 'Searching for barcode or QR code...');
+
 
             // Start inactivity auto-pause timer
             this.startInactivityTimer();
@@ -176,6 +186,7 @@
             });
         }
     }
+}"
 }"
 @start-camera.window="
     isCollapsed = false;
@@ -343,11 +354,12 @@ class="flex flex-col gap-3">
 
             <!-- Floating subtitle feedback overlay (Alpine-reactive inside wire:ignore) -->
             <div class="absolute bottom-1 left-1/2 transform -translate-x-1/2 z-20 py-2 px-6 bg-black/60 backdrop-blur-sm rounded-full shadow-lg border border-white/10 flex items-center justify-center text-center max-w-[90%] transition-all duration-300">
-            <!-- Floating Subtitle Status Pill (Accessible aria-live) -->
-            <div aria-live="polite" class="absolute bottom-2 left-1/2 transform -translate-x-1/2 z-20 py-1.5 px-4 bg-[#071943]/90 backdrop-blur-xs rounded-lg border border-white/10 flex items-center justify-center text-center max-w-[92%] transition-all duration-200">
                 <p x-text="state === 'success_member' || state === 'success_book' ? detail : message"
                    :class="state === 'success_member' || state === 'success_book' ? 'text-[#FCC719] font-bold' : (state === 'error' ? 'text-[#EF4444] font-bold' : 'text-white font-medium')"
                    class="text-[12px] drop-shadow-md tracking-wider leading-normal truncate"></p>
+            <!-- Floating Subtitle Status Pill (Accessible aria-live) -->
+            <div aria-live="polite" class="absolute bottom-2 left-1/2 transform -translate-x-1/2 z-20 py-1.5 px-4 bg-[#071943]/90 backdrop-blur-xs rounded-lg border border-white/10 flex items-center justify-center text-center max-w-[92%] transition-all duration-200">
+                <p x-text="state === 'success_member' || state === 'success_book' ? detail : message"
                    :class="state === 'success_member' || state === 'success_book' ? 'text-[#BBF7D0] font-bold' : (state === 'error' ? 'text-[#FECACA] font-bold' : 'text-white font-medium')"
                    class="text-xs tracking-wider leading-normal truncate"></p>
             </div>
@@ -371,6 +383,7 @@ class="flex flex-col gap-3">
         #reader-viewfinder video {
             width: 100% !important;
             height: 100% !important;
+            object-fit: cover !important;
             object-fit: cover !important;
             background-color: #0F172A !important;
         }
