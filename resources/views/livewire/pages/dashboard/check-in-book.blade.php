@@ -1,294 +1,206 @@
-<div class="relative w-full h-auto lg:h-[calc(100vh-70px)] flex flex-col items-center justify-start pt-4 px-3 md:px-6 xl:px-12 pb-5 font-sans bg-[#F8FAFC] overflow-y-auto lg:overflow-hidden check-in-workstation">
-
-    <!-- Lock page layout scroll to prevent entire page scrolling on desktop when screen size permits -->
-    <style>
-        @media (min-width: 1024px) {
-            @media (min-height: 800px) {
-                main {
-                    overflow: hidden !important;
-                    display: flex;
-                    flex-direction: column;
-                    height: calc(100vh - 70px) !important;
-                }
+<div class="w-full min-h-full flex flex-col font-sans bg-[#F8FAFC] pb-8 px-4 sm:px-6 lg:px-8"
+     x-data="{
+        cameraOpen: false,
+        toggleCamera() {
+            this.cameraOpen = !this.cameraOpen;
+            if (this.cameraOpen) {
+                this.$dispatch('start-camera');
+            } else {
+                this.$dispatch('collapse-camera');
             }
         }
+     }"
+     @start-camera.window="cameraOpen = true"
+     @collapse-camera.window="cameraOpen = false"
+>
+    <div class="w-full max-w-[1460px] mx-auto flex flex-col gap-5">
 
-        /* Zoom and Low Height Viewport Overrides */
-        @media (max-height: 799px) {
-            .check-in-workstation,
-            .check-in-workstation .lg\:overflow-hidden,
-            .check-in-workstation .lg\:h-full,
-            .check-in-workstation .lg\:h-\[calc\(100vh-70px\)\],
-            .check-in-workstation .lg\:h-\[calc\(100\%-80px\)\] {
-                height: auto !important;
-                overflow: visible !important;
-            }
-            main {
-                overflow: auto !important;
-                height: auto !important;
-            }
-        }
-
-        @keyframes loading-pulse {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(330%); }
-        }
-        .animate-loading-pulse {
-            animation: loading-pulse 1.5s infinite linear;
-        }
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-        .animate-spin-custom {
-            animation: spin 1s linear infinite;
-            transform-origin: center;
-        }
-    </style>
-
-    <div class="w-full max-w-[1460px] flex flex-col h-auto lg:h-full lg:overflow-hidden">
-        <!-- Header Area (Shrink-0 to keep fixed height) -->
-        <div class="w-full flex flex-col mb-4 md:mt-2 relative z-10 shrink-0">
-
-            <!-- Top Row: Back Button & Tabs -->
+        {{-- Top Navigation & Header --}}
+        <div class="flex flex-col gap-2 pt-2 shrink-0">
             @include('livewire.components.circulation.circulation-tab')
 
-            <!-- Title Row -->
-            <div class="flex flex-col md:flex-row pt-2 justify-between items-start md:items-center">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
                 <div>
-                    <h1 class="text-[1.35rem] font-bold text-[#102B70] tracking-tight leading-tight">
-                        Check-In / Return
+                    <h1 class="text-xl sm:text-2xl font-bold text-[#102B70] tracking-tight">
+                        Check-In / Return Books
                     </h1>
-                    <p class="mt-0.5 text-xs text-[#64748B] font-medium">
-                        Scan or enter member ID or book barcode to process returns.
+                    <p class="text-xs text-[#64748B] font-medium mt-0.5">
+                        Scan or enter a member ID or book barcode to process returns.
                     </p>
                 </div>
 
+                {{-- Camera Drawer Toggle Button (Secondary Action) --}}
+                <button type="button"
+                        @click="toggleCamera()"
+                        class="self-start sm:self-auto inline-flex items-center gap-2 h-10 px-4 bg-white border border-[#E2E8F0] hover:border-[#102B70] text-[#334155] hover:text-[#102B70] rounded-xl text-xs font-bold transition-all shadow-2xs focus:outline-none focus:ring-2 focus:ring-[#102B70]/20"
+                        :class="cameraOpen ? 'border-[#102B70] bg-[#EFF6FF] text-[#102B70]' : ''"
+                        aria-label="Toggle camera scanner drawer">
+                    <svg class="w-4 h-4 text-[#102B70]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    <span x-text="cameraOpen ? 'Hide Camera' : 'Camera Scanner'">Camera Scanner</span>
+                </button>
             </div>
         </div>
 
-        <!-- Main Content Grid (Three Column Workstation Grid Layout) -->
-        <div class="w-full grid grid-cols-1 lg:grid-cols-12 gap-6 relative z-10 mb-2 flex-1 lg:overflow-hidden h-auto lg:h-[calc(100%-80px)]">
+        {{-- Switch Student Confirmation Banner --}}
+        @if($showConfirmChangeMember)
+            <livewire:components.circulation.top-notification-banner
+                type="warning"
+                title="Unsaved Returns Session"
+                :message="'You have already scanned ' . count($returnedBooks) . ' book(s) in this session. Switching student to <b>' . $pendingStudentName . '</b> will clear this return session. Proceed?'"
+                confirm-action="confirmChangeMember"
+                confirm-label="Yes, Switch Student"
+                cancel-action="cancelChangeMember"
+                cancel-label="Cancel"
+            />
+        @endif
 
-            <!-- Left Section: Column 1 + Column 2 (col-span-9) -->
-            <div class="lg:col-span-9 h-auto lg:h-full flex flex-col gap-4 lg:overflow-hidden">
+        {{-- Primary Barcode Scanner / Search Bar --}}
+        <div class="relative overflow-hidden bg-white rounded-2xl border border-[#E2E8F0] p-4 shadow-xs shrink-0">
+            <!-- Indeterminate Loading Progress Bar -->
+            <div wire:loading class="absolute top-0 left-0 right-0 h-1 bg-[#EFF6FF] overflow-hidden">
+                <div class="h-full w-1/3 bg-[#FCC719] animate-loading-pulse rounded-full"></div>
+            </div>
 
-                <!-- Switch Student Confirmation Banner -->
-                @if($showConfirmChangeMember)
-                    <livewire:components.circulation.top-notification-banner
-                        type="warning"
-                        title="Unsaved Returns Session"
-                        :message="'You have already scanned ' . count($returnedBooks) . ' book(s) in this session. Switching student to <b>' . $pendingStudentName . '</b> will clear this return session. Proceed?'"
-                        confirm-action="confirmChangeMember"
-                        confirm-label="Yes, Switch Student"
-                        cancel-action="cancelChangeMember"
-                        cancel-label="Cancel"
-                    />
-                @endif
+            <livewire:components.circulation.qr-search-bar
+                label="Member ID / Code"
+                placeholder="Enter or scan member ID or book code"
+            />
 
-                <div class="relative overflow-hidden shrink-0 bg-white rounded-3xl border border-[#E2E8F0] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
-                    <!-- Indeterminate Top Progress Bar -->
-                    <div wire:loading class="absolute top-0 left-0 right-0 h-1 bg-[#EFF6FF] overflow-hidden">
-                        <div class="h-full w-1/3 bg-[#FCC719] animate-loading-pulse rounded-full"></div>
+            <!-- Operational Warning & Error Alerts -->
+            @if($errorMessage)
+                @php
+                    $isWarning = str_contains(strtolower($errorMessage), 'warning');
+                @endphp
+                <div x-data="{ showErr: true }" x-show="showErr"
+                     class="mt-3 p-3.5 border rounded-xl flex items-center justify-between text-xs font-bold transition-all shadow-2xs
+                            {{ $isWarning ? 'bg-[#FFFBEB] border-[#FDE68A] text-[#D97706]' : 'bg-[#FEF2F2] border-[#FECACA] text-[#B91C1C]' }}">
+                    <div class="flex items-center gap-2.5">
+                        <svg class="w-4 h-4 shrink-0 {{ $isWarning ? 'text-[#D97706]' : 'text-[#B91C1C]' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                        <span class="leading-normal">{{ $errorMessage }}</span>
+                    </div>
+                    <button type="button" @click="showErr = false" class="p-1 rounded-lg transition-colors focus:outline-none {{ $isWarning ? 'text-[#D97706] hover:bg-[#FEF3C7]' : 'text-[#B91C1C] hover:bg-[#FEE2E2]' }}" aria-label="Dismiss alert">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            @endif
+        </div>
+
+        {{-- Workstation Grid (8:4 layout on Desktop >=1280px, fluid protected on 1024-1279px, stacked on <1024px) --}}
+        <div class="w-full grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+            {{-- LEFT REGION (8 Cols on xl+, 7 Cols on lg) --}}
+            <div class="lg:col-span-7 xl:col-span-8 flex flex-col gap-5 min-w-0">
+
+                {{-- Optional Camera Drawer (Webcam Scanner) --}}
+                <div x-show="cameraOpen"
+                     x-collapse
+                     x-cloak
+                     class="bg-white rounded-2xl border border-[#E2E8F0] p-5 shadow-xs flex flex-col gap-3 transition-all">
+                    <div class="flex items-center justify-between pb-2 border-b border-[#E2E8F0]">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-[#102B70]"></span>
+                            <h3 class="text-xs font-bold text-[#102B70] uppercase tracking-wider">Webcam Scanner Viewport</h3>
+                        </div>
+                        <button type="button"
+                                @click="toggleCamera()"
+                                class="text-xs font-bold text-[#64748B] hover:text-[#B91C1C] transition-colors flex items-center gap-1 focus:outline-none"
+                                aria-label="Close camera scanner">
+                            <span>Close Camera</span>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
                     </div>
 
-                    <livewire:components.circulation.qr-search-bar
-                        label="Member ID / Code"
-                        placeholder="Enter or scan member ID or book code"
-                    />
+                    <livewire:components.circulation.live-camera />
+                </div>
 
-                    @if($errorMessage)
-                        <div x-data="{ showErr: true }" x-show="showErr" class="mt-3 p-3 bg-[#FEF2F2] border border-[#FCA5A5] rounded-xl flex items-center justify-between text-[11px] font-bold text-[#B91C1C] transition-all animate-fade-in">
+                {{-- Last Scanned / Returned Book Card (Tactile Feedback Strip) --}}
+                @if($lastReturnedBook)
+                    <div class="bg-white rounded-2xl border border-[#E2E8F0] p-5 shadow-xs flex flex-col gap-3 animate-fade-in">
+                        <div class="flex items-center justify-between pb-2.5 border-b border-[#E2E8F0]">
                             <div class="flex items-center gap-2">
-                                <svg class="w-4 h-4 text-[#EF4444] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                                </svg>
-                                <span>{{ $errorMessage }}</span>
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-[#DCFCE7] text-[#15803D] border border-[#BBF7D0]">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                    Returned in Session
+                                </span>
+                                <h3 class="text-xs font-bold text-[#334155] uppercase tracking-wider">Last Scanned Item</h3>
                             </div>
-                            <button type="button" @click="showErr = false" class="text-[#EF4444] hover:text-[#B91C1C] transition-colors focus:outline-none">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+
+                            <!-- Undo Return Action Button -->
+                            <button type="button"
+                                    wire:click="undoReturn('{{ $lastReturnedBook['accession'] }}')"
+                                    class="h-8 px-3 border border-[#FECACA] bg-white hover:bg-[#FEF2F2] text-[#B91C1C] rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs focus:outline-none focus:ring-2 focus:ring-[#B91C1C]/20">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path>
                                 </svg>
+                                Undo Return
                             </button>
                         </div>
-                    @endif
-                </div>
 
-                <!-- Sub Grid: Column 1 & Column 2 side-by-side (flex-1 overflow-hidden) -->
-                <div class="grid grid-cols-1 md:grid-cols-12 gap-4 flex-1 lg:overflow-hidden h-auto lg:h-full">
-
-                    <!-- COLUMN 1: Scanner + Scanned Book Details (md:col-span-4) -->
-                    <div class="md:col-span-4 flex flex-col gap-4 h-auto lg:h-full lg:overflow-hidden">
-                        <!-- Scanner Card -->
-                        <div class="bg-white rounded-3xl border border-[#E2E8F0] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.02)] shrink-0">
-                            <livewire:components.circulation.live-camera />
-                        </div>
-
-                        <!-- Scanned Book Details Card (Flex-1) -->
-                        <div wire:loading.class="opacity-65 transition-opacity duration-300" class="bg-white rounded-3xl border border-[#E2E8F0] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.02)] min-h-[320px] lg:flex-1 flex flex-col lg:overflow-hidden">
-                            <!-- Header -->
-                            <div class="flex justify-between items-center shrink-0 mb-3">
-                                <h3 class="text-xs font-bold text-[#102B70] uppercase tracking-wider">Scanned Book</h3>
-                                {{-- @if($lastReturnedBook)
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#DCFCE7] text-[#15803D] border border-[#BBF7D0]">
-                                        Returned
-                                    </span>
-                                @endif --}}
+                        <div class="flex items-start gap-4">
+                            <!-- Book Icon Tile -->
+                            <div class="w-10 h-14 rounded-lg bg-[#EFF6FF] text-[#102B70] border border-[#DBEAFE] flex items-center justify-center shrink-0 shadow-2xs">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                                </svg>
                             </div>
 
-                            @if($lastReturnedBook)
-                                <!-- Content -->
-                                <div class="flex-1 overflow-y-auto flex flex-col gap-3 pr-1">
-                                    <div class="flex gap-4">
-                                        <!-- Book Cover -->
-                                        <div class="w-12 h-16 bg-gradient-to-br from-[#102B70] to-[#F59E0B] rounded shadow-sm overflow-hidden flex items-center justify-center shrink-0">
-                                            <span class="text-[9px] text-white/50 font-bold uppercase tracking-wider text-center px-1">{{ $lastReturnedBook['code'] }}</span>
-                                        </div>
-                                        <div class="flex flex-col min-w-0">
-                                            <h4 class="font-extrabold text-[14px] leading-tight text-[#0F172A] truncate">{{ $lastReturnedBook['title'] }}</h4>
-                                            <span class="text-[11px] text-[#64748B] font-semibold mt-0.5 truncate">{{ $lastReturnedBook['author'] }}</span>
-                                            <span class="text-[10px] text-[#94A3B8] font-medium mt-1 truncate">{{ $lastReturnedBook['call_number'] }}</span>
-                                        </div>
-                                    </div>
-
-                                    <!-- Metadata list -->
-                                    <div class="flex flex-col gap-1.5 mt-1.5 text-xs font-semibold">
-                                        <div class="flex justify-between items-center py-1.5 border-b border-[#F1F5F9]">
-                                            <span class="text-[#64748B]">Accession No.</span>
-                                            <span class="text-[#0F172A]">{{ $lastReturnedBook['accession'] }}</span>
-                                        </div>
-                                        <div class="flex justify-between items-center py-1.5 border-b border-[#F1F5F9]">
-                                            <span class="text-[#64748B]">Borrowed On</span>
-                                            <span class="text-[#0F172A]">{{ $lastReturnedBook['borrowed_on'] }}</span>
-                                        </div>
-                                        <div class="flex justify-between items-center py-1.5">
-                                            <span class="text-[#64748B]">Due Date</span>
-                                            <span class="text-[#0F172A]">{{ $lastReturnedBook['due_date'] }}</span>
-                                        </div>
-                                    </div>
+                            <div class="flex-1 min-w-0">
+                                <h4 class="text-sm font-bold text-[#0F172A] leading-snug truncate" title="{{ $lastReturnedBook['title'] }}">
+                                    {{ $lastReturnedBook['title'] }}
+                                </h4>
+                                <p class="text-xs text-[#475569] mt-0.5 truncate">{{ $lastReturnedBook['author'] }}</p>
+                                <div class="flex items-center gap-3 mt-1 text-xs text-[#64748B] tabular-nums flex-wrap">
+                                    <span>Acc. No: <span class="font-mono text-[#0F172A] font-semibold">{{ $lastReturnedBook['accession'] }}</span></span>
+                                    <span class="text-slate-300" aria-hidden="true">&bull;</span>
+                                    <span>Borrowed: <span class="font-semibold text-[#334155]">{{ $lastReturnedBook['borrowed_on'] }}</span></span>
+                                    <span class="text-slate-300" aria-hidden="true">&bull;</span>
+                                    <span>Due: <span class="font-semibold text-[#334155]">{{ $lastReturnedBook['due_date'] }}</span></span>
                                 </div>
-
-                                <!-- Action Undo button (shrink-0) -->
-                                <div class="mt-auto pt-3 shrink-0">
-                                    <button wire:click="undoReturn('{{ $lastReturnedBook['accession'] }}')" class="w-full h-10 border border-[#FECACA] hover:bg-[#FEF2F2] text-[#EF4444] rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-colors">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                        </svg>
-                                        Undo Return
-                                    </button>
-                                </div>
-                            @else
-                                <div class="flex-1 flex flex-col items-center justify-center text-center p-4 gap-2">
-                                    <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
-                                        </svg>
-                                    </div>
-                                    <span class="text-xs font-bold text-[#64748B] uppercase tracking-wider">No Book Scanned</span>
-                                    <p class="text-[10px] text-[#94A3B8] max-w-[180px] leading-normal">Scan a book code to mark it as returned in this session.</p>
-                                </div>
-                            @endif
+                            </div>
                         </div>
                     </div>
+                @endif
 
-                    <!-- COLUMN 2: Borrowed Books (md:col-span-8) -->
-                    <livewire:components.circulation.table
-                        :borrowed-books="$borrowedBooks"
-                        :scanned-member="$scannedMember"
-                    />
-
-                </div>
+                {{-- Canonical Borrowed Books Table --}}
+                <livewire:components.circulation.table
+                    :borrowed-books="$borrowedBooks"
+                    :scanned-member="$scannedMember"
+                    mode="check-in"
+                    title="Borrowed Books on Account"
+                    class="w-full min-h-[380px]"
+                />
             </div>
 
-            <!-- Right Section: Column 3 (col-span-3 Return Summary Panel) -->
-            <div class="lg:col-span-3 h-auto lg:h-full flex flex-col gap-4 lg:overflow-hidden">
-                <!-- Student Card -->
-                <div wire:loading.class="opacity-65 transition-opacity duration-300" class="bg-white rounded-3xl border border-[#E2E8F0] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.02)] shrink-0 min-h-[220px] flex flex-col">
-                    <div class="flex flex-col gap-3 flex-1">
-                        <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-widest">Student</span>
+            {{-- RIGHT RAIL (4 Cols on xl+, 5 Cols on lg) --}}
+            <div class="lg:col-span-5 xl:col-span-4 flex flex-col gap-5 min-w-0">
 
-                        @if($scannedMember)
-                            @php
-                                $initials = '';
-                                if (!empty($scannedMember['name'])) {
-                                    $words = explode(' ', $scannedMember['name']);
-                                    $initials = strtoupper(substr($words[0], 0, 1) . (count($words) > 1 ? substr(end($words), 0, 1) : ''));
-                                }
-                                $isStatusActive = strtolower($scannedMember['status'] ?? 'active') === 'active';
-                            @endphp
-                            <div class="bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl p-4 flex flex-col gap-4 shadow-inner flex-1 justify-between">
-                                <div class="flex items-center gap-3.5">
-                                    <!-- Branded Initials Avatar -->
-                                    <div class="w-12 h-12 rounded-full bg-[#102B70] text-[#FFFFFF] border-2 flex items-center justify-center shrink-0 shadow-sm text-sm font-bold tracking-wider select-none">
-                                        {{ $initials ?: 'S' }}
-                                    </div>
+                {{-- Member Profile Card (Canonical Component) --}}
+                <livewire:components.circulation.member-scan-result
+                    :member="$scannedMember"
+                />
 
-                                    <div class="min-w-0 flex-1">
-                                        <div class="flex items-center gap-2 flex-wrap">
-                                            <h3 class="text-[#0F172A] font-bold text-[15px] leading-tight truncate max-w-[130px] xl:max-w-none" title="{{ $scannedMember['name'] }}">{{ $scannedMember['name'] }}</h3>
-                                            <span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[8.5px] font-bold border {{ $isStatusActive ? 'bg-[#DCFCE7] text-[#15803D] border-[#BBF7D0]' : 'bg-[#FEF2F2] text-[#B91C1C] border-[#FECACA]' }}">
-                                                {{ $scannedMember['status'] }}
-                                            </span>
-                                        </div>
-                                        <div class="text-[12px] text-[#64748B] font-semibold mt-0.5">
-                                            <span>{{ $scannedMember['school_id'] }}</span>
-                                            <span class="mx-1 text-slate-300">&bull;</span>
-                                            <span class="text-[11.5px] font-medium">{{ $scannedMember['course'] }}</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Aligned Action Button -->
-                                <div class="flex justify-end" x-data="{ confirmChange: false }">
-                                    <!-- Normal State: Change Student -->
-                                    <button x-show="!confirmChange"
-                                            type="button"
-                                            @click="confirmChange = true"
-                                            class="h-8 px-3.5 border border-[#102B70] bg-white text-[#102B70] hover:bg-[#EFF6FF] rounded-xl text-[11px] font-bold transition-all flex items-center gap-1.5 shadow-sm">
-                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                                        </svg>
-                                        Change Student
-                                    </button>
-
-                                    <!-- Confirmation choices (Inline) -->
-                                    <div x-show="confirmChange" class="flex items-center gap-1.5" style="display: none;">
-                                        <span class="text-[10px] font-bold text-[#EF4444] mr-1 select-none">Sure?</span>
-                                        <button type="button"
-                                                @click="confirmChange = false"
-                                                class="h-8 px-2.5 border border-[#CBD5E1] bg-white text-[#64748B] hover:bg-slate-50 hover:text-[#0F172A] rounded-xl text-[10px] font-bold transition-all shadow-sm">
-                                            Cancel
-                                        </button>
-                                        <button type="button"
-                                                wire:click="clearMember"
-                                                @click="confirmChange = false"
-                                                class="h-8 px-3 bg-[#EF4444] hover:bg-[#B91C1C] text-white rounded-xl text-[10px] font-bold transition-all shadow-sm">
-                                            Confirm
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        @else
-                            <div class="bg-[#F8FAFC] border border-dashed border-[#CBD5E1] rounded-2xl p-6 flex flex-col items-center justify-center text-center gap-2.5 flex-1 mt-1 hover:border-[#102B70] transition-colors duration-200">
-                                <div class="w-12 h-12 rounded-full bg-[#EFF6FF] border border-[#DBEAFE] flex items-center justify-center text-[#102B70] shrink-0 shadow-sm">
-                                    <svg class="w-5.5 h-5.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.333 0 4 .667 4 2V17H5v-1c0-1.333 2.667-2 4-2z"></path>
-                                    </svg>
-                                </div>
-                                <span class="text-[13px] font-bold text-[#334155]">No Student Profile Loaded</span>
-                                <p class="text-[10.5px] text-[#64748B] max-w-[190px] leading-relaxed">Scan or enter a member ID number to load their profile and books.</p>
-                            </div>
-                        @endif
-                    </div>
-                </div>
-
-                <livewire:components.circulation.summary-panel :stats="$stats" :scanned-member="$scannedMember" />
+                {{-- Return Summary Panel (Canonical Component) --}}
+                <livewire:components.circulation.summary-panel
+                    :stats="$stats"
+                    :scanned-member="$scannedMember"
+                />
             </div>
+
+        </div>
 
     </div>
 
-    <!-- Search Entity Modal -->
+    {{-- Search Entity Modal Component --}}
     <livewire:components.circulation.search-entity-modal service="check-in" />
 </div>
-
-

@@ -31,7 +31,7 @@
         </div>
 
         <!-- Breadcrumbs for Desktop -->
-        <nav aria-label="Breadcrumb" class="hidden md:flex items-center text-base font-semibold">
+        <nav aria-label="Breadcrumb" class="hidden md:flex items-center text-s font-semibold">
             <span class="text-[#64748B]">{{ $staffRole }}</span>
             <span class="mx-2 text-[#CBD5E1] select-none" aria-hidden="true">&gt;</span>
             @if($subpage)
