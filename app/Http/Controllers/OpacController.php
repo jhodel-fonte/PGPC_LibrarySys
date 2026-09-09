@@ -13,10 +13,11 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Pagination\LengthAwarePaginator;
 use App\Services\DataNormalizationService;
-
+use App\Traits\SanitizesRequestInput;
 
 class OpacController extends Controller
 {
+    use SanitizesRequestInput;
     /**
      * Display the OPAC catalog search & filter view.
      */
@@ -164,7 +165,7 @@ class OpacController extends Controller
             if (request()->expectsJson()) {
                 return response()->json([
                     'success'        => true,
-                    'message'        => 'Book reservation submitted successfully! Please pick up the item within 3 days.',
+                    'message'        => 'Book reservation submitted successfully! Please pick up the item within {count} days.',
                     'reservation_id' => $reservation->id,
                 ]);
             }
@@ -196,17 +197,7 @@ class OpacController extends Controller
      * PRIVATE HELPERS
      * ========================================================================= */
 
-    /**
-     * Safely read a request input as a trimmed string.
-     * Returns '' when the value is an array (e.g. subject[]=1).
-     *
-     * Bug fix #1 / #2: prevents trim() TypeError when array params are passed.
-     */
-    private function inputString(Request $request, string $key): string
-    {
-        $value = $request->input($key);
-        return is_string($value) ? trim($value) : '';
-    }
+    // inputString() and inputInt() are provided by SanitizesRequestInput trait.
 
     /**
      * Parse and sanitize all filter parameters from the request into a
@@ -214,50 +205,77 @@ class OpacController extends Controller
      *
      * Separating this out keeps executeCatalogQuery() focused on DB work only.
      */
+    /**
+     * Parse and sanitize all filter parameters from the request into a
+     * structured array that the catalog query can safely consume.
+     */
     private function parseFilters(Request $request): array
     {
-        $search      = $this->inputString($request, 'search');
-        $advTitle    = $this->inputString($request, 'title');
-        $advAuthor   = $this->inputString($request, 'author');
-        // Bug fix #1: subject as a text string (Advanced Search field)
-        $advSubject  = $this->inputString($request, 'subject');
-        $advIsbn     = $this->inputString($request, 'isbn');
-        $advLocation = $this->inputString($request, 'location');
+        // 1. Sanitize text string inputs with safe length bounds
+        $search      = mb_substr($this->inputString($request, 'search'), 0, 255);
+        $advTitle    = mb_substr($this->inputString($request, 'title'), 0, 255);
+        $advAuthor   = mb_substr($this->inputString($request, 'author'), 0, 255);
+        $advSubject  = mb_substr($this->inputString($request, 'subject'), 0, 255);
+        $advIsbn     = mb_substr($this->inputString($request, 'isbn'), 0, 100);
+        $advLocation = mb_substr($this->inputString($request, 'location'), 0, 100);
         if ($advLocation === 'all') {
             $advLocation = '';
         }
 
-        $matchType    = $this->inputString($request, 'match') ?: 'all';
-        $selectedType = $this->inputString($request, 'type') ?: 'all';
+        // 2. Validate matchType strictly to 'all' or 'any'
+        $rawMatch  = strtolower($this->inputString($request, 'match'));
+        $matchType = in_array($rawMatch, ['all', 'any'], true) ? $rawMatch : 'all';
 
-        $rawAvail             = $request->input('availability', []);
+        // 3. Validate selectedType
+        $rawType    = strtolower($this->inputString($request, 'type'));
+        $validTypes = ['all', 'books', 'theses', 'journals', 'reports', 'multimedia', 'book'];
+        $selectedType = in_array($rawType, $validTypes, true) ? $rawType : 'all';
+
+        // 4. Validate availability (handle both single string and array)
+        $rawAvail = $request->input('availability', []);
+        $availCandidates = is_array($rawAvail) ? $rawAvail : [$rawAvail];
+        $validAvailabilities = ['available', 'checked_out', 'reserved', 'reference_only'];
         $selectedAvailabilities = array_values(array_filter(
-            is_array($rawAvail) ? $rawAvail : [$rawAvail],
-            fn($val) => filled($val) && $val !== 'all'
+            $availCandidates,
+            fn($val) => is_string($val) && in_array(strtolower(trim($val)), $validAvailabilities, true)
         ));
 
-        // Bug fix #1: subject as an array of category IDs (sidebar checkboxes)
-        // Only treat them as integer IDs — reject non-numeric values so a plain
-        // text "subject=Computer Science" from Advanced Search doesn't bleed here.
+        // 5. Validate subjects (numeric IDs for sidebar facets)
         $rawSubjects     = (array) $request->input('subject', []);
         $selectedSubjects = array_values(array_filter(
             $rawSubjects,
-            fn($v) => is_numeric($v)   // only numeric IDs from sidebar checkboxes
+            fn($v) => is_numeric($v)
         ));
 
-        $yearFrom = is_numeric($request->input('year_from')) ? (int) $request->input('year_from') : null;
-        $yearTo   = is_numeric($request->input('year_to'))   ? (int) $request->input('year_to')   : null;
-        $sortBy   = $this->inputString($request, 'sort') ?: 'relevance';
+        // 6. Validate publication year bounds (1000 to current year + 10)
+        $rawYearFrom = $this->inputInt($request, 'year_from');
+        $rawYearTo   = $this->inputInt($request, 'year_to');
+        $maxValidYear = (int) date('Y') + 10;
 
+        $yearFrom = ($rawYearFrom && $rawYearFrom >= 1000 && $rawYearFrom <= $maxValidYear) ? $rawYearFrom : null;
+        $yearTo   = ($rawYearTo && $rawYearTo >= 1000 && $rawYearTo <= $maxValidYear) ? $rawYearTo : null;
+
+        // 7. Validate sort options
+        $rawSort   = strtolower($this->inputString($request, 'sort'));
+        $validSort = ['relevance', 'newest', 'year_desc', 'title_asc'];
+        $sortBy    = in_array($rawSort, $validSort, true) ? $rawSort : 'relevance';
+
+        // 8. Validate perPage pagination options
         $perPage = (int) $request->input('per_page', 5);
-        if (! in_array($perPage, [5, 10, 25, 50])) {
+        if (! in_array($perPage, [5, 10, 25, 50], true)) {
             $perPage = 5;
         }
+
+        // 9. Determine if this is an advanced search request
+        $isAdvancedSearch = $request->routeIs('opac.advanced') ||
+            $request->is('*advanced*') ||
+            $request->has('match') ||
+            $request->hasAny(['title', 'author', 'isbn']);
 
         return compact(
             'search', 'advTitle', 'advAuthor', 'advSubject', 'advIsbn', 'advLocation',
             'matchType', 'selectedType', 'selectedAvailabilities', 'selectedSubjects',
-            'yearFrom', 'yearTo', 'sortBy', 'perPage'
+            'yearFrom', 'yearTo', 'sortBy', 'perPage', 'isAdvancedSearch'
         );
     }
 
@@ -314,30 +332,43 @@ class OpacController extends Controller
      */
     private function runViewQuery(Request $request, array $f): array
     {
-        $query = OpacCatalogView::query()
-            ->search($f['search'])
-            ->advancedSearch([
-                'title'    => $f['advTitle'],
-                'author'   => $f['advAuthor'],
-                'subject'  => $f['advSubject'],
-                'isbn'     => $f['advIsbn'],
-                'location' => $f['advLocation'],
+        $query = OpacCatalogView::query();
+
+        // 1. Simple search bar if present
+        if (!empty($f['search'])) {
+            $query->search($f['search']);
+        }
+
+        // 2. If this is an Advanced Search request, pass all criteria into advancedSearch scope
+        if (!empty($f['isAdvancedSearch'])) {
+            $query->advancedSearch([
+                'title'        => $f['advTitle'],
+                'author'       => $f['advAuthor'],
+                'subject'      => $f['advSubject'],
+                'isbn'         => $f['advIsbn'],
+                'type'         => $f['selectedType'],
+                'availability' => $f['selectedAvailabilities'],
+                'year_from'    => $f['yearFrom'],
+                'year_to'      => $f['yearTo'],
+                'location'     => $f['advLocation'],
             ], $f['matchType']);
+        } else {
+            // Standard OPAC Search Sidebar Filters (always AND narrowed)
+            if ($f['selectedType'] !== 'all' && filled($f['selectedType'])) {
+                $query->filterType($f['selectedType']);
+            }
 
-        if ($f['selectedType'] !== 'all' && filled($f['selectedType'])) {
-            $query->filterType($f['selectedType']);
-        }
+            if (! empty($f['selectedAvailabilities'])) {
+                $query->filterAvailability($f['selectedAvailabilities']);
+            }
 
-        if (! empty($f['selectedAvailabilities'])) {
-            $query->filterAvailability($f['selectedAvailabilities']);
-        }
+            if (! empty($f['yearFrom']) || ! empty($f['yearTo'])) {
+                $query->filterYear($f['yearFrom'], $f['yearTo']);
+            }
 
-        if (! empty($f['yearFrom']) || ! empty($f['yearTo'])) {
-            $query->filterYear($f['yearFrom'], $f['yearTo']);
-        }
-
-        if (! empty($f['selectedSubjects'])) {
-            $query->filterSubject($f['selectedSubjects']);
+            if (! empty($f['selectedSubjects'])) {
+                $query->filterSubject($f['selectedSubjects']);
+            }
         }
 
         match ($f['sortBy']) {
@@ -346,8 +377,6 @@ class OpacController extends Controller
             default               => $query->orderBy('book_detail_id', 'desc'),
         };
 
-        // Bug fix #4: use only safe scalar params for appends to avoid
-        // double-encoding of array params like subject[0]=1
         $paginator = $query->paginate($f['perPage'])->appends(
             $request->except(['page'])  // let paginator manage the page param itself
         );

@@ -5,11 +5,17 @@
 
 @php
     $isAlpine = is_null($book);
+    $bladeDetailUrl = !$isAlpine ? route('opac.book.detail', (!empty($book['accession_no']) && $book['accession_no'] !== 'N/A') ? $book['accession_no'] : $book['id']) : '';
 @endphp
 
 <!-- Book Result Card Component -->
 <article
-    class="rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xs hover:border-slate-300 transition-all duration-150"
+    @if ($isAlpine)
+        @click="window.location.href = '{{ route('opac.book.detail', '') }}/' + (book.accession_no && book.accession_no !== 'N/A' ? encodeURIComponent(book.accession_no) : book.id)"
+    @else
+        onclick="window.location.href = '{{ $bladeDetailUrl }}'"
+    @endif
+    class="group cursor-pointer rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xs hover:border-[#102B70]/30 hover:shadow-md transition-all duration-200"
 >
     <div class="flex flex-col sm:flex-row items-start gap-5">
 
@@ -41,12 +47,14 @@
                 </template>
                 <div
                     x-show="imgError || !book.cover"
-                    class="h-full w-full flex flex-col items-center justify-center p-3 text-center bg-slate-100 text-slate-400"
+                    class="h-full w-full flex items-center justify-center bg-[#EFF6FF] border border-[#DBEAFE]"
                 >
-                    <svg width="32" height="32" class="h-8 w-8 mb-1.5 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                    </svg>
-                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Book Cover</span>
+                    <img
+                        src="{{ asset('images/logo.webp') }}"
+                        alt="No cover available"
+                        class="h-20 w-20 object-contain opacity-30 select-none pointer-events-none"
+                        draggable="false"
+                    >
                 </div>
             @else
                 <!-- Blade Static Image -->
@@ -70,12 +78,14 @@
                 <div
                     x-show="imgError || !'{{ $book['cover'] ?? '' }}'"
                     style="{{ !empty($book['cover']) ? 'display: none;' : '' }}"
-                    class="h-full w-full flex flex-col items-center justify-center p-3 text-center bg-slate-100 text-slate-400"
+                    class="h-full w-full flex items-center justify-center bg-[#EFF6FF] border border-[#DBEAFE]"
                 >
-                    <svg width="32" height="32" class="h-8 w-8 mb-1.5 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                    </svg>
-                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Book Cover</span>
+                    <img
+                        src="{{ asset('images/logo.webp') }}"
+                        alt="No cover available"
+                        class="h-20 w-20 object-contain opacity-30 select-none pointer-events-none"
+                        draggable="false"
+                    >
                 </div>
             @endif
         </div>
@@ -84,17 +94,17 @@
         <div class="flex-1 min-w-0 pr-0 sm:pr-2">
 
             <!-- Level 1: Book Title -->
-            <h3 class="text-[16px] sm:text-[17.5px] font-bold text-[#0B2454] leading-snug tracking-tight">
+            <h3 class="text-[16px] sm:text-[17.5px] font-bold text-[#0B2454] group-hover:text-[#3B82F6] leading-snug tracking-tight transition-colors">
                 @if ($isAlpine)
                     <a
                         :href="'{{ route('opac.book.detail', '') }}/' + (book.accession_no && book.accession_no !== 'N/A' ? encodeURIComponent(book.accession_no) : book.id)"
-                        class="hover:text-[#3B82F6] transition-colors"
+                        class="hover:underline"
                         x-text="book.title"
                     ></a>
                 @else
                     <a
-                        href="{{ route('opac.book.detail', (!empty($book['accession_no']) && $book['accession_no'] !== 'N/A') ? $book['accession_no'] : $book['id']) }}"
-                        class="hover:text-[#3B82F6] transition-colors"
+                        href="{{ $bladeDetailUrl }}"
+                        class="hover:underline"
                     >
                         {{ $book['title'] }}
                     </a>
@@ -179,22 +189,15 @@
             <div class="text-left sm:text-right">
                 @if ($isAlpine)
                     <div class="inline-flex items-center gap-1.5 font-bold text-[13px]" :class="book.status_color">
-                        <span class="h-2 w-2 rounded-full shrink-0" :class="book.dot_color"></span>
                         <span x-text="book.status_label"></span>
                     </div>
 
-                    <!-- Checkout & Accession Details -->
                     <template x-if="isLoggedIn">
                         <div>
                             <p x-show="book.due_date" x-text="book.due_date" class="text-[11.5px] text-rose-600 mt-0.5 font-semibold"></p>
                             <p x-show="book.pickup_date" x-text="book.pickup_date" class="text-[11.5px] text-amber-700 mt-0.5 font-semibold"></p>
                             <p x-text="'Accession No. ' + book.accession_no" class="text-[11px] text-slate-400 mt-0.5 font-mono"></p>
                         </div>
-                    </template>
-                    <template x-if="!isLoggedIn">
-                        <p class="text-[11px] text-slate-400 mt-0.5">
-                            Sign in for copy details
-                        </p>
                     </template>
                 @else
                     <div class="inline-flex items-center gap-1.5 font-bold text-[13px] {{ $book['status_color'] }}">
@@ -224,76 +227,21 @@
                 @endif
             </div>
 
-            <!-- Action Buttons Hierarchy: [ View Details ] [ Reserve ] [ ♡ ] -->
             <div class="flex items-center gap-2 mt-auto">
-                <!-- Secondary: View Details -->
                 @if ($isAlpine)
                     <a
                         :href="'{{ route('opac.book.detail', '') }}/' + (book.accession_no && book.accession_no !== 'N/A' ? encodeURIComponent(book.accession_no) : book.id)"
-                        class="inline-flex items-center justify-center py-2 px-3.5 rounded-xl border border-slate-300 bg-white text-[13px] font-semibold text-[#0B2454] shadow-2xs hover:bg-slate-50 hover:border-[#0B2454] transition-all cursor-pointer whitespace-nowrap"
+                        class="inline-flex items-center justify-center py-2 px-3.5 rounded-xl border border-slate-300 bg-white text-[13px] font-semibold text-[#0B2454] shadow-2xs group-hover:border-[#102B70] group-hover:bg-[#102B70] group-hover:text-white transition-all whitespace-nowrap"
                     >
                         View Details
                     </a>
-
-                    <!-- Primary: Reserve Button -->
-                    <template x-if="isLoggedIn && book.can_reserve">
-                        <button
-                            type="button"
-                            @click="openReserve(book)"
-                            class="inline-flex items-center gap-1.5 py-2 px-3.5 rounded-xl bg-[#F9C000] text-[13px] font-bold text-[#071A3D] shadow-xs hover:bg-[#e6b000] active:scale-95 transition-all cursor-pointer whitespace-nowrap"
-                        >
-                            <svg width="14" height="14" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                            </svg>
-                            <span>Reserve</span>
-                        </button>
-                    </template>
-
-                    <template x-if="!isLoggedIn">
-                        <a
-                            href="{{ route('login') }}"
-                            class="inline-flex items-center gap-1.5 py-2 px-3 rounded-xl border border-amber-300/80 bg-amber-50/80 text-[12.5px] font-bold text-[#0B2454] hover:bg-amber-100 transition-all shadow-2xs whitespace-nowrap"
-                            title="Sign in with your account to reserve this resource"
-                        >
-                            <svg width="13" height="13" class="h-3.5 w-3.5 text-amber-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                            </svg>
-                            <span>Sign in to Reserve</span>
-                        </a>
-                    </template>
                 @else
                     <a
-                        href="{{ route('opac.book.detail', (!empty($book['accession_no']) && $book['accession_no'] !== 'N/A') ? $book['accession_no'] : $book['id']) }}"
-                        class="inline-flex items-center justify-center py-2 px-3.5 rounded-xl border border-slate-300 bg-white text-[13px] font-semibold text-[#0B2454] shadow-2xs hover:bg-slate-50 hover:border-[#0B2454] transition-all cursor-pointer whitespace-nowrap"
+                        href="{{ $bladeDetailUrl }}"
+                        class="inline-flex items-center justify-center py-2 px-3.5 rounded-xl border border-slate-300 bg-white text-[13px] font-semibold text-[#0B2454] shadow-2xs group-hover:border-[#102B70] group-hover:bg-[#102B70] group-hover:text-white transition-all whitespace-nowrap"
                     >
                         View Details
                     </a>
-
-                    @if ($isLoggedIn)
-                        @if ($book['can_reserve'])
-                            <button
-                                type="button"
-                                @click="openReserve({{ json_encode($book) }})"
-                                class="inline-flex items-center gap-1.5 py-2 px-3.5 rounded-xl bg-[#F9C000] text-[13px] font-bold text-[#071A3D] shadow-xs hover:bg-[#e6b000] active:scale-95 transition-all cursor-pointer whitespace-nowrap"
-                            >
-                                <svg width="14" height="14" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                                </svg>
-                                <span>Reserve</span>
-                            </button>
-                        @endif
-                    @else
-                        <a
-                            href="{{ route('login') }}"
-                            class="inline-flex items-center gap-1.5 py-2 px-3 rounded-xl border border-amber-300/80 bg-amber-50/80 text-[12.5px] font-bold text-[#0B2454] hover:bg-amber-100 transition-all shadow-2xs whitespace-nowrap"
-                            title="Sign in with your account to reserve this resource"
-                        >
-                            <svg width="13" height="13" class="h-3.5 w-3.5 text-amber-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                            </svg>
-                            <span>Sign in to Reserve</span>
-                        </a>
-                    @endif
                 @endif
             </div>
 

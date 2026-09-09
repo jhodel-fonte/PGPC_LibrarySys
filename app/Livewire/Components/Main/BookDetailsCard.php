@@ -582,8 +582,110 @@ class BookDetailsCard extends Component
         ];
     }
 
+    public function getSimilarBooks(): array
+    {
+        $currentId = $this->bookDetailId ?? ($this->book['id'] ?? null);
+        $categories = $this->book['subjects'] ?? [];
+
+        try {
+            $query = BookDetail::with([
+                'bookData.authors',
+                'bookData.categories',
+                'bookType',
+                'books',
+            ]);
+
+            if ($currentId) {
+                $query->where('id', '!=', $currentId);
+            }
+
+            if (!empty($categories)) {
+                $query->whereHas('bookData.categories', function ($q) use ($categories) {
+                    $q->whereIn('name', $categories);
+                });
+            }
+
+            $results = $query->take(10)->get();
+
+            // If not enough results by category, get other books in catalog
+            if ($results->count() < 4) {
+                $excludedIds = $results->pluck('id')->push($currentId)->filter()->toArray();
+                $additional = BookDetail::with([
+                    'bookData.authors',
+                    'bookData.categories',
+                    'bookType',
+                    'books',
+                ])
+                ->whereNotIn('id', $excludedIds)
+                ->take(10 - $results->count())
+                ->get();
+
+                $results = $results->concat($additional);
+            }
+
+            if ($results->isNotEmpty()) {
+                return $results->map(function ($record) {
+                    $bdata = $record->bookData;
+                    $copies = $record->books;
+                    $availableCopies = $copies->where('status', 'available')->count();
+                    $authorNames = $bdata ? $bdata->authors->map(fn($a) => trim("{$a->first_name} {$a->last_name}"))->filter()->values()->toArray() : [];
+                    $primaryAccession = $copies->first()?->accession_number;
+
+                    $coverUrl = null;
+                    if ($record->cover_image) {
+                        $coverUrl = str_starts_with($record->cover_image, 'http')
+                            ? $record->cover_image
+                            : asset('storage/' . $record->cover_image);
+                    }
+
+                    return [
+                        'id' => $record->id,
+                        'identifier' => $primaryAccession ?: $record->id,
+                        'accession_no' => $primaryAccession ?: 'N/A',
+                        'title' => $bdata->book_title ?? 'Untitled',
+                        'author' => !empty($authorNames) ? implode(', ', $authorNames) : 'Unknown Author',
+                        'year' => $record->publication_year ?? $record->copyright_year ?? $bdata?->copyright_year ?? '',
+                        'type' => $record->bookType->type ?? 'Book',
+                        'category' => $bdata?->categories->first()?->name ?? 'General',
+                        'cover' => $coverUrl,
+                        'cover_url' => $coverUrl,
+                        'available_copies' => $availableCopies,
+                        'status_label' => $availableCopies > 0 ? 'Available' : 'Unavailable',
+                    ];
+                })->toArray();
+            }
+        } catch (\Throwable $e) {
+            // Fallback gracefully below
+        }
+
+        // Fallback books
+        return $this->getFallbackBooks()
+            ->filter(fn($b) => (string) ($b['id'] ?? '') !== (string) $currentId)
+            ->map(function ($b) {
+                return [
+                    'id' => $b['id'],
+                    'identifier' => $b['accession_no'] ?? $b['id'],
+                    'accession_no' => $b['accession_no'] ?? 'N/A',
+                    'title' => $b['title'] ?? 'Untitled',
+                    'author' => $b['author'] ?? 'Unknown Author',
+                    'year' => $b['year'] ?? '',
+                    'type' => $b['type'] ?? 'Book',
+                    'category' => $b['subjects'][0] ?? 'General',
+                    'cover' => $b['cover_url'] ?? null,
+                    'cover_url' => $b['cover_url'] ?? null,
+                    'available_copies' => $b['available_copies'] ?? 1,
+                    'status_label' => $b['status_label'] ?? 'Available',
+                ];
+            })
+            ->values()
+            ->toArray();
+    }
+
     public function render()
     {
-        return view('livewire.components.main.book-details-card');
+        return view('livewire.components.main.book-details-card', [
+            'similarBooks' => $this->getSimilarBooks(),
+        ]);
     }
 }
+

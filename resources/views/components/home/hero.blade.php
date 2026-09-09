@@ -43,16 +43,6 @@
                             >
                         </div>
 
-                        {{-- <!-- Resource Filter Dropdown -->
-                        <div class="hidden sm:flex items-center border-l border-slate-200 px-3">
-                            <select name="type" class="bg-transparent text-[13px] font-semibold text-slate-600 focus:outline-none cursor-pointer pr-1">
-                                <option value="all">All Resources</option>
-                                <option value="books">Books</option>
-                                <option value="journals">Journals</option>
-                                <option value="theses">Theses</option>
-                            </select>
-                        </div> --}}
-
                         <!-- Search Button -->
                         <button type="submit"
                             class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#FCC719] text-[#071943] shadow-sm transition hover:bg-[#ffd84c] active:scale-95 focus:outline-none cursor-pointer"

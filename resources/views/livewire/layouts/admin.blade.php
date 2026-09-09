@@ -20,7 +20,7 @@
         <tallstackui:script />
         @livewireStyles
     </head>
-    <body class="font-sans antialiased bg-[#F8FAFC] text-[#0F172A] selection:bg-[#FCC719]/30 selection:text-[#102B70]">
+    <body class="font-sans antialiased bg-[#F8FAFC] text-[#0F172A]">
         @persist('preloader')
             <x-preloader />
         @endpersist

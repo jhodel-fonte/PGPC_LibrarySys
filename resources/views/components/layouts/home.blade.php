@@ -32,7 +32,7 @@
     @livewireStyles
 </head>
 
-<body class="antialiased font-sans min-h-dvh flex flex-col relative overflow-x-hidden bg-[#F8FAFC] text-[#0F172A] selection:bg-[#FCC719]/30 selection:text-[#102B70]">
+<body class="antialiased font-sans min-h-dvh flex flex-col relative overflow-x-hidden bg-[#F8FAFC] text-[#0F172A]">
 
     <!-- Preloader -->
     <x-preloader />

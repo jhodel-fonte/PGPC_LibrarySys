@@ -19,18 +19,25 @@
 
 @php
     $searchTerm = $search ?: request('search', '');
-    $totalCount = $totalResults ?: (is_countable($results) ? count($results) : 0);
+
+    // Fix: $results may be a Laravel Collection on initial page load —
+    // normalize to a plain array so @json() and count() are consistent.
+    $resultsArray = is_array($results) ? $results
+        : (method_exists($results, 'values') ? $results->values()->toArray() : (array) $results);
+
+    $totalCount = (int) $totalResults ?: count($resultsArray);
+
     $paginationData = null;
     if ($pagination instanceof \Illuminate\Pagination\LengthAwarePaginator) {
         $paginationData = [
-            'currentPage' => $pagination->currentPage(),
-            'lastPage' => $pagination->lastPage(),
+            'currentPage'  => $pagination->currentPage(),
+            'lastPage'     => $pagination->lastPage(),
             'hasMorePages' => $pagination->hasMorePages(),
-            'total' => $totalResults,
-            'perPage' => $pagination->perPage(),
-            'nextUrl' => $pagination->nextPageUrl(),
-            'prevUrl' => $pagination->previousPageUrl(),
-            'links' => $pagination->linkCollection()->toArray(),
+            'total'        => $pagination->total(),   // use paginator directly, not the prop
+            'perPage'      => $pagination->perPage(),
+            'nextUrl'      => $pagination->nextPageUrl(),
+            'prevUrl'      => $pagination->previousPageUrl(),
+            'links'        => $pagination->linkCollection()->toArray(),
         ];
     }
 @endphp
@@ -38,7 +45,7 @@
 <script>
 function opacCatalog() {
     return {
-        results: @json($results),
+        results: @json($resultsArray),
         totalCount: {{ (int) $totalCount }},
         searchTerm: @json($searchTerm),
         isLoading: false,
@@ -73,12 +80,20 @@ function opacCatalog() {
                 });
                 if (!res.ok) throw new Error('Network response not ok');
                 const data = await res.json();
-                this.results = data.results || [];
-                this.totalCount = data.totalResults || 0;
-                this.pagination = data.pagination || null;
-                this.searchTerm = data.search || '';
-                this.sortBy = data.sortBy || this.sortBy;
-                this.perPage = data.perPage || this.perPage;
+                this.results                = data.results || [];
+                this.totalCount             = data.totalResults || 0;
+                this.pagination             = data.pagination  || null;
+                this.searchTerm             = data.search      || '';
+                this.sortBy                 = data.sortBy      || this.sortBy;
+                this.perPage                = parseInt(data.perPage, 10) || this.perPage;
+                // Sync filter selection state from AJAX response so back/forward
+                // navigation (popstate) correctly reflects the current filter state.
+                if (Array.isArray(data.selectedAvailabilities)) {
+                    this.selectedAvailabilities = data.selectedAvailabilities;
+                }
+                if (Array.isArray(data.selectedSubjects)) {
+                    this.selectedSubjects = data.selectedSubjects.map(Number);
+                }
                 if (updateHistory) {
                     window.history.pushState(null, '', url);
                 }
@@ -92,7 +107,8 @@ function opacCatalog() {
             }
         },
         changePerPage(val) {
-            this.perPage = val;
+            // Fix: coerce to int — $event.target.value is always a string
+            this.perPage = parseInt(val, 10);
             const url = new URL(window.location.href);
             url.searchParams.set('per_page', val);
             url.searchParams.delete('page');
@@ -109,6 +125,9 @@ function opacCatalog() {
             const url = new URL('{{ route('opac.index') }}', window.location.origin);
             if (detail.search) url.searchParams.set('search', detail.search);
             if (detail.type && detail.type !== 'all') url.searchParams.set('type', detail.type);
+            // Preserve current per_page and sort so the user's preferences carry over
+            if (this.perPage && this.perPage !== 5) url.searchParams.set('per_page', this.perPage);
+            if (this.sortBy && this.sortBy !== 'relevance') url.searchParams.set('sort', this.sortBy);
             this.fetchResults(url.toString());
             this.scrollToTarget(true);
         },
@@ -120,10 +139,15 @@ function opacCatalog() {
             }
             for (const [key, value] of formData.entries()) {
                 if (value) {
+                    // Fix: strip the trailing [] from the param name before appending.
+                    // url.searchParams.append('availability[]', 'available') sends the
+                    // literal key 'availability[]' which PHP does NOT parse as an array.
+                    // We must send 'availability' (no brackets) with multiple appends instead.
+                    const cleanKey = key.endsWith('[]') ? key.slice(0, -2) : key;
                     if (key.endsWith('[]')) {
-                        url.searchParams.append(key, value);
+                        url.searchParams.append(cleanKey, value);
                     } else {
-                        url.searchParams.set(key, value);
+                        url.searchParams.set(cleanKey, value);
                     }
                 }
             }
@@ -137,7 +161,13 @@ function opacCatalog() {
             if (currentUrl.searchParams.has('search')) {
                 url.searchParams.set('search', currentUrl.searchParams.get('search'));
             }
-            this.mobileFilterOpen = false;
+            // Fix: also reset Alpine state to match the cleared URL so the
+            // sort/perPage controls don't stay in a stale state after a reset.
+            this.sortBy                 = 'relevance';
+            this.perPage                = 5;
+            this.selectedAvailabilities = [];
+            this.selectedSubjects       = [];
+            this.mobileFilterOpen       = false;
             this.fetchResults(url.toString());
         },
         goToPage(pageUrl) {
@@ -307,7 +337,7 @@ function opacCatalog() {
                 <!-- 7. Results Header: Count & Sort Bar -->
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
                     <div>
-                        <h2 class="text-[17px] sm:text-[18px] font-extrabold text-[#0B2454] tracking-tight">
+                        <h2 class="text-[17px] sm:text-[18px] font-extrabold text-[#0B2454] tracking-tight flex items-center gap-1.5 flex-wrap">
                             <span x-text="totalCount"></span>
                             <template x-if="searchTerm">
                                 <span>results for "<span class="text-[#0B2454]" x-text="searchTerm"></span>"</span>
@@ -504,9 +534,6 @@ function opacCatalog() {
                                 <option value="25">25</option>
                                 <option value="50">50</option>
                             </select>
-                            <svg width="12" height="12" class="h-3 w-3 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                            </svg>
                         </div>
                     </div>
                 </div>

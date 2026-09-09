@@ -4,7 +4,7 @@
         <div class="max-w-[1380px] mx-auto w-full space-y-10">
 
             <!-- 1. The Advanced Search Card -->
-            <x-home.advance-search-card />
+            <x-home.advance-search-card :has-results="!empty($hasSearched)" />
 
             <!-- 2. Results Workspace (Displayed whenever an advanced search is performed) -->
             @if(!empty($hasSearched))
@@ -126,8 +126,9 @@
                                 <h3 class="text-xl sm:text-2xl font-bold text-[#0B2454] tracking-tight">
                                     Search Results
                                 </h3>
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#EFF6FF] text-[#102B70] border border-[#DBEAFE]">
-                                    <span x-text="totalCount">{{ $totalResults }}</span> found
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#EFF6FF] text-[#102B70] border border-[#DBEAFE]">
+                                    <span x-text="totalCount">{{ $totalResults }}</span>
+                                    <span>found</span>
                                 </span>
                             </div>
                             <p class="text-[13.5px] text-slate-500 mt-1">
@@ -135,15 +136,6 @@
                             </p>
                         </div>
 
-                        <a
-                            href="{{ route('opac.advanced') }}"
-                            class="inline-flex items-center gap-1.5 py-2 px-3.5 rounded-lg border border-[#D7E0EC] bg-slate-50 hover:bg-slate-100 text-[#173664] text-xs font-semibold transition cursor-pointer self-start sm:self-auto shadow-2xs"
-                        >
-                            <svg width="14" height="14" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                            </svg>
-                            <span>New Search</span>
-                        </a>
                     </div>
 
                     <!-- Active Filter Badges -->

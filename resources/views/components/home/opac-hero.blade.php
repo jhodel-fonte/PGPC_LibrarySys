@@ -3,7 +3,7 @@
     'advancedSearchUrl' => Route::has('opac.advanced') ? route('opac.advanced') : url('/opac/advanced-search'),
     'title' => 'Online Public Access Catalog',
     'eyebrow' => 'OPAC',
-    'subtitle' => 'Search the library catalog to discover books, journals, theses and other resources available in PGPC Library.',
+    'subtitle' => 'Search the library catalog to discover books, journals, and other resources available in PGPC Library.',
     'placeholder' => 'Search title, author, keyword, subject, or ISBN...',
     'selectedType' => request('type', 'all'),
     'searchValue' => request('search', ''),
@@ -20,24 +20,8 @@
             alt="Padre Garcia Polytechnic College Campus"
             loading="eager"
             decoding="async"
-            class="absolute inset-0 h-full w-full object-cover object-right md:object-center select-none opacity-25"
+            class="absolute inset-0 h-full w-full object-cover object-right md:object-center select-none"
         >
-
-        <!-- Layer 2: Subtle PGPC School Seal -->
-        <div
-            class="absolute left-[35%] lg:left-[40%] top-1/2 -translate-y-1/2 select-none hidden md:block"
-            style="opacity: 0.08;"
-            aria-hidden="true"
-        >
-            <img
-                src="{{ asset('images/logo.webp') }}"
-                alt=""
-                width="500"
-                height="500"
-                class="h-[440px] w-[440px] lg:h-[500px] lg:w-[500px] max-w-none object-contain mix-blend-luminosity grayscale contrast-125"
-                onerror="this.src='{{ asset('logo.webp') }}'"
-            >
-        </div>
 
         <!-- Layer 3: Dark Navy Gradient Overlay (#071A3D to #0B2454) -->
         <div
@@ -66,10 +50,10 @@
                     openDropdown: false,
                     selectedType: '{{ $selectedType }}',
                     selectedLabel: 'All Resources',
+                    searchQuery: '{{ addslashes($searchValue) }}',
                     types: [
                         { value: 'all', label: 'All Resources' },
                         { value: 'books', label: 'Books' },
-                        { value: 'theses', label: 'Theses' },
                         { value: 'journals', label: 'Journals' },
                     ],
                     init() {
@@ -81,13 +65,22 @@
                         this.selectedLabel = type.label;
                         this.openDropdown = false;
                     },
+                    clearSearch() {
+                        this.searchQuery = '';
+                        this.$nextTick(() => {
+                            if (window.innerWidth >= 640) {
+                                this.$refs.searchInputDesktop?.focus();
+                            } else {
+                                this.$refs.searchInputMobile?.focus();
+                            }
+                        });
+                    },
                     submitSearch(e) {
                         if (window.location.pathname.includes('/opac') || window.location.pathname === '/opac') {
                             e.preventDefault();
-                            const input = this.$el.querySelector('input[name=search]');
                             window.dispatchEvent(new CustomEvent('opac-search-trigger', {
                                 detail: {
-                                    search: input ? input.value : '',
+                                    search: this.searchQuery,
                                     type: this.selectedType
                                 }
                             }));
@@ -148,17 +141,32 @@
                     </div>
 
                     <!-- Search Input Field (Increased font size: 16px–17px, bold & readable) -->
-                    <div class="flex flex-1 items-center px-4 h-full">
+                    <div class="flex flex-1 items-center px-4 h-full relative">
                         <svg width="20" height="20" class="h-5 w-5 shrink-0 text-[#94A3B8] mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
                         <input
                             type="text"
                             name="search"
-                            value="{{ $searchValue }}"
+                            x-ref="searchInputDesktop"
+                            x-model="searchQuery"
                             placeholder="{{ $placeholder }}"
-                            class="w-full border-0 border-none bg-transparent p-0 text-[16px] sm:text-[16.5px] text-[#071A3D] placeholder:text-[#94A3B8] placeholder:text-[15px] sm:placeholder:text-[15.5px] focus:border-0 focus:border-none focus:outline-none focus:ring-0 shadow-none font-semibold"
+                            class="w-full border-0 border-none bg-transparent p-0 text-[16px] sm:text-[16.5px] text-[#071A3D] placeholder:text-[#94A3B8] placeholder:text-[15px] sm:placeholder:text-[15.5px] focus:border-0 focus:border-none focus:outline-none focus:ring-0 shadow-none font-semibold pr-2"
                         >
+                        <!-- Clear 'X' Button Desktop -->
+                        <button
+                            type="button"
+                            x-show="searchQuery && searchQuery.trim().length > 0"
+                            style="display: none;"
+                            @click="clearSearch()"
+                            class="p-1.5 text-slate-400 hover:text-[#071A3D] hover:bg-slate-100 rounded-full transition-colors cursor-pointer shrink-0 mr-1.5"
+                            title="Clear search"
+                            aria-label="Clear search input"
+                        >
+                            <svg width="17" height="17" class="h-[17px] w-[17px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
                     </div>
 
                     <!-- Search Button (Gold #F9C000, 68–72px wide, rounded 10px) -->
@@ -210,17 +218,32 @@
 
                     <!-- Search Input + Button Mobile -->
                     <div class="flex items-center h-[54px] rounded-[10px] bg-white p-1 shadow-md">
-                        <div class="flex flex-1 items-center px-3">
+                        <div class="flex flex-1 items-center px-3 relative">
                             <svg width="18" height="18" class="h-[18px] w-[18px] shrink-0 text-[#94A3B8] mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                             </svg>
                             <input
                                 type="text"
                                 name="search"
-                                value="{{ $searchValue }}"
+                                x-ref="searchInputMobile"
+                                x-model="searchQuery"
                                 placeholder="{{ $placeholder }}"
-                                class="w-full border-0 border-none bg-transparent p-0 text-[15px] font-semibold text-[#071A3D] placeholder:text-[#94A3B8] focus:outline-none focus:ring-0"
+                                class="w-full border-0 border-none bg-transparent p-0 text-[15px] font-semibold text-[#071A3D] placeholder:text-[#94A3B8] focus:outline-none focus:ring-0 pr-1"
                             >
+                            <!-- Clear 'X' Button Mobile -->
+                            <button
+                                type="button"
+                                x-show="searchQuery && searchQuery.trim().length > 0"
+                                style="display: none;"
+                                @click="clearSearch()"
+                                class="p-1 text-slate-400 hover:text-[#071A3D] hover:bg-slate-100 rounded-full transition-colors cursor-pointer shrink-0"
+                                title="Clear search"
+                                aria-label="Clear search input"
+                            >
+                                <svg width="15" height="15" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
                         </div>
                         <button
                             type="submit"

@@ -12,37 +12,9 @@
 ])
 
 @php
-    $selectedAvailabilities = (array) $selectedAvailabilities;
-    $selectedSubjects = (array) $selectedSubjects;
-
-    // Fallbacks if empty
-    if (empty($availabilities)) {
-        $availabilities = [
-            ['id' => 'available', 'label' => 'Available', 'count' => 128, 'color' => 'bg-emerald-500'],
-            ['id' => 'checked_out', 'label' => 'Checked Out', 'count' => 42, 'color' => 'bg-rose-500'],
-            ['id' => 'reserved', 'label' => 'Reserved', 'count' => 18, 'color' => 'bg-amber-500'],
-            ['id' => 'reference_only', 'label' => 'Reference Only', 'count' => 16, 'color' => 'bg-blue-500'],
-        ];
-    }
-    if (empty($resourceTypes)) {
-        $resourceTypes = [
-            ['id' => 'all', 'label' => 'All Resources', 'count' => 200],
-            ['id' => 'books', 'label' => 'Books', 'count' => 128],
-            ['id' => 'theses', 'label' => 'Theses', 'count' => 32],
-            ['id' => 'journals', 'label' => 'Journals', 'count' => 24],
-            ['id' => 'reports', 'label' => 'Reports', 'count' => 12],
-            ['id' => 'multimedia', 'label' => 'Multimedia', 'count' => 8],
-        ];
-    }
-    if (empty($subjects)) {
-        $subjects = [
-            ['id' => 'cs', 'label' => 'Computer Science', 'count' => 84],
-            ['id' => 'prog', 'label' => 'Programming', 'count' => 62],
-            ['id' => 'algo', 'label' => 'Algorithms', 'count' => 38],
-            ['id' => 'db', 'label' => 'Database Systems', 'count' => 29],
-            ['id' => 'se', 'label' => 'Software Engineering', 'count' => 25],
-        ];
-    }
+    $selectedAvailabilities = array_values(array_map('strval', (array) $selectedAvailabilities));
+    $selectedSubjects = array_values(array_map('strval', (array) $selectedSubjects));
+    $selectedType = (string) ($selectedType ?: 'all');
 @endphp
 
 <!-- Filter Sidebar Card -->
@@ -51,24 +23,59 @@
     action="{{ route('opac.index') }}"
     method="GET"
     x-data="{
+        selectedAvailabilities: {{ Js::from($selectedAvailabilities) }},
+        selectedType: {{ Js::from($selectedType) }},
+        selectedSubjects: {{ Js::from($selectedSubjects) }},
+        yearFrom: {{ Js::from($yearFrom ? (string)$yearFrom : '') }},
+        yearTo: {{ Js::from($yearTo ? (string)$yearTo : '') }},
+        query: '',
+
         submitFilter() {
             window.dispatchEvent(new CustomEvent('opac-filter-trigger', {
                 detail: new FormData(this.$el)
             }));
         },
         resetFilter() {
-            this.$el.querySelectorAll('input[type=checkbox]').forEach(cb => cb.checked = false);
-            this.$el.querySelectorAll('input[type=radio]').forEach(rb => {
-                rb.checked = (rb.value === 'all');
-            });
-            this.$el.querySelectorAll('input[type=number]').forEach(num => num.value = '');
+            this.selectedAvailabilities = [];
+            this.selectedType = 'all';
+            this.selectedSubjects = [];
+            this.yearFrom = '';
+            this.yearTo = '';
+            this.query = '';
             window.dispatchEvent(new CustomEvent('opac-filter-reset'));
+        },
+        syncFilters(detail) {
+            if (!detail) return;
+            if (Array.isArray(detail.selectedAvailabilities)) {
+                this.selectedAvailabilities = detail.selectedAvailabilities.map(String);
+            }
+            if (detail.selectedType !== undefined) {
+                this.selectedType = detail.selectedType || 'all';
+            }
+            if (Array.isArray(detail.selectedSubjects)) {
+                this.selectedSubjects = detail.selectedSubjects.map(String);
+            }
+            if (detail.yearFrom !== undefined) {
+                this.yearFrom = detail.yearFrom ? String(detail.yearFrom) : '';
+            }
+            if (detail.yearTo !== undefined) {
+                this.yearTo = detail.yearTo ? String(detail.yearTo) : '';
+            }
+        },
+        onReset() {
+            this.selectedAvailabilities = [];
+            this.selectedType = 'all';
+            this.selectedSubjects = [];
+            this.yearFrom = '';
+            this.yearTo = '';
+            this.query = '';
         }
     }"
+    @opac-updated.window="syncFilters($event.detail)"
+    @opac-filter-reset.window="onReset()"
     @submit.prevent="submitFilter()"
     class="w-full rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs select-none"
 >
-    <!-- Hidden Inputs to preserve search query from hero bar -->
     @if (!empty($search))
         <input type="hidden" name="search" value="{{ $search }}">
     @endif
@@ -76,9 +83,6 @@
     <!-- Header / Filter Title -->
     <div class="flex items-center justify-between pb-4 border-b border-slate-100">
         <h3 class="text-[15px] font-bold text-[#0B2454] flex items-center gap-2">
-            <svg width="16" height="16" class="h-4 w-4 shrink-0 text-[#0B2454]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-            </svg>
             <span>Filters</span>
         </h3>
         <button
@@ -104,21 +108,21 @@
         </button>
 
         <div x-show="open" class="mt-3 space-y-2.5 pb-3">
-            @foreach ($availabilities as $item)
-                @php
-                    $isChecked = in_array($item['id'], $selectedAvailabilities);
-                @endphp
+            @forelse ($availabilities as $item)
                 <label class="flex items-center justify-between text-[13.5px] cursor-pointer group">
                     <div class="flex items-center gap-2.5">
                         <input
                             type="checkbox"
                             name="availability[]"
                             value="{{ $item['id'] }}"
-                            {{ $isChecked ? 'checked' : '' }}
+                            x-model="selectedAvailabilities"
                             class="rounded border-slate-300 text-[#0B2454] focus:ring-[#0B2454]/20 h-4 w-4 cursor-pointer"
                         >
                         <span class="h-2 w-2 rounded-full {{ $item['color'] }} shrink-0"></span>
-                        <span class="text-slate-700 group-hover:text-[#0B2454] transition-colors font-medium {{ $isChecked ? 'font-bold text-[#0B2454]' : '' }}">
+                        <span
+                            class="group-hover:text-[#0B2454] transition-colors font-medium"
+                            :class="selectedAvailabilities.includes('{{ $item['id'] }}') ? 'font-bold text-[#0B2454]' : 'text-slate-700'"
+                        >
                             {{ $item['label'] }}
                         </span>
                     </div>
@@ -126,7 +130,9 @@
                         {{ $item['count'] }}
                     </span>
                 </label>
-            @endforeach
+            @empty
+                <p class="text-[12px] text-slate-400 italic py-1">Unable to load availability filters.</p>
+            @endforelse
         </div>
     </div>
 
@@ -144,20 +150,37 @@
         </button>
 
         <div x-show="open" class="mt-3 space-y-2.5 pb-3">
-            @foreach ($resourceTypes as $item)
-                @php
-                    $isTypeSelected = ($selectedType === $item['id']);
-                @endphp
+            <label class="flex items-center justify-between text-[13.5px] cursor-pointer group">
+                <div class="flex items-center gap-2.5">
+                    <input
+                        type="radio"
+                        name="type"
+                        value="all"
+                        x-model="selectedType"
+                        class="rounded-full border-slate-300 text-[#0B2454] focus:ring-[#0B2454]/20 h-4 w-4 cursor-pointer"
+                    >
+                    <span
+                        class="group-hover:text-[#0B2454] transition-colors font-medium"
+                        :class="selectedType === 'all' ? 'font-bold text-[#0B2454]' : 'text-slate-700'"
+                    >
+                        All Resources
+                    </span>
+                </div>
+            </label>
+            @forelse ($resourceTypes as $item)
                 <label class="flex items-center justify-between text-[13.5px] cursor-pointer group">
                     <div class="flex items-center gap-2.5">
                         <input
                             type="radio"
                             name="type"
                             value="{{ $item['id'] }}"
-                            {{ $isTypeSelected ? 'checked' : '' }}
+                            x-model="selectedType"
                             class="rounded-full border-slate-300 text-[#0B2454] focus:ring-[#0B2454]/20 h-4 w-4 cursor-pointer"
                         >
-                        <span class="text-slate-700 group-hover:text-[#0B2454] transition-colors font-medium {{ $isTypeSelected ? 'font-bold text-[#0B2454]' : '' }}">
+                        <span
+                            class="group-hover:text-[#0B2454] transition-colors font-medium"
+                            :class="selectedType === '{{ $item['id'] }}' ? 'font-bold text-[#0B2454]' : 'text-slate-700'"
+                        >
                             {{ $item['label'] }}
                         </span>
                     </div>
@@ -165,12 +188,14 @@
                         {{ $item['count'] }}
                     </span>
                 </label>
-            @endforeach
+            @empty
+                <p class="text-[12px] text-slate-400 italic py-1">Unable to load resource types.</p>
+            @endforelse
         </div>
     </div>
 
     <!-- 3. Subject Quick Filter Group -->
-    <div x-data="{ open: true, query: '' }" class="pt-4 pb-1 border-b border-slate-100">
+    <div x-data="{ open: true }" class="pt-4 pb-1 border-b border-slate-100">
         <button
             type="button"
             @click="open = !open"
@@ -198,12 +223,9 @@
 
             <!-- Subject Checklist -->
             <div class="space-y-2 max-h-48 overflow-y-auto pr-1">
-                @foreach ($subjects as $subj)
-                    @php
-                        $isSubjSelected = in_array((string)$subj['id'], array_map('strval', $selectedSubjects));
-                    @endphp
+                @forelse ($subjects as $subj)
                     <label
-                        x-show="!query || '{{ strtolower($subj['label']) }}'.includes(query.toLowerCase())"
+                        x-show="!query || {{ Js::from(strtolower($subj['label'])) }}.includes(query.toLowerCase())"
                         class="flex items-center justify-between text-[13px] cursor-pointer group"
                     >
                         <div class="flex items-center gap-2">
@@ -211,10 +233,13 @@
                                 type="checkbox"
                                 name="subject[]"
                                 value="{{ $subj['id'] }}"
-                                {{ $isSubjSelected ? 'checked' : '' }}
+                                x-model="selectedSubjects"
                                 class="rounded border-slate-300 text-[#0B2454] focus:ring-[#0B2454]/20 h-3.5 w-3.5 cursor-pointer"
                             >
-                            <span class="text-slate-600 group-hover:text-[#0B2454] transition-colors {{ $isSubjSelected ? 'font-bold text-[#0B2454]' : '' }}">
+                            <span
+                                class="group-hover:text-[#0B2454] transition-colors font-medium"
+                                :class="selectedSubjects.includes('{{ (string)$subj['id'] }}') ? 'font-bold text-[#0B2454]' : 'text-slate-600'"
+                            >
                                 {{ $subj['label'] }}
                             </span>
                         </div>
@@ -222,7 +247,9 @@
                             {{ $subj['count'] }}
                         </span>
                     </label>
-                @endforeach
+                @empty
+                    <p class="text-[12px] text-slate-400 italic py-1">Unable to load subjects.</p>
+                @endforelse
             </div>
         </div>
     </div>
@@ -245,7 +272,7 @@
                 <input
                     type="number"
                     name="year_from"
-                    value="{{ $yearFrom }}"
+                    x-model="yearFrom"
                     placeholder="From"
                     min="1900"
                     max="{{ date('Y') }}"
@@ -255,7 +282,7 @@
                 <input
                     type="number"
                     name="year_to"
-                    value="{{ $yearTo }}"
+                    x-model="yearTo"
                     placeholder="To"
                     min="1900"
                     max="{{ date('Y') }}"
@@ -269,11 +296,8 @@
     <div class="pt-4 mt-2 border-t border-slate-100 space-y-2">
         <button
             type="submit"
-            class="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-[#0B2454] hover:bg-[#071943] active:scale-[0.98] text-white text-[13.5px] font-bold shadow-xs hover:shadow transition-all cursor-pointer group"
+            class="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-[#0B2454] hover:bg-[#071943] active:scale-[0.98] text-white text-[13.5px] font-bold shadow-xs hover:shadow transition-all cursor-pointer"
         >
-            <svg width="15" height="15" class="h-4 w-4 text-[#F9C000] group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-            </svg>
             <span>Apply Filters</span>
         </button>
 
