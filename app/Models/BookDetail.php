@@ -27,6 +27,17 @@ class BookDetail extends Model
         'publisher_id',
         'cover_image',
         'url',
+        'total_copies',
+        'available_copies',
+        'borrowed_copies',
+        'damaged_lost_copies',
+    ];
+
+    protected $casts = [
+        'total_copies' => 'integer',
+        'available_copies' => 'integer',
+        'borrowed_copies' => 'integer',
+        'damaged_lost_copies' => 'integer',
     ];
 
     public function bookData(): BelongsTo

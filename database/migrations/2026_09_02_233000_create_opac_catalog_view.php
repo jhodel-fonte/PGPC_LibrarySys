@@ -36,16 +36,53 @@ return new class extends Migration
     }
 
     /**
-     * PostgreSQL syntax for opac_catalog_view.
-     * Note:
-     * - `languages` table column is `lang` (no softDeletes).
-     * - `book_types` table column is `type` (no softDeletes).
-     * - `borrowing_transactions` has no softDeletes.
+     * Optimized PostgreSQL syntax for opac_catalog_view using pre-aggregated CTEs.
+     * Eliminates row multiplication from LEFT JOIN books and eliminates outer GROUP BY.
      */
     private function createPgsqlViewSql(): string
     {
         return <<<SQL
 CREATE OR REPLACE VIEW opac_catalog_view AS
+WITH copy_stats AS (
+    SELECT 
+        b.book_detail_id,
+        COUNT(b.id) AS total_copies,
+        COUNT(CASE WHEN b.status = 'available' AND b.deleted_at IS NULL THEN 1 END) AS available_copies,
+        COUNT(CASE WHEN b.status = 'borrowed' AND b.deleted_at IS NULL THEN 1 END) AS borrowed_copies,
+        COUNT(CASE WHEN b.status = 'reserved' AND b.deleted_at IS NULL THEN 1 END) AS reserved_copies,
+        MIN(CASE WHEN b.status = 'available' AND b.deleted_at IS NULL THEN b.accession_number ELSE b.accession_number END) AS primary_accession_no,
+        MIN(CASE WHEN b.location IS NOT NULL AND b.location != '' THEN b.location ELSE 'Main Library' END) AS primary_location,
+        MIN(CASE WHEN b.status = 'available' AND b.deleted_at IS NULL THEN b.id END) AS available_book_id
+    FROM books b
+    WHERE b.deleted_at IS NULL
+    GROUP BY b.book_detail_id
+),
+author_agg AS (
+    SELECT 
+        bda.book_data_id,
+        STRING_AGG(DISTINCT TRIM(CONCAT(a.first_name, ' ', a.last_name)), ', ') AS authors
+    FROM book_data_author bda
+    JOIN authors a ON a.id = bda.author_id AND a.deleted_at IS NULL
+    GROUP BY bda.book_data_id
+),
+category_agg AS (
+    SELECT 
+        bdc.book_data_id,
+        STRING_AGG(DISTINCT c.name, ', ') AS categories,
+        STRING_AGG(DISTINCT CAST(c.id AS VARCHAR), ',') AS category_ids
+    FROM book_data_category bdc
+    JOIN categories c ON c.id = bdc.category_id AND c.deleted_at IS NULL
+    GROUP BY bdc.book_data_id
+),
+due_dates AS (
+    SELECT 
+        bk.book_detail_id,
+        MIN(btx.due_date) AS earliest_due_date
+    FROM books bk
+    JOIN borrowing_transactions btx ON btx.book_id = bk.id AND btx.return_date IS NULL
+    WHERE bk.status = 'borrowed' AND bk.deleted_at IS NULL
+    GROUP BY bk.book_detail_id
+)
 SELECT 
     -- 1. Primary Keys & Foreign Keys
     bd.id AS book_detail_id,
@@ -83,63 +120,34 @@ SELECT
     bd.cover_image,
     bd.url,
 
-    -- 7. Aggregated Authors
-    COALESCE(
-        (
-            SELECT STRING_AGG(DISTINCT TRIM(CONCAT(a.first_name, ' ', a.last_name)), ', ')
-            FROM book_data_author bda
-            JOIN authors a ON a.id = bda.author_id AND a.deleted_at IS NULL
-            WHERE bda.book_data_id = bdata.id
-        ),
-        'Unknown Author'
-    ) AS authors,
+    -- 7. Pre-aggregated Authors
+    COALESCE(a_agg.authors, 'Unknown Author') AS authors,
 
-    -- 8. Aggregated Categories & Subject IDs
-    COALESCE(
-        (
-            SELECT STRING_AGG(DISTINCT c.name, ', ')
-            FROM book_data_category bdc
-            JOIN categories c ON c.id = bdc.category_id AND c.deleted_at IS NULL
-            WHERE bdc.book_data_id = bdata.id
-        ),
-        'General'
-    ) AS categories,
+    -- 8. Pre-aggregated Categories
+    COALESCE(c_agg.categories, 'General') AS categories,
+    c_agg.category_ids,
 
-    (
-        SELECT STRING_AGG(DISTINCT CAST(c.id AS VARCHAR), ',')
-        FROM book_data_category bdc
-        JOIN categories c ON c.id = bdc.category_id AND c.deleted_at IS NULL
-        WHERE bdc.book_data_id = bdata.id
-    ) AS category_ids,
-
-    -- 9. Physical Copies Aggregation
-    COUNT(b.id) AS total_copies,
-    COUNT(CASE WHEN b.status = 'available' AND b.deleted_at IS NULL THEN 1 END) AS available_copies,
-    COUNT(CASE WHEN b.status = 'borrowed' AND b.deleted_at IS NULL THEN 1 END) AS borrowed_copies,
-    COUNT(CASE WHEN b.status = 'reserved' AND b.deleted_at IS NULL THEN 1 END) AS reserved_copies,
+    -- 9. Physical Copies Aggregation (from CTE)
+    COALESCE(cs.total_copies, 0) AS total_copies,
+    COALESCE(cs.available_copies, 0) AS available_copies,
+    COALESCE(cs.borrowed_copies, 0) AS borrowed_copies,
+    COALESCE(cs.reserved_copies, 0) AS reserved_copies,
 
     -- 10. Representative Accession & Location
-    MIN(CASE WHEN b.status = 'available' AND b.deleted_at IS NULL THEN b.accession_number ELSE b.accession_number END) AS primary_accession_no,
-    MIN(CASE WHEN b.location IS NOT NULL AND b.location != '' THEN b.location ELSE 'Main Library' END) AS primary_location,
-    MIN(CASE WHEN b.status = 'available' AND b.deleted_at IS NULL THEN b.id END) AS available_book_id,
+    cs.primary_accession_no,
+    COALESCE(cs.primary_location, 'Main Library') AS primary_location,
+    cs.available_book_id,
 
     -- 11. Calculated Catalog Status
     CASE 
-        WHEN COUNT(CASE WHEN b.status = 'available' AND b.deleted_at IS NULL THEN 1 END) > 0 THEN 'available'
-        WHEN COUNT(b.id) = 0 THEN 'reference_only'
-        WHEN COUNT(CASE WHEN b.status = 'reserved' AND b.deleted_at IS NULL THEN 1 END) > 0 THEN 'reserved'
+        WHEN COALESCE(cs.available_copies, 0) > 0 THEN 'available'
+        WHEN COALESCE(cs.total_copies, 0) = 0 THEN 'reference_only'
+        WHEN COALESCE(cs.reserved_copies, 0) > 0 THEN 'reserved'
         ELSE 'checked_out'
     END AS catalog_status,
 
-    -- 12. Earliest Return Due Date among active checkouts
-    (
-        SELECT MIN(btx.due_date)
-        FROM books bk
-        JOIN borrowing_transactions btx ON btx.book_id = bk.id
-        WHERE bk.book_detail_id = bd.id 
-          AND bk.status = 'borrowed' 
-          AND btx.return_date IS NULL
-    ) AS earliest_due_date,
+    -- 12. Earliest Return Due Date
+    dd.earliest_due_date,
 
     -- 13. Timestamps
     bd.created_at,
@@ -150,37 +158,11 @@ JOIN book_datas bdata ON bdata.id = bd.book_data_id AND bdata.deleted_at IS NULL
 LEFT JOIN book_types bt ON bt.id = bd.book_type_id
 LEFT JOIN publishers p ON p.id = bd.publisher_id AND p.deleted_at IS NULL
 LEFT JOIN languages lang ON lang.id = bdata.language_id
-LEFT JOIN books b ON b.book_detail_id = bd.id AND b.deleted_at IS NULL
-
-WHERE bd.deleted_at IS NULL
-
-GROUP BY 
-    bd.id,
-    bdata.id,
-    bt.id,
-    p.id,
-    lang.id,
-    bdata.book_title,
-    bdata.subtitle,
-    bdata.description,
-    bdata.series_title,
-    bdata.note,
-    bd.isbn,
-    bd.issn,
-    bd.call_number,
-    bd.classification,
-    bt.type,
-    bd.format,
-    bd.publication_year,
-    bd.copyright_year,
-    bd.edition,
-    bd.pages,
-    p.name,
-    lang.lang,
-    bd.cover_image,
-    bd.url,
-    bd.created_at,
-    bd.updated_at;
+LEFT JOIN copy_stats cs ON cs.book_detail_id = bd.id
+LEFT JOIN author_agg a_agg ON a_agg.book_data_id = bdata.id
+LEFT JOIN category_agg c_agg ON c_agg.book_data_id = bdata.id
+LEFT JOIN due_dates dd ON dd.book_detail_id = bd.id
+WHERE bd.deleted_at IS NULL;
 SQL;
     }
 
@@ -191,6 +173,46 @@ SQL;
     {
         return <<<SQL
 CREATE OR REPLACE VIEW `opac_catalog_view` AS
+WITH copy_stats AS (
+    SELECT 
+        b.book_detail_id,
+        COUNT(b.id) AS total_copies,
+        COUNT(CASE WHEN b.status = 'available' AND b.deleted_at IS NULL THEN 1 END) AS available_copies,
+        COUNT(CASE WHEN b.status = 'borrowed' AND b.deleted_at IS NULL THEN 1 END) AS borrowed_copies,
+        COUNT(CASE WHEN b.status = 'reserved' AND b.deleted_at IS NULL THEN 1 END) AS reserved_copies,
+        MIN(CASE WHEN b.status = 'available' AND b.deleted_at IS NULL THEN b.accession_number ELSE b.accession_number END) AS primary_accession_no,
+        MIN(CASE WHEN b.location IS NOT NULL AND b.location != '' THEN b.location ELSE 'Main Library' END) AS primary_location,
+        MIN(CASE WHEN b.status = 'available' AND b.deleted_at IS NULL THEN b.id END) AS available_book_id
+    FROM books b
+    WHERE b.deleted_at IS NULL
+    GROUP BY b.book_detail_id
+),
+author_agg AS (
+    SELECT 
+        bda.book_data_id,
+        GROUP_CONCAT(DISTINCT TRIM(CONCAT(a.first_name, ' ', a.last_name)) ORDER BY a.last_name ASC SEPARATOR ', ') AS authors
+    FROM book_data_author bda
+    JOIN authors a ON a.id = bda.author_id AND a.deleted_at IS NULL
+    GROUP BY bda.book_data_id
+),
+category_agg AS (
+    SELECT 
+        bdc.book_data_id,
+        GROUP_CONCAT(DISTINCT c.name ORDER BY c.name ASC SEPARATOR ', ') AS categories,
+        GROUP_CONCAT(DISTINCT c.id SEPARATOR ',') AS category_ids
+    FROM book_data_category bdc
+    JOIN categories c ON c.id = bdc.category_id AND c.deleted_at IS NULL
+    GROUP BY bdc.book_data_id
+),
+due_dates AS (
+    SELECT 
+        bk.book_detail_id,
+        MIN(btx.due_date) AS earliest_due_date
+    FROM books bk
+    JOIN borrowing_transactions btx ON btx.book_id = bk.id AND btx.return_date IS NULL
+    WHERE bk.status = 'borrowed' AND bk.deleted_at IS NULL
+    GROUP BY bk.book_detail_id
+)
 SELECT 
     bd.id AS book_detail_id,
     bdata.id AS book_data_id,
@@ -216,55 +238,23 @@ SELECT
     lang.lang AS language_name,
     bd.cover_image,
     bd.url,
-    COALESCE(
-        (
-            SELECT GROUP_CONCAT(
-                DISTINCT TRIM(CONCAT(a.first_name, ' ', a.last_name))
-                ORDER BY a.last_name ASC 
-                SEPARATOR ', '
-            )
-            FROM book_data_author bda
-            JOIN authors a ON a.id = bda.author_id AND a.deleted_at IS NULL
-            WHERE bda.book_data_id = bdata.id
-        ),
-        'Unknown Author'
-    ) AS authors,
-    COALESCE(
-        (
-            SELECT GROUP_CONCAT(DISTINCT c.name ORDER BY c.name ASC SEPARATOR ', ')
-            FROM book_data_category bdc
-            JOIN categories c ON c.id = bdc.category_id AND c.deleted_at IS NULL
-            WHERE bdc.book_data_id = bdata.id
-        ),
-        'General'
-    ) AS categories,
-    (
-        SELECT GROUP_CONCAT(DISTINCT c.id SEPARATOR ',')
-        FROM book_data_category bdc
-        JOIN categories c ON c.id = bdc.category_id AND c.deleted_at IS NULL
-        WHERE bdc.book_data_id = bdata.id
-    ) AS category_ids,
-    COUNT(b.id) AS total_copies,
-    COUNT(CASE WHEN b.status = 'available' AND b.deleted_at IS NULL THEN 1 END) AS available_copies,
-    COUNT(CASE WHEN b.status = 'borrowed' AND b.deleted_at IS NULL THEN 1 END) AS borrowed_copies,
-    COUNT(CASE WHEN b.status = 'reserved' AND b.deleted_at IS NULL THEN 1 END) AS reserved_copies,
-    MIN(CASE WHEN b.status = 'available' AND b.deleted_at IS NULL THEN b.accession_number ELSE b.accession_number END) AS primary_accession_no,
-    MIN(CASE WHEN b.location IS NOT NULL AND b.location != '' THEN b.location ELSE 'Main Library' END) AS primary_location,
-    MIN(CASE WHEN b.status = 'available' AND b.deleted_at IS NULL THEN b.id END) AS available_book_id,
+    COALESCE(a_agg.authors, 'Unknown Author') AS authors,
+    COALESCE(c_agg.categories, 'General') AS categories,
+    c_agg.category_ids,
+    COALESCE(cs.total_copies, 0) AS total_copies,
+    COALESCE(cs.available_copies, 0) AS available_copies,
+    COALESCE(cs.borrowed_copies, 0) AS borrowed_copies,
+    COALESCE(cs.reserved_copies, 0) AS reserved_copies,
+    cs.primary_accession_no,
+    COALESCE(cs.primary_location, 'Main Library') AS primary_location,
+    cs.available_book_id,
     CASE 
-        WHEN COUNT(CASE WHEN b.status = 'available' AND b.deleted_at IS NULL THEN 1 END) > 0 THEN 'available'
-        WHEN COUNT(b.id) = 0 THEN 'reference_only'
-        WHEN COUNT(CASE WHEN b.status = 'reserved' AND b.deleted_at IS NULL THEN 1 END) > 0 THEN 'reserved'
+        WHEN COALESCE(cs.available_copies, 0) > 0 THEN 'available'
+        WHEN COALESCE(cs.total_copies, 0) = 0 THEN 'reference_only'
+        WHEN COALESCE(cs.reserved_copies, 0) > 0 THEN 'reserved'
         ELSE 'checked_out'
     END AS catalog_status,
-    (
-        SELECT MIN(btx.due_date)
-        FROM books bk
-        JOIN borrowing_transactions btx ON btx.book_id = bk.id
-        WHERE bk.book_detail_id = bd.id 
-          AND bk.status = 'borrowed' 
-          AND btx.return_date IS NULL
-    ) AS earliest_due_date,
+    dd.earliest_due_date,
     bd.created_at,
     bd.updated_at
 FROM book_details bd
@@ -272,13 +262,12 @@ JOIN book_datas bdata ON bdata.id = bd.book_data_id AND bdata.deleted_at IS NULL
 LEFT JOIN book_types bt ON bt.id = bd.book_type_id
 LEFT JOIN publishers p ON p.id = bd.publisher_id AND p.deleted_at IS NULL
 LEFT JOIN languages lang ON lang.id = bdata.language_id
-LEFT JOIN books b ON b.book_detail_id = bd.id AND b.deleted_at IS NULL
-WHERE bd.deleted_at IS NULL
-GROUP BY 
-    bd.id, bdata.id, bt.id, p.id, lang.id, bdata.book_title, bdata.subtitle, bdata.description,
-    bdata.series_title, bdata.note, bd.isbn, bd.issn, bd.call_number, bd.classification,
-    bt.type, bd.format, bd.publication_year, bd.copyright_year, bd.edition, bd.pages,
-    p.name, lang.lang, bd.cover_image, bd.url, bd.created_at, bd.updated_at;
+LEFT JOIN copy_stats cs ON cs.book_detail_id = bd.id
+LEFT JOIN author_agg a_agg ON a_agg.book_data_id = bdata.id
+LEFT JOIN category_agg c_agg ON c_agg.book_data_id = bdata.id
+LEFT JOIN due_dates dd ON dd.book_detail_id = bd.id
+WHERE bd.deleted_at IS NULL;
 SQL;
     }
 };
+

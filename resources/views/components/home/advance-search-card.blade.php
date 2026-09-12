@@ -275,11 +275,6 @@
                             <option value="reserved">Reserved</option>
                             <option value="reference_only">Reference Only</option>
                         </select>
-                        <span class="absolute right-4 pointer-events-none text-[#8A9AB2]">
-                            <svg width="15" height="15" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </span>
                     </div>
                     <p class="text-[13px] sm:text-[13.5px] text-[#7B8CA6] mt-2 leading-tight font-normal">
                         Available, Checked Out, Reserved, Reference Only.
@@ -540,13 +535,6 @@
                             Location
                         </label>
                         <div class="relative flex items-center">
-                            <!-- Left Icon: Map Pin -->
-                            <span class="absolute left-4 pointer-events-none text-[#8A9AB2]">
-                                <svg width="18" height="18" class="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                </svg>
-                            </span>
                             <select
                                 id="adv_location"
                                 name="location"

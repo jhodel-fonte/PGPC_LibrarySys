@@ -29,6 +29,7 @@ Route::middleware(['auth', 'verified', 'role:Admin'])->prefix('admin')->name('ad
 
         Route::prefix('book-management')->name('book-management.')->group(function () {
             Route::get('/', \App\Livewire\Pages\Dashboard\BookManager::class)->name('index');
+            Route::get('/add', \App\Livewire\Pages\Dashboard\AddBook::class)->name('add');
         });
 
         Route::get('/settings', \App\Livewire\Pages\Dashboard\Settings::class)->name('settings');

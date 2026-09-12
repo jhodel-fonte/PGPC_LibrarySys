@@ -8,10 +8,10 @@ export default defineConfig({
             refresh: true,
         }),
     ],
-    server: {
-        host: '0.0.0.0', // Forces Vite to listen on your local network
-        hmr: {
-            host: '192.168.1.58', // ⚠️ CHANGE THIS to your exact computer IP address
-        },
-    },
+    // server: {
+    //     host: '0.0.0.0', // Forces Vite to listen on your local network
+    //     hmr: {
+    //         host: '192.168.1.58', // ⚠️ CHANGE THIS to your exact computer IP address
+    //     },
+    // },
 });

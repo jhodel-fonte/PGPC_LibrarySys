@@ -24,6 +24,117 @@ class UserManagement extends Component
         'direction' => 'desc',
     ];
 
+    public function placeholder()
+    {
+        return <<<'HTML'
+        <div class="min-h-full bg-[#F8FAFC]">
+            <div class="mx-auto w-full max-w-[1600px] p-4 lg:p-6 space-y-6">
+                <!-- Header Skeleton -->
+                <div class="flex justify-between items-start animate-pulse">
+                    <div>
+                        <div class="h-8 bg-slate-200 rounded w-48 mb-2"></div>
+                        <div class="h-4 bg-slate-200 rounded w-64"></div>
+                    </div>
+                    <div class="flex gap-3">
+                        <div class="h-11 w-28 bg-slate-200 rounded-2xl"></div>
+                        <div class="h-11 w-32 bg-slate-200 rounded-2xl"></div>
+                    </div>
+                </div>
+
+                <!-- Stats Skeleton -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-5">
+                    <div class="rounded-2xl border border-slate-200 bg-white px-5 py-3.5 flex items-center justify-between gap-3 animate-pulse">
+                        <div>
+                            <div class="h-3.5 bg-slate-200 rounded w-24 mb-2"></div>
+                            <div class="h-7 bg-slate-200 rounded w-16"></div>
+                        </div>
+                        <div class="h-10 w-10 rounded-xl bg-slate-200 shrink-0"></div>
+                    </div>
+                    <div class="rounded-2xl border border-slate-200 bg-white px-5 py-3.5 flex items-center justify-between gap-3 animate-pulse">
+                        <div>
+                            <div class="h-3.5 bg-slate-200 rounded w-24 mb-2"></div>
+                            <div class="h-7 bg-slate-200 rounded w-16"></div>
+                        </div>
+                        <div class="h-10 w-10 rounded-xl bg-slate-200 shrink-0"></div>
+                    </div>
+                    <div class="rounded-2xl border border-slate-200 bg-white px-5 py-3.5 flex items-center justify-between gap-3 animate-pulse">
+                        <div>
+                            <div class="h-3.5 bg-slate-200 rounded w-24 mb-2"></div>
+                            <div class="h-7 bg-slate-200 rounded w-16"></div>
+                        </div>
+                        <div class="h-10 w-10 rounded-xl bg-slate-200 shrink-0"></div>
+                    </div>
+                    <div class="rounded-2xl border border-slate-200 bg-white px-5 py-3.5 flex items-center justify-between gap-3 animate-pulse">
+                        <div>
+                            <div class="h-3.5 bg-slate-200 rounded w-24 mb-2"></div>
+                            <div class="h-7 bg-slate-200 rounded w-16"></div>
+                        </div>
+                        <div class="h-10 w-10 rounded-xl bg-slate-200 shrink-0"></div>
+                    </div>
+                </div>
+
+                <!-- Table Skeleton -->
+                <div class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden animate-pulse">
+                    <div class="px-6 py-4 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                        <div class="flex gap-2">
+                            <div class="h-9 w-20 bg-slate-200 rounded-lg"></div>
+                            <div class="h-9 w-20 bg-slate-200 rounded-lg"></div>
+                            <div class="h-9 w-20 bg-slate-200 rounded-lg"></div>
+                        </div>
+                        <div class="h-10 w-full md:w-[320px] bg-slate-200 rounded-xl"></div>
+                    </div>
+                    <div class="p-5 space-y-5">
+                        <div class="flex items-center gap-4">
+                            <div class="h-10 w-10 rounded-full bg-slate-200 shrink-0"></div>
+                            <div class="space-y-2 flex-1">
+                                <div class="h-4 bg-slate-200 rounded w-1/4"></div>
+                                <div class="h-3 bg-slate-200 rounded w-1/3"></div>
+                            </div>
+                            <div class="h-4 bg-slate-200 rounded w-20"></div>
+                            <div class="h-6 bg-slate-200 rounded-md w-20"></div>
+                            <div class="h-6 bg-slate-200 rounded-md w-20"></div>
+                            <div class="h-4 bg-slate-200 rounded w-20"></div>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <div class="h-10 w-10 rounded-full bg-slate-200 shrink-0"></div>
+                            <div class="space-y-2 flex-1">
+                                <div class="h-4 bg-slate-200 rounded w-1/4"></div>
+                                <div class="h-3 bg-slate-200 rounded w-1/3"></div>
+                            </div>
+                            <div class="h-4 bg-slate-200 rounded w-20"></div>
+                            <div class="h-6 bg-slate-200 rounded-md w-20"></div>
+                            <div class="h-6 bg-slate-200 rounded-md w-20"></div>
+                            <div class="h-4 bg-slate-200 rounded w-20"></div>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <div class="h-10 w-10 rounded-full bg-slate-200 shrink-0"></div>
+                            <div class="space-y-2 flex-1">
+                                <div class="h-4 bg-slate-200 rounded w-1/4"></div>
+                                <div class="h-3 bg-slate-200 rounded w-1/3"></div>
+                            </div>
+                            <div class="h-4 bg-slate-200 rounded w-20"></div>
+                            <div class="h-6 bg-slate-200 rounded-md w-20"></div>
+                            <div class="h-6 bg-slate-200 rounded-md w-20"></div>
+                            <div class="h-4 bg-slate-200 rounded w-20"></div>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <div class="h-10 w-10 rounded-full bg-slate-200 shrink-0"></div>
+                            <div class="space-y-2 flex-1">
+                                <div class="h-4 bg-slate-200 rounded w-1/4"></div>
+                                <div class="h-3 bg-slate-200 rounded w-1/3"></div>
+                            </div>
+                            <div class="h-4 bg-slate-200 rounded w-20"></div>
+                            <div class="h-6 bg-slate-200 rounded-md w-20"></div>
+                            <div class="h-6 bg-slate-200 rounded-md w-20"></div>
+                            <div class="h-4 bg-slate-200 rounded w-20"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        HTML;
+    }
+
     public function getHeadersProperty()
     {
         return [
@@ -32,7 +143,7 @@ class UserManagement extends Component
             ['index' => 'role', 'label' => 'Account Type', 'sortable' => true],
             ['index' => 'status', 'label' => 'Status', 'sortable' => true],
             ['index' => 'last_login', 'label' => 'Last Login', 'sortable' => true],
-            ['index' => 'actions', 'label' => 'Actions', 'sortable' => false],
+            ['index' => 'actions', 'label' => 'Actions', 'sortable' => false, 'align' => 'right'],
         ];
     }
 
@@ -55,67 +166,6 @@ class UserManagement extends Component
     {
         $this->activeTab = $tab;
         $this->resetPage();
-    }
-
-    public function placeholder()
-    {
-        return <<<'HTML'
-        <div class="min-h-full bg-[#F8FAFC]">
-            <div class="mx-auto w-full max-w-[1600px] p-4 lg:p-6 space-y-6">
-                <!-- Header Skeleton -->
-                <div class="flex justify-between items-start animate-pulse">
-                    <div>
-                        <div class="h-8 bg-slate-200 rounded w-48 mb-2"></div>
-                        <div class="h-4 bg-slate-200 rounded w-64"></div>
-                    </div>
-                    <div class="flex gap-3">
-                        <div class="h-10 w-28 bg-slate-200 rounded-lg"></div>
-                        <div class="h-10 w-32 bg-slate-200 rounded-lg"></div>
-                    </div>
-                </div>
-
-                <!-- Stats Skeleton -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-5">
-                    @for ($i = 0; $i < 4; $i++)
-                        <div class="min-h-[104px] rounded-2xl border border-slate-200 bg-white p-5 flex items-center justify-between animate-pulse">
-                            <div>
-                                <div class="h-4 bg-slate-200 rounded w-24 mb-3"></div>
-                                <div class="h-8 bg-slate-200 rounded w-16"></div>
-                            </div>
-                            <div class="h-11 w-11 rounded-full bg-slate-200"></div>
-                        </div>
-                    @endfor
-                </div>
-
-                <!-- Table Skeleton -->
-                <div class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden animate-pulse">
-                    <div class="p-4 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3">
-                        <div class="flex gap-2">
-                            <div class="h-9 w-20 bg-slate-200 rounded-lg"></div>
-                            <div class="h-9 w-20 bg-slate-200 rounded-lg"></div>
-                            <div class="h-9 w-20 bg-slate-200 rounded-lg"></div>
-                        </div>
-                        <div class="h-10 w-full md:w-[340px] bg-slate-200 rounded-lg"></div>
-                    </div>
-                    <div class="p-4 space-y-4">
-                        @for ($i = 0; $i < 5; $i++)
-                            <div class="flex items-center gap-4">
-                                <div class="h-10 w-10 rounded-full bg-slate-200 shrink-0"></div>
-                                <div class="space-y-2 flex-1">
-                                    <div class="h-4 bg-slate-200 rounded w-1/4"></div>
-                                    <div class="h-3 bg-slate-200 rounded w-1/3"></div>
-                                </div>
-                                <div class="h-4 bg-slate-200 rounded w-16"></div>
-                                <div class="h-6 bg-slate-200 rounded-md w-20"></div>
-                                <div class="h-6 bg-slate-200 rounded-md w-20"></div>
-                                <div class="h-4 bg-slate-200 rounded w-24"></div>
-                            </div>
-                        @endfor
-                    </div>
-                </div>
-            </div>
-        </div>
-        HTML;
     }
 
     public function render()

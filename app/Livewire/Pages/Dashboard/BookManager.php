@@ -16,7 +16,7 @@ class BookManager extends Component
     use WithPagination;
 
     public $search = '';
-    public $activeTab = 'All Copies'; // All Copies, Available, Borrowed, Damaged/Lost
+    public $activeTab = 'All Books'; // All Books, In Stock, Borrowed, Damaged/Lost
 
     // Sorting
     public array $sort = [
@@ -24,7 +24,12 @@ class BookManager extends Component
         'direction' => 'desc',
     ];
 
-    // Edit modal form properties
+    // Manage Copies Modal
+    public $viewingCopiesBookDetailId = null;
+    public $selectedBookDetail = null;
+    public $showCopiesModal = false;
+
+    // Edit single copy form properties
     public $editingBookId = null;
     public $editAccessionNumber = '';
     public $editCode = '';
@@ -45,12 +50,11 @@ class BookManager extends Component
     {
         return [
             ['index' => 'book_title', 'label' => 'Book details', 'sortable' => true],
-            ['index' => 'accession_number', 'label' => 'Accession No.', 'sortable' => true],
-            ['index' => 'code', 'label' => 'Unique Code', 'sortable' => true],
-            ['index' => 'location', 'label' => 'Location', 'sortable' => true],
-            ['index' => 'condition', 'label' => 'Condition', 'sortable' => false],
-            ['index' => 'status', 'label' => 'Status', 'sortable' => true],
-            ['index' => 'actions', 'label' => 'Actions', 'sortable' => false],
+            ['index' => 'isbn', 'label' => 'ISBN / Call No.', 'sortable' => true],
+            ['index' => 'categories', 'label' => 'Category', 'sortable' => false],
+            ['index' => 'copies', 'label' => 'Total Copies', 'sortable' => true],
+            ['index' => 'availability', 'label' => 'Status / In Stock', 'sortable' => false],
+            ['index' => 'actions', 'label' => 'Actions', 'sortable' => false, 'align' => 'right'],
         ];
     }
 
@@ -82,7 +86,31 @@ class BookManager extends Component
         $this->errorMessage = '';
     }
 
-    // Modal Actions
+    // View All Copies for a Specific Book Detail
+    public function openCopiesModal($bookDetailId)
+    {
+        $this->clearMessages();
+        $this->viewingCopiesBookDetailId = $bookDetailId;
+        $this->loadSelectedBookDetail();
+        $this->showCopiesModal = true;
+    }
+
+    public function closeCopiesModal()
+    {
+        $this->showCopiesModal = false;
+        $this->viewingCopiesBookDetailId = null;
+        $this->selectedBookDetail = null;
+    }
+
+    protected function loadSelectedBookDetail()
+    {
+        if ($this->viewingCopiesBookDetailId) {
+            $this->selectedBookDetail = BookDetail::with(['bookData.authors', 'books.condition', 'publisher'])
+                ->find($this->viewingCopiesBookDetailId);
+        }
+    }
+
+    // Edit Single Copy Modal Actions
     public function editCopy($bookId)
     {
         $this->clearMessages();
@@ -92,7 +120,7 @@ class BookManager extends Component
             $this->editingBookId = $book->id;
             $this->editAccessionNumber = $book->accession_number;
             $this->editCode = $book->code ?: 'N/A';
-            $this->editLocation = $book->location;
+            $this->editLocation = $book->location ?? '';
             $this->editConditionId = $book->book_condition_id;
             $this->showEditModal = true;
         }
@@ -114,69 +142,81 @@ class BookManager extends Component
 
         $book = Book::find($this->editingBookId);
         if ($book) {
-            // Update book details
             $book->update([
                 'location' => trim($this->editLocation) ?: null,
                 'book_condition_id' => $this->editConditionId,
             ]);
 
-            $this->successMessage = 'Book copy "' . $book->accession_number . '" updated successfully.';
+            $this->dispatch('toast', message: 'Book copy "' . $book->accession_number . '" updated successfully.', type: 'success');
             $this->showEditModal = false;
             $this->editingBookId = null;
+            $this->loadSelectedBookDetail();
         } else {
-            $this->errorMessage = 'Failed to find book copy details.';
+            $this->dispatch('toast', message: 'Failed to find book copy details.', type: 'error');
         }
     }
 
     public function deleteCopy($bookId)
     {
-        $this->clearMessages();
         $book = Book::find($bookId);
 
         if ($book) {
             if ($book->status === 'borrowed') {
-                $this->errorMessage = 'Cannot delete a book copy that is currently checked out / borrowed.';
+                $this->dispatch('toast', message: 'Cannot delete a book copy that is currently checked out / borrowed.', type: 'error');
                 return;
             }
 
             $accNum = $book->accession_number;
             $book->delete();
-            $this->successMessage = 'Book copy "' . $accNum . '" has been soft-deleted.';
+            $this->dispatch('toast', message: 'Book copy "' . $accNum . '" has been soft-deleted.', type: 'info');
+            $this->loadSelectedBookDetail();
         }
     }
 
     public function render()
     {
-        // 1. Build Query with eager loading
-        $query = Book::with(['bookDetail.bookData.authors', 'condition']);
+        // 1. Build Query on BookDetail with eager loading & counts
+        $query = BookDetail::with(['bookData.authors', 'bookData.categories', 'publisher'])
+            ->withCount([
+                'books as total_copies',
+                'books as available_copies' => fn($q) => $q->where('status', 'available'),
+                'books as borrowed_copies' => fn($q) => $q->where('status', 'borrowed'),
+                'books as damaged_lost_copies' => fn($q) => $q->whereIn('book_condition_id', [4, 5]),
+            ]);
 
         // 2. Filter by Search Query
         if (!empty($this->search)) {
             $searchVal = '%' . trim($this->search) . '%';
             $query->where(function ($q) use ($searchVal) {
-                $q->where('accession_number', 'like', $searchVal)
-                  ->orWhere('code', 'like', $searchVal)
-                  ->orWhere('location', 'like', $searchVal)
-                  ->orWhereHas('bookDetail.bookData', function ($bq) use ($searchVal) {
+                $q->where('isbn', 'like', $searchVal)
+                  ->orWhere('call_number', 'like', $searchVal)
+                  ->orWhere('classification', 'like', $searchVal)
+                  ->orWhereHas('bookData', function ($bq) use ($searchVal) {
                       $bq->where('book_title', 'like', $searchVal)
+                        ->orWhere('subtitle', 'like', $searchVal)
                         ->orWhereHas('authors', function ($aq) use ($searchVal) {
                             $aq->where('first_name', 'like', $searchVal)
                               ->orWhere('last_name', 'like', $searchVal);
+                        })
+                        ->orWhereHas('categories', function ($cq) use ($searchVal) {
+                            $cq->where('name', 'like', $searchVal);
                         });
                   })
-                  ->orWhereHas('bookDetail', function ($bdq) use ($searchVal) {
-                      $bdq->where('isbn', 'like', $searchVal);
+                  ->orWhereHas('books', function ($copyQ) use ($searchVal) {
+                      $copyQ->where('accession_number', 'like', $searchVal)
+                            ->orWhere('code', 'like', $searchVal)
+                            ->orWhere('location', 'like', $searchVal);
                   });
             });
         }
 
         // 3. Filter by Active Tab
-        if ($this->activeTab === 'Available') {
-            $query->where('status', 'available');
+        if ($this->activeTab === 'In Stock') {
+            $query->whereHas('books', fn($q) => $q->where('status', 'available'));
         } elseif ($this->activeTab === 'Borrowed') {
-            $query->where('status', 'borrowed');
+            $query->whereHas('books', fn($q) => $q->where('status', 'borrowed'));
         } elseif ($this->activeTab === 'Damaged/Lost') {
-            $query->whereIn('book_condition_id', [4, 5]); // 4 = Damaged, 5 = Lost
+            $query->whereHas('books', fn($q) => $q->whereIn('book_condition_id', [4, 5]));
         }
 
         // 4. Apply Sorting
@@ -184,16 +224,19 @@ class BookManager extends Component
         $sortDirection = $this->sort['direction'];
 
         if ($sortColumn === 'book_title') {
-            $query->join('book_details', 'books.book_detail_id', '=', 'book_details.id')
-                  ->join('book_datas', 'book_details.book_data_id', '=', 'book_datas.id')
-                  ->select('books.*')
+            $query->join('book_datas', 'book_details.book_data_id', '=', 'book_datas.id')
+                  ->select('book_details.*')
                   ->orderBy('book_datas.book_title', $sortDirection);
-        } else {
+        } elseif ($sortColumn === 'copies') {
+            $query->orderBy('total_copies', $sortDirection);
+        } elseif (in_array($sortColumn, ['isbn', 'call_number', 'created_at', 'id'])) {
             $query->orderBy($sortColumn, $sortDirection);
+        } else {
+            $query->orderBy('id', $sortDirection);
         }
 
         // 5. Fetch Paginated Records
-        $books = $query->paginate(10);
+        $bookDetails = $query->paginate(10);
 
         // 6. Fetch Stat Counts
         $stats = [
@@ -208,7 +251,7 @@ class BookManager extends Component
         $conditions = BookCondition::all();
 
         return view('livewire.pages.dashboard.book-manager', [
-            'books' => $books,
+            'bookDetails' => $bookDetails,
             'stats' => $stats,
             'conditions' => $conditions,
         ]);
