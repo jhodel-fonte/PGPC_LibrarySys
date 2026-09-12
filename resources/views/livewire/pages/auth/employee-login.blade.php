@@ -44,8 +44,19 @@ new #[Layout('components.layouts.auth')] class extends Component
             }
 
             $this->redirect(route('admin.dashboard'), navigate: false);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $this->dispatch('login-failed');
+            $this->dispatch('auth-error', [
+                'title' => "We couldn't sign you in.",
+                'message' => $e->validator->errors()->first() ?: 'These credentials do not match our records.',
+            ]);
+            throw $e;
         } catch (\Throwable $e) {
             $this->dispatch('login-failed');
+            $this->dispatch('auth-error', [
+                'title' => "Sign In Failed",
+                'message' => $e->getMessage() ?: 'An unexpected error occurred. Please try again.',
+            ]);
             throw $e;
         }
     }
@@ -54,6 +65,14 @@ new #[Layout('components.layouts.auth')] class extends Component
 <!-- Elevated White Card Container -->
 <div
     x-data="{ isLoggingIn: false }"
+    x-init="
+        if (typeof Livewire !== 'undefined') {
+            Livewire.hook('commit', ({ respond, fail }) => {
+                respond(() => { isLoggingIn = false; });
+                fail(() => { isLoggingIn = false; });
+            });
+        }
+    "
     @login-failed.window="isLoggingIn = false"
     x-on:livewire:error.window="isLoggingIn = false"
     class="w-full rounded-2xl border border-slate-200/80 bg-white p-7 sm:p-9 md:p-10 shadow-xl shadow-slate-200/70 select-none"
@@ -152,11 +171,13 @@ new #[Layout('components.layouts.auth')] class extends Component
         <div class="mt-6">
             <button
                 type="submit"
+                wire:loading.attr="disabled"
+                wire:target="login"
                 :disabled="isLoggingIn"
                 class="group relative flex h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-[#102b70] px-5 text-[15px] font-semibold text-white shadow-md shadow-blue-900/10 transition hover:-translate-y-0.5 hover:bg-[#0b225e] hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-blue-200 active:translate-y-0 disabled:opacity-75 disabled:cursor-not-allowed"
             >
                 <!-- Normal Button Content -->
-                <span x-show="!isLoggingIn" class="inline-flex items-center gap-2">
+                <span wire:loading.remove wire:target="login" x-show="!isLoggingIn" class="inline-flex items-center gap-2">
                     Sign in to your account
                     <svg class="h-4 w-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
@@ -164,7 +185,7 @@ new #[Layout('components.layouts.auth')] class extends Component
                 </span>
 
                 <!-- Animated CSS Spinner Content -->
-                <span x-show="isLoggingIn" style="display: none;" class="inline-flex items-center justify-center gap-2.5">
+                <span wire:loading.flex wire:target="login" x-show="isLoggingIn" style="display: none;" class="inline-flex items-center justify-center gap-2.5">
                     <span class="inline-block h-4 w-4 animate-spin animate-pgpc-spin rounded-full border-2 border-white/30 border-t-white"></span>
                     <span>Signing in...</span>
                 </span>

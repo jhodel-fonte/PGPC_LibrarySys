@@ -25,6 +25,23 @@ class LoginForm extends Form
     #[Validate('boolean')]
     public bool $remember = false;
 
+    public function rules(): array
+    {
+        return [
+            'email' => 'required|string',
+            'password' => 'required|string',
+            'remember' => 'boolean',
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'email.required' => 'Please enter your username, email or student ID.',
+            'password.required' => 'Please enter your password.',
+        ];
+    }
+
     /**
      * Attempt to authenticate the request's credentials with role filtering.
      *
@@ -40,49 +57,33 @@ class LoginForm extends Form
         $loginInput = trim($this->email);
         $isEmail = filter_var($loginInput, FILTER_VALIDATE_EMAIL);
 
-        $roleFilter = function ($q) use ($allowedRoles) {
-            if (! empty($allowedRoles)) {
-                $q->whereIn('name', $allowedRoles);
-            }
-        };
-
+        // 1. Locate the user account by email, username, or school ID
         $account = null;
 
         if ($isEmail) {
-            $account = Account::where('email', $loginInput)
-                ->when(! empty($allowedRoles), function ($q) use ($roleFilter) {
-                    $q->whereHas('role', $roleFilter);
-                })
-                ->first();
+            $account = Account::with('role', 'status')->where('email', $loginInput)->first();
         } else {
-            // 1. Try finding account by username with role filter
-            $account = Account::where('username', $loginInput)
-                ->when(! empty($allowedRoles), function ($q) use ($roleFilter) {
-                    $q->whereHas('role', $roleFilter);
-                })
-                ->first();
+            // Try username
+            $account = Account::with('role', 'status')->where('username', $loginInput)->first();
 
-            // 2. If staff/librarian roles are allowed, search librarian school_id_number
-            if (! $account && (empty($allowedRoles) || array_intersect($allowedRoles, ['Admin', 'Head Librarian', 'Librarian']))) {
+            // Try librarian school ID
+            if (! $account) {
                 $librarian = Librarian::where('school_id_number', $loginInput)->first();
                 if ($librarian && $librarian->account) {
-                    if (empty($allowedRoles) || in_array($librarian->account->role?->name, $allowedRoles)) {
-                        $account = $librarian->account;
-                    }
+                    $account = $librarian->account()->with('role', 'status')->first();
                 }
             }
 
-            // 3. If student role is allowed, search student school_id_number
-            if (! $account && (empty($allowedRoles) || in_array('Student', $allowedRoles))) {
+            // Try student school ID
+            if (! $account) {
                 $student = Student::where('school_id_number', $loginInput)->first();
                 if ($student && $student->account) {
-                    if (empty($allowedRoles) || in_array($student->account->role?->name, $allowedRoles)) {
-                        $account = $student->account;
-                    }
+                    $account = $student->account()->with('role', 'status')->first();
                 }
             }
         }
 
+        // 2. Validate existence and password
         if (! $account || ! Hash::check($this->password, $account->getAuthPassword())) {
             RateLimiter::hit($this->throttleKey());
 
@@ -91,11 +92,29 @@ class LoginForm extends Form
             }
 
             throw ValidationException::withMessages([
-                'form.email' => trans('auth.failed'),
+                'form.email' => 'These credentials do not match our records. Please verify your username/email and password.',
             ]);
         }
 
-        // Verify account status
+        // 3. Verify role access permissions
+        if (! empty($allowedRoles)) {
+            $userRole = $account->role?->name;
+            if (! in_array($userRole, $allowedRoles)) {
+                RateLimiter::hit($this->throttleKey());
+
+                if (in_array('Student', $allowedRoles)) {
+                    throw ValidationException::withMessages([
+                        'form.email' => 'This account has staff privileges. Please use the Employee Portal to log in.',
+                    ]);
+                } else {
+                    throw ValidationException::withMessages([
+                        'form.email' => 'This account does not have staff access. Please use the Student Portal to log in.',
+                    ]);
+                }
+            }
+        }
+
+        // 4. Verify account status
         if ($account->status && strtolower($account->status->status_name) !== 'active') {
             $statusName = strtolower($account->status->status_name);
             RateLimiter::hit($this->throttleKey());
@@ -105,7 +124,7 @@ class LoginForm extends Form
             ]);
         }
 
-        // Update login stats on success
+        // 5. Update login stats on success
         $account->update([
             'last_login' => now(),
             'failed_attempts' => 0,

@@ -111,11 +111,6 @@ class OpacController extends Controller
 
     /**
      * Handle book reservation request for authenticated users.
-     *
-     * Bug fix #7: $bookId from the OPAC result card is always a book_detail_id,
-     * so look up BookDetail first, then find an available copy from it.
-     * Bug fix #6: wrap the check + update in a DB transaction with a pessimistic
-     * lock to prevent race conditions on concurrent reservation requests.
      */
     public function reserve(Request $request, $bookId)
     {
