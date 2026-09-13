@@ -47,12 +47,12 @@
                 </template>
                 <div
                     x-show="imgError || !book.cover"
-                    class="h-full w-full flex items-center justify-center bg-[#EFF6FF] border border-[#DBEAFE]"
+                    class="h-full w-full flex items-center justify-center bg-slate-100"
                 >
                     <img
-                        src="{{ asset('images/logo.webp') }}"
+                        src="{{ asset('images/book-cover.webp') }}"
                         alt="No cover available"
-                        class="h-20 w-20 object-contain opacity-30 select-none pointer-events-none"
+                        class="h-full w-full object-cover select-none pointer-events-none"
                         draggable="false"
                     >
                 </div>
@@ -78,12 +78,12 @@
                 <div
                     x-show="imgError || !'{{ $book['cover'] ?? '' }}'"
                     style="{{ !empty($book['cover']) ? 'display: none;' : '' }}"
-                    class="h-full w-full flex items-center justify-center bg-[#EFF6FF] border border-[#DBEAFE]"
+                    class="h-full w-full flex items-center justify-center bg-slate-100"
                 >
                     <img
-                        src="{{ asset('images/logo.webp') }}"
+                        src="{{ asset('images/book-cover.webp') }}"
                         alt="No cover available"
-                        class="h-20 w-20 object-contain opacity-30 select-none pointer-events-none"
+                        class="h-full w-full object-cover select-none pointer-events-none"
                         draggable="false"
                     >
                 </div>

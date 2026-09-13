@@ -42,12 +42,12 @@
                 <div
                     x-show="imgError || !'{{ $book['cover_url'] ?? '' }}'"
                     style="{{ !empty($book['cover_url']) ? 'display: none;' : '' }}"
-                    class="h-full w-full flex items-center justify-center bg-[#EFF6FF] border border-[#DBEAFE]"
+                    class="h-full w-full flex items-center justify-center bg-slate-100"
                 >
                     <img
-                        src="{{ asset('images/logo.webp') }}"
+                        src="{{ asset('images/book-cover.webp') }}"
                         alt="No cover available"
-                        class="h-28 w-28 object-contain opacity-35 select-none pointer-events-none"
+                        class="w-full h-full object-cover select-none pointer-events-none"
                         draggable="false"
                     >
                 </div>

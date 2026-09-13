@@ -1,344 +1,496 @@
-<div class="bg-[#F8FAFC] lg:h-full lg:flex lg:flex-col lg:min-h-0">
-    <div class="mx-auto w-full max-w-[1600px] p-4 lg:p-6 relative flex flex-col gap-6 lg:h-full lg:min-h-0 lg:flex-1">
-
-        <div class="absolute inset-0 pointer-events-none overflow-hidden flex items-center justify-center opacity-[0.012] z-0">
-            <img src="{{ asset('images/logo.webp') }}" class="w-2/3 max-w-[800px] object-contain" alt="">
-        </div>
-
+<div
+    x-data="{
+        fallbackCover: '{{ asset('images/book-cover.webp') }}'
+    }"
+    class="bg-[#F8FAFC] lg:h-full lg:flex lg:flex-col lg:min-h-0 overflow-hidden"
+>
+    <div class="mx-auto w-full max-w-[1600px] p-4 lg:p-6 relative flex flex-col gap-4 lg:h-full lg:min-h-0 lg:flex-1 overflow-hidden">
         <!-- 1. Page Header -->
-        <div class="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between lg:shrink-0">
-            <div>
-                <h1 class="text-2xl font-bold tracking-tight text-[#102B70]">Book Inventory Manager</h1>
-                <p class="mt-1 text-sm text-slate-500">Track and manage physical book copies, locations, and copy conditions.</p>
+        <div class="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between lg:shrink-0">
+            <div class="flex min-w-0 items-start gap-3.5">
+                <div class="min-w-0 pl-4">
+                    <h1 class="text-xl font-bold tracking-[-0.02em] text-[#102B70] sm:text-2xl">Book Management</h1>
+                    <p class="mt-0.5 max-w-2xl text-sm font-medium text-slate-600">Manage catalog records, physical copies, shelf locations, and availability.</p>
+                    <p class="mt-1.5 text-xs font-semibold tabular-nums text-slate-500">
+                        {{ number_format($totalTitles) }} {{ $totalTitles === 1 ? 'title' : 'titles' }}, {{ number_format($totalCopies) }} physical {{ $totalCopies === 1 ? 'copy' : 'copies' }}
+                    </p>
+                </div>
             </div>
-            <div class="flex items-center gap-3">
-                <a href="{{ route('admin.book-management.add') }}" wire:navigate class="flex items-center gap-2 h-11 px-5 rounded-2xl bg-[#102B70] hover:bg-[#0B225E] text-white text-xs uppercase tracking-wider font-bold transition-colors shadow-sm focus:outline-none">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
-                    Add Book
+
+            <!-- Primary Action -->
+            <div class="grid grid-cols-2 gap-2 sm:flex sm:shrink-0 sm:items-center">
+                <a href="{{ route('admin.book-management.add') }}" wire:navigate
+                    class="inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-[#102B70] px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#0B225E] active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70] focus-visible:ring-offset-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                    <span>Add Book</span>
                 </a>
-                <button type="button" onclick="alert('Book Import feature coming soon!')" class="flex items-center gap-2 h-11 px-5 rounded-2xl border border-[#102B70] bg-white text-[#102B70] hover:bg-slate-50 text-xs uppercase tracking-wider font-bold transition-colors shadow-sm focus:outline-none">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
-                    Import Book
+
+                <!-- Secondary Action -->
+                <button type="button" onclick="alert('Book Import feature coming soon!')" class="inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-[#CBD5E1] bg-white px-4 text-sm font-semibold text-[#102B70] shadow-sm transition-colors hover:border-[#102B70] hover:bg-slate-50 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70] focus-visible:ring-offset-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+                    <span>Import Book</span>
                 </button>
             </div>
         </div>
 
-        <!-- 2. Statistics Cards -->
-        <div class="relative z-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 lg:gap-5 lg:shrink-0">
-            <!-- Total Titles -->
-            <div class="rounded-2xl border border-[#E2E8F0] bg-white px-5 py-3.5 shadow-[0_1px_3px_rgba(15,23,42,0.03)] flex items-center justify-between gap-3">
-                <div class="min-w-0">
-                    <p class="text-xs font-bold uppercase tracking-wider text-slate-500 truncate">Book Titles</p>
-                    <p class="mt-0.5 text-2xl font-extrabold tracking-tight text-[#0F172A]">{{ number_format($stats['total_titles']) }}</p>
-                </div>
-                <div class="h-10 w-10 rounded-xl flex items-center justify-center bg-[#EFF6FF] text-[#102B70] shrink-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
-                </div>
-            </div>
-
-            <!-- Total Copies -->
-            <div class="rounded-2xl border border-[#E2E8F0] bg-white px-5 py-3.5 shadow-[0_1px_3px_rgba(15,23,42,0.03)] flex items-center justify-between gap-3">
-                <div class="min-w-0">
-                    <p class="text-xs font-bold uppercase tracking-wider text-slate-500 truncate">Total Copies</p>
-                    <p class="mt-0.5 text-2xl font-extrabold tracking-tight text-[#0F172A]">{{ number_format($stats['total_copies']) }}</p>
-                </div>
-                <div class="h-10 w-10 rounded-xl flex items-center justify-center bg-[#DBEAFE] text-[#1D4ED8] shrink-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
-                </div>
-            </div>
-
-            <!-- Available Copies -->
-            <div class="rounded-2xl border border-[#E2E8F0] bg-white px-5 py-3.5 shadow-[0_1px_3px_rgba(15,23,42,0.03)] flex items-center justify-between gap-3">
-                <div class="min-w-0">
-                    <p class="text-xs font-bold uppercase tracking-wider text-slate-500 truncate">Available</p>
-                    <p class="mt-0.5 text-2xl font-extrabold tracking-tight text-emerald-700">{{ number_format($stats['available']) }}</p>
-                </div>
-                <div class="h-10 w-10 rounded-xl flex items-center justify-center bg-emerald-50 text-emerald-600 shrink-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                </div>
-            </div>
-
-            <!-- Borrowed Copies -->
-            <div class="rounded-2xl border border-[#E2E8F0] bg-white px-5 py-3.5 shadow-[0_1px_3px_rgba(15,23,42,0.03)] flex items-center justify-between gap-3">
-                <div class="min-w-0">
-                    <p class="text-xs font-bold uppercase tracking-wider text-slate-500 truncate">Borrowed</p>
-                    <p class="mt-0.5 text-2xl font-extrabold tracking-tight text-blue-700">{{ number_format($stats['borrowed']) }}</p>
-                </div>
-                <div class="h-10 w-10 rounded-xl flex items-center justify-center bg-blue-50 text-blue-600 shrink-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                </div>
-            </div>
-
-            <!-- Damaged/Lost Copies -->
-            <div class="rounded-2xl border border-[#E2E8F0] bg-white px-5 py-3.5 shadow-[0_1px_3px_rgba(15,23,42,0.03)] flex items-center justify-between gap-3">
-                <div class="min-w-0">
-                    <p class="text-xs font-bold uppercase tracking-wider text-slate-500 truncate">Damaged / Lost</p>
-                    <p class="mt-0.5 text-2xl font-extrabold tracking-tight text-red-700">{{ number_format($stats['damaged_lost']) }}</p>
-                </div>
-                <div class="h-10 w-10 rounded-xl flex items-center justify-center bg-red-50 text-red-600 shrink-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><line x1="9" x2="15" y1="9" y2="15"/><line x1="15" x2="9" y1="9" y2="15"/></svg>
-                </div>
-            </div>
-        </div>
-
-        <!-- 3. Table Card -->
-        <x-data-table
-            :headers="$this->headers"
-            :sort="$sort"
-            :tabs="['All Books', 'In Stock', 'Borrowed', 'Damaged/Lost']"
-            :activeTab="$activeTab"
-            searchPlaceholder="Search title, author, ISBN, call number, accession..."
-            :paginator="$bookDetails"
-            minWidth="1050px"
-        >
-            @forelse($bookDetails as $detail)
-                @php
-                    $data = $detail->bookData;
-                    $authorName = 'Unknown Author';
-                    if ($data && $data->authors->isNotEmpty()) {
-                        $authorName = $data->authors->map(function($a) {
-                            return trim($a->first_name . ' ' . $a->last_name);
-                        })->implode(', ');
-                    }
-                    $categories = $data ? $data->categories : collect();
-                @endphp
-                <tr class="hover:bg-slate-50/70 transition-colors h-[76px] group">
-                    <!-- Book Info -->
-                    <td class="px-6 py-4 align-middle max-w-[340px]">
-                        <div class="flex items-center gap-3.5">
-                            <!-- Miniature Book Thumbnail (Vertical Book Ratio) -->
-                            @if($detail->cover_image)
-                                <img src="{{ asset('storage/' . $detail->cover_image) }}" class="w-9 h-12 rounded-lg object-cover shrink-0 border border-slate-200 shadow-2xs" alt="Cover">
-                            @else
-                                @php
-                                    $initials = collect(explode(' ', $data ? $data->book_title : 'BOOK'))->map(fn($n) => substr($n, 0, 1))->take(2)->join('');
-                                @endphp
-                                <div class="w-9 h-12 rounded-lg bg-[#E8EEFC] text-[#102B70] flex items-center justify-center shrink-0 font-bold text-xs uppercase select-none border border-[#DBEAFE] shadow-2xs">
-                                    {{ strtoupper($initials) }}
-                                </div>
-                            @endif
-
-                            <div class="flex flex-col min-w-0">
-                                <span class="text-sm font-bold text-[#102B70] group-hover:text-blue-700 transition-colors truncate" title="{{ $data ? $data->book_title : 'Unknown' }}">
-                                    {{ $data ? $data->book_title : 'Unknown Title' }}
-                                </span>
-                                <span class="text-xs text-slate-500 truncate mt-0.5 font-medium">{{ $authorName }}</span>
-                            </div>
-                        </div>
-                    </td>
-
-                    <!-- ISBN / Call Number -->
-                    <td class="px-6 py-4 align-middle">
-                        <div class="flex flex-col">
-                            <span class="text-sm text-slate-700 font-semibold font-mono">{{ $detail->isbn ?: '—' }}</span>
-                            @if($detail->call_number)
-                                <span class="text-xs text-slate-500 font-medium mt-0.5">Call: {{ $detail->call_number }}</span>
-                            @endif
-                        </div>
-                    </td>
-
-                    <!-- Category -->
-                    <td class="px-6 py-4 align-middle">
-                        @if($categories->isNotEmpty())
-                            <div class="flex flex-wrap gap-1 max-w-[200px]">
-                                @foreach($categories->take(2) as $category)
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
-                                        {{ $category->name }}
-                                    </span>
-                                @endforeach
-                                @if($categories->count() > 2)
-                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[11px] font-bold text-slate-500">
-                                        +{{ $categories->count() - 2 }}
-                                    </span>
-                                @endif
-                            </div>
-                        @else
-                            <span class="text-xs text-slate-400 font-medium">Uncategorized</span>
-                        @endif
-                    </td>
-
-                    <!-- Total Copies -->
-                    <td class="px-6 py-4 align-middle">
-                        <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-200 bg-slate-50 text-slate-700">
-                            {{ $detail->total_copies }} {{ Str::plural('Copy', $detail->total_copies) }}
-                        </span>
-                    </td>
-
-                    <!-- Status / Availability -->
-                    <td class="px-6 py-4 align-middle">
-                        @if($detail->available_copies > 0)
-                            <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold border border-[#BBF7D0] bg-[#DCFCE7] text-[#15803D]">
-                                {{ $detail->available_copies }} Available
-                            </span>
-                        @elseif($detail->total_copies > 0 && $detail->borrowed_copies > 0)
-                            <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold border border-[#FED7AA] bg-[#FFEDD5] text-[#C2410C]">
-                                All Borrowed
-                            </span>
-                        @else
-                            <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-200 bg-slate-100 text-slate-500">
-                                No Copies
-                            </span>
-                        @endif
-                    </td>
-
-                    <!-- Actions -->
-                    <td class="px-6 py-4 align-middle text-right">
-                        <div class="flex items-center justify-end gap-2">
-                            <button
-                                wire:click="openCopiesModal({{ $detail->id }})"
-                                type="button"
-                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#EFF6FF] hover:bg-[#DBEAFE] text-[#102B70] text-xs uppercase tracking-wider font-bold transition-colors shadow-2xs focus:outline-none"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
-                                Copies ({{ $detail->total_copies }})
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-            @empty
-                <tr>
-                    <td colspan="6" class="px-6 py-12 text-center text-slate-500 text-sm md:text-base font-semibold">
-                        No book records match the current search or filters.
-                    </td>
-                </tr>
-            @endforelse
-        </x-data-table>
-    </div>
-
-    <!-- 4. MANAGE COPIES MODAL (View & manage all copies for selected title) -->
-    @if($showCopiesModal && $selectedBookDetail)
-        @php
-            $modalData = $selectedBookDetail->bookData;
-            $modalAuthor = 'Unknown Author';
-            if ($modalData && $modalData->authors->isNotEmpty()) {
-                $modalAuthor = $modalData->authors->map(fn($a) => trim($a->first_name . ' ' . $a->last_name))->implode(', ');
-            }
-        @endphp
-        <div class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-            <div class="bg-white rounded-3xl border border-[#E2E8F0] shadow-2xl max-w-3xl w-full overflow-hidden animate-fade-in flex flex-col max-h-[90vh]">
-                <!-- Modal Header -->
-                <div class="px-6 py-5 border-b border-[#E2E8F0] bg-slate-50 flex items-start justify-between gap-4 shrink-0">
-                    <div class="flex items-center gap-3.5 min-w-0">
-                        @if($selectedBookDetail->cover_image)
-                            <img src="{{ asset('storage/' . $selectedBookDetail->cover_image) }}" class="w-10 h-14 rounded-lg object-cover shrink-0 border border-slate-200 shadow-xs" alt="Cover">
-                        @else
-                            <div class="w-10 h-14 rounded-lg bg-[#E8EEFC] text-[#102B70] flex items-center justify-center shrink-0 font-bold text-xs uppercase border border-[#DBEAFE]">
-                                BOOK
-                            </div>
-                        @endif
-                        <div class="min-w-0">
-                            <h3 class="text-base font-bold text-[#102B70] truncate">{{ $modalData ? $modalData->book_title : 'Book Copies' }}</h3>
-                            <p class="text-xs text-slate-500 font-medium truncate mt-0.5">{{ $modalAuthor }}</p>
-                            <p class="text-[11px] text-slate-400 font-mono mt-0.5">ISBN: {{ $selectedBookDetail->isbn ?: 'N/A' }} &bull; Call: {{ $selectedBookDetail->call_number ?: 'N/A' }}</p>
-                        </div>
-                    </div>
-                    <button type="button" wire:click="closeCopiesModal" class="text-slate-400 hover:text-[#0F172A] text-2xl font-bold select-none shrink-0">&times;</button>
-                </div>
-
-                <!-- Modal Body: Table of Physical Copies -->
-                <div class="p-6 overflow-y-auto flex-1 space-y-4">
-                    <div class="flex items-center justify-between">
-                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-600">Physical Copies ({{ $selectedBookDetail->books->count() }})</h4>
-                    </div>
-
-                    <div class="border border-[#E2E8F0] rounded-2xl overflow-hidden bg-white shadow-2xs">
-                        <table class="w-full text-left text-xs">
-                            <thead class="bg-[#F8FAFC] border-b border-[#E2E8F0] text-slate-500 font-bold uppercase tracking-wider">
-                                <tr>
-                                    <th class="px-4 py-3">Accession No.</th>
-                                    <th class="px-4 py-3">QR / Code</th>
-                                    <th class="px-4 py-3">Location</th>
-                                    <th class="px-4 py-3">Condition</th>
-                                    <th class="px-4 py-3">Status</th>
-                                    <th class="px-4 py-3 text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100">
-                                @forelse($selectedBookDetail->books as $copy)
-                                    @php
-                                        $cond = strtolower($copy->condition ? $copy->condition->status : 'good');
-                                        $condColor = match($cond) {
-                                            'new' => 'border-[#BBF7D0] bg-[#DCFCE7] text-[#15803D]',
-                                            'good' => 'border-[#BFDBFE] bg-[#DBEAFE] text-[#1D4ED8]',
-                                            'fair' => 'border-[#FDE68A] bg-[#FEF3C7] text-[#B45309]',
-                                            'damaged' => 'border-[#FED7AA] bg-[#FFEDD5] text-[#C2410C]',
-                                            'lost' => 'border-[#FECACA] bg-[#FEE2E2] text-[#B91C1C]',
-                                            default => 'border-[#E2E8F0] bg-[#F1F5F9] text-[#475569]'
-                                        };
-
-                                        $stat = strtolower($copy->status);
-                                        $statColor = match($stat) {
-                                            'available' => 'border-[#BBF7D0] bg-[#DCFCE7] text-[#15803D]',
-                                            'borrowed' => 'border-[#FECACA] bg-[#FEE2E2] text-[#B91C1C]',
-                                            default => 'border-[#E2E8F0] bg-[#F1F5F9] text-[#475569]'
-                                        };
-                                    @endphp
-                                    <tr class="hover:bg-slate-50/70 transition-colors">
-                                        <td class="px-4 py-3 font-semibold text-slate-800 font-mono">{{ $copy->accession_number }}</td>
-                                        <td class="px-4 py-3 text-slate-600 font-mono">{{ $copy->code ?: '—' }}</td>
-                                        <td class="px-4 py-3 text-slate-600 font-medium">{{ $copy->location ?: 'Not Placed' }}</td>
-                                        <td class="px-4 py-3">
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold border {{ $condColor }}">
-                                                {{ $copy->condition ? $copy->condition->status : 'Unknown' }}
-                                            </span>
-                                        </td>
-                                        <td class="px-4 py-3">
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold border {{ $statColor }}">
-                                                {{ ucfirst($copy->status) }}
-                                            </span>
-                                        </td>
-                                        <td class="px-4 py-3 text-right">
-                                            <div class="flex items-center justify-end gap-2">
-                                                <button
-                                                    wire:click="editCopy({{ $copy->id }})"
-                                                    type="button"
-                                                    class="text-xs font-bold uppercase tracking-wider text-[#102B70] hover:text-blue-700 transition-colors"
-                                                >
-                                                    Edit
-                                                </button>
-                                                <button
-                                                    wire:click="deleteCopy({{ $copy->id }})"
-                                                    @if($copy->status === 'borrowed') disabled @endif
-                                                    type="button"
-                                                    class="text-xs font-bold uppercase tracking-wider text-red-600 hover:text-red-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                                                    onclick="confirm('Are you sure you want to delete copy {{ $copy->accession_number }}?') || event.stopImmediatePropagation()"
-                                                >
-                                                    Delete
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="6" class="px-4 py-8 text-center text-slate-400 font-medium">
-                                            No physical copies registered for this book.
-                                        </td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Modal Footer -->
-                <div class="px-6 py-4 border-t border-[#E2E8F0] bg-slate-50 flex justify-end shrink-0">
+    <!-- 2. Data Table Component -->
+    <x-data-table
+        :headers="$this->headers"
+        :sort="$sort"
+        headerTextSize="text-xs"
+        :tabs="[]"
+        :activeTab="$activeTab"
+        searchPlaceholder="Search accession, code, title, ISBN, or author..."
+        :paginator="$books"
+        minWidth="1000px"
+        :selectable="true"
+        selectAllModel="selectAll"
+        :selectedCount="count($selectedCopies)"
+        :showFilter="true"
+        :activeFilterCount="$this->activeFilterCount"
+        perPageModel="perPage"
+    >
+        <x-slot:toolbarLeft>
+            @php
+                $statusTabs = [
+                    'All Copies' => ['label' => 'All', 'count' => $totalCopies],
+                    'Available' => ['label' => 'Available', 'count' => $availableCopies],
+                    'Borrowed' => ['label' => 'Borrowed', 'count' => $borrowedCopies],
+                    'Damaged/Lost' => ['label' => 'Damaged/Lost', 'count' => $damagedLostCopies],
+                ];
+            @endphp
+            <div class="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0" aria-label="Inventory view and status filters">
+                @foreach(['Titles' => $totalTitles, 'Copies' => $totalCopies] as $viewName => $viewCount)
                     <button
                         type="button"
-                        wire:click="closeCopiesModal"
-                        class="px-5 h-10 border border-slate-200 hover:bg-white text-slate-700 text-xs uppercase tracking-wider font-bold rounded-xl transition-colors"
+                        wire:click="setInventoryView('{{ $viewName }}')"
+                        aria-pressed="{{ $inventoryView === $viewName ? 'true' : 'false' }}"
+                        class="inline-flex shrink-0 items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70] {{ $inventoryView === $viewName ? 'border-[#102B70] bg-[#102B70] text-white shadow-sm' : 'border-[#DCE3EC] bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50' }}"
                     >
-                        Close
+                        <span>{{ $viewName }}</span>
+                        <span class="inline-flex min-w-[22px] items-center justify-center rounded px-1.5 py-0.5 text-[10px] font-bold tabular-nums {{ $inventoryView === $viewName ? 'bg-[#071943] text-white' : 'bg-slate-100 text-slate-600' }}">{{ number_format($viewCount) }}</span>
                     </button>
+                @endforeach
+
+                <span class="mx-1 h-6 w-px shrink-0 bg-slate-200" aria-hidden="true"></span>
+
+                @foreach($statusTabs as $tabName => $tab)
+                    <button
+                        type="button"
+                        wire:click="setTab('{{ $tabName }}')"
+                        aria-pressed="{{ $activeTab === $tabName ? 'true' : 'false' }}"
+                        class="inline-flex shrink-0 items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70] {{ $activeTab === $tabName ? 'bg-[#102B70] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-[#102B70]' }}"
+                    >
+                        <span>{{ $tab['label'] }}</span>
+                        <span class="inline-flex min-w-[22px] items-center justify-center rounded px-1.5 py-0.5 text-[10px] font-bold tabular-nums {{ $activeTab === $tabName ? 'bg-[#071943] text-white' : 'bg-slate-100 text-slate-600' }}">{{ number_format($tab['count']) }}</span>
+                    </button>
+                @endforeach
+            </div>
+        </x-slot:toolbarLeft>
+
+        <!-- Filter Dropdown Slot -->
+        <x-slot:filterDropdown>
+            <!-- Header -->
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <h3 class="text-sm font-bold text-[#0F172A]">Filter Options</h3>
+                <button
+                    type="button"
+                    wire:click="clearFilters"
+                    class="text-xs font-semibold text-[#1D4ED8] hover:underline"
+                >
+                    Clear All
+                </button>
+            </div>
+
+            <!-- Form Controls -->
+            <div class="py-4 space-y-3.5">
+                <!-- Location -->
+                <div class="grid grid-cols-3 items-center gap-2">
+                    <label for="book-filter-location" class="text-xs font-semibold text-slate-600">Location</label>
+                    <div class="col-span-2 relative">
+                        <select
+                            wire:model.defer="filterLocation"
+                            id="book-filter-location"
+                            class="w-full h-9 px-3 rounded-lg border border-[#E2E8F0] bg-white text-xs font-medium text-slate-800 outline-none focus:border-[#102B70] appearance-none cursor-pointer"
+                        >
+                            <option value="">All Locations</option>
+                            @foreach($locations as $loc)
+                                <option value="{{ $loc }}">{{ $loc }}</option>
+                            @endforeach
+                        </select>
+                        <div class="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none text-slate-400">
+                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Condition -->
+                <div class="grid grid-cols-3 items-center gap-2">
+                    <label for="book-filter-condition" class="text-xs font-semibold text-slate-600">Condition</label>
+                    <div class="col-span-2 relative">
+                        <select
+                            wire:model.defer="filterCondition"
+                            id="book-filter-condition"
+                            class="w-full h-9 px-3 rounded-lg border border-[#E2E8F0] bg-white text-xs font-medium text-slate-800 outline-none focus:border-[#102B70] appearance-none cursor-pointer"
+                        >
+                            <option value="">All Conditions</option>
+                            @foreach($conditions as $cond)
+                                <option value="{{ $cond->id }}">{{ $cond->status }}</option>
+                            @endforeach
+                        </select>
+                        <div class="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none text-slate-400">
+                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Status -->
+                <div class="grid grid-cols-3 items-center gap-2">
+                    <label for="book-filter-status" class="text-xs font-semibold text-slate-600">Status</label>
+                    <div class="col-span-2 relative">
+                        <select
+                            wire:model.defer="filterStatus"
+                            id="book-filter-status"
+                            class="w-full h-9 px-3 rounded-lg border border-[#E2E8F0] bg-white text-xs font-medium text-slate-800 outline-none focus:border-[#102B70] appearance-none cursor-pointer"
+                        >
+                            <option value="">All Statuses</option>
+                            <option value="available">Available</option>
+                            <option value="borrowed">Borrowed</option>
+                            <option value="reserved">Reserved</option>
+                            <option value="damaged">Damaged</option>
+                            <option value="lost">Lost</option>
+                        </select>
+                        <div class="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none text-slate-400">
+                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Author -->
+                <div class="grid grid-cols-3 items-center gap-2">
+                    <label for="book-filter-author" class="text-xs font-semibold text-slate-600">Author</label>
+                    <input
+                        wire:model.defer="filterAuthor"
+                        id="book-filter-author"
+                        type="text"
+                        placeholder="All Authors"
+                        class="col-span-2 h-9 px-3 rounded-lg border border-[#E2E8F0] bg-white text-xs font-medium text-slate-800 outline-none focus:border-[#102B70]"
+                    >
+                </div>
+
+                <!-- Publication Year -->
+                <div class="grid grid-cols-3 items-center gap-2">
+                    <label for="book-filter-year" class="text-xs font-semibold text-slate-600">Publication Year</label>
+                    <input
+                        wire:model.defer="filterYear"
+                        id="book-filter-year"
+                        type="number"
+                        placeholder="Any"
+                        class="col-span-2 h-9 px-3 rounded-lg border border-[#E2E8F0] bg-white text-xs font-medium text-slate-800 outline-none focus:border-[#102B70]"
+                    >
                 </div>
             </div>
-        </div>
-    @endif
 
-    <!-- 5. EDIT BOOK COPY MODAL (Tailwind CSS Modal with Livewire Show trigger) -->
+            <!-- Footer -->
+            <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2.5">
+                <button
+                    type="button"
+                    @click="filterOpen = false"
+                    class="px-4 h-9 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                    Cancel
+                </button>
+                <button
+                    type="button"
+                    wire:click="applyFilters"
+                    @click="filterOpen = false"
+                    class="h-9 rounded-lg bg-[#102B70] px-4 text-xs font-bold text-white shadow-sm transition-colors hover:bg-[#0B225E] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70]"
+                >
+                    Apply Filters
+                </button>
+            </div>
+        </x-slot:filterDropdown>
+
+        <!-- Bulk Actions Slot -->
+        <x-slot:bulkActions>
+            <button
+                type="button"
+                wire:click="openBulkLocationModal"
+                class="rounded-lg border border-slate-300 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70]"
+            >
+                Change Location
+            </button>
+
+            <button
+                type="button"
+                wire:click="openBulkConditionModal"
+                class="rounded-lg border border-slate-300 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70]"
+            >
+                Update Condition
+            </button>
+
+            <button
+                type="button"
+                onclick="window.print()"
+                class="rounded-lg border border-slate-300 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70]"
+            >
+                Print Labels
+            </button>
+
+            <button
+                type="button"
+                wire:click="bulkDelete"
+                onclick="confirm('Are you sure you want to delete the selected copies?') || event.stopImmediatePropagation()"
+                class="rounded-lg bg-red-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-red-700 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600"
+            >
+                Delete
+            </button>
+
+            <button
+                type="button"
+                wire:click="clearSelection"
+                class="px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors flex items-center gap-1"
+            >
+                <span>&times;</span> Clear
+            </button>
+        </x-slot:bulkActions>
+
+        <!-- Rows -->
+        @forelse($books as $book)
+            @php
+                $detail = $book->bookDetail;
+                $data = $detail ? $detail->bookData : null;
+                $authorName = 'Unknown Author';
+                if ($data && $data->authors->isNotEmpty()) {
+                    $authorName = $data->authors->map(function($a) {
+                        return trim($a->first_name . ' ' . $a->last_name);
+                    })->implode(', ');
+                }
+
+                $cond = strtolower($book->condition ? $book->condition->status : 'good');
+                $condBadgeClass = match($cond) {
+                    'new' => 'bg-[#DCFCE7] text-[#15803D]',
+                    'good' => 'bg-[#DBEAFE] text-[#1D4ED8]',
+                    'worn', 'fair' => 'bg-[#FEF3C7] text-[#B45309]',
+                    'damaged' => 'bg-[#FFEDD5] text-[#C2410C]',
+                    'lost' => 'bg-[#FEE2E2] text-[#B91C1C]',
+                    default => 'bg-slate-100 text-slate-600'
+                };
+
+                $stat = strtolower($book->status);
+                $statBadgeClass = match($stat) {
+                    'available' => 'bg-[#DCFCE7] text-[#15803D]',
+                    'borrowed' => 'bg-[#DBEAFE] text-[#1D4ED8]',
+                    'damaged' => 'bg-[#FFEDD5] text-[#C2410C]',
+                    'lost' => 'bg-[#FEE2E2] text-[#B91C1C]',
+                    'reserved' => 'bg-amber-50 text-amber-700',
+                    'maintenance' => 'bg-slate-100 text-slate-700',
+                    default => 'bg-slate-100 text-slate-600'
+                };
+
+                $coverUrl = $detail && $detail->cover_image ? (str_starts_with($detail->cover_image, 'http') ? $detail->cover_image : asset('storage/' . $detail->cover_image)) : null;
+                $initials = collect(explode(' ', $data ? $data->book_title : 'BOOK'))->map(fn($n) => substr($n, 0, 1))->take(2)->join('');
+            @endphp
+            <tr class="group h-[64px] transition-colors hover:bg-slate-50/70 {{ in_array((string)$book->id, $selectedCopies) ? 'bg-blue-50/60' : '' }}">
+                <!-- Selection Checkbox -->
+                <td class="w-12 px-4 py-3 align-middle text-center">
+                    <input
+                        type="checkbox"
+                        wire:model.live="selectedCopies"
+                        value="{{ (string)$book->id }}"
+                        class="rounded border-slate-300 text-[#102B70] focus:ring-[#102B70] cursor-pointer"
+                    >
+                </td>
+
+                <!-- Book Details -->
+                <td x-show="cols['details'] !== false" class="px-4 py-3 align-middle max-w-[340px]">
+                    <div class="flex items-center gap-3">
+                        <div
+                            x-data="{
+                                coverSrc: @js($coverUrl) || fallbackCover
+                            }"
+                            class="relative flex h-11 w-8 shrink-0 items-center justify-center overflow-hidden rounded-md border border-slate-200 bg-[#E8EEFC] shadow-sm"
+                        >
+                            <img
+                                :src="coverSrc || fallbackCover"
+                                x-on:error="if (coverSrc !== fallbackCover) coverSrc = fallbackCover"
+                                class="w-full h-full object-cover select-none"
+                                alt="{{ $data ? $data->book_title : 'Book Cover' }}"
+                                loading="lazy"
+                            >
+                        </div>
+
+                        <div class="flex flex-col min-w-0">
+                            <button
+                                type="button"
+                                x-on:click="$dispatch('open-book-details', { id: {{ $book->book_detail_id ?? $book->id }}, bookId: {{ $book->id }} })"
+                                class="block max-w-full truncate text-left text-sm font-bold leading-snug text-[#102B70] underline-offset-4 transition-colors hover:text-blue-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70]"
+                                title="View details for {{ $data ? $data->book_title : 'Unknown Title' }}"
+                            >
+                                {{ $data ? $data->book_title : 'Unknown Title' }}
+                            </button>
+                            <span class="text-xs text-slate-500 font-medium truncate mt-0.5">{{ $authorName }}</span>
+                        </div>
+                    </div>
+                </td>
+
+                <!-- Accession No. -->
+                <td x-show="cols['accession'] !== false" class="px-4 py-3 align-middle">
+                    <span class="text-sm font-medium text-slate-700">{{ $book->accession_number }}</span>
+                </td>
+
+                <!-- Unique Code -->
+                <td x-show="cols['code'] !== false" class="px-4 py-3 align-middle">
+                    <span class="text-sm text-slate-600">{{ $book->code ?: 'Not assigned' }}</span>
+                </td>
+
+                <!-- Location -->
+                <td x-show="cols['location'] !== false" class="px-4 py-3 align-middle">
+                    <span class="text-sm font-medium text-slate-700">{{ $book->location ?: 'Main Library' }}</span>
+                </td>
+
+                <!-- Condition Badge -->
+                <td x-show="cols['condition'] !== false" class="px-4 py-3 align-middle">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-sm font-semibold {{ $condBadgeClass }}">
+                        {{ $book->condition ? $book->condition->status : 'Good' }}
+                    </span>
+                </td>
+
+                <!-- Status Badge -->
+                <td x-show="cols['status'] !== false" class="px-4 py-3 align-middle">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-sm font-semibold {{ $statBadgeClass }}">
+                        {{ ucfirst($book->status) }}
+                    </span>
+                </td>
+
+                <!-- Actions -->
+                <td class="px-4 py-3 align-middle text-right pr-6">
+                    <div class="flex items-center justify-end gap-3">
+                        <button
+                            wire:click="editCopy({{ $book->id }})"
+                            type="button"
+                            class="inline-flex items-center gap-1 text-sm font-bold text-[#102B70] hover:text-[#0B225E] transition-colors focus:outline-none"
+                        >
+                            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                            </svg>
+                            <span>Edit</span>
+                        </button>
+
+                        <div class="relative inline-block text-left" x-data="{ open: false }">
+                            <button
+                                @click="open = !open"
+                                type="button"
+                                class="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors focus:outline-none"
+                                aria-label="More actions"
+                            >
+                                <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                                </svg>
+                            </button>
+
+                            <div
+                                x-show="open"
+                                @click.outside="open = false"
+                                x-cloak
+                                x-transition:enter="transition ease-out duration-100"
+                                x-transition:enter-start="transform opacity-0 scale-95"
+                                x-transition:enter-end="transform opacity-100 scale-100"
+                                x-transition:leave="transition ease-in duration-75"
+                                x-transition:leave-start="transform opacity-100 scale-100"
+                                x-transition:leave-end="transform opacity-0 scale-95"
+                                class="absolute right-0 z-30 mt-1 w-44 rounded-xl border border-[#E2E8F0] bg-white p-1.5 text-left shadow-xl focus:outline-none"
+                            >
+                                <button
+                                    type="button"
+                                    @click="open = false; $dispatch('open-book-details', { id: {{ $book->book_detail_id ?? $book->id }}, bookId: {{ $book->id }} })"
+                                    class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 rounded-xl transition-colors"
+                                >
+                                    <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                    View Details
+                                </button>
+
+                                <button
+                                    type="button"
+                                    wire:click="editCopy({{ $book->id }})"
+                                    @click="open = false"
+                                    class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 rounded-xl transition-colors"
+                                >
+                                    <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                    Edit Copy
+                                </button>
+
+                                <button
+                                    type="button"
+                                    wire:click="editCopy({{ $book->id }})"
+                                    @click="open = false"
+                                    class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 rounded-xl transition-colors"
+                                >
+                                    <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                    Change Location
+                                </button>
+
+                                <button
+                                    type="button"
+                                    wire:click="editCopy({{ $book->id }})"
+                                    @click="open = false"
+                                    class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 rounded-xl transition-colors"
+                                >
+                                    <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                                    Update Condition
+                                </button>
+
+                                <button
+                                    type="button"
+                                    wire:click="viewHistory({{ $book->id }})"
+                                    @click="open = false"
+                                    class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 rounded-xl transition-colors"
+                                >
+                                    <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    View History
+                                </button>
+
+                                <div class="border-t border-slate-100 my-1"></div>
+
+                                <button
+                                    type="button"
+                                    wire:click="deleteCopy({{ $book->id }})"
+                                    @disabled($book->status === 'borrowed')
+                                    @click="open = false"
+                                    onclick="confirm('Are you sure you want to delete copy {{ $book->accession_number }}?') || event.stopImmediatePropagation()"
+                                    class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-xl transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                >
+                                    <svg class="h-3.5 w-3.5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                    Delete Copy
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        @empty
+            <tr>
+                <td colspan="8" class="px-6 py-16 text-center">
+                    <div class="mx-auto flex max-w-sm flex-col items-center">
+                        <div class="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-500" aria-hidden="true">
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                        </div>
+                        <p class="text-sm font-semibold text-slate-700">No matching book copies</p>
+                        <p class="mt-1 text-xs font-medium text-slate-500">Try a different search term or clear the active filters.</p>
+                        @if($this->activeFilterCount > 0)
+                            <button type="button" wire:click="clearFilters" class="mt-4 text-xs font-semibold text-[#102B70] underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70]">Clear filters</button>
+                        @endif
+                    </div>
+                </td>
+            </tr>
+        @endforelse
+    </x-data-table>
+    </div>
+
+    <!-- 3. SINGLE EDIT MODAL -->
     @if($showEditModal)
-        <div class="fixed inset-0 z-60 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-            <div class="bg-white rounded-3xl border border-[#E2E8F0] shadow-2xl max-w-md w-full overflow-hidden animate-fade-in">
-                <!-- Header -->
+        <div class="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto bg-slate-900/60 p-4 backdrop-blur-sm">
+            <div class="w-full max-w-md overflow-hidden rounded-xl bg-white shadow-2xl animate-fade-in">
                 <div class="px-6 py-5 border-b border-[#E2E8F0] bg-slate-50 flex items-center justify-between">
                     <div>
                         <h3 class="text-base font-bold text-[#102B70]">Edit Copy Settings</h3>
@@ -347,61 +499,78 @@
                     <button type="button" wire:click="closeEditModal" class="text-slate-400 hover:text-[#0F172A] text-2xl font-bold select-none">&times;</button>
                 </div>
 
-                <!-- Form -->
-                <form wire:submit.prevent="saveCopy" class="p-6 space-y-5">
-                    <!-- Unique QR Code (Disabled display) -->
+                <form wire:submit.prevent="saveCopy" class="p-6 space-y-4">
                     <div class="space-y-1.5">
-                        <label class="text-[11.5px] font-bold text-[#334155] uppercase tracking-wider">Unique Copy QR Code</label>
-                        <input type="text" value="{{ $editCode }}" disabled class="w-full h-11 px-4 rounded-xl border border-[#E2E8F0] bg-slate-50 text-slate-500 text-sm font-bold font-mono outline-none cursor-not-allowed">
+                        <label class="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Item Code / Barcode</label>
+                        <input type="text" value="{{ $editCode }}" disabled class="h-[42px] w-full cursor-not-allowed rounded-lg border border-[#E2E8F0] bg-slate-50 px-3.5 text-xs font-bold text-slate-500 outline-none">
                     </div>
 
-                    <!-- Shelf Location Input -->
                     <div class="space-y-1.5">
-                        <label for="editLocation" class="text-[11.5px] font-bold text-[#334155] uppercase tracking-wider">Shelf Location</label>
+                        <label for="editLocation" class="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Shelf Location</label>
                         <input
                             wire:model="editLocation"
                             type="text"
                             id="editLocation"
                             placeholder="e.g. Shelf A-2, Section B"
-                            class="w-full h-12 px-4 rounded-xl border border-[#E2E8F0] bg-white text-sm text-[#0F172A] font-semibold outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all"
+                            class="h-[42px] w-full rounded-lg border border-[#E2E8F0] bg-white px-3.5 text-xs font-semibold text-[#0F172A] outline-none transition-colors focus:border-[#102B70] focus:ring-2 focus:ring-[#EFF6FF]"
                         >
-                        @error('editLocation') <span class="text-xs font-bold text-[#EF4444]">{{ $message }}</span> @enderror
+                        @error('editLocation') <span class="text-xs font-bold text-red-500">{{ $message }}</span> @enderror
                     </div>
 
-                    <!-- Condition Selection -->
                     <div class="space-y-1.5">
-                        <label for="editConditionId" class="text-[11.5px] font-bold text-[#334155] uppercase tracking-wider">Physical Copy Condition</label>
+                        <label for="editConditionId" class="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Physical Condition</label>
                         <div class="relative">
                             <select
                                 wire:model="editConditionId"
                                 id="editConditionId"
-                                class="w-full h-12 px-4 rounded-xl border border-[#E2E8F0] bg-white text-sm text-[#0F172A] font-semibold outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all appearance-none cursor-pointer"
+                                class="h-[42px] w-full cursor-pointer appearance-none rounded-lg border border-[#E2E8F0] bg-white px-3.5 text-xs font-semibold text-[#0F172A] outline-none transition-colors focus:border-[#102B70] focus:ring-2 focus:ring-[#EFF6FF]"
                             >
                                 <option value="">Select Condition</option>
                                 @foreach($conditions as $condition)
                                     <option value="{{ $condition->id }}">{{ $condition->status }}</option>
                                 @endforeach
                             </select>
-                            <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-slate-400">
-                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path></svg>
+                            <div class="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-slate-400">
+                                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path></svg>
                             </div>
                         </div>
-                        @error('editConditionId') <span class="text-xs font-bold text-[#EF4444]">{{ $message }}</span> @enderror
+                        @error('editConditionId') <span class="text-xs font-bold text-red-500">{{ $message }}</span> @enderror
                     </div>
 
-                    <!-- Action buttons -->
-                    <div class="pt-3 border-t border-[#F1F5F9] flex justify-end gap-3">
+                    <div class="space-y-1.5">
+                        <label for="editStatus" class="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Circulation Status</label>
+                        <div class="relative">
+                            <select
+                                wire:model="editStatus"
+                                id="editStatus"
+                                class="h-[42px] w-full cursor-pointer appearance-none rounded-lg border border-[#E2E8F0] bg-white px-3.5 text-xs font-semibold text-[#0F172A] outline-none transition-colors focus:border-[#102B70] focus:ring-2 focus:ring-[#EFF6FF]"
+                            >
+                                <option value="available">Available</option>
+                                <option value="borrowed">Borrowed</option>
+                                <option value="reserved">Reserved</option>
+                                <option value="damaged">Damaged</option>
+                                <option value="lost">Lost</option>
+                                <option value="maintenance">Maintenance</option>
+                            </select>
+                            <div class="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-slate-400">
+                                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path></svg>
+                            </div>
+                        </div>
+                        @error('editStatus') <span class="text-xs font-bold text-red-500">{{ $message }}</span> @enderror
+                    </div>
+
+                    <div class="pt-3 border-t border-[#F1F5F9] flex justify-end gap-2.5">
                         <button
                             type="button"
                             wire:click="closeEditModal"
-                            class="px-5 h-11 border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs uppercase tracking-wider font-bold rounded-xl transition-colors"
+                            class="px-4 h-10 border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs uppercase tracking-wider font-bold rounded-xl transition-colors"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
                             wire:loading.attr="disabled"
-                            class="px-5 h-11 bg-[#102B70] hover:bg-[#0B225E] text-white text-xs uppercase tracking-wider font-bold rounded-xl transition-colors flex items-center gap-1.5 shadow-sm disabled:opacity-60"
+                            class="flex h-10 items-center gap-1.5 rounded-lg bg-[#102B70] px-[18px] text-xs font-bold uppercase tracking-wider text-white shadow-sm transition-colors hover:bg-[#0B225E] disabled:opacity-60"
                         >
                             <span wire:loading.remove wire:target="saveCopy">Save Changes</span>
                             <span wire:loading.flex wire:target="saveCopy" class="items-center gap-1.5">
@@ -417,4 +586,106 @@
             </div>
         </div>
     @endif
+
+    <!-- 4. BULK CHANGE LOCATION MODAL -->
+    @if($showBulkLocationModal)
+        <div class="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto bg-slate-900/60 p-4 backdrop-blur-sm">
+            <div class="w-full max-w-sm overflow-hidden rounded-xl bg-white shadow-2xl animate-fade-in">
+                <div class="px-6 py-4 border-b border-[#E2E8F0] bg-slate-50 flex items-center justify-between">
+                    <h3 class="text-sm font-bold text-[#102B70]">Change Shelf Location</h3>
+                    <button type="button" wire:click="$set('showBulkLocationModal', false)" class="text-slate-400 hover:text-slate-600 text-xl">&times;</button>
+                </div>
+                <form wire:submit.prevent="saveBulkLocation" class="p-6 space-y-4">
+                    <p class="text-xs text-slate-500 font-medium">Update location for <strong>{{ count($selectedCopies) }}</strong> selected copies.</p>
+                    <div class="space-y-1">
+                        <label class="text-xs font-semibold text-slate-700">New Shelf Location</label>
+                        <input
+                            wire:model="bulkLocation"
+                            type="text"
+                            placeholder="e.g. Shelf B-4, Section C"
+                            class="w-full h-10 px-3 rounded-xl border border-[#E2E8F0] bg-white text-xs font-semibold outline-none focus:border-[#102B70]"
+                            required
+                        >
+                    </div>
+                    <div class="pt-2 flex justify-end gap-2">
+                        <button type="button" wire:click="$set('showBulkLocationModal', false)" class="px-3.5 h-9 rounded-lg border border-slate-200 text-xs font-semibold text-slate-600">Cancel</button>
+                        <button type="submit" class="h-9 rounded-lg bg-[#102B70] px-4 text-xs font-bold text-white shadow-sm">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    @endif
+
+    <!-- 5. BULK UPDATE CONDITION MODAL -->
+    @if($showBulkConditionModal)
+        <div class="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto bg-slate-900/60 p-4 backdrop-blur-sm">
+            <div class="w-full max-w-sm overflow-hidden rounded-xl bg-white shadow-2xl animate-fade-in">
+                <div class="px-6 py-4 border-b border-[#E2E8F0] bg-slate-50 flex items-center justify-between">
+                    <h3 class="text-sm font-bold text-[#102B70]">Update Copy Condition</h3>
+                    <button type="button" wire:click="$set('showBulkConditionModal', false)" class="text-slate-400 hover:text-slate-600 text-xl">&times;</button>
+                </div>
+                <form wire:submit.prevent="saveBulkCondition" class="p-6 space-y-4">
+                    <p class="text-xs text-slate-500 font-medium">Update condition for <strong>{{ count($selectedCopies) }}</strong> selected copies.</p>
+                    <div class="space-y-1">
+                        <label class="text-xs font-semibold text-slate-700">Physical Condition</label>
+                        <select
+                            wire:model="bulkConditionId"
+                            class="w-full h-10 px-3 rounded-xl border border-[#E2E8F0] bg-white text-xs font-semibold outline-none focus:border-[#102B70]"
+                            required
+                        >
+                            <option value="">Select Condition</option>
+                            @foreach($conditions as $cond)
+                                <option value="{{ $cond->id }}">{{ $cond->status }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="pt-2 flex justify-end gap-2">
+                        <button type="button" wire:click="$set('showBulkConditionModal', false)" class="px-3.5 h-9 rounded-lg border border-slate-200 text-xs font-semibold text-slate-600">Cancel</button>
+                        <button type="submit" class="h-9 rounded-lg bg-[#102B70] px-4 text-xs font-bold text-white shadow-sm">Apply</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    @endif
+
+    <!-- 6. VIEW HISTORY MODAL -->
+    @if($showHistoryModal && $historyBook)
+        <div class="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto bg-slate-900/60 p-4 backdrop-blur-sm">
+            <div class="w-full max-w-xl overflow-hidden rounded-xl bg-white shadow-2xl animate-fade-in">
+                <div class="px-6 py-4 border-b border-[#E2E8F0] bg-slate-50 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-sm font-bold text-[#102B70]">Circulation History</h3>
+                        <p class="text-xs text-slate-500 font-medium">Accession: {{ $historyBook->accession_number }}</p>
+                    </div>
+                    <button type="button" wire:click="closeHistoryModal" class="text-slate-400 hover:text-slate-600 text-xl">&times;</button>
+                </div>
+                <div class="p-6 text-xs max-h-96 overflow-y-auto">
+                    @if($historyBook->borrowingTransactions && $historyBook->borrowingTransactions->isNotEmpty())
+                        <div class="divide-y divide-slate-100 space-y-2">
+                            @foreach($historyBook->borrowingTransactions as $tx)
+                                <div class="pt-2 first:pt-0 flex items-center justify-between">
+                                    <div>
+                                        <p class="font-bold text-slate-800">{{ $tx->user ? $tx->user->first_name . ' ' . $tx->user->last_name : 'Unknown User' }}</p>
+                                        <p class="text-[11px] text-slate-500">Borrowed: {{ $tx->borrowed_date ? \Carbon\Carbon::parse($tx->borrowed_date)->format('M d, Y') : 'N/A' }}</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="inline-flex px-2 py-0.5 rounded text-[10px] font-bold {{ $tx->status === 'returned' ? 'bg-emerald-50 text-emerald-700' : 'bg-blue-50 text-blue-700' }}">
+                                            {{ ucfirst($tx->status) }}
+                                        </span>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <p class="text-slate-500 text-center py-6">No previous borrowing transactions recorded for this copy.</p>
+                    @endif
+                </div>
+                <div class="px-6 py-3 border-t border-slate-100 flex justify-end">
+                    <button type="button" wire:click="closeHistoryModal" class="px-4 h-9 rounded-lg bg-[#102B70] text-white text-xs font-bold">Close</button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    <livewire:components.book-manager.edit-book-modal />
 </div>

@@ -208,15 +208,15 @@
                         </div>
                     </template>
 
-                    <!-- Fallback Cover with PGPC Logo Watermark -->
+                    <!-- Fallback Cover -->
                     <div
                         x-show="imgError || (!book.cover && !book.cover_url)"
-                        class="h-full w-full flex items-center justify-center bg-[#EFF6FF] border border-[#DBEAFE] p-3"
+                        class="h-full w-full flex items-center justify-center bg-slate-100"
                     >
                         <img
-                            src="{{ asset('images/logo.webp') }}"
+                            src="{{ asset('images/book-cover.webp') }}"
                             alt="No cover"
-                            class="h-16 w-16 object-contain opacity-35 select-none pointer-events-none"
+                            class="w-full h-full object-cover select-none pointer-events-none"
                             draggable="false"
                         >
                     </div>
