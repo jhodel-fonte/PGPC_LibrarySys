@@ -1,68 +1,3 @@
-<?php
-
-use App\Livewire\Forms\LoginForm;
-use Illuminate\Support\Facades\Session;
-use Livewire\Attributes\Layout;
-use Livewire\Volt\Component;
-
-new #[Layout('components.layouts.auth')] class extends Component
-{
-    public LoginForm $form;
-
-    /**
-     * If staff user is already logged in, redirect immediately to dashboard.
-     */
-    public function mount(): void
-    {
-        if (auth()->check()) {
-            $user = auth()->user();
-            $roleName = strtolower(str_replace(' ', '', $user->role?->name ?? ''));
-
-            if (in_array($roleName, ['admin', 'headlibrarian', 'librarian'])) {
-                $this->redirect(route('admin.dashboard'), navigate: false);
-            } else {
-                $this->redirect(url('/'), navigate: false);
-            }
-        }
-    }
-
-    /**
-     * Handle incoming staff authentication request.
-     */
-    public function login(): void
-    {
-        try {
-            // Enforce strict staff roles: Admin, Head Librarian, Librarian
-            $this->form->authenticate(['Admin', 'Head Librarian', 'Librarian']);
-
-            Session::regenerate();
-
-            $intended = session()->pull('url.intended');
-            if ($intended && ! str_contains($intended, '/portal') && ! str_contains($intended, '/login')) {
-                $this->redirect($intended, navigate: false);
-                return;
-            }
-
-            $this->redirect(route('admin.dashboard'), navigate: false);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            $this->dispatch('login-failed');
-            $this->dispatch('auth-error', [
-                'title' => "We couldn't sign you in.",
-                'message' => $e->validator->errors()->first() ?: 'These credentials do not match our records.',
-            ]);
-            throw $e;
-        } catch (\Throwable $e) {
-            $this->dispatch('login-failed');
-            $this->dispatch('auth-error', [
-                'title' => "Sign In Failed",
-                'message' => $e->getMessage() ?: 'An unexpected error occurred. Please try again.',
-            ]);
-            throw $e;
-        }
-    }
-}; ?>
-
-<!-- Elevated White Card Container -->
 <div
     x-data="{ isLoggingIn: false }"
     x-init="
@@ -77,10 +12,9 @@ new #[Layout('components.layouts.auth')] class extends Component
     x-on:livewire:error.window="isLoggingIn = false"
     class="w-full rounded-2xl border border-slate-200/80 bg-white p-7 sm:p-9 md:p-10 shadow-xl shadow-slate-200/70 select-none"
 >
-    <!-- Title Area (Heading 32px/Bold, Subtitle 15px, 8px gap, 28-32px bottom spacing) -->
-    <div class="mb-[30px]">
-        <h2 class="text-[20px] font-bold tracking-tight text-slate-900 leading-tight">Employee Portal</h2>
-        <p class="mt-2 text-[15px] font-normal text-slate-500 leading-normal">Sign in to access the library management workspace.</p>
+    <div class="mb-[28px]">
+        <h2 class="text-[28px] font-bold tracking-tight text-slate-900 leading-tight">Employee Portal</h2>
+        <p class="mt-2 text-[17px] font-normal text-slate-500 leading-normal">Sign in to access the library management workspace.</p>
     </div>
 
     <!-- Auth Response / Error Card (Alpine.js controlled) -->
@@ -113,15 +47,11 @@ new #[Layout('components.layouts.auth')] class extends Component
                 @enderror
             </div>
 
-            <!-- Password with Alpine Show/Hide (Label 14px/Semibold, 8px gap, Input 52px height, 12px radius, Text 15px) -->
             <div x-data="{ showPassword: false }">
                 <div class="mb-2 flex items-center justify-between">
                     <label for="password" class="inline-block cursor-pointer text-[14px] font-semibold text-slate-700">
                         Password <span class="text-red-500">*</span>
                     </label>
-                    @if (Route::has('password.request'))
-                        <a href="{{ route('password.request') }}" class="text-[12px] font-semibold text-[#102b70] transition hover:text-blue-800" wire:navigate>Forgot password?</a>
-                    @endif
                 </div>
                 <div class="group relative">
                     <svg class="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400 transition group-focus-within:text-[#102b70]" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
@@ -140,7 +70,7 @@ new #[Layout('components.layouts.auth')] class extends Component
                     >
                     <button
                         type="button"
-                        @click="showPassword = !showPassword"
+                        x-on:click="showPassword = !showPassword"
                         :aria-label="showPassword ? 'Hide password' : 'Show password'"
                         class="absolute right-2 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-[#102b70] focus:outline-none focus:ring-2 focus:ring-blue-200"
                     >
@@ -159,15 +89,17 @@ new #[Layout('components.layouts.auth')] class extends Component
             </div>
         </div>
 
-        <!-- Keep me signed in (16px top spacing, Checkbox 16px, Text 14px) -->
-        <div class="mt-4">
+        <!-- Keep me signed in & Forgot Password -->
+        <div class="mt-4 flex items-center justify-between">
             <label class="inline-flex cursor-pointer items-center gap-2.5 text-[14px] text-slate-600 select-none">
                 <input wire:model="form.remember" type="checkbox" name="remember" class="h-4 w-4 rounded border-slate-300 text-[#102b70] focus:ring-[#102b70]">
                 Keep me signed in on this device
             </label>
+            @if (Route::has('password.request'))
+                <a href="{{ route('password.request') }}" class="text-[13px] font-semibold text-[#102b70] transition hover:text-blue-800" wire:navigate>Forgot password?</a>
+            @endif
         </div>
 
-        <!-- Primary Submit Button (Stays loading even during redirect) -->
         <div class="mt-6">
             <button
                 type="submit"
@@ -193,7 +125,7 @@ new #[Layout('components.layouts.auth')] class extends Component
         </div>
     </form>
 
-    <!-- Social Sign In (28-32px top spacing, Divider "or", Button height 52px, Radius 12px, Text 15px/Semibold) -->
+    <!-- Social Sign In -->
     @if (Route::has('auth.google'))
         <div class="relative my-7">
             <div class="absolute inset-0 flex items-center" aria-hidden="true">

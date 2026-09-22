@@ -9,8 +9,10 @@ use App\Models\Role;
 use App\Models\Student;
 use Database\Seeders\AccountStatusSeeder;
 use Database\Seeders\RoleSeeder;
+use App\Livewire\Pages\Auth\StudentLogin;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Livewire\Livewire;
 use Livewire\Volt\Volt;
 use Tests\TestCase;
 
@@ -55,7 +57,7 @@ class LoginTest extends TestCase
         $response = $this->get('/login');
 
         $response->assertOk()
-            ->assertSeeVolt('pages.auth.student-login')
+            ->assertSeeLivewire(StudentLogin::class)
             ->assertSee('Welcome back');
     }
 
@@ -82,7 +84,7 @@ class LoginTest extends TestCase
             'password_hash' => Hash::make('Student12345'),
         ]);
 
-        $component = Volt::test('pages.auth.student-login')
+        $component = Livewire::test(StudentLogin::class)
             ->set('form.email', 'student@test.com')
             ->set('form.password', 'Student12345')
             ->call('login');
@@ -103,7 +105,7 @@ class LoginTest extends TestCase
             'password_hash' => Hash::make('Student12345'),
         ]);
 
-        $component = Volt::test('pages.auth.student-login')
+        $component = Livewire::test(StudentLogin::class)
             ->set('form.email', 'john_student')
             ->set('form.password', 'Student12345')
             ->call('login');
@@ -132,7 +134,7 @@ class LoginTest extends TestCase
             'library_status_id' => 1,
         ]);
 
-        $component = Volt::test('pages.auth.student-login')
+        $component = Livewire::test(StudentLogin::class)
             ->set('form.email', 'STU-2026-001')
             ->set('form.password', 'Student12345')
             ->call('login');
@@ -153,7 +155,7 @@ class LoginTest extends TestCase
             'password_hash' => Hash::make('CorrectPassword'),
         ]);
 
-        $component = Volt::test('pages.auth.student-login')
+        $component = Livewire::test(StudentLogin::class)
             ->set('form.email', 'student@test.com')
             ->set('form.password', 'WrongPassword')
             ->call('login');
@@ -166,7 +168,7 @@ class LoginTest extends TestCase
 
     public function test_student_login_fails_with_non_existent_account(): void
     {
-        $component = Volt::test('pages.auth.student-login')
+        $component = Livewire::test(StudentLogin::class)
             ->set('form.email', 'unknown@test.com')
             ->set('form.password', 'AnyPassword123')
             ->call('login');
@@ -177,7 +179,7 @@ class LoginTest extends TestCase
         $this->assertGuest();
     }
 
-    public function test_staff_member_is_blocked_from_student_portal_with_specific_message(): void
+    public function test_staff_member_is_blocked_from_student_portal_with_no_account_message(): void
     {
         Account::factory()->create([
             'role_id' => $this->adminRole->id,
@@ -187,7 +189,7 @@ class LoginTest extends TestCase
             'password_hash' => Hash::make('Admin12345'),
         ]);
 
-        $component = Volt::test('pages.auth.student-login')
+        $component = Livewire::test(StudentLogin::class)
             ->set('form.email', 'admin@admin.com')
             ->set('form.password', 'Admin12345')
             ->call('login');
@@ -328,7 +330,7 @@ class LoginTest extends TestCase
             'password_hash' => Hash::make('Student12345'),
         ]);
 
-        $component = Volt::test('pages.auth.student-login')
+        $component = Livewire::test(StudentLogin::class)
             ->set('form.email', 'suspended_student@test.com')
             ->set('form.password', 'Student12345')
             ->call('login');
@@ -367,5 +369,37 @@ class LoginTest extends TestCase
 
         $response = $this->get('/login');
         $response->assertRedirect('/');
+    }
+
+    public function test_employee_logout_redirects_to_employee_login(): void
+    {
+        $admin = Account::factory()->create([
+            'role_id' => $this->adminRole->id,
+            'status_id' => $this->activeStatus->id,
+            'email' => 'admin_logout@test.com',
+            'username' => 'admin_logout',
+        ]);
+
+        $this->actingAs($admin);
+
+        $response = $this->get('/logout');
+        $response->assertRedirect(route('employee.login'));
+        $this->assertGuest();
+    }
+
+    public function test_student_logout_redirects_to_student_login(): void
+    {
+        $student = Account::factory()->create([
+            'role_id' => $this->studentRole->id,
+            'status_id' => $this->activeStatus->id,
+            'email' => 'student_logout@test.com',
+            'username' => 'student_logout',
+        ]);
+
+        $this->actingAs($student);
+
+        $response = $this->get('/logout');
+        $response->assertRedirect(route('login'));
+        $this->assertGuest();
     }
 }

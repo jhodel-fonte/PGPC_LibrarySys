@@ -1,62 +1,5 @@
-<?php
 
-use App\Livewire\Forms\LoginForm;
-use Illuminate\Support\Facades\Session;
-use Livewire\Attributes\Layout;
-use Livewire\Volt\Component;
-
-new #[Layout('components.layouts.auth')] class extends Component
-{
-    public LoginForm $form;
-
-    /**
-     * If user is already logged in, redirect immediately.
-     */
-    public function mount(): void
-    {
-        if (auth()->check()) {
-            $user = auth()->user();
-            $roleName = strtolower(str_replace(' ', '', $user->role?->name ?? ''));
-
-            if (in_array($roleName, ['admin', 'headlibrarian', 'librarian'])) {
-                $this->redirect(route('admin.dashboard'), navigate: false);
-            } else {
-                $this->redirect(url('/'), navigate: false);
-            }
-        }
-    }
-
-    /**
-     * Handle incoming student authentication request.
-     */
-    public function login(): void
-    {
-        try {
-            // Enforce strict Student role filter
-            $this->form->authenticate(['Student']);
-
-            Session::regenerate();
-
-            $this->redirectIntended(default: url('/'), navigate: false);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            $this->dispatch('login-failed');
-            $this->dispatch('auth-error', [
-                'title' => "We couldn't sign you in.",
-                'message' => $e->validator->errors()->first() ?: 'These credentials do not match our records.',
-            ]);
-            throw $e;
-        } catch (\Throwable $e) {
-            $this->dispatch('login-failed');
-            $this->dispatch('auth-error', [
-                'title' => "Sign In Failed",
-                'message' => $e->getMessage() ?: 'An unexpected error occurred. Please try again.',
-            ]);
-            throw $e;
-        }
-    }
-}; ?>
-
-<!-- Elevated White Card Container (rounded-2xl matching Employee portal) -->
+<!-- Elevated White Card Container -->
 <div
     x-data="{ isLoggingIn: false }"
     x-init="
@@ -67,20 +10,20 @@ new #[Layout('components.layouts.auth')] class extends Component
             });
         }
     "
-    @login-failed.window="isLoggingIn = false"
+    x-on:login-failed.window="isLoggingIn = false"
     x-on:livewire:error.window="isLoggingIn = false"
     class="w-full rounded-2xl border border-slate-200/80 bg-white p-7 sm:p-9 md:p-10 shadow-xl shadow-slate-200/70 select-none"
 >
     <!-- Title Area (Heading 32px/Bold, Subtitle 15px/Regular, 8px gap, 28-32px bottom spacing) -->
     <div class="mb-[30px]">
-        <h2 class="text-[20px] text-[#102B70] font-bold tracking-tight text-slate-900 leading-tight">Welcome back</h2>
+        <h2 class="text-[25px] font-bold tracking-tight text-slate-900 leading-tight">Student Portal</h2>
         <p class="mt-2 text-[15px] font-normal text-slate-500 leading-normal">Sign in to access your personal library account.</p>
     </div>
 
     <!-- Auth Response / Error Card (Alpine.js controlled) -->
     <x-auth.responseCard id="ajax-general-error" />
 
-    <form wire:submit="login" @submit="isLoggingIn = true" novalidate>
+    <form wire:submit="login" x-on:submit="isLoggingIn = true" novalidate>
         <div class="space-y-5">
             <!-- Username or Student ID (Label 14px/Semibold, 8px gap, Input 52px height, 12px radius, Text 15px, Icon 20px) -->
             <div>
@@ -133,7 +76,7 @@ new #[Layout('components.layouts.auth')] class extends Component
                     >
                     <button
                         type="button"
-                        @click="showPassword = !showPassword"
+                        x-on:click="showPassword = !showPassword"
                         :aria-label="showPassword ? 'Hide password' : 'Show password'"
                         class="absolute right-2 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-[#102b70] focus:outline-none focus:ring-2 focus:ring-blue-200"
                     >

@@ -7,8 +7,8 @@
 
     <div class="relative z-10 w-full max-w-[520px] m-auto py-6">
 
-        <!-- Top Header Bar: Mobile Logo + Back to Home Button (Normal Static Flow, Never Sticky) -->
-        <div class="mb-6 flex items-center justify-between gap-4 select-none">
+        
+        <div class="mb-6 flex items-center justify-between gap-3 select-none">
             <!-- Mobile Logo Header (Hidden on Desktop) -->
             <div class="lg:hidden">
                 <a href="{{ url('/') }}" class="flex items-center gap-2.5 outline-none focus:outline-none group" wire:navigate>
@@ -22,17 +22,18 @@
                 </a>
             </div>
 
-            <!-- Back to Home Button (Right-aligned, Non-sticky, Natural Document Flow) -->
+            <!-- Back to Home Button -->
             <div class="ml-auto">
                 <a
                     href="{{ url('/') }}"
-                    class="group inline-flex h-[38px] items-center justify-center gap-2 rounded-xl border border-slate-200/90 bg-white px-3.5 text-[13px] sm:text-[14px] font-semibold text-slate-600 shadow-xs transition hover:border-slate-300 hover:bg-slate-50 hover:text-[#102b70] hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-100 select-none"
+                    class="group inline-flex h-[38px] items-center justify-center gap-1.5 sm:gap-2 rounded-xl border border-slate-200/90 bg-white px-3 sm:px-3.5 text-[13px] sm:text-[14px] font-semibold text-slate-600 shadow-xs transition hover:border-slate-300 hover:bg-slate-50 hover:text-[#102b70] hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-100 select-none"
                     wire:navigate
+                    title="Back to Home"
                 >
                     <svg class="h-[18px] w-[18px] text-slate-400 transition-colors group-hover:text-[#102b70]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 00-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                     </svg>
-                    <span>Back to Home</span>
+                    <span class="text-xs sm:text-sm">Home</span>
                 </a>
             </div>
         </div>

@@ -14,7 +14,7 @@
             
             <h1 class="text-3xl sm:text-[34px] xl:text-[38px] font-bold text-white leading-tight mb-2">
                 Good {{ now()->hour < 12 ? 'morning' : (now()->hour < 18 ? 'afternoon' : 'evening') }}, 
-                <span class="text-[#FFC61A]">{{ $staffName ?? 'Admin' }}</span> 👋
+                <span class="text-[#FFC61A]">{{ $staffName ?? 'User' }}</span>
             </h1>
             
             <p class="text-blue-100 text-[13px] sm:text-[14px] leading-relaxed max-w-[620px] mt-2 sm:mt-3">

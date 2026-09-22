@@ -9,9 +9,9 @@ Route::middleware('unauthenticated')->group(function () {
     Volt::route('register', 'pages.auth.register')->name('register');
 
     // Student login
-    Volt::route('/student/', 'pages.auth.student-login')->name('login');
+    Route::get('/student/', \App\Livewire\Pages\Auth\StudentLogin::class)->name('login');
     // Employee login
-    Volt::route('/employee/', 'pages.auth.employee-login')->name('employee.login');
+    Route::get('/employee/', \App\Livewire\Pages\Auth\EmployeeLogin::class)->name('employee.login');
     Route::get('forgot-password', \App\Livewire\Pages\Auth\ForgotPassword::class)->name('password.request');
     Volt::route('reset-password/{token}', 'pages.auth.reset-password')->name('password.reset');
 
@@ -30,9 +30,15 @@ Route::middleware('auth')->group(function () {
     Volt::route('confirm-password', 'pages.auth.confirm-password')->name('password.confirm');
 });
 
-Route::get('/logout', function (Request $request) {
-    Auth::logout();
+Route::match(['get', 'post'], '/logout', function (\Illuminate\Http\Request $request) {
+    $user = \Illuminate\Support\Facades\Auth::user();
+    $roleName = strtolower(str_replace(' ', '', $user?->role?->name ?? ''));
+    $isEmployee = in_array($roleName, ['admin', 'headlibrarian', 'librarian'], true);
 
+    \Illuminate\Support\Facades\Auth::guard('web')->logout();
 
-    return redirect('/');
+    $request->session()->invalidate();
+    $request->session()->regenerateToken();
+
+    return redirect($isEmployee ? route('employee.login') : route('login'));
 })->name('logout');

@@ -57,28 +57,35 @@ class LoginForm extends Form
         $loginInput = trim($this->email);
         $isEmail = filter_var($loginInput, FILTER_VALIDATE_EMAIL);
 
-        // 1. Locate the user account by email, username, or school ID
+        // 1. Locate the user account by email, username, or school ID scoped to allowed roles
+        $accountQuery = Account::with('role', 'status');
+        if (! empty($allowedRoles)) {
+            $accountQuery->whereHas('role', function ($q) use ($allowedRoles) {
+                $q->whereIn('name', $allowedRoles);
+            });
+        }
+
         $account = null;
 
         if ($isEmail) {
-            $account = Account::with('role', 'status')->where('email', $loginInput)->first();
+            $account = (clone $accountQuery)->where('email', $loginInput)->first();
         } else {
             // Try username
-            $account = Account::with('role', 'status')->where('username', $loginInput)->first();
+            $account = (clone $accountQuery)->where('username', $loginInput)->first();
 
-            // Try librarian school ID
-            if (! $account) {
+            // Try librarian school ID (only if staff roles are allowed)
+            if (! $account && (empty($allowedRoles) || array_intersect(['Admin', 'Head Librarian', 'Librarian'], $allowedRoles))) {
                 $librarian = Librarian::where('school_id_number', $loginInput)->first();
-                if ($librarian && $librarian->account) {
-                    $account = $librarian->account()->with('role', 'status')->first();
+                if ($librarian && $librarian->account_id) {
+                    $account = (clone $accountQuery)->where('id', $librarian->account_id)->first();
                 }
             }
 
-            // Try student school ID
-            if (! $account) {
+            // Try student school ID (only if student role is allowed)
+            if (! $account && (empty($allowedRoles) || in_array('Student', $allowedRoles))) {
                 $student = Student::where('school_id_number', $loginInput)->first();
-                if ($student && $student->account) {
-                    $account = $student->account()->with('role', 'status')->first();
+                if ($student && $student->account_id) {
+                    $account = (clone $accountQuery)->where('id', $student->account_id)->first();
                 }
             }
         }
@@ -92,25 +99,19 @@ class LoginForm extends Form
             }
 
             throw ValidationException::withMessages([
-                'form.email' => 'These credentials do not match our records. Please verify your username/email and password.',
+                'form.email' => 'Invalid username or password.',
             ]);
         }
 
-        // 3. Verify role access permissions
+        // 3. Fallback role access safeguard
         if (! empty($allowedRoles)) {
             $userRole = $account->role?->name;
             if (! in_array($userRole, $allowedRoles)) {
                 RateLimiter::hit($this->throttleKey());
 
-                if (in_array('Student', $allowedRoles)) {
-                    throw ValidationException::withMessages([
-                        'form.email' => 'This account has staff privileges. Please use the Employee Portal to log in.',
-                    ]);
-                } else {
-                    throw ValidationException::withMessages([
-                        'form.email' => 'This account does not have staff access. Please use the Student Portal to log in.',
-                    ]);
-                }
+                throw ValidationException::withMessages([
+                    'form.email' => 'Invalid username or password. Please try again.',
+                ]);
             }
         }
 
