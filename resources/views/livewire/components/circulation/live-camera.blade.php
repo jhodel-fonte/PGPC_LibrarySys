@@ -204,22 +204,22 @@ class="flex flex-col gap-3">
             <!-- Dynamic Status Badge inside Header -->
             @if($state === 'ready')
                 <div class="flex items-center gap-1.5">
-                    <span class="w-2 h-2 rounded-full bg-[#64748B]"></span>
+                    
                     <span class="text-xs font-semibold text-[#64748B] uppercase tracking-wider">Paused</span>
                 </div>
             @elseif($state === 'scanning')
                 <div class="flex items-center gap-1.5">
-                    <span class="w-2 h-2 rounded-full bg-[#15803D] animate-pulse"></span>
+                    
                     <span class="text-xs font-semibold text-[#15803D] uppercase tracking-wider">Scanning</span>
                 </div>
             @elseif($state === 'success_member' || $state === 'success_book')
                 <div class="flex items-center gap-1.5">
-                    <span class="w-2 h-2 rounded-full bg-[#15803D]"></span>
+                    
                     <span class="text-xs font-bold text-[#15803D] uppercase tracking-wider">Recognized</span>
                 </div>
             @elseif($state === 'error')
                 <div class="flex items-center gap-1.5">
-                    <span class="w-2 h-2 rounded-full bg-[#B91C1C]"></span>
+                    
                     <span class="text-xs font-semibold text-[#B91C1C] uppercase tracking-wider">Blocked</span>
                 </div>
             @endif

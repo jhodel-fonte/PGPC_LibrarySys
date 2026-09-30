@@ -34,7 +34,7 @@
                                     <div class="flex flex-col min-w-0">
                                         <span class="font-bold text-sm text-[#0F172A] leading-snug truncate" title="{{ $item['book'] }}">{{ $item['book'] }}</span>
                                         <span class="text-xs text-[#475569] mt-0.5 truncate">{{ $item['author'] ?? 'Unknown Author' }}</span>
-                                        <span class="text-xs text-[#64748B] tabular-nums mt-0.5">Acc. No: <span class="font-mono text-[#0F172A] font-semibold">{{ $item['accession'] ?? 'N/A' }}</span></span>
+                                        <span class="text-xs text-[#64748B] tabular-nums mt-0.5">Accession Number: <span class="font-mono text-[#0F172A] font-semibold">{{ $item['accession'] ?? 'N/A' }}</span></span>
                                     </div>
                                 </div>
                             </td>

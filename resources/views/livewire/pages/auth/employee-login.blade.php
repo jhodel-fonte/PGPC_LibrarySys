@@ -161,5 +161,7 @@
                 Privacy Policy
             </a>.
         </p>
+        <p class="text-[12px] text-slate-400 pt-1">Student Portal: <a href="{{ route('login') }}" wire:navigate class="font-semibold text-[#102b70] underline decoration-[#fcc719] decoration-2 underline-offset-2 hover:text-blue-800 transition">Student Login</a>.
+        </p>
     </div>
 </div>

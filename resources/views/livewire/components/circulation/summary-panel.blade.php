@@ -1,6 +1,6 @@
 <div class="flex-1 lg:overflow-hidden">
     <!-- Return Summary Card (Flex-1) -->
-    <div class="bg-white rounded-2xl border border-[#E2E8F0] p-5 shadow-xs flex flex-col h-auto lg:h-full lg:overflow-hidden">
+    <div class="bg-white rounded-3xl border border-[#E2E8F0] p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col h-auto lg:h-full lg:overflow-hidden">
         <!-- Return Summary Panel Contents (Top Section - shrink-0) -->
         <div class="flex flex-col gap-3 shrink-0">
             <div>
