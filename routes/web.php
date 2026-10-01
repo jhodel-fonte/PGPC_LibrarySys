@@ -32,6 +32,8 @@ Route::middleware(['auth', 'verified', 'role:Admin'])->prefix('admin')->name('ad
             Route::get('/add', \App\Livewire\Pages\Dashboard\AddBook::class)->name('add');
         });
 
+        Route::get('/authors/search', [\App\Http\Controllers\AuthorController::class, 'search'])->name('authors.search');
+
         Route::get('/settings', \App\Livewire\Pages\Dashboard\Settings::class)->name('settings');
         // Route::get('/profile', \App\Livewire\Pages\Dashboard\Profile::class)->name('profile');
         // Route::view('/profile', 'livewire.pages.admin.profile')->name('profile');

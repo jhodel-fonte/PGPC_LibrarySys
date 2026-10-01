@@ -20,6 +20,7 @@ return new class extends Migration
             DB::statement("CREATE INDEX IF NOT EXISTS idx_book_details_call_num_trgm ON book_details USING gin (call_number gin_trgm_ops);");
             DB::statement("CREATE INDEX IF NOT EXISTS idx_authors_first_name_trgm ON authors USING gin (first_name gin_trgm_ops);");
             DB::statement("CREATE INDEX IF NOT EXISTS idx_authors_last_name_trgm ON authors USING gin (last_name gin_trgm_ops);");
+            DB::statement("CREATE INDEX IF NOT EXISTS idx_authors_full_name_trgm ON authors USING gin ((first_name || ' ' || last_name) gin_trgm_ops);");
             DB::statement("CREATE INDEX IF NOT EXISTS idx_books_accession_no_trgm ON books USING gin (accession_number gin_trgm_ops);");
 
             // 3. Composite B-Tree indexes for fast joins & filtering

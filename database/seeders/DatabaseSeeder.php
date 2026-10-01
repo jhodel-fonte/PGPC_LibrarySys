@@ -64,5 +64,30 @@ class DatabaseSeeder extends Seeder
             UserPreferenceSeeder::class,
             UserNotificationSeeder::class,
         ]);
+
+        // Fix auto-increment sequences after seeding records
+        if (\Illuminate\Support\Facades\DB::getDriverName() === 'pgsql') {
+            $tables = [
+                'accounts', 'students', 'librarians', 'roles', 'permissions',
+                'role_permission', 'account_permission', 'account_statuses',
+                'library_statuses', 'book_conditions', 'reservation_statuses',
+                'book_types', 'languages', 'fine_types', 'borrow_types',
+                'categories', 'publishers', 'authors', 'book_datas',
+                'book_details', 'thesis_metadata', 'books', 'book_reservations',
+                'borrowing_transactions', 'fines', 'fine_payments',
+                'notif_templates', 'user_preferences', 'user_notifications',
+                'system_settings', 'global_announcements', 'book_data_author', 'book_data_category'
+            ];
+            foreach ($tables as $table) {
+                $sequenceName = $table . '_id_seq';
+                $seqExists = \Illuminate\Support\Facades\DB::selectOne("SELECT to_regclass('{$sequenceName}') as exists");
+                if ($seqExists && $seqExists->exists) {
+                    $maxId = \Illuminate\Support\Facades\DB::table($table)->max('id');
+                    if ($maxId !== null) {
+                        \Illuminate\Support\Facades\DB::statement("SELECT setval('{$sequenceName}', {$maxId})");
+                    }
+                }
+            }
+        }
     }
 }
