@@ -5,9 +5,52 @@ namespace App\Http\Controllers;
 use App\Models\Language;
 use App\Http\Requests\StoreLanguageRequest;
 use App\Http\Requests\UpdateLanguageRequest;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class LanguageController extends Controller
 {
+    /**
+     * Search languages using PostgreSQL ILIKE / Trigram indexed search.
+     */
+    public function search(Request $request): JsonResponse
+    {
+        $q = trim((string) $request->get('query', ''));
+        
+        $query = Language::query()->select(['id', 'lang']);
+
+        if ($q !== '') {
+            $query->where('lang', 'ILIKE', "%{$q}%");
+
+            if (DB::getDriverName() === 'pgsql') {
+                $prefixPattern = "{$q}%";
+                $query->orderByRaw("
+                    CASE 
+                        WHEN lang ILIKE ? THEN 1
+                        ELSE 2
+                    END,
+                    lang ASC
+                ", [$prefixPattern]);
+            } else {
+                $query->orderBy('lang');
+            }
+        } else {
+            $query->orderBy('lang');
+        }
+
+        $languages = $query->limit(20)
+            ->get()
+            ->map(function ($l) {
+                return [
+                    'id' => $l->id,
+                    'name' => $l->lang,
+                ];
+            });
+
+        return response()->json($languages);
+    }
+
     /**
      * Display a listing of the resource.
      */

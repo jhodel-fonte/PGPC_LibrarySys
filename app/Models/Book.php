@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Book extends Model
 {
@@ -44,5 +45,16 @@ class Book extends Model
     public function borrowingTransactions(): HasMany
     {
         return $this->hasMany(BorrowingTransaction::class);
+    }
+
+    public function languages(): BelongsToMany
+    {
+        return $this->belongsToMany(Language::class, 'language_books', 'book_id', 'language_id')
+            ->withTimestamps();
+    }
+
+    public function languageBooks(): HasMany
+    {
+        return $this->hasMany(Language_Book::class, 'book_id');
     }
 }

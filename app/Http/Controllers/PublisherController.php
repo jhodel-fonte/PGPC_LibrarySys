@@ -5,9 +5,54 @@ namespace App\Http\Controllers;
 use App\Models\Publisher;
 use App\Http\Requests\StorePublisherRequest;
 use App\Http\Requests\UpdatePublisherRequest;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class PublisherController extends Controller
 {
+    /**
+     * Search publishers using PostgreSQL Trigram (GIN) indexed search.
+     */
+    public function search(Request $request): JsonResponse
+    {
+        $q = trim((string) $request->get('query', ''));
+        
+        // Select only required columns to minimize I/O overhead
+        $query = Publisher::query()->select(['id', 'name']);
+
+        if ($q !== '') {
+            $query->where('name', 'ILIKE', "%{$q}%");
+
+            // Relevance ordering: Prefix matches first with native bindings
+            if (DB::getDriverName() === 'pgsql') {
+                $prefixPattern = "{$q}%";
+                $query->orderByRaw("
+                    CASE 
+                        WHEN name ILIKE ? THEN 1
+                        ELSE 2
+                    END,
+                    name ASC
+                ", [$prefixPattern]);
+            } else {
+                $query->orderBy('name');
+            }
+        } else {
+            $query->orderBy('name');
+        }
+
+        $publishers = $query->limit(10)
+            ->get()
+            ->map(function ($p) {
+                return [
+                    'id' => $p->id,
+                    'name' => $p->name,
+                ];
+            });
+
+        return response()->json($publishers);
+    }
+
     /**
      * Display a listing of the resource.
      */

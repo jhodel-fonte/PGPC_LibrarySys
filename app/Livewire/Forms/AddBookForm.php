@@ -48,13 +48,16 @@ class AddBookForm extends Component
     public string $issn = '';
     public string $callNumber = '';
     public string $classification = '';
+    public ?int $publisherId = null;
     public string $publisherName = '';
+    public string $selectedPublisherName = '';
     public ?int $publicationYear = null;
     public string $edition = '';
     public ?int $pages = null;
 
     // Categories & Language
     public array $selectedCategories = [];
+    public array $selectedLanguages = ['English'];
     public string $language = 'English';
     public ?int $copyrightYear = null;
 
@@ -69,6 +72,9 @@ class AddBookForm extends Component
     public function mount()
     {
         $this->dateAcquired = Carbon::now()->format('Y-m-d');
+        if (empty($this->selectedLanguages)) {
+            $this->selectedLanguages = !empty($this->language) ? [$this->language] : ['English'];
+        }
     }
 
     public function generateBarcode()
@@ -99,6 +105,53 @@ class AddBookForm extends Component
     public function toggleManualAuthor()
     {
         $this->showManualAuthor = !$this->showManualAuthor;
+    }
+
+    public function selectPublisher(int $id, string $name)
+    {
+        $this->publisherId = $id;
+        $this->selectedPublisherName = $name;
+        $this->publisherName = $name;
+        $this->resetErrorBag('publisherName');
+    }
+
+    public function clearPublisher()
+    {
+        $this->publisherId = null;
+        $this->selectedPublisherName = '';
+        $this->publisherName = '';
+    }
+
+    public function updatedSelectedLanguages(): void
+    {
+        $this->language = implode(', ', $this->selectedLanguages);
+    }
+
+    public function createAndSelectCategory(string $name): array
+    {
+        $name = trim($name);
+        if (!empty($name)) {
+            $category = Category::firstOrCreate(['name' => $name]);
+            if (!in_array($category->id, $this->selectedCategories)) {
+                $this->selectedCategories[] = $category->id;
+            }
+            return ['id' => $category->id, 'name' => $category->name];
+        }
+        return [];
+    }
+
+    public function createAndSelectLanguage(string $name): array
+    {
+        $name = trim($name);
+        if (!empty($name)) {
+            $languageRecord = Language::firstOrCreate(['lang' => $name]);
+            if (!in_array($languageRecord->lang, $this->selectedLanguages)) {
+                $this->selectedLanguages[] = $languageRecord->lang;
+                $this->language = implode(', ', $this->selectedLanguages);
+            }
+            return ['id' => $languageRecord->id, 'name' => $languageRecord->lang];
+        }
+        return [];
     }
 
     public function save()
@@ -141,7 +194,8 @@ class AddBookForm extends Component
 
             'selectedCategories' => 'nullable|array',
             'selectedCategories.*' => 'exists:categories,id',
-            'language' => 'nullable|string|max:50',
+            'selectedLanguages' => 'nullable|array',
+            'language' => 'nullable|string|max:150',
             'copyrightYear' => 'nullable|integer|min:1000|max:' . (date('Y') + 1),
 
             'bookDescription' => 'nullable|string|max:3000',
@@ -156,9 +210,30 @@ class AddBookForm extends Component
 
         try {
             DB::transaction(function () {
-                // 1. Resolve or Create Language
-                $langName = trim($this->language) ?: 'English';
-                $languageModel = Language::firstOrCreate(['lang' => $langName]);
+                // 1. Resolve or Create Languages
+                $languageNames = !empty($this->selectedLanguages)
+                    ? array_unique(array_filter(array_map('trim', $this->selectedLanguages)))
+                    : [trim($this->language) ?: 'English'];
+
+                $languageIds = [];
+                $primaryLanguage = null;
+
+                foreach ($languageNames as $langName) {
+                    if (!empty($langName)) {
+                        $langModel = Language::firstOrCreate(['lang' => $langName]);
+                        $languageIds[] = $langModel->id;
+                        if (!$primaryLanguage) {
+                            $primaryLanguage = $langModel;
+                        }
+                    }
+                }
+
+                if (!$primaryLanguage) {
+                    $primaryLanguage = Language::firstOrCreate(['lang' => 'English']);
+                    $languageIds[] = $primaryLanguage->id;
+                }
+
+                $this->language = implode(', ', $languageNames);
 
                 // 2. Create BookData
                 $bookData = BookData::create([
@@ -166,7 +241,7 @@ class AddBookForm extends Component
                     'subtitle' => trim($this->subtitle) ?: null,
                     'description' => trim($this->bookDescription) ?: null,
                     'note' => trim($this->notes) ?: null,
-                    'language_id' => $languageModel->id,
+                    'language_id' => $primaryLanguage->id,
                     'copyright_year' => $this->copyrightYear ?: $this->publicationYear,
                 ]);
 
@@ -217,11 +292,17 @@ class AddBookForm extends Component
                 }
 
                 // 5. Resolve Publisher
-                $pubName = trim($this->publisherName);
-                if (empty($pubName)) {
-                    $pub = Publisher::firstOrCreate(['name' => 'Independent / Unknown']);
-                } else {
-                    $pub = Publisher::firstOrCreate(['name' => $pubName]);
+                $pub = null;
+                if ($this->publisherId) {
+                    $pub = Publisher::find($this->publisherId);
+                }
+                if (!$pub) {
+                    $pubName = trim($this->publisherName);
+                    if (empty($pubName)) {
+                        $pub = Publisher::firstOrCreate(['name' => 'Independent / Unknown']);
+                    } else {
+                        $pub = Publisher::firstOrCreate(['name' => $pubName]);
+                    }
                 }
 
                 // 6. Handle Cover Image
@@ -258,7 +339,7 @@ class AddBookForm extends Component
                 $conditionId = $condition->id;
 
                 // 10. Create Physical Book Copy
-                Book::create([
+                $book = Book::create([
                     'book_detail_id' => $bookDetail->id,
                     'book_condition_id' => $conditionId,
                     'accession_number' => trim($this->accessionNumber),
@@ -267,6 +348,11 @@ class AddBookForm extends Component
                     'status' => strtolower($this->status),
                     'date_acquired' => $this->dateAcquired ? Carbon::parse($this->dateAcquired)->toDateString() : Carbon::now()->toDateString(),
                 ]);
+
+                // 11. Sync Multiple Languages to Physical Book Copy (via language_books pivot)
+                if (!empty($languageIds)) {
+                    $book->languages()->sync(array_unique($languageIds));
+                }
             });
 
             session()->flash('successMessage', 'Book "' . $this->bookTitle . '" registered successfully into library catalog.');
@@ -319,7 +405,7 @@ class AddBookForm extends Component
     {
         if (DB::getDriverName() === 'pgsql') {
             try {
-                $tables = ['book_datas', 'book_details', 'books', 'authors', 'publishers', 'categories', 'languages'];
+                $tables = ['book_datas', 'book_details', 'books', 'authors', 'publishers', 'categories', 'languages', 'language_books'];
                 foreach ($tables as $table) {
                     $sequenceName = $table . '_id_seq';
                     $seqExists = DB::selectOne("SELECT to_regclass('{$sequenceName}') as exists");
@@ -340,11 +426,13 @@ class AddBookForm extends Component
     {
         $authors = Author::orderBy('first_name')->get();
         $categories = Category::orderBy('name')->get();
+        $languages = Language::orderBy('lang')->get();
         $conditions = BookCondition::all();
 
         return view('livewire.forms.add-book-form', [
             'authors' => $authors,
             'categories' => $categories,
+            'languages' => $languages,
             'conditions' => $conditions,
         ]);
     }
