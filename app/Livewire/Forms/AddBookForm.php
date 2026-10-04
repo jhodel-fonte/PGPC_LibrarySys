@@ -110,7 +110,8 @@ class AddBookForm extends Component
         $this->showManualAuthor = !$this->showManualAuthor;
     }
 
-    public function selectPublisher(int $id, string $name)
+    #[On('publisher-selected')]
+    public function selectPublisher(?int $id = null, string $name = '')
     {
         $this->publisherId = $id;
         $this->selectedPublisherName = $name;
@@ -118,6 +119,7 @@ class AddBookForm extends Component
         $this->resetErrorBag('publisherName');
     }
 
+    #[On('publisher-cleared')]
     public function clearPublisher()
     {
         $this->publisherId = null;
@@ -128,6 +130,33 @@ class AddBookForm extends Component
     public function updatedSelectedLanguages(): void
     {
         $this->language = implode(', ', $this->selectedLanguages);
+    }
+
+    public ?int $autoDetectedCategoryId = null;
+
+    public function updatedCallNumber($value): void
+    {
+        $newCategoryId = null;
+        if (preg_match('/^([a-zA-Z]{1,3})\s*\d+/', trim((string) $value), $matches)) {
+            $code = strtoupper($matches[1]);
+            $category = Category::where('code', $code)->first();
+            if ($category) {
+                $newCategoryId = $category->id;
+            }
+        }
+
+        if ($this->autoDetectedCategoryId && (int)$this->autoDetectedCategoryId !== (int)$newCategoryId) {
+            $this->selectedCategories = array_values(array_filter(
+                $this->selectedCategories,
+                fn($id) => (int)$id !== (int)$this->autoDetectedCategoryId
+            ));
+            $this->autoDetectedCategoryId = null;
+        }
+
+        if ($newCategoryId && !in_array($newCategoryId, $this->selectedCategories)) {
+            $this->selectedCategories[] = $newCategoryId;
+            $this->autoDetectedCategoryId = $newCategoryId;
+        }
     }
 
     public function createAndSelectCategory(string $name): array

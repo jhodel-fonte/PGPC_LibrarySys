@@ -2,9 +2,10 @@
 
 namespace Database\Seeders;
 
+use App\Models\Category;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
+use Illuminate\Support\Facades\File;
 
 class CategorySeeder extends Seeder
 {
@@ -13,29 +14,54 @@ class CategorySeeder extends Seeder
      */
     public function run(): void
     {
-        $now = Carbon::now();
-        $categories = [
-            ['id' => 1, 'name' => 'Computer Science & IT'],
-            ['id' => 2, 'name' => 'Mathematics'],
-            ['id' => 3, 'name' => 'Physics & Chemistry'],
-            ['id' => 4, 'name' => 'Literature & Fiction'],
-            ['id' => 5, 'name' => 'History & Geography'],
-            ['id' => 6, 'name' => 'Social Sciences'],
-            ['id' => 7, 'name' => 'Philosophy & Psychology'],
-            ['id' => 8, 'name' => 'Arts & Recreation'],
-            ['id' => 9, 'name' => 'Business & Economics'],
-            ['id' => 10, 'name' => 'Engineering & Technology'],
-        ];
+        $jsonPath = resource_path('files/library_of_congress_subclasses_master.json');
 
-        $data = array_map(function ($cat) use ($now) {
-            return array_merge($cat, [
-                'created_at' => $now,
-                'updated_at' => $now,
-            ]);
-        }, $categories);
+        if (!File::exists($jsonPath)) {
+            $this->command->error("JSON file not found at: {$jsonPath}");
+            return;
+        }
 
-        DB::table('categories')->insertOrIgnore($data);
+        $classes = json_decode(File::get($jsonPath), true);
 
-        $this->command->info('Categories seeded successfully!');
+        if (empty($classes) || !is_array($classes)) {
+            $this->command->error("Invalid or empty JSON in {$jsonPath}");
+            return;
+        }
+
+        DB::transaction(function () use ($classes) {
+            foreach ($classes as $mainCode => $mainData) {
+                $mainName = $mainData['name'] ?? $mainCode;
+
+                // 1. Create or update main parent class (e.g. Code: 'A', Name: 'General Works', parent_id: null)
+                $parent = Category::updateOrCreate(
+                    [
+                        'code' => $mainCode,
+                        'parent_id' => null,
+                    ],
+                    [
+                        'name' => $mainName,
+                    ]
+                );
+
+                // 2. Create or update subclasses (e.g. Code: 'AC', Name: 'Collections; Series; Collected works', parent_id: $parent->id)
+                if (!empty($mainData['subclasses']) && is_array($mainData['subclasses'])) {
+                    foreach ($mainData['subclasses'] as $subCode => $subName) {
+                        Category::updateOrCreate(
+                            [
+                                'code' => $subCode,
+                                'parent_id' => $parent->id,
+                            ],
+                            [
+                                'name' => $subName,
+                            ]
+                        );
+                    }
+                }
+            }
+        });
+
+        $count = Category::count();
+        $this->command->info("Library of Congress categories seeded successfully! Total categories in database: {$count}");
     }
 }
+

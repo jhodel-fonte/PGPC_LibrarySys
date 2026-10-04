@@ -26,7 +26,7 @@ class AddCategoryMultiSelect extends Component
 
     public function render()
     {
-        $categories = Category::orderBy('name')->get();
+        $categories = Category::orderBy('code')->orderBy('name')->get();
 
         return view('livewire.components.book-manager.add-category-multi-select', [
             'categories' => $categories,

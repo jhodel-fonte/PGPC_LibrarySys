@@ -2,10 +2,11 @@
      wire:key="categories-combobox-wrapper"
      x-data="{
         selectedIds: @entangle('selected').live,
-        preloads: {{ Js::from($categories->map(fn($c) => ['id' => $c->id, 'name' => $c->name])->values()) }},
+        preloads: {{ Js::from($categories->map(fn($c) => ['id' => $c->id, 'name' => $c->name, 'code' => $c->code])->values()) }},
         query: '',
         isOpen: false,
         highlightedIndex: 0,
+        lastAutoDetectedId: null,
 
         init() {
             if (!Array.isArray(this.selectedIds)) this.selectedIds = [];
@@ -23,22 +24,54 @@
 
         get filteredCategories() {
             const q = this.query.trim().toLowerCase();
-            return (this.preloads || []).filter(cat => {
-                const notSelected = !this.isSelected(cat.id);
-                if (!q) return notSelected;
-                return notSelected && cat.name.toLowerCase().includes(q);
-            });
+            const list = (this.preloads || []).filter(cat => !this.isSelected(cat.id));
+            if (!q) return list;
+
+            const getScore = (cat) => {
+                const code = (cat.code || '').toLowerCase();
+                const name = (cat.name || '').toLowerCase();
+
+                if (code === q) return 1;
+                if (code.startsWith(q)) return 2;
+                if (code.includes(q)) return 3;
+                if (name.startsWith(q)) return 4;
+                if (name.split(/\s+/).some(word => word.startsWith(q))) return 5;
+                if (name.includes(q)) return 6;
+                return 99;
+            };
+
+            return list
+                .filter(cat => {
+                    const matchesName = cat.name && cat.name.toLowerCase().includes(q);
+                    const matchesCode = cat.code && cat.code.toLowerCase().includes(q);
+                    return matchesName || matchesCode;
+                })
+                .sort((a, b) => {
+                    const scoreA = getScore(a);
+                    const scoreB = getScore(b);
+                    if (scoreA !== scoreB) return scoreA - scoreB;
+
+                    const codeA = a.code || '';
+                    const codeB = b.code || '';
+                    if (codeA && codeB && codeA.length !== codeB.length) {
+                        return codeA.length - codeB.length;
+                    }
+                    if (codeA && codeB && codeA !== codeB) {
+                        return codeA.localeCompare(codeB);
+                    }
+                    return (a.name || '').localeCompare(b.name || '');
+                });
         },
 
         get canCreateNew() {
             const q = this.query.trim().toLowerCase();
             if (!q) return false;
-            return !(this.preloads || []).some(c => c.name.toLowerCase() === q);
+            return !(this.preloads || []).some(c => c.name.toLowerCase() === q || (c.code && c.code.toLowerCase() === q));
         },
 
         selectCategory(cat) {
             if (cat && cat.id && !(this.preloads || []).some(c => String(c.id) === String(cat.id))) {
-                this.preloads.push({ id: cat.id, name: cat.name });
+                this.preloads.push({ id: cat.id, name: cat.name, code: cat.code || null });
             }
             if (!this.isSelected(cat.id)) {
                 this.selectedIds = [...(this.selectedIds || []), cat.id];
@@ -50,6 +83,9 @@
         },
 
         removeCategory(id) {
+            if (this.lastAutoDetectedId && String(this.lastAutoDetectedId) === String(id)) {
+                this.lastAutoDetectedId = null;
+            }
             this.selectedIds = (this.selectedIds || []).filter(item => String(item) !== String(id));
             this.highlightedIndex = 0;
             this.isOpen = true;
@@ -62,7 +98,7 @@
             $wire.createAndSelectCategory(q).then(newCat => {
                 if (newCat && newCat.id) {
                     if (!(this.preloads || []).some(c => String(c.id) === String(newCat.id))) {
-                        this.preloads.push({ id: newCat.id, name: newCat.name });
+                        this.preloads.push({ id: newCat.id, name: newCat.name, code: newCat.code || null });
                     }
                     if (!this.isSelected(newCat.id)) {
                         this.selectedIds = [...(this.selectedIds || []), newCat.id];
@@ -77,6 +113,7 @@
 
         clearAll() {
             this.selectedIds = [];
+            this.lastAutoDetectedId = null;
             this.query = '';
             this.highlightedIndex = 0;
             this.isOpen = true;
@@ -110,6 +147,29 @@
             this.highlightedIndex = (this.highlightedIndex - 1 + total) % total;
         },
 
+        autoSelectByCode(code) {
+            const cleanCode = (code || '').trim().toUpperCase();
+            const matched = cleanCode ? (this.preloads || []).find(c => (c.code || '').toUpperCase() === cleanCode) : null;
+            const newId = matched ? matched.id : null;
+
+            // If previously auto-detected category is different from new match, auto-remove it
+            if (this.lastAutoDetectedId && String(this.lastAutoDetectedId) !== String(newId)) {
+                this.selectedIds = (this.selectedIds || []).filter(item => String(item) !== String(this.lastAutoDetectedId));
+                this.lastAutoDetectedId = null;
+            }
+
+            // Add newly detected category if not already selected
+            if (matched) {
+                if (!(this.preloads || []).some(c => String(c.id) === String(matched.id))) {
+                    this.preloads.push({ id: matched.id, name: matched.name, code: matched.code || null });
+                }
+                if (!this.isSelected(matched.id)) {
+                    this.selectedIds = [...(this.selectedIds || []), matched.id];
+                }
+                this.lastAutoDetectedId = matched.id;
+            }
+        },
+
         selectHighlighted() {
             if (!this.isOpen) {
                 this.isOpen = true;
@@ -122,6 +182,7 @@
             }
         }
      }"
+     @call-number-code-detected.window="autoSelectByCode($event.detail.code)"
      @click.outside="isOpen = false"
 >
     <div class="flex items-center justify-between">
@@ -160,6 +221,7 @@
             <input
                 x-ref="catSearchInput"
                 x-model="query"
+                @input="highlightedIndex = 0"
                 @focus="isOpen = true"
                 @keydown.arrow-down.prevent="nextItem()"
                 @keydown.arrow-up.prevent="prevItem()"
@@ -214,9 +276,9 @@
             class="absolute z-50 left-0 right-0 top-full mt-1.5 bg-white border border-[#E2E8F0] rounded-2xl shadow-xl overflow-hidden max-h-60 overflow-y-auto custom-scrollbar"
         >
             <!-- Header -->
-            <div class="px-3.5 py-1.5 text-xs font-semibold text-slate-400 bg-slate-50 border-b border-[#F1F5F9] flex items-center justify-between">
-                <span>Categories in Catalog</span>
-                <span x-text="filteredCategories.length + ' available'"></span>
+            <div class="px-4 py-2 text-xs font-bold text-slate-500 bg-slate-50 border-b border-[#F1F5F9] flex items-center justify-between uppercase tracking-wider">
+                <span>Category</span>
+                <span>Code</span>
             </div>
 
             <!-- Available Results -->
@@ -230,14 +292,17 @@
                                 'bg-[#EFF6FF] text-[#102B70]': highlightedIndex === index,
                                 'text-[#0F172A] hover:bg-slate-50': highlightedIndex !== index
                             }"
-                            class="px-3.5 py-2.5 flex items-center justify-between cursor-pointer transition-colors text-sm font-medium border-b border-slate-50 last:border-0"
+                            class="px-4 py-2.5 flex items-center justify-between gap-4 cursor-pointer transition-colors border-b border-slate-50 last:border-0"
                         >
-                            <div class="flex items-center gap-2.5">
-                                <span x-text="cat.name"></span>
+                            <!-- Left Side: Category Name -->
+                            <div class="flex-1 min-w-0 pr-2">
+                                <span class="text-sm font-medium leading-snug" x-text="cat.name"></span>
                             </div>
-                            <span class="text-xs font-semibold text-slate-400 px-2 py-0.5 rounded bg-slate-100 group-hover:bg-[#DBEAFE] group-hover:text-[#102B70]">
-                                + Add
-                            </span>
+
+                            <!-- Right Side: Code (Blue, no box, 5px larger than text-sm) -->
+                            <div class="shrink-0 text-right">
+                                <span class="text-[15px] font-bold text-[#2563EB] font-mono tracking-wide" x-text="cat.code || ''"></span>
+                            </div>
                         </div>
                     </template>
                 </div>

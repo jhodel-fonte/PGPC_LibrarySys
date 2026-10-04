@@ -1,0 +1,311 @@
+{
+    "A": {
+        "name": "General Works",
+        "subclasses": {
+            "AC": "Collections; Series; Collected works",
+            "AE": "Encyclopedias",
+            "AG": "Dictionaries and other general reference works",
+            "AI": "Indexes",
+            "AM": "Museums. Collectors and collecting",
+            "AN": "Newspapers",
+            "AP": "Periodicals",
+            "AS": "Academies and learned societies",
+            "AY": "Almanacs; Directories; Yearbooks",
+            "AZ": "History of scholarship and learning. The humanities"
+        }
+    },
+    "B": {
+        "name": "Philosophy (General)",
+        "subclasses": {
+            "BC": "Logic",
+            "BD": "Speculative philosophy",
+            "BF": "Psychology",
+            "BH": "Aesthetics",
+            "BJ": "Ethics",
+            "BL": "Religions. Mythology. Rationalism",
+            "BM": "Judaism",
+            "BP": "Islam. Bahaism. Theosophy, etc.",
+            "BQ": "Buddhism",
+            "BR": "Christianity",
+            "BS": "The Bible",
+            "BT": "Doctrinal Theology",
+            "BV": "Practical Theology",
+            "BX": "Christian Denominations"
+        }
+    },
+    "C": {
+        "name": "Auxiliary Sciences of History",
+        "subclasses": {
+            "CB": "History of Civilization",
+            "CC": "Archaeology",
+            "CD": "Diplomatics. Archives. Seals",
+            "CE": "Technical Chronology. Calendar",
+            "CJ": "Numismatics",
+            "CN": "Inscriptions. Epigraphy",
+            "CR": "Heraldry",
+            "CS": "Genealogy",
+            "CT": "Biography"
+        }
+    },
+    "D": {
+        "name": "History (General)",
+        "subclasses": {
+            "DA": "Great Britain",
+            "DAW": "Central Europe",
+            "DB": "Austria - Liechtenstein - Hungary - Czechoslovakia",
+            "DC": "France - Andorra - Monaco",
+            "DD": "Germany",
+            "DE": "Greco-Roman World",
+            "DF": "Greece",
+            "DG": "Italy - Malta",
+            "DH": "Low Countries - Benelux Countries",
+            "DJ": "Netherlands (Holland)",
+            "DJK": "Eastern Europe (General)",
+            "DK": "Russia. Soviet Union. Former Soviet Republics - Poland",
+            "DL": "Northern Europe. Scandinavia",
+            "DP": "Spain - Portugal",
+            "DQ": "Switzerland",
+            "DR": "Balkan Peninsula",
+            "DS": "Asia",
+            "DT": "Africa",
+            "DU": "Oceania (South Seas)",
+            "DX": "Romanies"
+        }
+    },
+    "E": {
+        "name": "History: America (General, including United States general history)",
+        "subclasses": {}
+    },
+    "F": {
+        "name": "United States local history, British America, Dutch America, French America, Latin America",
+        "subclasses": {}
+    },
+    "G": {
+        "name": "Geography (General). Atlases. Maps",
+        "subclasses": {
+            "GA": "Mathematical geography. Cartography",
+            "GB": "Physical geography",
+            "GC": "Oceanography",
+            "GE": "Environmental Sciences",
+            "GF": "Human ecology. Anthropogeography",
+            "GN": "Anthropology",
+            "GR": "Folklore",
+            "GT": "Manners and customs (General)",
+            "GV": "Recreation. Leisure"
+        }
+    },
+    "H": {
+        "name": "Social sciences (General)",
+        "subclasses": {
+            "HA": "Statistics",
+            "HB": "Economic theory. Demography",
+            "HC": "Economic history and conditions",
+            "HD": "Industries. Land use. Labor",
+            "HE": "Transportation and communications",
+            "HF": "Commerce",
+            "HG": "Finance",
+            "HJ": "Public finance",
+            "HM": "Sociology (General)",
+            "HN": "Social history and conditions. Social problems. Social reform",
+            "HQ": "The family. Marriage. Women",
+            "HS": "Societies: secret, benevolent, etc.",
+            "HT": "Communities. Classes. Races",
+            "HV": "Social pathology. Social and public welfare. Criminology",
+            "HX": "Socialism. Communism. Anarchism"
+        }
+    },
+    "J": {
+        "name": "General legislative and executive papers",
+        "subclasses": {
+            "JA": "Political science (General)",
+            "JC": "Political theory",
+            "JF": "Political institutions and public administration",
+            "JJ": "Political institutions and public administration (North America)",
+            "JK": "Political institutions and public administration (United States)",
+            "JL": "Political institutions and public administration (Canada, Latin America, etc.)",
+            "JN": "Political institutions and public administration (Europe)",
+            "JQ": "Political institutions and public administration (Asia, Africa, Australia, Pacific Area, etc.)",
+            "JS": "Local government. Municipal government",
+            "JV": "Colonies and colonization. Emigration and immigration. International migration",
+            "JX": "International law. International relations (See also JZ and KZ) (Obsolete)",
+            "JZ": "International relations"
+        }
+    },
+    "K": {
+        "name": "Law in general. Comparative and uniform law. Jurisprudence",
+        "subclasses": {
+            "KB": "Religious law in general. Comparative religious law. Jurisprudence",
+            "KBM": "Jewish law",
+            "KBP": "Islamic law",
+            "KBR": "History of canon law",
+            "KBU": "Law of the Roman Catholic Church. The Holy See",
+            "KD": "United Kingdom and Ireland",
+            "KDZ": "America. North America",
+            "KE": "Canada",
+            "KF": "United States",
+            "KG": "Latin America - Mexico and Central America - West Indies. Caribbean area",
+            "KH": "South America",
+            "KJ-KKZ": "Europe",
+            "KL-KWX": "Asia and Eurasia, Africa, Pacific Area, and Antarctica",
+            "KZ": "Law of nations"
+        }
+    },
+    "L": {
+        "name": "Education (General)",
+        "subclasses": {
+            "LA": "History of education",
+            "LB": "Theory and practice of education",
+            "LC": "Special aspects of education",
+            "LD": "Individual institutions - United States",
+            "LE": "Individual institutions - America (except United States)",
+            "LF": "Individual institutions - Europe",
+            "LG": "Individual institutions - Asia, Africa, Indian Ocean Islands, Australia, New Zealand, Pacific Islands",
+            "LH": "College and school magazines and papers",
+            "LJ": "Student fraternities and societies, United States",
+            "LT": "Textbooks"
+        }
+    },
+    "M": {
+        "name": "Music",
+        "subclasses": {
+            "ML": "Literature on music",
+            "MT": "Instruction and study"
+        }
+    },
+    "N": {
+        "name": "Visual arts (General)",
+        "subclasses": {
+            "NA": "Architecture",
+            "NB": "Sculpture",
+            "NC": "Drawing. Design. Illustration",
+            "ND": "Painting",
+            "NE": "Printmedia",
+            "NK": "Decorative arts",
+            "NX": "Arts in general"
+        }
+    },
+    "P": {
+        "name": "Philology. Linguistics (General)",
+        "subclasses": {
+            "PA": "Greek language and literature. Latin language and literature",
+            "PB": "Modern languages. Celtic languages",
+            "PC": "Romanic languages",
+            "PD": "Germanic languages",
+            "PE": "English language",
+            "PF": "West Germanic languages",
+            "PG": "Slavic languages and literatures. Baltic languages. Albanian language",
+            "PH": "Uralic languages. Basque language",
+            "PJ": "Oriental languages and literatures",
+            "PK": "Indo-Iranian languages and literatures",
+            "PL": "Languages and literatures of Eastern Asia, Africa, Oceania",
+            "PM": "Hyperborean, Native American, and artificial languages",
+            "PN": "Literature (General)",
+            "PQ": "French, Italian, Spanish, and Portuguese literatures",
+            "PR": "English literature",
+            "PS": "American literature",
+            "PT": "Germanic literatures",
+            "PZ": "Fiction and juvenile belles lettres"
+        }
+    },
+    "Q": {
+        "name": "Science (General)",
+        "subclasses": {
+            "QA": "Mathematics",
+            "QB": "Astronomy",
+            "QC": "Physics",
+            "QD": "Chemistry",
+            "QE": "Geology",
+            "QH": "Natural history - Biology",
+            "QK": "Botany",
+            "QL": "Zoology",
+            "QM": "Human anatomy",
+            "QP": "Physiology",
+            "QR": "Microbiology"
+        }
+    },
+    "R": {
+        "name": "Medicine (General)",
+        "subclasses": {
+            "RA": "Public aspects of medicine",
+            "RB": "Pathology",
+            "RC": "Internal medicine",
+            "RD": "Surgery",
+            "RE": "Ophthalmology",
+            "RF": "Otorhinolaryngology",
+            "RG": "Gynecology and Obstetrics",
+            "RJ": "Pediatrics",
+            "RK": "Dentistry",
+            "RL": "Dermatology",
+            "RM": "Therapeutics. Pharmacology",
+            "RS": "Pharmacy and materia medica",
+            "RT": "Nursing",
+            "RV": "Botanic, Thomsonian, and eclectic medicine",
+            "RX": "Homeopathy",
+            "RZ": "Other systems of medicine"
+        }
+    },
+    "S": {
+        "name": "Agriculture (General)",
+        "subclasses": {
+            "SB": "Plant culture",
+            "SD": "Forestry",
+            "SF": "Animal culture",
+            "SH": "Aquaculture. Fisheries. Angling",
+            "SK": "Hunting sports"
+        }
+    },
+    "T": {
+        "name": "Technology (General)",
+        "subclasses": {
+            "TA": "Engineering (General). Civil engineering",
+            "TC": "Hydraulic engineering. Ocean engineering",
+            "TD": "Environmental technology. Sanitary engineering",
+            "TE": "Highway engineering. Roads and pavements",
+            "TF": "Railroad engineering and operation",
+            "TG": "Bridge engineering",
+            "TH": "Building construction",
+            "TJ": "Mechanical engineering and machinery",
+            "TK": "Electrical engineering. Electronics. Nuclear engineering",
+            "TL": "Motor vehicles. Aeronautics. Astronautics",
+            "TN": "Mining engineering. Metallurgy",
+            "TP": "Chemical technology",
+            "TR": "Photography",
+            "TS": "Manufactures",
+            "TT": "Handicrafts. Arts and crafts",
+            "TX": "Home economics"
+        }
+    },
+    "U": {
+        "name": "Military science (General)",
+        "subclasses": {
+            "UA": "Armies: Organization, distribution, military situation",
+            "UB": "Military administration",
+            "UC": "Maintenance and transportation",
+            "UD": "Infantry",
+            "UE": "Cavalry. Armor",
+            "UF": "Artillery",
+            "UG": "Military engineering. Air forces",
+            "UH": "Other military services"
+        }
+    },
+    "V": {
+        "name": "Naval science (General)",
+        "subclasses": {
+            "VA": "Navies: Organization, distribution, naval situation",
+            "VB": "Naval administration",
+            "VC": "Naval maintenance",
+            "VD": "Naval seamen",
+            "VE": "Marines",
+            "VF": "Naval ordnance",
+            "VG": "Other naval services",
+            "VK": "Navigation. Merchant marine",
+            "VM": "Naval architecture. Shipbuilding. Marine engineering"
+        }
+    },
+    "Z": {
+        "name": "Books (General). Writing. Paleography. Book industries and trade. Libraries. Bibliography",
+        "subclasses": {
+            "ZA": "Information resources/media (General)"
+        }
+    }
+}
