@@ -81,9 +81,7 @@
 
                         $shelfLocation = $copies->pluck('location')->filter()->first() ?: ($bookDetail->call_number ?: 'Main Library');
 
-                        $coverUrl = $bookDetail->cover_image
-                            ? (str_starts_with($bookDetail->cover_image, 'http') ? $bookDetail->cover_image : asset('storage/' . $bookDetail->cover_image))
-                            : asset('images/book-cover.webp');
+                        $coverUrl = $bookDetail->cover_url;
                     @endphp
 
                     <div class="grid gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] items-start">

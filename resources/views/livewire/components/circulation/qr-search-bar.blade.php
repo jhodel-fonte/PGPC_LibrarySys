@@ -1,6 +1,6 @@
 <div class="w-full flex flex-col gap-1.5"
      x-data="{ queryVal: @entangle('value'), openingAdd: false }"
-     @clear-search-input.window="queryVal = ''; $nextTick(() => { $refs.checkinInput.focus(); });"
+     @clear-search-input.window="queryVal = ''; $nextTick(() => { $refs.checkinInput?.focus(); });"
      @set-search-value.window="
          let codeStr = $event.detail.code;
          queryVal = '';
@@ -58,7 +58,7 @@
                 <!-- Clear Button (Client-side reset and focus recovery) -->
                 <button type="button"
                         x-show="queryVal && queryVal.length > 0"
-                        @click="queryVal = ''; $nextTick(() => { $refs.checkinInput.focus(); });"
+                        @click="queryVal = ''; $nextTick(() => { $refs.checkinInput?.focus(); });"
                         class="h-10 w-10 flex items-center justify-center bg-[#F8FAFC] border border-[#E2E8F0] hover:border-[#102B70] text-[#64748B] hover:text-[#B91C1C] rounded-xl transition-colors shadow-2xs focus:outline-none focus:ring-2 focus:ring-[#102B70]/20"
                         aria-label="Clear input"
                         title="Clear input"

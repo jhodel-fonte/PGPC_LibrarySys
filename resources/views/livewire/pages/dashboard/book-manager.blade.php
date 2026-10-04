@@ -11,9 +11,6 @@
                 <div class="min-w-0 pl-4">
                     <h1 class="text-xl font-bold tracking-[-0.02em] text-[#102B70] sm:text-2xl">Book Management</h1>
                     <p class="mt-0.5 max-w-2xl text-sm font-medium text-slate-600">Manage catalog records, physical copies, shelf locations, and availability.</p>
-                    <p class="mt-1.5 text-xs font-semibold tabular-nums text-slate-500">
-                        {{ number_format($totalTitles) }} {{ $totalTitles === 1 ? 'title' : 'titles' }}, {{ number_format($totalCopies) }} physical {{ $totalCopies === 1 ? 'copy' : 'copies' }}
-                    </p>
                 </div>
             </div>
 
@@ -288,7 +285,7 @@
                     default => 'bg-slate-100 text-slate-600'
                 };
 
-                $coverUrl = $detail && $detail->cover_image ? (str_starts_with($detail->cover_image, 'http') ? $detail->cover_image : asset('storage/' . $detail->cover_image)) : null;
+                $coverUrl = $detail && $detail->cover_image ? $detail->cover_url : null;
                 $initials = collect(explode(' ', $data ? $data->book_title : 'BOOK'))->map(fn($n) => substr($n, 0, 1))->take(2)->join('');
             @endphp
             <tr class="group h-[64px] transition-colors hover:bg-slate-50/70 {{ in_array((string)$book->id, $selectedCopies) ? 'bg-blue-50/60' : '' }}">

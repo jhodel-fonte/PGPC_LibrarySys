@@ -34,8 +34,6 @@ Route::middleware(['auth', 'verified', 'role:Admin'])->prefix('admin')->name('ad
 
         Route::get('/authors/search', [\App\Http\Controllers\AuthorController::class, 'search'])->name('authors.search');
         Route::get('/publishers/search', [\App\Http\Controllers\PublisherController::class, 'search'])->name('publishers.search');
-        Route::get('/categories/search', [\App\Http\Controllers\CategoryController::class, 'search'])->name('categories.search');
-        Route::get('/languages/search', [\App\Http\Controllers\LanguageController::class, 'search'])->name('languages.search');
 
         Route::get('/settings', \App\Livewire\Pages\Dashboard\Settings::class)->name('settings');
         // Route::get('/profile', \App\Livewire\Pages\Dashboard\Profile::class)->name('profile');

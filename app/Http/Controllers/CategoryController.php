@@ -17,6 +17,10 @@ class CategoryController extends Controller
     public function search(Request $request): JsonResponse
     {
         $q = trim((string) $request->get('query', ''));
+
+        if (mb_strlen($q) > 100) {
+            return response()->json(['error' => 'Query is too long.'], 422);
+        }
         
         $query = Category::query()->select(['id', 'name']);
 

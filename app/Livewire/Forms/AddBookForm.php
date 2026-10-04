@@ -13,7 +13,10 @@ use App\Models\Language;
 use App\Models\Publisher;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Image;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
@@ -28,8 +31,8 @@ class AddBookForm extends Component
     public string $location = '';
     public string $dateAcquired = '';
 
-    // 2. Book Cover
-    public $coverImage = null;
+    // 2. Book Cover (Managed via UploadBookCoverImage subcomponent)
+    public $coverImage = null;          // Livewire temporary upload object
 
     // 3. Bibliographic Information
     public string $bookTitle = '';
@@ -154,6 +157,25 @@ class AddBookForm extends Component
         return [];
     }
 
+    public function updatedCoverImage(): void
+    {
+        $maxSetting = config('settings.coverFile_max_size', '5MB');
+        $maxKb = $this->parseSizeToKilobytes($maxSetting);
+
+        $this->validate([
+            'coverImage' => 'nullable|image|max:' . $maxKb,
+        ], [
+            'coverImage.image' => 'The file must be a valid image (PNG, JPG, JPEG, WEBP).',
+            'coverImage.max' => 'The cover image size may not exceed ' . $maxSetting . '.',
+        ]);
+    }
+
+    public function removeCoverImage(): void
+    {
+        $this->coverImage = null;
+        $this->resetErrorBag('coverImage');
+    }
+
     public function save()
     {
         $this->errorMessage = '';
@@ -168,13 +190,15 @@ class AddBookForm extends Component
         }
 
         // Validation
+        $maxSetting = config('settings.coverFile_max_size', '5MB');
+        $maxKb = $this->parseSizeToKilobytes($maxSetting);
+
         $this->validate([
             'accessionNumber' => 'required|string|max:50|unique:books,accession_number',
             'barcode' => 'nullable|string|max:50|unique:books,code',
             'status' => 'required|string',
             'location' => 'nullable|string|max:100',
             'dateAcquired' => 'nullable|date',
-            'coverImage' => 'nullable|image|max:2048',
 
             'bookTitle' => 'required|string|max:255',
             'subtitle' => 'nullable|string|max:255',
@@ -183,13 +207,13 @@ class AddBookForm extends Component
             'newAuthorLastName' => 'nullable|string|max:100',
             'newAuthorFirstName' => 'nullable|string|max:100',
 
-            'isbn' => 'nullable|string|max:30',
-            'issn' => 'nullable|string|max:30',
-            'callNumber' => 'required|string|max:100',
-            'classification' => 'nullable|string|max:100',
+            'isbn' => 'nullable|string|max:15',
+            'issn' => 'nullable|string|max:15',
+            'callNumber' => 'required|string|max:30',
+            'classification' => 'nullable|string|max:30',
             'publisherName' => 'nullable|string|max:150',
             'publicationYear' => 'nullable|integer|min:1000|max:' . (date('Y') + 1),
-            'edition' => 'nullable|string|max:100',
+            'edition' => 'nullable|string|max:30',
             'pages' => 'nullable|integer|min:1|max:50000',
 
             'selectedCategories' => 'nullable|array',
@@ -205,7 +229,6 @@ class AddBookForm extends Component
             'accessionNumber.unique' => 'This Accession Number is already in use.',
             'bookTitle.required' => 'The Book Title is required.',
             'callNumber.required' => 'The Call Number is required.',
-            'coverImage.max' => 'The cover image may not be greater than 2MB.',
         ]);
 
         try {
@@ -305,10 +328,50 @@ class AddBookForm extends Component
                     }
                 }
 
-                // 6. Handle Cover Image
+                // 6. Convert & Store Book Cover (only upon confirmed save)
                 $coverPath = null;
                 if ($this->coverImage) {
-                    $coverPath = $this->coverImage->store('book-covers', 'public');
+                    $filename = 'cover_' . uniqid() . '_' . time() . '.webp';
+
+                    try {
+                        $image = null;
+                        if (is_object($this->coverImage) && $this->coverImage instanceof \Illuminate\Http\UploadedFile) {
+                            $image = Image::fromUpload($this->coverImage);
+                        } elseif (is_object($this->coverImage) && method_exists($this->coverImage, 'get')) {
+                            $image = Image::fromBytes($this->coverImage->get());
+                        } elseif (is_object($this->coverImage) && method_exists($this->coverImage, 'getRealPath') && file_exists($this->coverImage->getRealPath())) {
+                            $image = Image::fromPath($this->coverImage->getRealPath());
+                        } elseif (is_string($this->coverImage)) {
+                            if (Storage::disk('local')->exists($this->coverImage)) {
+                                $image = Image::fromStorage($this->coverImage, 'local');
+                            } elseif (Storage::disk('public')->exists($this->coverImage)) {
+                                $image = Image::fromStorage($this->coverImage, 'public');
+                            } elseif (file_exists($this->coverImage)) {
+                                $image = Image::fromPath($this->coverImage);
+                            } elseif (Storage::disk('public')->exists('book_cover/' . $this->coverImage)) {
+                                $coverPath = basename($this->coverImage);
+                            }
+                        }
+
+                        if ($image) {
+                            $image = $image->toWebp()->quality(85);
+                            $stored = $image->storeAs('book_cover', $filename, 'public');
+                            if ($stored) {
+                                $coverPath = $filename;
+                                Log::info('Book cover converted to WebP and stored on save', ['path' => $filename]);
+                            }
+                        }
+                    } catch (\Throwable $e) {
+                        Log::warning('Image facade WebP conversion fallback on save: ' . $e->getMessage());
+                        try {
+                            if (is_object($this->coverImage) && method_exists($this->coverImage, 'store')) {
+                                $stored = $this->coverImage->store('book_cover', 'public');
+                                $coverPath = $stored ? basename($stored) : null;
+                            }
+                        } catch (\Throwable $fallbackErr) {
+                            Log::error('Image upload fallback error on save: ' . $fallbackErr->getMessage());
+                        }
+                    }
                 }
 
                 // 7. Resolve default Book Type
@@ -420,6 +483,24 @@ class AddBookForm extends Component
                 Log::warning('Sequence self-healing error: ' . $t->getMessage());
             }
         }
+    }
+
+    protected function parseSizeToKilobytes($size): int
+    {
+        if (is_numeric($size)) {
+            return (int) $size;
+        }
+        $size = strtoupper(trim((string)$size));
+        if (str_ends_with($size, 'MB')) {
+            return (int) rtrim($size, 'MB') * 1024;
+        }
+        if (str_ends_with($size, 'KB')) {
+            return (int) rtrim($size, 'KB');
+        }
+        if (str_ends_with($size, 'GB')) {
+            return (int) rtrim($size, 'GB') * 1024 * 1024;
+        }
+        return 5120;
     }
 
     public function render()

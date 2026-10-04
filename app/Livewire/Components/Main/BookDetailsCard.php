@@ -262,12 +262,7 @@ class BookDetailsCard extends Component
                         $categories = ['General Collection'];
                     }
 
-                    $coverUrl = null;
-                    if ($record->cover_image) {
-                        $coverUrl = str_starts_with($record->cover_image, 'http')
-                            ? $record->cover_image
-                            : asset('storage/' . $record->cover_image);
-                    }
+                    $coverUrl = $record->cover_url;
 
                     $primaryAccession = $copyByAccession?->accession_number
                         ?? $copies->first()?->accession_number
@@ -631,12 +626,7 @@ class BookDetailsCard extends Component
                     $authorNames = $bdata ? $bdata->authors->map(fn($a) => trim("{$a->first_name} {$a->last_name}"))->filter()->values()->toArray() : [];
                     $primaryAccession = $copies->first()?->accession_number;
 
-                    $coverUrl = null;
-                    if ($record->cover_image) {
-                        $coverUrl = str_starts_with($record->cover_image, 'http')
-                            ? $record->cover_image
-                            : asset('storage/' . $record->cover_image);
-                    }
+                    $coverUrl = $record->cover_url;
 
                     return [
                         'id' => $record->id,

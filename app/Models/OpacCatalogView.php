@@ -127,19 +127,29 @@ class OpacCatalogView extends Model
     }
 
     /**
-     * Formatted cover image URL.
+     * Formatted cover image URL based on configuration settings.
      */
     public function getCoverUrlAttribute(): ?string
     {
+        $defaultImg = config('settings.coverFile_default', 'book-cover.webp');
+        $defaultUrl = asset('images/' . ltrim($defaultImg, '/'));
+
         if (empty($this->cover_image)) {
-            return null;
+            return $defaultUrl;
         }
 
         if (str_starts_with($this->cover_image, 'http://') || str_starts_with($this->cover_image, 'https://')) {
             return $this->cover_image;
         }
 
-        return asset($this->cover_image);
+        $baseUrl = config('settings.coverFile_url', '/storage/book_cover/');
+        $filename = basename($this->cover_image);
+
+        if (str_starts_with($baseUrl, 'http://') || str_starts_with($baseUrl, 'https://')) {
+            return rtrim($baseUrl, '/') . '/' . $filename;
+        }
+
+        return asset(trim($baseUrl, '/') . '/' . $filename);
     }
 
     /* =========================================================================

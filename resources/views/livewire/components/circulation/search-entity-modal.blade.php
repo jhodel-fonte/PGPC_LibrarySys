@@ -29,7 +29,7 @@
              if (value) {
                  localQuery = '';
                  selectedIndex = -1;
-                 $nextTick(() => { $refs.searchInput.focus(); });
+                 $nextTick(() => { $refs.searchInput?.focus(); });
              } else {
                  $dispatch('search-modal-closed');
              }
@@ -110,7 +110,7 @@
                     <!-- Clear Input Button (Client-side instant toggle and focus retention) -->
                     <button type="button"
                             x-show="localQuery && localQuery.length > 0"
-                            @click="localQuery = ''; $wire.searchQuery = ''; $wire.performSearch(); $nextTick(() => { $refs.searchInput.focus(); });"
+                            @click="localQuery = ''; $wire.searchQuery = ''; $wire.performSearch(); $nextTick(() => { $refs.searchInput?.focus(); });"
                             class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#94A3B8] hover:text-[#0F172A] transition-colors"
                             aria-label="Clear search query"
                     >
@@ -278,11 +278,11 @@
                                     <div class="flex items-center gap-3.5 min-w-0">
                                         <!-- Book cover container (Fixed w-9 h-12) -->
                                         <div class="w-9 h-12 bg-slate-50 border border-[#E2E8F0] rounded overflow-hidden flex items-center justify-center shrink-0">
-                                            @if(!empty($item['cover_image']))
-                                                <img src="{{ asset('storage/' . $item['cover_image']) }}"
+                                            @if(!empty($item['cover_url']))
+                                                <img src="{{ $item['cover_url'] }}"
                                                      alt="Cover"
-                                                     clas="w-full h-full object-cover"
-                                                     onerror="this.onerror=null; this.src=''; this.prentElement.innerHTML='<div class=\'w-full h-full bg-gradient-to-br from-[#102B70] to-[#F59E0B] flex items-center justify-center\'><span class=\'text-[8px] text-white/80 font-bold uppercase tracking-wider text-center px-1 leading-tight\'>{{ $item['code_tag'] }}</span></div>';"
+                                                     class="w-full h-full object-cover"
+                                                     onerror="this.onerror=null; this.src=''; this.parentElement.innerHTML='<div class=\'w-full h-full bg-gradient-to-br from-[#102B70] to-[#F59E0B] flex items-center justify-center\'><span class=\'text-[8px] text-white/80 font-bold uppercase tracking-wider text-center px-1 leading-tight\'>{{ $item['code_tag'] }}</span></div>';"
                                                 >
                                             @else
                                                 <div class="w-full h-full bg-gradient-to-br from-[#102B70] to-[#F59E0B] flex items-center justify-center">

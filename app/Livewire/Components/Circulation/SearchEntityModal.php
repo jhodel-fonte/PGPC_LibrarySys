@@ -201,6 +201,7 @@ class SearchEntityModal extends Component
                     'subtitle' => trim($authorName . ' · Accession No. ' . ($book->accession_number ?? 'N/A')),
                     'barcode' => $book->code,
                     'code_tag' => $codeInitials ?: 'BOOK',
+                    'cover_url' => $detail ? $detail->cover_url : null,
                     'icon' => 'book-open'
                 ];
             }
@@ -283,6 +284,7 @@ class SearchEntityModal extends Component
                     'subtitle' => trim($authorName . ' · Accession No. ' . ($book->accession_number ?? 'N/A')),
                     'barcode' => $book->code,
                     'code_tag' => $codeInitials ?: 'BOOK',
+                    'cover_url' => $detail ? $detail->cover_url : null,
                     'icon' => 'book-open'
                 ];
             }
