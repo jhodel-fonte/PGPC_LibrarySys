@@ -363,16 +363,16 @@
                 <!-- Actions -->
                 <td class="px-4 py-3 align-middle text-right pr-6">
                     <div class="flex items-center justify-end gap-3">
-                        <button
-                            wire:click="editCopy({{ $book->id }})"
-                            type="button"
+                        <a
+                            href="{{ route('admin.book-management.edit', $book->book_detail_id ?? $book->id) }}"
+                            wire:navigate
                             class="inline-flex items-center gap-1 text-sm font-bold text-[#102B70] hover:text-[#0B225E] transition-colors focus:outline-none"
                         >
                             <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                             </svg>
                             <span>Edit</span>
-                        </button>
+                        </a>
 
                         <div class="relative inline-block text-left" x-data="{ open: false }">
                             <button
@@ -407,15 +407,15 @@
                                     View Details
                                 </button>
 
-                                <button
-                                    type="button"
-                                    wire:click="editCopy({{ $book->id }})"
+                                <a
+                                    href="{{ route('admin.book-management.edit', $book->book_detail_id ?? $book->id) }}"
+                                    wire:navigate
                                     @click="open = false"
                                     class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 rounded-xl transition-colors"
                                 >
                                     <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                                    Edit Copy
-                                </button>
+                                    Edit Book
+                                </a>
 
                                 <button
                                     type="button"

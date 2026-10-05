@@ -294,7 +294,7 @@
                     Close
                 </button>
                 <a
-                    href="{{ $bookDetail ? route('admin.book-management.add', ['edit' => $bookDetail->id]) : route('admin.book-management.add') }}"
+                    href="{{ $bookDetail ? route('admin.book-management.edit', $bookDetail->id) : '#' }}"
                     wire:navigate
                     class="inline-flex h-9 items-center gap-2 rounded-lg bg-[#102B70] px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#0B225E] active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70] focus-visible:ring-offset-2"
                 >

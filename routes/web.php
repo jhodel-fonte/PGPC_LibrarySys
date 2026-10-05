@@ -30,6 +30,7 @@ Route::middleware(['auth', 'verified', 'role:Admin'])->prefix('admin')->name('ad
         Route::prefix('book-management')->name('book-management.')->group(function () {
             Route::get('/', \App\Livewire\Pages\Dashboard\BookManager::class)->name('index');
             Route::get('/add', \App\Livewire\Pages\Dashboard\AddBook::class)->name('add');
+            Route::get('/edit/{id}', \App\Livewire\Pages\Dashboard\EditBook::class)->name('edit');
         });
 
         Route::get('/authors/search', [\App\Http\Controllers\AuthorController::class, 'search'])->name('authors.search');

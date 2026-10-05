@@ -8,7 +8,7 @@
                 <div class="flex items-start gap-3">
                     <div class="flex-1 min-w-0 pt-0.5">
                         <h4 class="text-sm font-bold text-[#B91C1C] uppercase tracking-wider">
-                            {{ $errorMessage ? 'Unable to Save Book' : 'Error Adding Book' }}
+                            {{ $errorMessage ? 'Unable to Update Book' : 'Error Updating Book' }}
                         </h4>
                         <p class="text-sm text-[#7F1D1D] font-medium mt-1 leading-relaxed">
                             {{ $errorMessage ?: 'Please review and correct the ' . $errors->count() . ' highlighted field(s) below before submitting.' }}
@@ -753,14 +753,14 @@
                 class="px-7 h-12 rounded-2xl bg-[#102B70] hover:bg-[#0B225E] text-white text-sm font-semibold transition-all shadow-sm flex items-center gap-2 focus:outline-none disabled:opacity-60"
             >
                 <span wire:loading.remove wire:target="save" class="flex items-center gap-2">
-                    <span>Save Book Details</span>
+                    <span>Update Book Details</span>
                 </span>
                 <span wire:loading.flex wire:target="save" class="items-center gap-2">
                     <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    <span>Saving...</span>
+                    <span>Updating...</span>
                 </span>
             </button>
         </div>
