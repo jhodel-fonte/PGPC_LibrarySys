@@ -82,6 +82,10 @@ class EditBookForm extends Component
 
     public function mount($id)
     {
+        if (auth()->check() && !auth()->user()->can('update', Book::class)) {
+            abort(403, 'Unauthorized action. You do not have permission to edit catalog books.');
+        }
+
         // Find BookDetail or Book
         $bookDetail = BookDetail::with([
             'bookData.authors',
@@ -311,6 +315,12 @@ class EditBookForm extends Component
 
     public function save()
     {
+        if (auth()->check() && !auth()->user()->can('update', Book::class)) {
+            $this->errorMessage = 'Unauthorized action. You do not have permission to edit catalog books.';
+            $this->dispatch('toast', message: $this->errorMessage, type: 'error');
+            return;
+        }
+
         $this->errorMessage = '';
 
         // Check if author is provided (Required)

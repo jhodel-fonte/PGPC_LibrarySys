@@ -9,58 +9,74 @@ use Illuminate\Auth\Access\Response;
 class BookPolicy
 {
     /**
-     * Determine whether the user can view any models.
+     * Perform pre-authorization checks.
+     * Super Admin and Admin have unrestricted access.
+     */
+    public function before(Account $user, string $ability): ?bool
+    {
+        if ($user->role) {
+            $roleName = strtolower(trim($user->role->name));
+            if (in_array($roleName, ['admin', 'super admin', 'superadmin'])) {
+                return true;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Determine whether the user can view any books.
      */
     public function viewAny(Account $user): bool
     {
-        return false;
+        return $user->hasPermission('view_catalog') || $user->hasPermission('manage_catalog');
     }
 
     /**
-     * Determine whether the user can view the model.
+     * Determine whether the user can view the book.
      */
-    public function view(Account $user, Book $book): bool
+    public function view(Account $user, ?Book $book = null): bool
     {
-        return false;
+        return $user->hasPermission('view_catalog') || $user->hasPermission('manage_catalog');
     }
 
     /**
-     * Determine whether the user can create models.
+     * Determine whether the user can add / create books.
      */
     public function create(Account $user): bool
     {
-        return false;
+        return $user->hasPermission('manage_catalog');
     }
 
     /**
-     * Determine whether the user can update the model.
+     * Determine whether the user can edit / update the book.
      */
-    public function update(Account $user, Book $book): bool
+    public function update(Account $user, ?Book $book = null): bool
     {
-        return false;
+        return $user->hasPermission('manage_catalog');
     }
 
     /**
-     * Determine whether the user can delete the model.
+     * Determine whether the user can delete the book.
      */
-    public function delete(Account $user, Book $book): bool
+    public function delete(Account $user, ?Book $book = null): bool
     {
-        return false;
+        return $user->hasPermission('manage_catalog');
     }
 
     /**
-     * Determine whether the user can restore the model.
+     * Determine whether the user can restore the book.
      */
-    public function restore(Account $user, Book $book): bool
+    public function restore(Account $user, ?Book $book = null): bool
     {
-        return false;
+        return $user->hasPermission('manage_catalog');
     }
 
     /**
-     * Determine whether the user can permanently delete the model.
+     * Determine whether the user can permanently delete the book.
      */
-    public function forceDelete(Account $user, Book $book): bool
+    public function forceDelete(Account $user, ?Book $book = null): bool
     {
-        return false;
+        return $user->hasPermission('manage_catalog');
     }
 }

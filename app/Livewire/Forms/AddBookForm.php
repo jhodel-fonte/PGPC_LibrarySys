@@ -74,6 +74,10 @@ class AddBookForm extends Component
 
     public function mount()
     {
+        if (auth()->check() && !auth()->user()->can('create', Book::class)) {
+            abort(403, 'Unauthorized action. You do not have permission to add catalog books.');
+        }
+
         $this->dateAcquired = Carbon::now()->format('Y-m-d');
         if (empty($this->selectedLanguages)) {
             $this->selectedLanguages = !empty($this->language) ? [$this->language] : ['English'];
@@ -207,6 +211,12 @@ class AddBookForm extends Component
 
     public function save()
     {
+        if (auth()->check() && !auth()->user()->can('create', Book::class)) {
+            $this->errorMessage = 'Unauthorized action. You do not have permission to add catalog books.';
+            $this->dispatch('toast', message: $this->errorMessage, type: 'error');
+            return;
+        }
+
         $this->errorMessage = '';
 
         // Check if author is provided (Required)

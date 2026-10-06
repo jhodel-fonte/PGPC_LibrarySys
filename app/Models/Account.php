@@ -100,4 +100,58 @@ class Account extends Authenticatable
     {
         return $this->username;
     }
+
+    /**
+     * Check if the account has a specific permission.
+     * Checks direct account permission overrides first, then role permissions.
+     */
+    public function hasPermission(string $permissionName): bool
+    {
+        // 1. Direct account permission override check
+        $accountPermission = $this->permissions()->where('permissions.name', $permissionName)->first();
+        if ($accountPermission) {
+            return (bool) $accountPermission->pivot->is_allowed;
+        }
+
+        // 2. Role-based check
+        if ($this->role) {
+            $roleName = strtolower(trim($this->role->name));
+            // Admins & Super Admins have unrestricted access
+            if (in_array($roleName, ['admin', 'super admin', 'superadmin', 'head librarian'])) {
+                return true;
+            }
+
+            // Check role_permissions table
+            return $this->role->permissions()
+                ->where('permissions.name', $permissionName)
+                ->where(function ($query) {
+                    $query->where('role_permissions.is_allowed', true)
+                        ->orWhereNull('role_permissions.is_allowed');
+                })
+                ->exists();
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if the account possesses any of the specified roles.
+     */
+    public function hasRole(string|array $roles): bool
+    {
+        if (!$this->role) {
+            return false;
+        }
+
+        $currentRole = strtolower(str_replace(' ', '', $this->role->name));
+        $checkRoles = is_array($roles) ? $roles : [$roles];
+
+        foreach ($checkRoles as $role) {
+            if ($currentRole === strtolower(str_replace(' ', '', $role))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }
