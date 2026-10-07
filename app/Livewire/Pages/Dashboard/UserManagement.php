@@ -17,7 +17,15 @@ class UserManagement extends Component
     use WithPagination;
 
     public $search = '';
-    public $activeTab = 'All Users'; // 'All Users', 'Students', 'Librarians'
+    public $activeTab = 'ALL'; // 'ALL', 'Student', 'Librarian'
+    public $filterStatus = '';
+    public $filterRole = '';
+    public $filterVerification = '';
+
+    // Staged filter properties before clicking Apply
+    public $tempFilterStatus = '';
+    public $tempFilterRole = '';
+    public $tempFilterVerification = '';
 
     public array $sort = [
         'column' => 'id',
@@ -168,22 +176,69 @@ class UserManagement extends Component
         $this->resetPage();
     }
 
+    public function applyFilters(): void
+    {
+        $this->filterStatus = $this->tempFilterStatus;
+        $this->filterRole = $this->tempFilterRole;
+        $this->filterVerification = $this->tempFilterVerification;
+        $this->resetPage();
+    }
+
+    public function clearFilters(): void
+    {
+        $this->tempFilterStatus = '';
+        $this->tempFilterRole = '';
+        $this->tempFilterVerification = '';
+        $this->filterStatus = '';
+        $this->filterRole = '';
+        $this->filterVerification = '';
+        $this->resetPage();
+    }
+
+    public function getActiveFilterCountProperty(): int
+    {
+        $count = 0;
+        if (!empty($this->filterStatus)) $count++;
+        if (!empty($this->filterRole)) $count++;
+        if (!empty($this->filterVerification)) $count++;
+        return $count;
+    }
+
     public function render()
     {
         $query = Account::with(['role', 'status', 'student', 'librarian']);
 
-        // Apply tab filter
-        if ($this->activeTab === 'Students') {
+        // 1. Apply Top Tab Filter (ALL, Student, Librarian)
+        if ($this->activeTab === 'Student') {
             $query->whereHas('role', function($q) {
-                $q->where('name', 'Student');
+                $q->whereIn('name', ['Student', 'Member']);
             });
-        } elseif ($this->activeTab === 'Librarians') {
+        } elseif ($this->activeTab === 'Librarian') {
             $query->whereHas('role', function($q) {
-                $q->where('name', 'Librarian');
+                $q->whereIn('name', ['Librarian', 'Head Librarian']);
             });
         }
 
-        // Apply search filter
+        // 2. Apply Dropdown Filters
+        if (!empty($this->filterStatus)) {
+            $query->whereHas('status', function ($q) {
+                $q->where('status_name', $this->filterStatus);
+            });
+        }
+
+        if (!empty($this->filterRole)) {
+            $query->whereHas('role', function ($q) {
+                $q->where('name', $this->filterRole);
+            });
+        }
+
+        if ($this->filterVerification === 'verified') {
+            $query->where('is_email_verified', true);
+        } elseif ($this->filterVerification === 'unverified') {
+            $query->where('is_email_verified', false);
+        }
+
+        // 3. Apply Search Filter
         if (!empty($this->search)) {
             $query->where(function($q) {
                 $q->where('username', 'like', '%' . $this->search . '%')
@@ -201,9 +256,7 @@ class UserManagement extends Component
             });
         }
 
-
-        // Apply sorting
-        // We have to conditionally sort based on relations if sorting by related columns
+        // 4. Apply Sorting
         $sortColumn = $this->sort['column'];
         $sortDirection = $this->sort['direction'];
 
@@ -224,8 +277,8 @@ class UserManagement extends Component
         $users = $query->paginate(10);
 
         // Fetch statistics efficiently
-        $totalStudents = Account::whereHas('role', function($q) { $q->where('name', 'Member'); })->count();
-        $totalLibrarians = Account::whereHas('role', function($q) { $q->where('name', 'Librarian'); })->count();
+        $totalStudents = Account::whereHas('role', function($q) { $q->whereIn('name', ['Student', 'Member']); })->count();
+        $totalLibrarians = Account::whereHas('role', function($q) { $q->whereIn('name', ['Librarian', 'Head Librarian']); })->count();
         $activeAccounts = Account::whereHas('status', function($q) { $q->where('status_name', 'Active'); })->count();
         $lockedAccounts = Account::whereHas('status', function($q) {
             $q->whereIn('status_name', ['Locked', 'Suspended']);

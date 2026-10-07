@@ -23,67 +23,105 @@
             </div>
         </div>
 
-        <!-- 2. Statistics Cards -->
-        <div class="relative z-10 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-5 lg:shrink-0">
-            <!-- Total Members -->
-            <div class="rounded-2xl border border-slate-200 bg-white px-5 py-3.5 shadow-[0_1px_3px_rgba(15,23,42,0.03)] flex items-center justify-between gap-3">
-                <div class="min-w-0">
-                    <p class="text-xs font-bold uppercase tracking-wider text-slate-500 truncate">Total Students</p>
-                    <p class="mt-0.5 text-2xl font-extrabold tracking-tight text-[#0F172A]">{{ number_format($totalStudents) }}</p>
-                </div>
-                <div class="h-10 w-10 rounded-xl flex items-center justify-center bg-[#EFF6FF] text-[#2563EB] shrink-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                </div>
-            </div>
-
-            <!-- Total Librarians -->
-            <div class="rounded-2xl border border-slate-200 bg-white px-5 py-3.5 shadow-[0_1px_3px_rgba(15,23,42,0.03)] flex items-center justify-between gap-3">
-                <div class="min-w-0">
-                    <p class="text-xs font-bold uppercase tracking-wider text-slate-500 truncate">Total Librarians</p>
-                    <p class="mt-0.5 text-2xl font-extrabold tracking-tight text-[#0F172A]">{{ number_format($totalLibrarians) }}</p>
-                </div>
-                <div class="h-10 w-10 rounded-xl flex items-center justify-center bg-[#FFFBEB] text-[#D97706] shrink-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-                </div>
-            </div>
-
-            <!-- Active Accounts -->
-            <div class="rounded-2xl border border-slate-200 bg-white px-5 py-3.5 shadow-[0_1px_3px_rgba(15,23,42,0.03)] flex items-center justify-between gap-3">
-                <div class="min-w-0">
-                    <p class="text-xs font-bold uppercase tracking-wider text-slate-500 truncate">Active Accounts</p>
-                    <p class="mt-0.5 text-2xl font-extrabold tracking-tight text-emerald-700">{{ number_format($activeAccounts) }}</p>
-                </div>
-                <div class="h-10 w-10 rounded-xl flex items-center justify-center bg-[#ECFDF5] text-[#059669] shrink-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                </div>
-            </div>
-
-            <!-- Locked/Suspended -->
-            <div class="rounded-2xl border border-slate-200 bg-white px-5 py-3.5 shadow-[0_1px_3px_rgba(15,23,42,0.03)] flex items-center justify-between gap-3">
-                <div class="min-w-0">
-                    <p class="text-xs font-bold uppercase tracking-wider text-slate-500 truncate">Locked / Suspended</p>
-                    <p class="mt-0.5 text-2xl font-extrabold tracking-tight text-red-700">{{ number_format($lockedAccounts) }}</p>
-                </div>
-                <div class="h-10 w-10 rounded-xl flex items-center justify-center bg-[#FEF2F2] text-[#DC2626] shrink-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                </div>
-            </div>
-        </div>
-
         <!-- 3. Table Card -->
         <x-data-table
             :headers="$this->headers"
             :sort="$sort"
             :tabs="[
-                'All Users' => 'All Users (' . ($totalStudents + $totalLibrarians) . ')',
-                'Students' => 'Students (' . $totalStudents . ')',
-                'Librarians' => 'Librarians (' . $totalLibrarians . ')'
+                'ALL' => 'ALL (' . ($totalStudents + $totalLibrarians) . ')',
+                'Student' => 'Student (' . $totalStudents . ')',
+                'Librarian' => 'Librarian (' . $totalLibrarians . ')'
             ]"
             :activeTab="$activeTab"
+            :showFilter="true"
+            :activeFilterCount="$this->activeFilterCount"
             searchPlaceholder="Search users..."
             :paginator="$users"
             minWidth="950px"
         >
+            <!-- Filter Dropdown-->
+            <x-slot:filterDropdown>
+                <div class="font-sans select-none">
+                    <!-- Header -->
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-[#102B70]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                            <h3 class="text-sm font-bold text-[#102B70]">Filter Options</h3>
+                        </div>
+                        @if($this->activeFilterCount > 0)
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EFF6FF] text-[#102B70] border border-[#BFDBFE]">
+                                {{ $this->activeFilterCount }} Active
+                            </span>
+                        @endif
+                    </div>
+
+                    <div class="space-y-3.5 pt-3.5 pb-4">
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-[#334155]">Account Status</label>
+                            <select
+                                wire:model="tempFilterStatus"
+                                class="w-full h-10 px-3.5 rounded-xl border border-[#CBD5E1] bg-white text-xs font-semibold text-[#0F172A] outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all cursor-pointer font-sans"
+                            >
+                                <option value="">All Statuses</option>
+                                <option value="Active">Active</option>
+                                <option value="Inactive">Inactive</option>
+                                <option value="Suspended">Suspended</option>
+                                <option value="Locked">Locked</option>
+                                <option value="Pending">Pending</option>
+                            </select>
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-[#334155]">Account Role</label>
+                            <select
+                                wire:model="tempFilterRole"
+                                class="w-full h-10 px-3.5 rounded-xl border border-[#CBD5E1] bg-white text-xs font-semibold text-[#0F172A] outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all cursor-pointer font-sans"
+                            >
+                                <option value="">All Roles</option>
+                                <option value="Student">Student</option>
+                                <option value="Librarian">Librarian</option>
+                                <option value="Head Librarian">Head Librarian</option>
+                                <option value="Admin">Admin</option>
+                            </select>
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-[#334155]">Email Verification</label>
+                            <select
+                                wire:model="tempFilterVerification"
+                                class="w-full h-10 px-3.5 rounded-xl border border-[#CBD5E1] bg-white text-xs font-semibold text-[#0F172A] outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all cursor-pointer font-sans"
+                            >
+                                <option value="">All Verification States</option>
+                                <option value="verified">Verified</option>
+                                <option value="unverified">Unverified</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-2.5">
+                        <button
+                            type="button"
+                            wire:click="clearFilters"
+                            @click="filterOpen = false"
+                            class="h-9 px-3.5 rounded-xl border border-[#CBD5E1] bg-white hover:bg-slate-50 text-[#334155] text-xs font-bold transition-colors cursor-pointer"
+                        >
+                            Reset
+                        </button>
+
+                        <button
+                            type="button"
+                            wire:click="applyFilters"
+                            @click="filterOpen = false"
+                            class="flex-1 h-9 px-4 rounded-xl bg-[#102B70] hover:bg-[#0B225E] active:scale-[0.98] text-white text-xs font-bold shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                            </svg>
+                            <span>Apply Filters</span>
+                        </button>
+                    </div>
+                </div>
+            </x-slot:filterDropdown>
             @forelse($users as $user)
                 @php
                     $person = $user->role?->name === 'Librarian' ? $user->librarian : $user->student;
