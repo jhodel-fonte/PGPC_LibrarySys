@@ -139,7 +139,6 @@
                             x-transition:leave-end="transform opacity-0 scale-95"
                             class="absolute right-0 z-40 mt-2 w-52 rounded-xl border border-[#DCE3EC] bg-white p-3 shadow-xl focus:outline-none"
                         >
-                            <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-2 py-1">Toggle Columns</div>
                             <div class="space-y-1 mt-1">
                                 @foreach($headers as $h)
                                     @php $idx = $h['index'] ?? null; @endphp
@@ -297,10 +296,10 @@
             </div>
 
             <!-- Right: Pagination links and optional per-page selector -->
-            <div class="flex items-center gap-4">
+            <div class="flex items-center gap-3 sm:gap-4">
                 @if(method_exists($paginator, 'hasPages') && $paginator->hasPages())
-                    <div class="flex items-center gap-1">
-                        {{ $paginator->links() }}
+                    <div class="flex items-center">
+                        {{ $paginator->links('components.pagination') }}
                     </div>
                 @endif
 
@@ -308,15 +307,12 @@
                     <div class="relative">
                         <select
                             wire:model.live="{{ $perPageModel }}"
-                            class="h-8 pl-3 pr-7 rounded-lg border border-[#E2E8F0] bg-white text-xs font-semibold text-slate-700 outline-none focus:border-[#102B70] appearance-none cursor-pointer"
+                            class="h-8 pl-3 pr-7 rounded-lg border border-[#CBD5E1] bg-white text-xs font-semibold text-slate-700 outline-none focus:border-[#102B70] focus:ring-2 focus:ring-[#EFF6FF] transition-colors appearance-none cursor-pointer"
                         >
                             @foreach($perPageOptions as $option)
                                 <option value="{{ $option }}">{{ $option }} / page</option>
                             @endforeach
                         </select>
-                        <div class="absolute inset-y-0 right-0 pr-2 flex items-center pointer-events-none text-slate-400">
-                            <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                        </div>
                     </div>
                 @endif
             </div>

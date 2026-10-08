@@ -19,6 +19,7 @@ Route::middleware(['auth', 'verified', 'role:Admin'])->prefix('admin')->name('ad
 
         Route::get('/dashboard', \App\Livewire\Pages\Dashboard\Dashboard::class)->name('dashboard');
         Route::get('/user-management', \App\Livewire\Pages\Dashboard\UserManagement::class)->name('user-management');
+        Route::get('/user-management/{id}', \App\Livewire\Pages\Dashboard\UserDetails::class)->name('user-details');
 
         Route::prefix('circulation-desk')->name('circulation-desk.')->group(function () {
             Route::get('/', \App\Livewire\Pages\Dashboard\CirculationDesk::class)->name('index');

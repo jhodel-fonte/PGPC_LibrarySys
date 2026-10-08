@@ -363,105 +363,70 @@
                 <!-- Actions -->
                 <td class="px-4 py-3 align-middle text-right pr-6">
                     <div class="flex items-center justify-end gap-3">
-                        <a
-                            href="{{ route('admin.book-management.edit', $book->book_detail_id ?? $book->id) }}"
-                            wire:navigate
-                            class="inline-flex items-center gap-1 text-sm font-bold text-[#102B70] hover:text-[#0B225E] transition-colors focus:outline-none"
-                        >
-                            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                            </svg>
-                            <span>Edit</span>
-                        </a>
-
-                        <div class="relative inline-block text-left" x-data="{ open: false }">
+                        <x-table-action-dot>
                             <button
-                                @click="open = !open"
                                 type="button"
-                                class="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors focus:outline-none"
-                                aria-label="More actions"
+                                @click="open = false; $dispatch('open-book-details', { id: {{ $book->book_detail_id ?? $book->id }}, bookId: {{ $book->id }} })"
+                                class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 rounded-xl transition-colors"
                             >
-                                <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                                </svg>
+                                <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                View Details
                             </button>
 
-                            <div
-                                x-show="open"
-                                @click.outside="open = false"
-                                x-cloak
-                                x-transition:enter="transition ease-out duration-100"
-                                x-transition:enter-start="transform opacity-0 scale-95"
-                                x-transition:enter-end="transform opacity-100 scale-100"
-                                x-transition:leave="transition ease-in duration-75"
-                                x-transition:leave-start="transform opacity-100 scale-100"
-                                x-transition:leave-end="transform opacity-0 scale-95"
-                                class="absolute right-0 z-30 mt-1 w-44 rounded-xl border border-[#E2E8F0] bg-white p-1.5 text-left shadow-xl focus:outline-none"
+                            <a
+                                href="{{ route('admin.book-management.edit', $book->book_detail_id ?? $book->id) }}"
+                                wire:navigate
+                                @click="open = false"
+                                class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 rounded-xl transition-colors"
                             >
-                                <button
-                                    type="button"
-                                    @click="open = false; $dispatch('open-book-details', { id: {{ $book->book_detail_id ?? $book->id }}, bookId: {{ $book->id }} })"
-                                    class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 rounded-xl transition-colors"
-                                >
-                                    <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                    View Details
-                                </button>
+                                <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                Edit Book
+                            </a>
 
-                                <a
-                                    href="{{ route('admin.book-management.edit', $book->book_detail_id ?? $book->id) }}"
-                                    wire:navigate
-                                    @click="open = false"
-                                    class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 rounded-xl transition-colors"
-                                >
-                                    <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                                    Edit Book
-                                </a>
+                            <button
+                                type="button"
+                                wire:click="editCopy({{ $book->id }})"
+                                @click="open = false"
+                                class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 rounded-xl transition-colors"
+                            >
+                                <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                Change Location
+                            </button>
 
-                                <button
-                                    type="button"
-                                    wire:click="editCopy({{ $book->id }})"
-                                    @click="open = false"
-                                    class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 rounded-xl transition-colors"
-                                >
-                                    <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                                    Change Location
-                                </button>
+                            <button
+                                type="button"
+                                wire:click="editCopy({{ $book->id }})"
+                                @click="open = false"
+                                class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 rounded-xl transition-colors"
+                            >
+                                <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                                Update Condition
+                            </button>
 
-                                <button
-                                    type="button"
-                                    wire:click="editCopy({{ $book->id }})"
-                                    @click="open = false"
-                                    class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 rounded-xl transition-colors"
-                                >
-                                    <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
-                                    Update Condition
-                                </button>
+                            <button
+                                type="button"
+                                wire:click="viewHistory({{ $book->id }})"
+                                @click="open = false"
+                                class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 rounded-xl transition-colors"
+                            >
+                                <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                View History
+                            </button>
 
-                                <button
-                                    type="button"
-                                    wire:click="viewHistory({{ $book->id }})"
-                                    @click="open = false"
-                                    class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 rounded-xl transition-colors"
-                                >
-                                    <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                    View History
-                                </button>
+                            <div class="border-t border-slate-100 my-1"></div>
 
-                                <div class="border-t border-slate-100 my-1"></div>
-
-                                <button
-                                    type="button"
-                                    wire:click="deleteCopy({{ $book->id }})"
-                                    @disabled($book->status === 'borrowed')
-                                    @click="open = false"
-                                    onclick="confirm('Are you sure you want to delete copy {{ $book->accession_number }}?') || event.stopImmediatePropagation()"
-                                    class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-xl transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                                >
-                                    <svg class="h-3.5 w-3.5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                    Delete Copy
-                                </button>
-                            </div>
-                        </div>
+                            <button
+                                type="button"
+                                wire:click="deleteCopy({{ $book->id }})"
+                                @disabled($book->status === 'borrowed')
+                                @click="open = false"
+                                onclick="confirm('Are you sure you want to delete copy {{ $book->accession_number }}?') || event.stopImmediatePropagation()"
+                                class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-xl transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                                <svg class="h-3.5 w-3.5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                Delete Copy
+                            </button>
+                        </x-table-action-dot>
                     </div>
                 </td>
             </tr>

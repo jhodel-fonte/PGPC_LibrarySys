@@ -132,15 +132,15 @@
                 <tr class="hover:bg-slate-50/70 transition-colors h-[72px] group">
                     <!-- USER -->
                     <td x-show="cols['user'] !== false" class="px-6 py-4 align-middle">
-                        <div class="flex items-center gap-3.5">
-                            <div class="h-10 w-10 rounded-full bg-[#E8EEFC] text-[#102B70] flex items-center justify-center shrink-0">
-                                <span class="text-xs font-bold">{{ strtoupper($initials) }}</span>
+                        <a href="{{ route('admin.user-details', $user->id) }}" wire:navigate class="flex items-center gap-3.5 group/user focus:outline-none">
+                            <div class="h-10 w-10 rounded-full bg-[#E8EEFC] text-[#102B70] flex items-center justify-center shrink-0 font-bold text-xs uppercase group-hover/user:bg-[#102B70] group-hover/user:text-white transition-colors">
+                                {{ $initials ?: 'U' }}
                             </div>
                             <div class="flex flex-col min-w-0">
-                                <span class="text-[14px] font-bold text-[#102B70] group-hover:text-blue-700 transition-colors truncate">{{ $fullName }}</span>
+                                <span class="text-[14px] font-bold text-[#102B70] group-hover/user:text-blue-700 group-hover/user:underline transition-colors truncate">{{ $fullName }}</span>
                                 <span class="text-xs text-slate-500 truncate mt-0.5 font-medium">{{ $user->email ?? 'No email' }}</span>
                             </div>
-                        </div>
+                        </a>
                     </td>
 
                     <!-- ID NUMBER -->
@@ -193,13 +193,28 @@
 
                     <!-- ACTIONS -->
                     <td class="px-6 py-4 align-middle text-right pr-6">
-                        <div class="flex items-center justify-end gap-3.5">
-                            <button class="text-xs font-bold text-[#102B70] hover:text-[#0B225E] transition-colors">
-                                View
-                            </button>
-                            <button class="text-xs font-bold text-slate-600 hover:text-[#102B70] transition-colors">
-                                Edit
-                            </button>
+                        <div class="flex items-center justify-end">
+                            <x-table-action-dot>
+                                <a
+                                    href="{{ route('admin.user-details', $user->id) }}"
+                                    wire:navigate
+                                    @click="open = false"
+                                    class="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-[#102B70] rounded-lg transition-colors"
+                                >
+                                    <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                    View Profile
+                                </a>
+
+                                <a
+                                    href="{{ route('admin.user-details', $user->id) }}"
+                                    wire:navigate
+                                    @click="open = false"
+                                    class="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-[#102B70] rounded-lg transition-colors"
+                                >
+                                    <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                    Edit Profile
+                                </a>
+                            </x-table-action-dot>
                         </div>
                     </td>
                 </tr>
