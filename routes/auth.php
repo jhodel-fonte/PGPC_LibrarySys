@@ -3,10 +3,10 @@
 use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
-
 Route::middleware('unauthenticated')->group(function () {
 
-    Volt::route('register', 'pages.auth.register')->name('register');
+    // Student Registration
+    Route::get('/register', \App\Livewire\Pages\Auth\Register::class)->name('register');
 
     // Student login
     Route::get('/student/', \App\Livewire\Pages\Auth\StudentLogin::class)->name('login');

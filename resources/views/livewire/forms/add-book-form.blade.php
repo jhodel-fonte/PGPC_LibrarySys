@@ -49,7 +49,9 @@
             <div class="flex items-center gap-3 border-b border-[#F1F5F9] pb-4">
                 <div>
                     <h2 class="text-base font-bold text-[#102B70]">Book Copy</h2>
+                    <p class="text-xs text-slate-500 font-medium">Fill up all the required fields to add a new book copy.</p>
                 </div>
+
             </div>
 
             <!-- Accession Number -->

@@ -12,7 +12,13 @@
     x-on:livewire:error.window="isLoggingIn = false"
     class="w-full rounded-2xl border border-slate-200/80 bg-white p-7 sm:p-9 md:p-10 shadow-xl shadow-slate-200/70 select-none"
 >
-    <div class="mb-[28px]">
+    <div class="mb-[10px]">
+        <a href="{{ url('/') }}" wire:navigate class="group mb-2 inline-flex items-center gap-2 text-[14px] font-semibold text-slate-500 transition hover:text-[#102b70]">
+            <svg class="h-4 w-4 transition-transform group-hover:-translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            <span>Back to Home</span>
+        </a>
         <h2 class="text-[28px] font-bold tracking-tight text-slate-900 leading-tight">Employee Portal</h2>
         <p class="mt-2 text-[17px] font-normal text-slate-500 leading-normal">Sign in to access the library management workspace.</p>
     </div>
@@ -100,7 +106,12 @@
             @endif
         </div>
 
-        <div class="mt-6">
+        <!-- Cloudflare Turnstile Widget -->
+        <div class="mt-4">
+            <x-turnstile model="form.turnstileToken" action="login" />
+        </div>
+
+        <div class="mt-5">
             <button
                 type="submit"
                 wire:loading.attr="disabled"
@@ -127,7 +138,7 @@
 
     <!-- Social Sign In -->
     @if (Route::has('auth.google'))
-        <div class="relative my-7">
+        <div class="relative my-2">
             <div class="absolute inset-0 flex items-center" aria-hidden="true">
                 <div class="w-full border-t border-slate-200"></div>
             </div>
@@ -158,8 +169,8 @@
             </a>
             and
             <a href="#" class="font-semibold text-[#102b70] underline decoration-[#fcc719] decoration-2 underline-offset-2 hover:text-blue-800 transition">
-                Privacy Policy
-            </a>.
+                Privacy Policy.
+            </a>
         </p>
         <p class="text-[12px] text-slate-400 pt-1">Student Portal: <a href="{{ route('login') }}" wire:navigate class="font-semibold text-[#102b70] underline decoration-[#fcc719] decoration-2 underline-offset-2 hover:text-blue-800 transition">Student Login</a>.
         </p>

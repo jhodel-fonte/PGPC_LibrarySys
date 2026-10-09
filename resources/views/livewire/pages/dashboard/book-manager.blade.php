@@ -5,6 +5,9 @@
     class="bg-[#F8FAFC] lg:h-full lg:flex lg:flex-col lg:min-h-0 overflow-hidden"
 >
     <div class="mx-auto w-full max-w-[1600px] p-4 lg:p-6 relative flex flex-col gap-4 lg:h-full lg:min-h-0 lg:flex-1 overflow-hidden">
+        <div class="absolute inset-0 pointer-events-none overflow-hidden flex items-center justify-center opacity-[0.018] z-0">
+            <img src="{{ asset('images/logo.webp') }}" class="w-2/3 max-w-[800px] object-contain" alt="">
+        </div>
         <!-- 1. Page Header -->
         <div class="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between lg:shrink-0">
             <div class="flex min-w-0 items-start gap-3.5">
@@ -348,14 +351,14 @@
 
                 <!-- Condition Badge -->
                 <td x-show="cols['condition'] !== false" class="px-4 py-3 align-middle">
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-sm font-semibold {{ $condBadgeClass }}">
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold leading-normal {{ $condBadgeClass }}">
                         {{ $book->condition ? $book->condition->status : 'Good' }}
                     </span>
                 </td>
 
                 <!-- Status Badge -->
                 <td x-show="cols['status'] !== false" class="px-4 py-3 align-middle">
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-sm font-semibold {{ $statBadgeClass }}">
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold leading-normal {{ $statBadgeClass }}">
                         {{ ucfirst($book->status) }}
                     </span>
                 </td>
@@ -610,44 +613,5 @@
         </div>
     @endif
 
-    <!-- 6. VIEW HISTORY MODAL -->
-    @if($showHistoryModal && $historyBook)
-        <div class="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto bg-slate-900/60 p-4 backdrop-blur-sm">
-            <div class="w-full max-w-xl overflow-hidden rounded-xl bg-white shadow-2xl animate-fade-in">
-                <div class="px-6 py-4 border-b border-[#E2E8F0] bg-slate-50 flex items-center justify-between">
-                    <div>
-                        <h3 class="text-sm font-bold text-[#102B70]">Circulation History</h3>
-                        <p class="text-xs text-slate-500 font-medium">Accession: {{ $historyBook->accession_number }}</p>
-                    </div>
-                    <button type="button" wire:click="closeHistoryModal" class="text-slate-400 hover:text-slate-600 text-xl">&times;</button>
-                </div>
-                <div class="p-6 text-xs max-h-96 overflow-y-auto">
-                    @if($historyBook->borrowingTransactions && $historyBook->borrowingTransactions->isNotEmpty())
-                        <div class="divide-y divide-slate-100 space-y-2">
-                            @foreach($historyBook->borrowingTransactions as $tx)
-                                <div class="pt-2 first:pt-0 flex items-center justify-between">
-                                    <div>
-                                        <p class="font-bold text-slate-800">{{ $tx->user ? $tx->user->first_name . ' ' . $tx->user->last_name : 'Unknown User' }}</p>
-                                        <p class="text-[11px] text-slate-500">Borrowed: {{ $tx->borrowed_date ? \Carbon\Carbon::parse($tx->borrowed_date)->format('M d, Y') : 'N/A' }}</p>
-                                    </div>
-                                    <div class="text-right">
-                                        <span class="inline-flex px-2 py-0.5 rounded text-[10px] font-bold {{ $tx->status === 'returned' ? 'bg-emerald-50 text-emerald-700' : 'bg-blue-50 text-blue-700' }}">
-                                            {{ ucfirst($tx->status) }}
-                                        </span>
-                                    </div>
-                                </div>
-                            @endforeach
-                        </div>
-                    @else
-                        <p class="text-slate-500 text-center py-6">No previous borrowing transactions recorded for this copy.</p>
-                    @endif
-                </div>
-                <div class="px-6 py-3 border-t border-slate-100 flex justify-end">
-                    <button type="button" wire:click="closeHistoryModal" class="px-4 h-9 rounded-lg bg-[#102B70] text-white text-xs font-bold">Close</button>
-                </div>
-            </div>
-        </div>
-    @endif
-
-    <livewire:components.book-manager.edit-book-modal />
+    <livewire:pages.dashboard.book-detail />
 </div>

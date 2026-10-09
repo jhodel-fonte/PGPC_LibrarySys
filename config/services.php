@@ -41,4 +41,10 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI', '/auth/google/callback'),
     ],
 
+    'turnstile' => [
+        'key' => env('TURNSTILE_SITE_KEY'),
+        'secret' => env('TURNSTILE_SECRET_KEY'),
+    ],
+
+
 ];

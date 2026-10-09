@@ -30,7 +30,7 @@
     $initialCols = collect($headers)->pluck('index')->filter()->mapWithKeys(fn($k) => [$k => true])->toArray();
 @endphp
 
-<div class="relative z-10 flex flex-col overflow-visible rounded-xl border border-[#DCE3EC] bg-white font-sans shadow-[0_8px_24px_rgba(15,43,112,0.045)] lg:min-h-0 lg:flex-1 {{ $textSize }}"
+<div class="relative z-10 flex flex-col overflow-visible rounded-xl border border-[#DCE3EC] bg-white font-sans antialiased shadow-[0_8px_24px_rgba(15,43,112,0.045)] lg:min-h-0 lg:flex-1 {{ $textSize }}"
      x-data="{
          localSearch: @entangle($searchModel).live,
          filterOpen: false,
@@ -217,10 +217,10 @@
     <div class="overflow-x-auto overflow-y-auto w-full relative min-h-[250px] lg:min-h-0 lg:flex-1">
         <table class="w-full text-left border-collapse" style="min-width: {{ $minWidth }};">
             <!-- Table Header -->
-            <thead class="bg-slate-50/80 border-b border-slate-200/80">
+            <thead class="sticky top-0 z-20 bg-slate-50 shadow-[inset_0_-1px_0_#E2E8F0]">
                 <tr>
                     @if($selectable)
-                        <th class="w-12 px-4 py-3.5 align-middle text-center">
+                        <th class="sticky top-0 z-20 bg-slate-50 shadow-[inset_0_-1px_0_#E2E8F0] w-12 px-4 py-3.5 align-middle text-center">
                             <input
                                 type="checkbox"
                                 wire:model.live="{{ $selectAllModel }}"
@@ -249,10 +249,10 @@
                             <th wire:click="{{ $sortMethod }}('{{ $colIndex }}')"
                                 {!! $thXShow !!}
                                 style="{{ $width ? 'width: ' . $width . ';' : '' }}"
-                                class="px-4 py-3.5 {{ $headerTextSize }} font-bold uppercase tracking-wider text-slate-500 cursor-pointer hover:bg-slate-100/70 hover:text-[#102B70] transition-colors group select-none {{ $align === 'right' ? 'text-right' : ($align === 'center' ? 'text-center' : 'text-left') }}"
+                                class="sticky top-0 z-20 bg-slate-50 shadow-[inset_0_-1px_0_#E2E8F0] px-4 py-3.5 {{ $headerTextSize }} font-bold uppercase tracking-wider text-slate-500 cursor-pointer hover:bg-slate-100 hover:text-[#102B70] transition-colors group select-none leading-normal {{ $align === 'right' ? 'text-right' : ($align === 'center' ? 'text-center' : 'text-left') }}"
                             >
                                 <div class="flex items-center gap-1 {{ $alignClass }}">
-                                    <span>{{ $header['label'] ?? '' }}</span>
+                                    <span class="leading-normal">{{ $header['label'] ?? '' }}</span>
                                     @if($isSorted)
                                         <span class="text-[#102B70] font-bold">{{ $sortDir === 'asc' ? '↑' : '↓' }}</span>
                                     @else
@@ -263,9 +263,9 @@
                         @else
                             <th {!! $thXShow !!}
                                 style="{{ $width ? 'width: ' . $width . ';' : '' }}"
-                                class="px-4 py-3.5 {{ $headerTextSize }} font-bold uppercase tracking-wider text-slate-500 {{ $align === 'right' ? 'text-right pr-6' : ($align === 'center' ? 'text-center' : 'text-left') }}"
+                                class="sticky top-0 z-20 bg-slate-50 shadow-[inset_0_-1px_0_#E2E8F0] px-4 py-3.5 {{ $headerTextSize }} font-bold uppercase tracking-wider text-slate-500 leading-normal {{ $align === 'right' ? 'text-right pr-6' : ($align === 'center' ? 'text-center' : 'text-left') }}"
                             >
-                                {{ $header['label'] ?? '' }}
+                                <span class="leading-normal">{{ $header['label'] ?? '' }}</span>
                             </th>
                         @endif
                     @endforeach

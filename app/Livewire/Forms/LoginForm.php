@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use App\Services\TurnstileService;
 use Livewire\Attributes\Validate;
 use Livewire\Form;
 
@@ -25,12 +26,16 @@ class LoginForm extends Form
     #[Validate('boolean')]
     public bool $remember = false;
 
+    #[Validate('required|string', message: 'Please complete the Cloudflare security verification.')]
+    public string $turnstileToken = '';
+
     public function rules(): array
     {
         return [
             'email' => 'required|string',
             'password' => 'required|string',
             'remember' => 'boolean',
+            'turnstileToken' => 'required|string',
         ];
     }
 
@@ -39,6 +44,7 @@ class LoginForm extends Form
         return [
             'email.required' => 'Please enter your username, email or student ID.',
             'password.required' => 'Please enter your password.',
+            'turnstileToken.required' => 'Please complete the Cloudflare security verification.',
         ];
     }
 
@@ -53,6 +59,12 @@ class LoginForm extends Form
         $this->validate();
 
         $this->ensureIsNotRateLimited();
+
+        if (! TurnstileService::verify($this->turnstileToken, 'login', request()->ip())) {
+            throw ValidationException::withMessages([
+                'form.turnstileToken' => 'Security verification failed. Please check the box again.',
+            ]);
+        }
 
         $loginInput = trim($this->email);
         $isEmail = filter_var($loginInput, FILTER_VALIDATE_EMAIL);

@@ -23,6 +23,7 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <tallstackui:script />
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
     @livewireStyles
 </head>
 
@@ -38,11 +39,11 @@
     <main id="portal-content"
         class="opacity-0 transition-opacity duration-700 ease-in-out relative min-h-dvh lg:h-dvh overflow-hidden lg:grid lg:grid-cols-12">
 
-        <!-- Left Hero Branding Side -->
-        <x-auth.login-hero />
+        <!-- Hero Branding Side -->
+        <x-auth.login-hero :order="$isStaff ? 'left' : 'right'" />
 
-        <!-- Right Form Card Side -->
-        <x-auth.login-form>
+        <!-- Form Card Side -->
+        <x-auth.login-form :order="$isStaff ? 'right' : 'left'">
             {{ $slot }}
         </x-auth.login-form>
 

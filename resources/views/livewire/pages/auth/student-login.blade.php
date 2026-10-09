@@ -15,7 +15,13 @@
     class="w-full rounded-2xl border border-slate-200/80 bg-white p-7 sm:p-9 md:p-10 shadow-xl shadow-slate-200/70 select-none"
 >
     <!-- Title Area (Heading 32px/Bold, Subtitle 15px/Regular, 8px gap, 28-32px bottom spacing) -->
-    <div class="mb-[30px]">
+    <div class="mb-[20px]">
+        <a href="{{ url('/') }}" wire:navigate class="group mb-5 inline-flex items-center gap-2 text-[14px] font-semibold text-slate-500 transition hover:text-[#102b70]">
+            <svg class="h-4 w-4 transition-transform group-hover:-translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            <span>Back to Home</span>
+        </a>
         <h2 class="text-[25px] font-bold tracking-tight text-slate-900 leading-tight">Student Portal</h2>
         <p class="mt-2 text-[15px] font-normal text-slate-500 leading-normal">Sign in to access your personal library account.</p>
     </div>
@@ -103,8 +109,13 @@
             </label>
         </div>
 
+        <!-- Cloudflare Turnstile Widget -->
+        <div class="mt-4">
+            <x-turnstile model="form.turnstileToken" action="login" />
+        </div>
+
         <!-- Primary Submit Button (Stays loading even during redirect) -->
-        <div class="mt-6">
+        <div class="mt-5">
             <button
                 type="submit"
                 wire:loading.attr="disabled"
@@ -128,7 +139,7 @@
 
     <!-- Social Sign In (28-32px top spacing, Divider "or", Button height 52px, Radius 12px, Text 15px/Semibold) -->
     @if (Route::has('auth.google'))
-        <div class="relative my-7">
+        <div class="relative my-3">
             <div class="absolute inset-0 flex items-center" aria-hidden="true">
                 <div class="w-full border-t border-slate-200"></div>
             </div>
@@ -151,16 +162,7 @@
     @endif
 
     <!-- Bottom Links & Policy Notice -->
-    <div class="mt-2 pt-2 text-center space-y-3">
-        @if (Route::has('register'))
-            <p class="text-[12px] text-slate-500">
-                Don't have an account?
-                <a href="{{ route('register') }}" class="ml-1 font-semibold text-[#102b70] underline decoration-[#fcc719] decoration-2 underline-offset-4 transition hover:text-blue-800" wire:navigate>
-                    Create an account
-                </a>
-            </p>
-        @endif
-
+    <div class="pt-2 text-center space-y-3">
         <p class="text-[12px] text-slate-400 pt-1">
             By signing in, you agree to our
             <a href="#" class="font-semibold text-[#102b70] underline decoration-[#fcc719] decoration-2 underline-offset-2 hover:text-blue-800 transition">
@@ -171,7 +173,13 @@
                 Privacy Policy
             </a>.
         </p>
-        <p class="text-[12px] text-slate-400 pt-1">Staff Portal: <a href="{{ route('employee.login') }}" wire:navigate class="font-semibold text-[#102b70] underline decoration-[#fcc719] decoration-2 underline-offset-2 hover:text-blue-800 transition">Employee Login</a>.
+        <p class="text-[12px] text-slate-500">
+            Don't have an account?
+            <a href="{{ route('register') }}" class="ml-1 font-semibold text-[#102b70] underline decoration-[#fcc719] decoration-2 underline-offset-4 transition hover:text-blue-800" wire:navigate>
+                Create an account
+            </a>
+        </p>
+        <p class="text-[12px] text-slate-400">Staff Portal: <a href="{{ route('employee.login') }}" wire:navigate class="font-semibold text-[#102b70] underline decoration-[#fcc719] decoration-2 underline-offset-2 hover:text-blue-800 transition">Employee Login</a>.
         </p>
     </div>
 </div>
