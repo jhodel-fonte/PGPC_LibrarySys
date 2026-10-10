@@ -31,7 +31,7 @@
     x-on:book-details-loaded.window="isFetching = false; isAddingCopy = false"
     x-on:open-add-copy.window="isAddingCopy = true"
     x-on:close-add-copy.window="isAddingCopy = false"
-    x-on:copy-added.window="isAddingCopy = false"
+    x-on:copy-added.window="if (!$event.detail || !$event.detail.isMultiple) { isAddingCopy = false }"
     x-on:keydown.escape.window="if (isAddingCopy) { isAddingCopy = false } else if (open) { hide() }"
     x-cloak
 >
@@ -83,30 +83,17 @@
             <div class="custom-scrollbar min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6">
                 <!-- 1. SKELETON LOADER (Shown first while fetching / switching books) -->
                 <div
-                    x-show="isFetching || !@js((bool) $bookDetail)"
+                    x-show="isFetching"
+                    x-cloak
                     class="animate-pulse"
                 >
                     <div class="grid gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] items-start">
-                        <!-- Left Side Skeleton: Cover, QR, Metadata -->
+                        <!-- Left Side Skeleton: Cover, Metadata -->
                         <div class="grid gap-6 sm:grid-cols-[180px_minmax(0,1fr)]">
-                            <aside class="grid grid-cols-[112px_minmax(0,1fr)] gap-3 sm:block">
+                            <aside class="w-full sm:w-[180px] shrink-0">
                                 <!-- Cover Skeleton -->
-                                <div class="aspect-[2/3] sm:aspect-[4/5] w-full rounded-lg bg-slate-200 flex items-center justify-center shadow-sm">
-                                    <svg class="h-9 w-9 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                    </svg>
-                                </div>
-
-                                <!-- QR Skeleton -->
-                                <div class="flex min-h-[160px] flex-col items-center justify-center rounded-lg border border-slate-200 bg-slate-50 p-3 sm:mt-3">
-                                    <div class="h-3 w-16 bg-slate-200 rounded mb-2"></div>
-                                    <div class="h-28 w-28 sm:h-32 sm:w-32 rounded-lg bg-slate-200 flex items-center justify-center">
-                                        <svg class="h-8 w-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-                                        </svg>
-                                    </div>
-                                    <div class="h-2.5 w-24 bg-slate-200 rounded mt-2.5"></div>
-                                    <div class="h-2 w-28 bg-slate-200 rounded mt-1.5"></div>
+                                <div class="w-full h-[260px] sm:h-[270px] rounded-lg bg-slate-100 flex flex-col items-center justify-center border border-slate-200/80 shadow-sm">
+                                    <div class="h-8 w-8 animate-spin rounded-full border-3 border-[#102B70]/20 border-t-[#102B70]"></div>
                                 </div>
                             </aside>
 
@@ -193,7 +180,7 @@
                     </div>
                 </div>
 
-                <!-- 2. ACTUAL BOOK CONTENT: Rendered when !isFetching and bookDetail is loaded -->
+                <!-- 2. ACTUAL BOOK CONTENT -->
                 @if($bookDetail)
                     @php
                         $data = $bookDetail->bookData;
@@ -222,78 +209,69 @@
                         wire:key="modal-content-{{ $bookDetail->id }}"
                         class="grid gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] items-start"
                     >
-                        <!-- Left Side: Cover, QR, and Book Details -->
+                        <!-- Left Side: Cover and Book Details -->
                         <div class="grid gap-6 sm:grid-cols-[180px_minmax(0,1fr)]">
-                            <aside class="grid grid-cols-[112px_minmax(0,1fr)] gap-3 sm:block">
+                            <aside class="w-full sm:w-[180px] shrink-0">
                                 <div
-                                    wire:key="modal-book-cover-{{ $bookDetail->id }}"
+                                    wire:key="modal-book-cover-{{ $bookDetail->id }}-{{ md5($coverUrl ?? 'no-cover') }}"
                                     x-data="{
-                                        coverLoaded: false,
-                                        coverError: false,
-                                        coverUrl: @js($coverUrl),
-                                        fallback: '{{ asset('images/book-cover.webp') }}',
-                                        init() {
-                                            if (!this.coverUrl) {
-                                                this.coverError = true;
-                                                this.coverLoaded = true;
-                                                return;
-                                            }
-                                            const img = new Image();
-                                            img.src = this.coverUrl;
-                                            img.onload = () => { this.coverLoaded = true; };
-                                            img.onerror = () => { this.coverError = true; this.coverLoaded = true; };
-                                        }
+                                        imgLoaded: false,
+                                        imgError: false,
+                                        coverSrc: @js($coverUrl)
                                     }"
-                                    class="relative aspect-[2/3] w-full overflow-hidden rounded-lg bg-[#E8EEFC] shadow-[0_8px_20px_rgba(15,23,42,0.18)] sm:aspect-[4/5]"
+                                    x-init="
+                                        imgLoaded = false;
+                                        imgError = false;
+                                        if (!coverSrc) {
+                                            imgError = true;
+                                            imgLoaded = true;
+                                        } else {
+                                            $nextTick(() => {
+                                                const img = $refs.coverImg;
+                                                if (img && img.complete && img.naturalHeight !== 0) {
+                                                    imgLoaded = true;
+                                                }
+                                            });
+                                        }
+                                    "
+                                    class="relative w-full h-[260px] sm:h-[270px] overflow-hidden rounded-lg bg-[#E8EEFC] shadow-[0_8px_20px_rgba(15,23,42,0.18)] flex items-center justify-center border border-slate-200/80"
                                 >
-                                    <!-- Image Loading Shimmer -->
+                                    <!-- Image Loading Spinner & Shimmer inside the placeholder while image is downloading -->
                                     <div
-                                        x-show="!coverLoaded"
-                                        class="absolute inset-0 bg-slate-200/80 animate-pulse flex items-center justify-center"
+                                        x-show="!imgLoaded && !imgError"
+                                        class="absolute inset-0 bg-slate-100/95 backdrop-blur-xs flex flex-col items-center justify-center p-3 text-center transition-opacity duration-300 z-10"
                                     >
-                                        <svg class="h-8 w-8 text-slate-300 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                        </svg>
+                                        <div class="h-8 w-8 animate-spin rounded-full border-3 border-[#102B70]/20 border-t-[#102B70]"></div>
                                     </div>
 
-                                    <img
-                                        :src="coverError || !coverUrl ? fallback : coverUrl"
-                                        alt="{{ $data ? $data->book_title : 'Book cover' }}"
-                                        class="h-full w-full object-cover select-none transition-opacity duration-300"
-                                        :class="coverLoaded ? 'opacity-100' : 'opacity-0'"
-                                        loading="eager"
+                                    <!-- Actual Book Cover Image (when URL exists) -->
+                                    @if(!empty($coverUrl))
+                                        <img
+                                            x-ref="coverImg"
+                                            src="{{ $coverUrl }}"
+                                            alt="{{ $data ? $data->book_title : 'Book cover' }}"
+                                            x-on:load="imgLoaded = true; imgError = false;"
+                                            x-on:error="imgError = true; imgLoaded = true;"
+                                            x-show="!imgError"
+                                            class="h-full w-full object-cover select-none transition-opacity duration-300"
+                                            :class="imgLoaded ? 'opacity-100' : 'opacity-0'"
+                                            loading="eager"
+                                        >
+                                    @endif
+
+                                    <!-- Fallback / No Cover / Error State -->
+                                    <div
+                                        x-show="imgError || !coverSrc"
+                                        x-cloak
+                                        class="absolute inset-0 h-full w-full bg-slate-100 flex flex-col items-center justify-center"
                                     >
-                                </div>
-
-                                <div class="flex min-h-[160px] flex-col items-center justify-center rounded-lg border border-[#CFE0F6] bg-[#F7FAFF] p-3 text-center sm:mt-3">
-                                    <div class="flex items-center justify-between w-full mb-2 px-0.5">
-                                        <span class="text-xs font-bold text-[#102B70]">QR Code</span>
-                                        @if($qrCodeSvg)
-                                            <a
-                                                href="data:image/svg+xml;utf8,{{ rawurlencode($qrCodeSvg) }}"
-                                                download="QR_{{ $bookDetail->isbn ?: 'Book_' . $bookDetail->id }}.svg"
-                                                class="text-[10px] font-semibold text-[#1D4ED8] hover:underline"
-                                                title="Download QR Code"
-                                            >
-                                                Download
-                                            </a>
-                                        @endif
+                                        <img
+                                            src="{{ asset('images/book-cover.webp') }}"
+                                            alt="No cover available"
+                                            class="h-full w-full object-cover select-none pointer-events-none"
+                                            draggable="false"
+                                        >
                                     </div>
-
-                                    <div class="flex h-28 w-28 sm:h-32 sm:w-32 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-white p-1.5 shadow-sm">
-                                        @if($qrCodeSvg)
-                                            <div class="h-full w-full flex items-center justify-center [&>svg]:h-full [&>svg]:w-full [&>svg]:block">
-                                                {!! $qrCodeSvg !!}
-                                            </div>
-                                        @else
-                                            <div class="h-6 w-6 animate-spin rounded-full border-2 border-[#102B70] border-t-transparent"></div>
-                                        @endif
-                                    </div>
-
-                                    <p class="mt-2 text-[11px] font-medium leading-tight text-slate-600 truncate max-w-[150px]">
-                                        {{ $bookDetail->isbn ? 'ISBN: ' . $bookDetail->isbn : ($bookDetail->call_number ? 'Call: ' . $bookDetail->call_number : 'Title #' . $bookDetail->id) }}
-                                    </p>
-                                    <p class="text-[10px] text-slate-400 mt-0.5">Scan to view in catalog</p>
                                 </div>
                             </aside>
 
@@ -359,7 +337,7 @@
                             </div>
                         </div>
 
-                        <!-- Right Side: Physical Copies Table OR Add Physical Copy Form -->
+                        <!--Physical Copies Table OR Add Physical Copy Form -->
                         <div class="flex flex-col min-w-0 xl:border-l xl:border-slate-200 xl:pl-6 pt-4 xl:pt-0 border-t border-slate-200 xl:border-t-0">
                             <!-- State A: Physical Copies Table & Management -->
                             <div x-show="!isAddingCopy" class="flex flex-col min-w-0">
@@ -370,17 +348,55 @@
                                         </h3>
                                         <p class="text-xs text-slate-500 mt-0.5">{{ $availableCopies }} available, {{ $borrowedCopies }} borrowed</p>
                                     </div>
-                                    <button
-                                        type="button"
-                                        x-on:click="$dispatch('open-add-copy', { bookDetailId: {{ $bookDetail->id }} })"
-                                        class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#102B70] bg-white px-3 text-xs font-semibold text-[#102B70] transition-colors hover:bg-[#F5F9FF] active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70]"
-                                    >
-                                        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-                                        <span>Add Copy</span>
-                                    </button>
+                                    @can('create', \App\Models\Book::class)
+                                        <div class="relative" x-data="{ addDropdownOpen: false }">
+                                            <button
+                                                type="button"
+                                                @click="addDropdownOpen = !addDropdownOpen"
+                                                class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#102B70] bg-white px-3 text-xs font-semibold text-[#102B70] transition-colors hover:bg-[#F5F9FF] active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70]"
+                                            >
+                                                <span>Add Copy</span>
+                                                <svg class="h-3 w-3 text-[#102B70] transition-transform duration-150" :class="addDropdownOpen ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                                            </button>
+
+                                            <div
+                                                x-show="addDropdownOpen"
+                                                @click.outside="addDropdownOpen = false"
+                                                x-cloak
+                                                x-transition:enter="transition ease-out duration-100"
+                                                x-transition:enter-start="transform opacity-0 scale-95"
+                                                x-transition:enter-end="transform opacity-100 scale-100"
+                                                x-transition:leave="transition ease-in duration-75"
+                                                x-transition:leave-start="transform opacity-100 scale-100"
+                                                x-transition:leave-end="transform opacity-0 scale-95"
+                                                class="absolute right-0 z-30 mt-1.5 w-48 rounded-xl border border-[#DCE3EC] bg-white p-1.5 shadow-lg focus:outline-none"
+                                            >
+                                                <button
+                                                    type="button"
+                                                    @click="addDropdownOpen = false; $dispatch('open-add-copy', { bookDetailId: {{ $bookDetail->id }}, isMultiple: false })"
+                                                    class="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs font-semibold text-slate-700 transition-colors hover:bg-blue-50 hover:text-[#102B70]"
+                                                >
+                                                    <svg class="h-5 w-5 text-[#102B70]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                                                    <div>
+                                                        <div class="text-sm">Single Copy</div>
+                                                    </div>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    @click="addDropdownOpen = false; $dispatch('open-add-copy', { bookDetailId: {{ $bookDetail->id }}, isMultiple: true })"
+                                                    class="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs font-semibold text-slate-700 transition-colors hover:bg-blue-50 hover:text-[#102B70]"
+                                                >
+                                                    <svg class="h-5 w-5 text-[#102B70]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" /></svg>
+                                                    <div>
+                                                        <div class="text-sm">Multiple Copies</div>
+                                                    </div>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    @endcan
                                 </div>
 
-                                <div class="overflow-x-auto rounded-lg border border-[#DCE3EC] max-h-[500px] custom-scrollbar overflow-y-auto">
+                                <div class="overflow-x-auto rounded-lg border border-[#DCE3EC] max-h-[500px] custom-scrollbar overflow-y-[100px]">
                                     <table class="w-full min-w-[520px] text-left text-sm">
                                         <thead class="sticky top-0 z-10 bg-[#F5F8FC] text-sm font-semibold text-slate-600 border-b border-[#DCE3EC]">
                                             <tr>
@@ -411,7 +427,6 @@
                                                         'damaged' => 'text-orange-600 font-semibold',
                                                         'lost' => 'text-red-600 font-semibold',
                                                         'reserved' => 'text-amber-600 font-semibold',
-                                                        'maintenance' => 'text-slate-600 font-semibold',
                                                         default => 'text-slate-600 font-semibold'
                                                     };
                                                 @endphp
@@ -473,15 +488,17 @@
                 >
                     Close
                 </button>
-                <a
-                    href="{{ $bookDetail ? route('admin.book-management.edit', $bookDetail->id) : '#' }}"
-                    wire:navigate
-                    :class="(isFetching || !@js((bool) $bookDetail)) ? 'opacity-40 pointer-events-none' : ''"
-                    class="inline-flex h-9 items-center gap-2 rounded-lg bg-[#102B70] px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#0B225E] active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70] focus-visible:ring-offset-2"
-                >
-                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="m14.7 6.3 3 3M5 19l3.7-.7L19 8a2.1 2.1 0 0 0-3-3L5.7 15.3 5 19Z"/></svg>
-                    <span>Edit Book</span>
-                </a>
+                @can('update', \App\Models\Book::class)
+                    <a
+                        href="{{ $bookDetail ? route('admin.book-management.edit', $bookDetail->id) : '#' }}"
+                        wire:navigate
+                        :class="isFetching ? 'opacity-40 pointer-events-none' : ''"
+                        class="inline-flex h-9 items-center gap-2 rounded-lg bg-[#102B70] px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#0B225E] active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70] focus-visible:ring-offset-2"
+                    >
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="m14.7 6.3 3 3M5 19l3.7-.7L19 8a2.1 2.1 0 0 0-3-3L5.7 15.3 5 19Z"/></svg>
+                        <span>Edit Book</span>
+                    </a>
+                @endcan
             </footer>
         </section>
     </div>

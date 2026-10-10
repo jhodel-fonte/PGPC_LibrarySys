@@ -30,13 +30,63 @@
     $initialCols = collect($headers)->pluck('index')->filter()->mapWithKeys(fn($k) => [$k => true])->toArray();
 @endphp
 
-<div class="relative z-10 flex flex-col overflow-visible rounded-xl border border-[#DCE3EC] bg-white font-sans antialiased shadow-[0_8px_24px_rgba(15,43,112,0.045)] lg:min-h-0 lg:flex-1 {{ $textSize }}"
+<div class="relative z-10 flex flex-col overflow-visible rounded-xl border border-[#DCE3EC] bg-white font-sans antialiased shadow-[0_8px_24px_rgba(15,43,112,0.045)] min-h-0 flex-1 {{ $textSize }}"
      x-data="{
          localSearch: @entangle($searchModel).live,
          filterOpen: false,
          columnsOpen: false,
-         cols: @js($initialCols)
+         cols: @js($initialCols),
+         isTableLoading: false,
+         loadingTimer: null,
+         hasError: false,
+         errorMessage: '',
+         init() {
+             if (typeof Livewire !== 'undefined') {
+                 Livewire.hook('commit', ({ respond, fail }) => {
+                     clearTimeout(this.loadingTimer);
+                     this.loadingTimer = setTimeout(() => {
+                         this.isTableLoading = true;
+                     }, 1200);
+
+                     respond(() => {
+                         clearTimeout(this.loadingTimer);
+                         this.isTableLoading = false;
+                         this.hasError = false;
+                     });
+
+                     fail(() => {
+                         clearTimeout(this.loadingTimer);
+                         this.isTableLoading = false;
+                         this.hasError = true;
+                         this.errorMessage = 'Unable to load records. Please check your network connection and try again.';
+                     });
+                 });
+             }
+         },
+         retry() {
+             this.hasError = false;
+             this.isTableLoading = true;
+             if (typeof $wire !== 'undefined') {
+                 $wire.$refresh().then(() => {
+                     this.isTableLoading = false;
+                 }).catch(() => {
+                     this.isTableLoading = false;
+                     this.hasError = true;
+                 });
+             }
+         }
      }"
+     x-on:livewire:error.window="
+         clearTimeout(loadingTimer);
+         isTableLoading = false;
+         hasError = true;
+         errorMessage = 'A network error occurred while reaching the server. Please try again.';
+     "
+     x-on:offline.window="
+         hasError = true;
+         errorMessage = 'You are currently offline. Please check your internet connection.';
+     "
+     x-on:online.window="hasError = false"
 >
     <!-- 1. Toolbar Row: Search Bar, Filter Button, Columns Button & Actions -->
     @if($showSearch || $showFilter || $showColumns || isset($actions))
@@ -167,21 +217,35 @@
     <!-- 2. Row 2: Filter Tabs OR Multiple Selection Bulk Action Bar -->
     @if(!empty($tabs) || isset($toolbarLeft) || $selectedCount > 0 || isset($bulkActions))
         <div class="border-b border-[#E2E8F0] bg-white px-3 py-2.5 sm:px-4">
-            @if($selectedCount > 0 && isset($bulkActions))
+            @if(isset($bulkActions))
                 <!-- Multiple Selection (Bulk Actions) Banner -->
-                <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-[#EAF2FF] px-3.5 py-2 animate-fade-in">
+                <div
+                    x-show="typeof selected !== 'undefined' ? (Array.isArray(selected) && selected.length > 0) : {{ $selectedCount > 0 ? 'true' : 'false' }}"
+                    x-cloak
+                    class="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-[#EAF2FF] px-3.5 py-2 animate-fade-in"
+                >
                     <div class="flex items-center gap-2 text-xs font-bold text-[#102B70]">
                         <svg class="w-4 h-4 text-[#102B70]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                        <span>{{ $selectedCount }} {{ $selectedCount === 1 ? 'item' : 'items' }} selected</span>
+                        <span>
+                            <span x-text="typeof selected !== 'undefined' ? (Array.isArray(selected) ? selected.length : 0) : {{ $selectedCount }}">{{ $selectedCount }}</span>
+                            <span x-text="(typeof selected !== 'undefined' ? (Array.isArray(selected) ? selected.length : 0) : {{ $selectedCount }}) === 1 ? 'item' : 'items'">{{ $selectedCount === 1 ? 'item' : 'items' }}</span> selected
+                        </span>
                     </div>
 
                     <div class="flex items-center gap-2 flex-wrap">
                         {{ $bulkActions }}
                     </div>
                 </div>
-            @elseif(isset($toolbarLeft))
-                {{ $toolbarLeft }}
-            @elseif(!empty($tabs))
+            @endif
+
+            <div
+                @if(isset($bulkActions))
+                    x-show="typeof selected !== 'undefined' ? (!Array.isArray(selected) || selected.length === 0) : {{ $selectedCount === 0 ? 'true' : 'false' }}"
+                @endif
+            >
+                @if(isset($toolbarLeft))
+                    {{ $toolbarLeft }}
+                @elseif(!empty($tabs))
                 <!-- Filter Tabs -->
                 <div class="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
                     @foreach($tabs as $tabKey => $tabValue)
@@ -210,22 +274,86 @@
                     @endforeach
                 </div>
             @endif
+            </div>
         </div>
     @endif
 
     <!-- 3. Scrollable Table Container -->
-    <div class="overflow-x-auto overflow-y-auto w-full relative min-h-[250px] lg:min-h-0 lg:flex-1">
-        <table class="w-full text-left border-collapse" style="min-width: {{ $minWidth }};">
+    <div
+        :class="hasError ? 'overflow-hidden' : 'overflow-auto'"
+        x-effect="if (hasError) { $el.scrollTop = 0; $el.scrollLeft = 0; }"
+        class="w-full relative flex-1 min-h-0"
+    >
+        
+        <!-- Long Loading State Overlay (Shown only when request takes > 1.2s) -->
+        <div
+            x-show="isTableLoading && !hasError"
+            x-cloak
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            class="absolute inset-0 z-30 flex flex-col items-center justify-center bg-white/80 backdrop-blur-[2px] p-6 text-center select-none"
+        >
+            <div class="relative flex items-center justify-center mb-3">
+                <div class="h-10 w-10 animate-spin rounded-full border-3 border-slate-200 border-t-[#102B70]"></div>
+                <div class="absolute h-5 w-5 animate-ping rounded-full bg-[#102B70]/10"></div>
+            </div>
+            <p class="text-sm font-bold text-[#102B70]">Loading records...</p>
+            <p class="text-xs text-slate-500 mt-0.5">Fetching latest data from server</p>
+        </div>
+
+        <!-- Graceful Error State Overlay (Network / Server Failure) -->
+        <div
+            x-show="hasError"
+            x-cloak
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0 scale-95"
+            x-transition:enter-end="opacity-100 scale-100"
+            class="absolute inset-0 z-30 flex flex-col items-center justify-center bg-white p-6 text-center select-none"
+        >
+            <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-600 mb-3 shadow-xs">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+            </div>
+            <h4 class="text-sm font-bold text-slate-900">Unable to load table data</h4>
+            <p class="mt-1 max-w-sm text-xs text-slate-500" x-text="errorMessage || 'An unexpected connection error occurred.'"></p>
+            
+            <button
+                type="button"
+                x-on:click="retry()"
+                class="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-[#102B70] px-4 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-[#0B225E] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70]"
+            >
+                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <span>Retry Connection</span>
+            </button>
+        </div>
+
+        <table
+            x-show="!hasError"
+            :class="isTableLoading ? 'opacity-40 pointer-events-none transition-opacity duration-300' : 'transition-opacity duration-200'"
+            class="table-responsive-cards w-full text-left border-collapse"
+            style="--min-w: {{ $minWidth }}; min-width: {{ $minWidth }};"
+        >
             <!-- Table Header -->
             <thead class="sticky top-0 z-20 bg-slate-50 shadow-[inset_0_-1px_0_#E2E8F0]">
                 <tr>
                     @if($selectable)
                         <th class="sticky top-0 z-20 bg-slate-50 shadow-[inset_0_-1px_0_#E2E8F0] w-12 px-4 py-3.5 align-middle text-center">
-                            <input
-                                type="checkbox"
-                                wire:model.live="{{ $selectAllModel }}"
-                                class="rounded border-slate-300 text-[#102B70] focus:ring-[#102B70] cursor-pointer"
-                            >
+                            @if(isset($headerCheckbox))
+                                {{ $headerCheckbox }}
+                            @else
+                                <input
+                                    type="checkbox"
+                                    wire:model.live="{{ $selectAllModel }}"
+                                    class="rounded border-slate-300 text-[#102B70] focus:ring-[#102B70] cursor-pointer"
+                                >
+                            @endif
                         </th>
                     @endif
 
@@ -281,11 +409,11 @@
 
     <!-- 4. Footer / Pagination -->
     @if(isset($footer))
-        <div class="px-5 py-3.5 border-t border-[#E2E8F0] bg-white">
+        <div :class="{ 'pointer-events-none opacity-50': hasError }" class="px-5 py-3.5 border-t border-[#E2E8F0] bg-white transition-opacity shrink-0">
             {{ $footer }}
         </div>
     @elseif($paginator)
-        <div class="px-5 py-3.5 border-t border-[#E2E8F0] bg-white flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600 font-medium">
+        <div :class="{ 'pointer-events-none opacity-50': hasError }" class="px-5 py-3.5 border-t border-[#E2E8F0] bg-white flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600 font-medium transition-opacity shrink-0">
             <!-- Left: Results count -->
             <div>
                 @if(method_exists($paginator, 'total') && $paginator->total() > 0)
@@ -319,3 +447,48 @@
         </div>
     @endif
 </div>
+
+<style>
+@media (max-width: 768px) {
+    .table-responsive-cards {
+        min-width: 100% !important;
+        display: block !important;
+        width: 100% !important;
+    }
+    .table-responsive-cards > thead {
+        display: none !important;
+    }
+    .table-responsive-cards > tbody {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 0.75rem !important;
+        padding: 0.75rem !important;
+        background-color: #F8FAFC !important;
+        width: 100% !important;
+    }
+    .table-responsive-cards > tbody > tr {
+        display: block !important;
+        width: 100% !important;
+        background-color: transparent !important;
+        border: none !important;
+        height: auto !important;
+    }
+    .table-responsive-cards > tbody > tr > td.desktop-cell {
+        display: none !important;
+    }
+    .table-responsive-cards > tbody > tr > td.mobile-cell {
+        display: block !important;
+        width: 100% !important;
+        padding: 0 !important;
+        border: none !important;
+    }
+}
+@media (min-width: 769px) {
+    .table-responsive-cards {
+        min-width: var(--min-w, 1000px) !important;
+    }
+    .table-responsive-cards > tbody > tr > td.mobile-cell {
+        display: none !important;
+    }
+}
+</style>

@@ -1,19 +1,61 @@
 <div
     x-data="{
-        fallbackCover: '{{ asset('images/book-cover.webp') }}'
+        fallbackCover: '{{ asset('images/book-cover.webp') }}',
+        selected: @entangle('selectedCopies').live,
+
+        isSelected(id) {
+            const sId = String(id);
+            return Array.isArray(this.selected) && this.selected.some(x => String(x) === sId);
+        },
+
+        toggle(id) {
+            const sId = String(id);
+            if (!Array.isArray(this.selected)) this.selected = [];
+            const idx = this.selected.findIndex(x => String(x) === sId);
+            if (idx > -1) {
+                this.selected.splice(idx, 1);
+            } else {
+                this.selected.push(sId);
+            }
+        },
+
+        toggleCurrentPage(ids) {
+            if (!Array.isArray(this.selected)) this.selected = [];
+            const strIds = ids.map(x => String(x));
+            const allSelected = strIds.length > 0 && strIds.every(id => this.isSelected(id));
+            if (allSelected) {
+                this.selected = this.selected.filter(id => !strIds.includes(String(id)));
+            } else {
+                const toAdd = strIds.filter(id => !this.isSelected(id));
+                this.selected = [...this.selected, ...toAdd];
+            }
+        },
+
+        isAllCurrentPageSelected(ids) {
+            if (!Array.isArray(this.selected)) return false;
+            const strIds = ids.map(x => String(x));
+            return strIds.length > 0 && strIds.every(id => this.isSelected(id));
+        },
+
+        isSomeCurrentPageSelected(ids) {
+            if (!Array.isArray(this.selected)) return false;
+            const strIds = ids.map(x => String(x));
+            return strIds.some(id => this.isSelected(id)) && !this.isAllCurrentPageSelected(ids);
+        },
+
+        clearAll() {
+            this.selected = [];
+        }
     }"
-    class="bg-[#F8FAFC] lg:h-full lg:flex lg:flex-col lg:min-h-0 overflow-hidden"
+    class="bg-[#F8FAFC] flex flex-col min-h-0 flex-1 overflow-hidden"
 >
-    <div class="mx-auto w-full max-w-[1600px] p-4 lg:p-6 relative flex flex-col gap-4 lg:h-full lg:min-h-0 lg:flex-1 overflow-hidden">
-        <div class="absolute inset-0 pointer-events-none overflow-hidden flex items-center justify-center opacity-[0.018] z-0">
-            <img src="{{ asset('images/logo.webp') }}" class="w-2/3 max-w-[800px] object-contain" alt="">
-        </div>
+    <div class="mx-auto w-full max-w-[1600px] p-3 sm:p-4 lg:p-6 relative flex flex-col gap-3 sm:gap-4 min-h-0 flex-1">
         <!-- 1. Page Header -->
-        <div class="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between lg:shrink-0">
+        <div class="relative z-10 flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-start sm:justify-between lg:shrink-0">
             <div class="flex min-w-0 items-start gap-3.5">
-                <div class="min-w-0 pl-4">
+                <div class="min-w-0 pl-0 sm:pl-2">
                     <h1 class="text-xl font-bold tracking-[-0.02em] text-[#102B70] sm:text-2xl">Book Management</h1>
-                    <p class="mt-0.5 max-w-2xl text-sm font-medium text-slate-600">Manage catalog records, physical copies, shelf locations, and availability.</p>
+                    <p class="mt-0.5 max-w-2xl text-xs sm:text-sm font-medium text-slate-600">Manage catalog records, physical copies, shelf locations, and availability.</p>
                 </div>
             </div>
 
@@ -33,6 +75,10 @@
             </div>
         </div>
 
+    @php
+        $currentPageIds = $books->pluck('id')->map(fn($id) => (string)$id)->values()->toArray();
+    @endphp
+
     <!-- 2. Data Table Component -->
     <x-data-table
         :headers="$this->headers"
@@ -50,6 +96,16 @@
         :activeFilterCount="$this->activeFilterCount"
         perPageModel="perPage"
     >
+        <x-slot:headerCheckbox>
+            <input
+                type="checkbox"
+                :checked="isAllCurrentPageSelected(@js($currentPageIds))"
+                :indeterminate="isSomeCurrentPageSelected(@js($currentPageIds))"
+                @change="toggleCurrentPage(@js($currentPageIds))"
+                class="rounded border-slate-300 text-[#102B70] focus:ring-[#102B70] cursor-pointer"
+                aria-label="Select all copies on this page"
+            >
+        </x-slot:headerCheckbox>
         <x-slot:toolbarLeft>
             @php
                 $statusTabs = [
@@ -248,6 +304,7 @@
 
             <button
                 type="button"
+                @click="clearAll()"
                 wire:click="clearSelection"
                 class="px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors flex items-center gap-1"
             >
@@ -291,19 +348,177 @@
                 $coverUrl = $detail && $detail->cover_image ? $detail->cover_url : null;
                 $initials = collect(explode(' ', $data ? $data->book_title : 'BOOK'))->map(fn($n) => substr($n, 0, 1))->take(2)->join('');
             @endphp
-            <tr class="group h-[64px] transition-colors hover:bg-slate-50/70 {{ in_array((string)$book->id, $selectedCopies) ? 'bg-blue-50/60' : '' }}">
+            <tr
+                :class="isSelected('{{ $book->id }}') ? 'bg-blue-50/60' : ''"
+                class="group h-auto md:h-[64px] transition-colors hover:bg-slate-50/70"
+            >
+                <!-- Mobile Card Cell (Visible on mobile screens <= 768px) -->
+                <td colspan="8" class="mobile-cell">
+                    <div
+                        :class="isSelected('{{ $book->id }}') ? 'border-[#102B70] bg-blue-50/30 ring-1 ring-[#102B70]' : ''"
+                        class="bg-white rounded-2xl border border-[#E2E8F0] p-4 shadow-xs relative transition-all hover:shadow-sm"
+                    >
+                        <!-- Card Header: Checkbox, Cover, Title, Author & 3-dots Menu -->
+                        <div class="flex items-start justify-between gap-2.5">
+                            <div class="flex items-start gap-3 min-w-0 flex-1">
+                                <!-- Selection Checkbox -->
+                                <div class="shrink-0 pt-0.5">
+                                    <input
+                                        type="checkbox"
+                                        :checked="isSelected('{{ $book->id }}')"
+                                        @change="toggle('{{ $book->id }}')"
+                                        value="{{ (string)$book->id }}"
+                                        class="rounded border-slate-300 text-[#102B70] focus:ring-[#102B70] cursor-pointer"
+                                        aria-label="Select copy {{ $book->accession_number }}"
+                                    >
+                                </div>
+
+                                <!-- Book Cover Image -->
+                                <div
+                                    x-data="{
+                                        coverSrc: @js($coverUrl) || fallbackCover
+                                    }"
+                                    class="relative flex h-14 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-[#E8EEFC] shadow-xs"
+                                >
+                                    <img
+                                        :src="coverSrc || fallbackCover"
+                                        x-on:error="if (coverSrc !== fallbackCover) coverSrc = fallbackCover"
+                                        class="w-full h-full object-cover select-none"
+                                        alt="{{ $data ? $data->book_title : 'Book Cover' }}"
+                                        loading="lazy"
+                                    >
+                                </div>
+
+                                <!-- Title and Author -->
+                                <div class="flex flex-col min-w-0 flex-1">
+                                    <button
+                                        type="button"
+                                        x-on:click="$dispatch('open-book-details', { id: {{ $book->book_detail_id ?? $book->id }}, bookId: {{ $book->id }} })"
+                                        class="text-left text-sm font-bold leading-snug text-[#102B70] line-clamp-2 underline-offset-2 hover:text-blue-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70]"
+                                        title="View details for {{ $data ? $data->book_title : 'Unknown Title' }}"
+                                    >
+                                        {{ $data ? $data->book_title : 'Unknown Title' }}
+                                    </button>
+                                    <span class="text-xs text-slate-500 font-medium truncate mt-0.5">
+                                        {{ $authorName }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- 3-Dots Actions Menu -->
+                            <div class="shrink-0 -mr-1">
+                                <x-table-action-dot>
+                                    <button
+                                        type="button"
+                                        @click="open = false; $dispatch('open-book-details', { id: {{ $book->book_detail_id ?? $book->id }}, bookId: {{ $book->id }} })"
+                                        class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 rounded-xl transition-colors"
+                                    >
+                                        <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                        View Details
+                                    </button>
+
+                                    <a
+                                        href="{{ route('admin.book-management.edit', $book->book_detail_id ?? $book->id) }}"
+                                        wire:navigate
+                                        @click="open = false"
+                                        class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 rounded-xl transition-colors"
+                                    >
+                                        <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                        Edit Book
+                                    </a>
+
+                                    <button
+                                        type="button"
+                                        wire:click="editCopy({{ $book->id }})"
+                                        @click="open = false"
+                                        class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 rounded-xl transition-colors"
+                                    >
+                                        <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                        Change Location
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        wire:click="editCopy({{ $book->id }})"
+                                        @click="open = false"
+                                        class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 rounded-xl transition-colors"
+                                    >
+                                        <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                                        Update Condition
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        wire:click="viewHistory({{ $book->id }})"
+                                        @click="open = false"
+                                        class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 rounded-xl transition-colors"
+                                    >
+                                        <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        View History
+                                    </button>
+
+                                    <div class="border-t border-slate-100 my-1"></div>
+
+                                    <button
+                                        type="button"
+                                        wire:click="deleteCopy({{ $book->id }})"
+                                        @disabled($book->status === 'borrowed')
+                                        @click="open = false"
+                                        onclick="confirm('Are you sure you want to delete copy {{ $book->accession_number }}?') || event.stopImmediatePropagation()"
+                                        class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-xl transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                    >
+                                        <svg class="h-3.5 w-3.5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                        Delete Copy
+                                    </button>
+                                </x-table-action-dot>
+                            </div>
+                        </div>
+
+                        <!-- Metadata Grid: Accession, Code, Location, Condition, Status -->
+                        <div class="mt-3.5 pt-3 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-3 gap-y-3 gap-x-3 text-left">
+                            <div x-show="cols['accession'] !== false">
+                                <span class="block text-[11px] font-medium text-slate-400">Accession No.</span>
+                                <span class="text-xs font-semibold text-slate-800 break-all">{{ $book->accession_number }}</span>
+                            </div>
+                            <div x-show="cols['code'] !== false">
+                                <span class="block text-[11px] font-medium text-slate-400">Unique Code</span>
+                                <span class="text-xs font-semibold text-slate-800 break-all">{{ $book->code ?: 'Not assigned' }}</span>
+                            </div>
+                            <div x-show="cols['location'] !== false">
+                                <span class="block text-[11px] font-medium text-slate-400">Location</span>
+                                <span class="text-xs font-semibold text-slate-800 truncate block">{{ $book->location ?: 'Main Library' }}</span>
+                            </div>
+                            <div x-show="cols['condition'] !== false">
+                                <span class="block text-[11px] font-medium text-slate-400 mb-1">Condition</span>
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded text-[11px] font-semibold {{ $condBadgeClass }}">
+                                    {{ $book->condition ? $book->condition->status : 'Good' }}
+                                </span>
+                            </div>
+                            <div x-show="cols['status'] !== false">
+                                <span class="block text-[11px] font-medium text-slate-400 mb-1">Status</span>
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded text-[11px] font-semibold {{ $statBadgeClass }}">
+                                    {{ ucfirst($book->status) }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+
+                <!-- Desktop Cells (Visible on desktop screens > 768px) -->
                 <!-- Selection Checkbox -->
-                <td class="w-12 px-4 py-3 align-middle text-center">
+                <td class="desktop-cell w-12 px-4 py-3 align-middle text-center">
                     <input
                         type="checkbox"
-                        wire:model.live="selectedCopies"
+                        :checked="isSelected('{{ $book->id }}')"
+                        @change="toggle('{{ $book->id }}')"
                         value="{{ (string)$book->id }}"
                         class="rounded border-slate-300 text-[#102B70] focus:ring-[#102B70] cursor-pointer"
+                        aria-label="Select copy {{ $book->accession_number }}"
                     >
                 </td>
 
                 <!-- Book Details -->
-                <td x-show="cols['details'] !== false" class="px-4 py-3 align-middle max-w-[340px]">
+                <td x-show="cols['details'] !== false" class="desktop-cell px-4 py-3 align-middle max-w-[340px]">
                     <div class="flex items-center gap-3">
                         <div
                             x-data="{
@@ -335,36 +550,36 @@
                 </td>
 
                 <!-- Accession No. -->
-                <td x-show="cols['accession'] !== false" class="px-4 py-3 align-middle">
+                <td x-show="cols['accession'] !== false" class="desktop-cell px-4 py-3 align-middle">
                     <span class="text-sm font-medium text-slate-700">{{ $book->accession_number }}</span>
                 </td>
 
                 <!-- Unique Code -->
-                <td x-show="cols['code'] !== false" class="px-4 py-3 align-middle">
+                <td x-show="cols['code'] !== false" class="desktop-cell px-4 py-3 align-middle">
                     <span class="text-sm text-slate-600">{{ $book->code ?: 'Not assigned' }}</span>
                 </td>
 
                 <!-- Location -->
-                <td x-show="cols['location'] !== false" class="px-4 py-3 align-middle">
+                <td x-show="cols['location'] !== false" class="desktop-cell px-4 py-3 align-middle">
                     <span class="text-sm font-medium text-slate-700">{{ $book->location ?: 'Main Library' }}</span>
                 </td>
 
                 <!-- Condition Badge -->
-                <td x-show="cols['condition'] !== false" class="px-4 py-3 align-middle">
+                <td x-show="cols['condition'] !== false" class="desktop-cell px-4 py-3 align-middle">
                     <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold leading-normal {{ $condBadgeClass }}">
                         {{ $book->condition ? $book->condition->status : 'Good' }}
                     </span>
                 </td>
 
                 <!-- Status Badge -->
-                <td x-show="cols['status'] !== false" class="px-4 py-3 align-middle">
+                <td x-show="cols['status'] !== false" class="desktop-cell px-4 py-3 align-middle">
                     <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold leading-normal {{ $statBadgeClass }}">
                         {{ ucfirst($book->status) }}
                     </span>
                 </td>
 
                 <!-- Actions -->
-                <td class="px-4 py-3 align-middle text-right pr-6">
+                <td class="desktop-cell px-4 py-3 align-middle text-right pr-6">
                     <div class="flex items-center justify-end gap-3">
                         <x-table-action-dot>
                             <button
@@ -561,7 +776,7 @@
                     <button type="button" wire:click="$set('showBulkLocationModal', false)" class="text-slate-400 hover:text-slate-600 text-xl">&times;</button>
                 </div>
                 <form wire:submit.prevent="saveBulkLocation" class="p-6 space-y-4">
-                    <p class="text-xs text-slate-500 font-medium">Update location for <strong>{{ count($selectedCopies) }}</strong> selected copies.</p>
+                    <p class="text-xs text-slate-500 font-medium">Update location for <strong x-text="selected.length">{{ count($selectedCopies) }}</strong> selected copies.</p>
                     <div class="space-y-1">
                         <label class="text-xs font-semibold text-slate-700">New Shelf Location</label>
                         <input
@@ -590,7 +805,7 @@
                     <button type="button" wire:click="$set('showBulkConditionModal', false)" class="text-slate-400 hover:text-slate-600 text-xl">&times;</button>
                 </div>
                 <form wire:submit.prevent="saveBulkCondition" class="p-6 space-y-4">
-                    <p class="text-xs text-slate-500 font-medium">Update condition for <strong>{{ count($selectedCopies) }}</strong> selected copies.</p>
+                    <p class="text-xs text-slate-500 font-medium">Update condition for <strong x-text="selected.length">{{ count($selectedCopies) }}</strong> selected copies.</p>
                     <div class="space-y-1">
                         <label class="text-xs font-semibold text-slate-700">Physical Condition</label>
                         <select

@@ -6,9 +6,28 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Laravel\Scout\Searchable;
 
 class OpacCatalogView extends Model
 {
+    use Searchable;
+
+    /**
+     * Get the indexable data array for Scout.
+     */
+    public function toSearchableArray(): array
+    {
+        return [
+            'book_title' => $this->book_title,
+            'subtitle' => $this->subtitle,
+            'authors' => $this->authors,
+            'categories' => $this->categories,
+            'isbn' => $this->isbn,
+            'call_number' => $this->call_number,
+            'classification' => $this->classification,
+            'publisher_name' => $this->publisher_name,
+        ];
+    }
     /**
      * The table associated with the model (database view).
      */

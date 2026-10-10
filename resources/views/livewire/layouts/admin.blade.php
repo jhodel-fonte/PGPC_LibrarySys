@@ -39,7 +39,7 @@
             <div :class="sidebarMinimized ? 'md:ml-[80px]' : 'md:ml-[280px]'" class="flex-1 flex flex-col min-w-0 h-screen transition-all duration-300 ease-in-out w-full bg-[#F8FAFC]">
                 <x-top-navbar :activepage="$title ?? 'Dashboards'" :subpage="$subpage ?? null" :activepageRoute="$activepageRoute ?? null" />
 
-                <main class="flex-1 overflow-y-auto bg-[#F8FAFC]">
+                <main class="flex-1 flex flex-col min-h-0 overflow-y-auto bg-[#F8FAFC]">
                     <livewire:components.global-announcement-banner />
                     {{ $slot }}
                 </main>

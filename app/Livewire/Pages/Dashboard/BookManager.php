@@ -5,6 +5,7 @@ namespace App\Livewire\Pages\Dashboard;
 use App\Models\Book;
 use App\Models\BookCondition;
 use App\Models\BookDetail;
+use App\Models\OpacCatalogView;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\Attributes\Layout;
@@ -16,7 +17,7 @@ class BookManager extends Component
 
     // Search & Tabs
     public $search = '';
-    public $inventoryView = 'Copies'; // Titles, Copies
+    public $inventoryView = 'Titles'; // Titles, Copies
     public $activeTab = 'All Copies'; // All Copies, Available, Borrowed, Damaged/Lost
     public $perPage = 10;
 
@@ -102,7 +103,7 @@ class BookManager extends Component
     public function getHeadersProperty()
     {
         return [
-            ['index' => 'details', 'label' => 'Book Details', 'sortable' => true],
+            ['index' => 'details', 'label' => 'Title', 'sortable' => true],
             ['index' => 'accession', 'label' => 'Accession No.', 'sortable' => true],
             ['index' => 'code', 'label' => 'Unique Code', 'sortable' => true],
             ['index' => 'location', 'label' => 'Location', 'sortable' => true],
@@ -201,6 +202,10 @@ class BookManager extends Component
 
     public function saveCopy()
     {
+        if (auth()->check() && !auth()->user()->can('update', Book::class)) {
+            abort(403, 'Unauthorized action. You do not have permission to update book copies.');
+        }
+
         $this->validate();
 
         $book = Book::find($this->editingBookId);
@@ -218,6 +223,10 @@ class BookManager extends Component
 
     public function markCondition($bookId, $conditionId)
     {
+        if (auth()->check() && !auth()->user()->can('update', Book::class)) {
+            abort(403, 'Unauthorized action. You do not have permission to update book condition.');
+        }
+
         $book = Book::find($bookId);
         if ($book) {
             $condition = BookCondition::find($conditionId);
@@ -241,6 +250,10 @@ class BookManager extends Component
 
     public function deleteCopy($bookId)
     {
+        if (auth()->check() && !auth()->user()->can('delete', Book::class)) {
+            abort(403, 'Unauthorized action. You do not have permission to delete book copies.');
+        }
+
         $book = Book::find($bookId);
         if ($book) {
             if ($book->status === 'borrowed') {
@@ -293,6 +306,10 @@ class BookManager extends Component
     {
         if (empty($this->selectedCopies)) return;
 
+        if (auth()->check() && !auth()->user()->can('update', Book::class)) {
+            abort(403, 'Unauthorized action. You do not have permission to update book copies.');
+        }
+
         $count = count($this->selectedCopies);
         Book::whereIn('id', $this->selectedCopies)->update([
             'location' => trim($this->bulkLocation) ?: null,
@@ -313,6 +330,10 @@ class BookManager extends Component
     public function saveBulkCondition()
     {
         if (empty($this->selectedCopies) || empty($this->bulkConditionId)) return;
+
+        if (auth()->check() && !auth()->user()->can('update', Book::class)) {
+            abort(403, 'Unauthorized action. You do not have permission to update book copies.');
+        }
 
         $count = count($this->selectedCopies);
         $newStatus = match((int)$this->bulkConditionId) {
@@ -343,6 +364,10 @@ class BookManager extends Component
     public function bulkDelete()
     {
         if (empty($this->selectedCopies)) return;
+
+        if (auth()->check() && !auth()->user()->can('delete', Book::class)) {
+            abort(403, 'Unauthorized action. You do not have permission to delete book copies.');
+        }
 
         $deletable = Book::whereIn('id', $this->selectedCopies)
             ->where('status', '!=', 'borrowed')
@@ -397,33 +422,26 @@ class BookManager extends Component
             });
         }
 
-        // Search Query
+        // Search Query (via Laravel Scout Database Driver)
         if (!empty($this->search)) {
-            $searchVal = '%' . trim($this->search) . '%';
-            $query->where(function ($q) use ($searchVal) {
-                $q->where('books.accession_number', 'like', $searchVal)
-                  ->orWhere('books.code', 'like', $searchVal)
-                  ->orWhere('books.location', 'like', $searchVal)
-                  ->orWhere('books.status', 'like', $searchVal)
-                  ->orWhereHas('condition', function ($cq) use ($searchVal) {
-                      $cq->where('status', 'like', $searchVal);
-                  })
-                  ->orWhereHas('bookDetail', function ($dq) use ($searchVal) {
-                      $dq->where('isbn', 'like', $searchVal)
-                        ->orWhere('call_number', 'like', $searchVal)
-                        ->orWhere('classification', 'like', $searchVal)
-                        ->orWhereHas('bookData', function ($bq) use ($searchVal) {
-                            $bq->where('book_title', 'like', $searchVal)
-                              ->orWhere('subtitle', 'like', $searchVal)
-                              ->orWhereHas('authors', function ($aq) use ($searchVal) {
-                                  $aq->where('first_name', 'like', $searchVal)
-                                    ->orWhere('last_name', 'like', $searchVal);
-                              })
-                              ->orWhereHas('categories', function ($catq) use ($searchVal) {
-                                  $catq->where('name', 'like', $searchVal);
-                              });
-                        });
-                  });
+            $searchTerm = trim($this->search);
+
+            // 1. Search copy-level attributes via Scout on Book (accession_number, code, location, status)
+            $copyIds = Book::search($searchTerm)->keys();
+
+            // 2. Search bibliographic & catalog attributes via Scout on OpacCatalogView (title, authors, categories, isbn, call_number, publisher)
+            $detailIds = OpacCatalogView::search($searchTerm)->keys();
+
+            // 3. Search condition status (e.g. Good, Fair, Damaged)
+            $conditionIds = BookCondition::where('status', 'ilike', '%' . $searchTerm . '%')->pluck('id')->toArray();
+
+            $query->where(function ($q) use ($copyIds, $detailIds, $conditionIds) {
+                $q->whereIn('books.id', $copyIds)
+                  ->orWhereIn('books.book_detail_id', $detailIds);
+
+                if (!empty($conditionIds)) {
+                    $q->orWhereIn('books.book_condition_id', $conditionIds);
+                }
             });
         }
 

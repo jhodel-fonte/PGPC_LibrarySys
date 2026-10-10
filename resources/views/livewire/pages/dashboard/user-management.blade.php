@@ -1,5 +1,5 @@
-<div class="bg-[#F8FAFC] lg:h-full lg:flex lg:flex-col lg:min-h-0">
-    <div class="mx-auto w-full max-w-[1600px] p-4 lg:p-6 relative flex flex-col gap-6 lg:h-full lg:min-h-0 lg:flex-1">
+<div class="bg-[#F8FAFC] flex flex-col min-h-0 flex-1 overflow-hidden">
+    <div class="mx-auto w-full max-w-[1600px] p-4 lg:p-6 relative flex flex-col gap-4 sm:gap-6 min-h-0 flex-1">
         
         <div class="absolute inset-0 pointer-events-none overflow-hidden flex items-center justify-center opacity-[0.018] z-0">
             <img src="{{ asset('images/logo.webp') }}" class="w-2/3 max-w-[800px] object-contain" alt="">
@@ -45,7 +45,6 @@
                     <!-- Header -->
                     <div class="flex items-center justify-between pb-3 border-b border-slate-100">
                         <div class="flex items-center gap-2">
-                            <svg class="w-4 h-4 text-[#102B70]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
                             <h3 class="text-sm font-bold text-[#102B70]">Filter Options</h3>
                         </div>
                         @if($this->activeFilterCount > 0)
@@ -82,18 +81,6 @@
                                 <option value="Librarian">Librarian</option>
                                 <option value="Head Librarian">Head Librarian</option>
                                 <option value="Admin">Admin</option>
-                            </select>
-                        </div>
-
-                        <div class="space-y-1.5">
-                            <label class="text-xs font-bold text-[#334155]">Email Verification</label>
-                            <select
-                                wire:model="tempFilterVerification"
-                                class="w-full h-10 px-3.5 rounded-xl border border-[#CBD5E1] bg-white text-xs font-semibold text-[#0F172A] outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all cursor-pointer font-sans"
-                            >
-                                <option value="">All Verification States</option>
-                                <option value="verified">Verified</option>
-                                <option value="unverified">Unverified</option>
                             </select>
                         </div>
                     </div>
@@ -134,10 +121,10 @@
                     <td x-show="cols['user'] !== false" class="px-6 py-4 align-middle">
                         <a href="{{ route('admin.user-details', $user->id) }}" wire:navigate class="flex items-center gap-3.5 group/user focus:outline-none">
                             <div class="h-10 w-10 rounded-full bg-[#E8EEFC] text-[#102B70] flex items-center justify-center shrink-0 font-bold text-xs uppercase group-hover/user:bg-[#102B70] group-hover/user:text-white transition-colors">
-                                {{ $initials ?: 'U' }}
+                                {{ $initials ?: ' ' }}
                             </div>
                             <div class="flex flex-col min-w-0">
-                                <span class="text-[14px] font-bold text-[#102B70] group-hover/user:text-blue-700 group-hover/user:underline transition-colors truncate">{{ $fullName }}</span>
+                                <span class="text-[15px] font-bold text-[#102B70] group-hover/user:text-blue-700 group-hover/user:underline transition-colors truncate">{{ $fullName }}</span>
                                 <span class="text-xs text-slate-500 truncate mt-0.5 font-medium">{{ $user->email ?? 'No email' }}</span>
                             </div>
                         </a>
@@ -145,21 +132,21 @@
 
                     <!-- ID NUMBER -->
                     <td x-show="cols['id_number'] !== false" class="px-6 py-4 align-middle">
-                        <span class="text-xs font-medium text-slate-700">{{ $idNumber }}</span>
+                        <span class="text-md font-medium text-slate-700">{{ $idNumber }}</span>
                     </td>
 
                     <!-- ACCOUNT TYPE -->
                     <td x-show="cols['role'] !== false" class="px-6 py-4 align-middle">
                         @if($user->role?->name === 'Member')
-                            <span class="inline-flex items-center rounded-md border border-[#BFDBFE] bg-[#DBEAFE] px-2.5 py-0.5 text-xs font-semibold text-[#1D4ED8]">
+                            <span class="inline-flex items-center  px-2.5 py-0.5 text-md font-semibold text-[#1D4ED8]">
                                 Student
                             </span>
                         @elseif($user->role?->name === 'Librarian')
-                            <span class="inline-flex items-center rounded-md border border-[#FDE68A] bg-[#FEF3C7] px-2.5 py-0.5 text-xs font-semibold text-[#B45309]">
+                            <span class="inline-flex items-center  px-2.5 py-0.5 text-md font-semibold text-[#B45309]">
                                 Librarian
                             </span>
                         @else
-                            <span class="inline-flex items-center rounded-md border border-slate-200 bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">
+                            <span class="inline-flex items-center px-2.5 py-0.5 text-md font-semibold text-slate-600">
                                 {{ $user->role?->name ?? 'Unknown' }}
                             </span>
                         @endif
@@ -170,12 +157,12 @@
                         @php
                             $statusName = $user->status?->status_name ?? 'Unknown';
                             $statusClass = match(strtolower($statusName)) {
-                                'active' => 'border-[#BBF7D0] bg-[#DCFCE7] text-[#15803D]',
-                                'locked', 'suspended' => 'border-[#FECACA] bg-[#FEE2E2] text-[#B91C1C]',
-                                default => 'border-[#E2E8F0] bg-[#F1F5F9] text-[#475569]'
+                                'active' => 'text-[#15803D]',
+                                'locked', 'suspended' => 'text-[#B91C1C]',
+                                default => 'text-[#475569]'
                             };
                         @endphp
-                        <span class="inline-flex items-center rounded-md border {{ $statusClass }} px-2.5 py-0.5 text-xs font-semibold">
+                        <span class="inline-flex items-center {{ $statusClass }} px-2.5 py-0.5 text-md font-semibold">
                             {{ $statusName }}
                         </span>
                     </td>
@@ -183,11 +170,11 @@
                     <!-- LAST LOGIN -->
                     <td x-show="cols['last_login'] !== false" class="px-6 py-4 align-middle">
                         @if($user->last_login)
-                            <span class="text-xs text-slate-600 font-medium" title="{{ $user->last_login->format('M d, Y h:i A') }}">
+                            <span class="text-md text-slate-600 font-medium" title="{{ $user->last_login->format('M d, Y h:i A') }}">
                                 {{ $user->last_login->diffForHumans() }}
                             </span>
                         @else
-                            <span class="text-xs text-slate-400 font-medium">Never</span>
+                            <span class="text-md text-slate-400 font-medium">Never</span>
                         @endif
                     </td>
 

@@ -8,21 +8,7 @@ use Illuminate\Auth\Access\Response;
 
 class BookPolicy
 {
-    /**
-     * Perform pre-authorization checks.
-     * Super Admin and Admin have unrestricted access.
-     */
-    public function before(Account $user, string $ability): ?bool
-    {
-        if ($user->role) {
-            $roleName = strtolower(trim($user->role->name));
-            if (in_array($roleName, ['admin', 'super admin', 'superadmin'])) {
-                return true;
-            }
-        }
 
-        return null;
-    }
 
     /**
      * Determine whether the user can view any books.

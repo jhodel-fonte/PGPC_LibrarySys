@@ -1,4 +1,22 @@
 <div
+    x-data="{
+        init() {
+            this.$nextTick(() => {
+                this.focusFirstInput();
+            });
+        },
+        focusFirstInput() {
+            setTimeout(() => {
+                const el = document.getElementById('copy-accession-number');
+                if (el) {
+                    el.focus();
+                    el.select();
+                }
+            }, 60);
+        }
+    }"
+    x-on:focus-accession-input.window="focusFirstInput()"
+    x-init="focusFirstInput()"
     class="flex flex-col w-full h-[500px] max-h-[500px] rounded-xl border border-slate-200/90 bg-white shadow-xs overflow-hidden animate-fade-in"
 >
     @if($bookDetail)
@@ -14,9 +32,22 @@
         <!-- Header (Pinned) -->
         <header class="flex shrink-0 items-start justify-between border-b border-slate-200 px-5 py-3 bg-slate-50/50">
             <div>
-                <h3 class="text-base font-bold tracking-[-0.01em] text-[#102B70]">Add Physical Copy</h3>
+                <div class="flex items-center gap-2">
+                    <h3 class="text-base font-bold tracking-[-0.01em] text-[#102B70]">Add Physical Copy</h3>
+                    @if($isMultiple)
+                        <span class="inline-flex items-center gap-1 bg-blue-100 px-2.5 py-0.5 text-xs font-bold text-[#102B70]">
+                            @if($addedCount > 0)
+                                {{ $addedCount }} added
+                            @endif
+                        </span>
+                    @endif
+                </div>
                 <p class="mt-0.5 text-xs text-slate-500 leading-relaxed max-w-sm">
-                    Add another physical copy of this title.
+                    @if($isMultiple)
+                        Continuous entry mode. Each saved copy is added immediately.
+                    @else
+                        Add another physical copy of this title.
+                    @endif
                 </p>
             </div>
             <button
@@ -33,27 +64,6 @@
         <form wire:submit.prevent="saveCopy" class="flex min-h-0 flex-1 flex-col overflow-hidden">
             <!-- Scrollable Content Only -->
             <div class="custom-scrollbar min-h-0 flex-1 overflow-y-auto p-5 space-y-3.5">
-                
-                {{-- <!-- Book (Title) Preview Box -->
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1.5">Book (Title)</label>
-                    <div class="flex items-center gap-3 rounded-xl border border-slate-200/90 bg-slate-50/70 p-3 shadow-xs">
-                        <div class="relative h-12 w-9 shrink-0 overflow-hidden rounded-md border border-slate-200 bg-[#E8EEFC] shadow-xs">
-                            <img
-                                src="{{ $coverUrl }}"
-                                class="h-full w-full object-cover select-none"
-                                alt="{{ $data ? $data->book_title : 'Book Cover' }}"
-                            >
-                        </div>
-                        <div class="min-w-0 flex-1">
-                            <h4 class="text-xs font-bold text-[#0F172A] truncate" title="{{ $data ? $data->book_title : 'Unknown Title' }}">
-                                {{ $data ? $data->book_title : 'Unknown Title' }}
-                            </h4>
-                            <p class="text-[11px] text-slate-500 font-medium truncate mt-0.5">Author: {{ $authorNames }}</p>
-                            <p class="text-[11px] text-slate-500 font-medium truncate mt-0.5">ISBN: {{ $bookDetail->isbn ?: ($bookDetail->issn ?: 'N/A') }}</p>
-                        </div>
-                    </div>
-                </div> --}}
 
                 <!-- Accession Number -->
                 <div>
@@ -64,6 +74,7 @@
                         wire:model.defer="accessionNumber"
                         type="text"
                         id="copy-accession-number"
+                        tabindex="1"
                         placeholder="Enter accession number"
                         class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-800 placeholder:text-slate-400 placeholder:font-normal outline-none transition-colors focus:border-[#102B70] focus:ring-2 focus:ring-[#EFF6FF]"
                     >
@@ -83,11 +94,13 @@
                             type="text"
                             id="copy-unique-code"
                             readonly
+                            tabindex="-1"
                             class="h-10 w-full rounded-lg border border-slate-200 bg-slate-100/80 px-3.5 pr-9 text-xs font-semibold text-slate-600 outline-none select-all cursor-default"
                         >
                         <button
                             type="button"
                             wire:click="generateUniqueCode"
+                            tabindex="-1"
                             title="Generate New Code"
                             class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-[#102B70] transition-colors"
                         >
@@ -112,6 +125,7 @@
                                 wire:model.defer="location"
                                 type="text"
                                 id="copy-shelf-location"
+                                tabindex="2"
                                 list="copy-location-options"
                                 placeholder="e.g. 231"
                                 class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3.5 pr-8 text-xs font-semibold text-slate-800 placeholder:text-slate-400 placeholder:font-normal outline-none transition-colors focus:border-[#102B70] focus:ring-2 focus:ring-[#EFF6FF]"
@@ -139,6 +153,7 @@
                             <select
                                 wire:model.defer="conditionId"
                                 id="copy-condition"
+                                tabindex="3"
                                 class="h-10 w-full cursor-pointer appearance-none rounded-lg border border-slate-200 bg-white px-3.5 pr-8 text-xs font-semibold text-slate-800 outline-none transition-colors focus:border-[#102B70] focus:ring-2 focus:ring-[#EFF6FF]"
                             >
                                 <option value="">Select Condition</option>
@@ -165,14 +180,14 @@
                         <select
                             wire:model.defer="status"
                             id="copy-initial-status"
+                            tabindex="4"
                             class="h-10 w-full cursor-pointer appearance-none rounded-lg border border-slate-200 bg-white px-3.5 pr-8 text-xs font-semibold text-slate-800 outline-none transition-colors focus:border-[#102B70] focus:ring-2 focus:ring-[#EFF6FF]"
                         >
                             <option value="available">Available</option>
                             <option value="borrowed">Borrowed</option>
                             <option value="reserved">Reserved</option>
-                            <option value="damaged">Damaged</option>
+                            <option value="damaged">Damaged/Lost</option>
                             <option value="lost">Lost</option>
-                            <option value="maintenance">Maintenance</option>
                         </select>
                         <div class="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none text-slate-400">
                             <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
@@ -191,6 +206,7 @@
                     <textarea
                         x-model="noteVal"
                         id="copy-notes"
+                        tabindex="5"
                         maxlength="500"
                         rows="3"
                         placeholder="Add any notes about this physical copy..."
@@ -209,26 +225,38 @@
             </div>
 
             <!-- Footer Actions -->
-            <footer class="flex shrink-0 items-center justify-end gap-2.5 border-t border-slate-200 bg-white px-6 py-3.5">
-                <button
-                    type="button"
-                    wire:click="close"
-                    class="h-9 rounded-lg border border-slate-300 bg-white px-4 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 active:translate-y-px"
-                >
-                    Cancel
-                </button>
-                <button
-                    type="submit"
-                    wire:loading.attr="disabled"
-                    class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#102B70] px-4 text-xs font-bold text-white shadow-sm transition-colors hover:bg-[#0B225E] active:translate-y-px disabled:opacity-60"
-                >
-                    <svg wire:loading.remove wire:target="saveCopy" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
-                    <svg wire:loading wire:target="saveCopy" class="animate-spin h-3.5 w-3.5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <span>Add Copy</span>
-                </button>
+            <footer class="flex shrink-0 items-center justify-between border-t border-slate-200 bg-white px-6 py-3.5">
+                <div>
+                    @if($isMultiple && $addedCount > 0)
+                        <span class="text-xs font-semibold text-emerald-600 flex items-center gap-1">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                            {{ $addedCount }} {{ $addedCount === 1 ? 'copy' : 'copies' }} saved
+                        </span>
+                    @endif
+                </div>
+                <div class="flex items-center gap-2.5">
+                    <button
+                        type="button"
+                        wire:click="close"
+                        tabindex="7"
+                        class="h-9 rounded-lg border border-slate-300 bg-white px-4 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 active:translate-y-px"
+                    >
+                        {{ $isMultiple && $addedCount > 0 ? 'Done' : 'Cancel' }}
+                    </button>
+                    <button
+                        type="submit"
+                        wire:loading.attr="disabled"
+                        tabindex="6"
+                        class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#102B70] px-4 text-xs font-bold text-white shadow-sm transition-colors hover:bg-[#0B225E] active:translate-y-px disabled:opacity-60"
+                    >
+                        <svg wire:loading.remove wire:target="saveCopy" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
+                        <svg wire:loading wire:target="saveCopy" class="animate-spin h-3.5 w-3.5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>{{ $isMultiple ? 'Save & Add Another' : 'Add Copy' }}</span>
+                    </button>
+                </div>
             </footer>
         </form>
     @endif

@@ -11,6 +11,8 @@ use Livewire\Component;
 class BookCopyModal extends Component
 {
     public bool $isOpen = false;
+    public bool $isMultiple = false;
+    public int $addedCount = 0;
     public ?int $bookDetailId = null;
     public ?BookDetail $bookDetail = null;
 
@@ -46,9 +48,15 @@ class BookCopyModal extends Component
 
     #[On('open-add-copy')]
     #[On('open-book-copy-modal')]
-    public function openAddCopy($bookDetailId = null): void
+    public function openAddCopy($bookDetailId = null, $isMultiple = false): void
     {
         $id = is_array($bookDetailId) ? ($bookDetailId['bookDetailId'] ?? $bookDetailId['id'] ?? null) : $bookDetailId;
+        if (is_array($bookDetailId) && isset($bookDetailId['isMultiple'])) {
+            $this->isMultiple = (bool) $bookDetailId['isMultiple'];
+        } else {
+            $this->isMultiple = (bool) $isMultiple;
+        }
+
         if (!$id) {
             return;
         }
@@ -68,9 +76,10 @@ class BookCopyModal extends Component
         $this->accessionNumber = '';
         $this->notes = '';
         $this->status = 'available';
+        $this->addedCount = 0;
 
         // Auto-generate unique barcode
-        $this->uniqueCode = 'BK-' . date('Y') . '-' . strtoupper(substr(uniqid(), -5));
+        $this->generateUniqueCode();
 
         // Pre-fill location from existing copies or call number
         $existingLocation = $this->bookDetail->books->pluck('location')->filter()->first();
@@ -82,6 +91,7 @@ class BookCopyModal extends Component
         $this->conditionId = $defaultCondition ? $defaultCondition->id : null;
 
         $this->isOpen = true;
+        $this->dispatch('focus-accession-input');
     }
 
     public function generateUniqueCode(): void
@@ -91,6 +101,10 @@ class BookCopyModal extends Component
 
     public function saveCopy(): void
     {
+        if (auth()->check() && !auth()->user()->can('create', Book::class)) {
+            abort(403, 'Unauthorized action. You do not have permission to add book copies.');
+        }
+
         $this->validate();
 
         if (!$this->bookDetailId) {
@@ -107,11 +121,19 @@ class BookCopyModal extends Component
             'date_acquired' => now(),
         ]);
 
+        $this->addedCount++;
         $this->dispatch('toast', message: "Physical copy '{$book->accession_number}' added successfully.", type: 'success');
-        $this->dispatch('copy-added', bookDetailId: $this->bookDetailId);
+        $this->dispatch('copy-added', bookDetailId: $this->bookDetailId, isMultiple: $this->isMultiple);
         $this->dispatch('book-details-updated');
 
-        $this->close();
+        if ($this->isMultiple) {
+            $this->accessionNumber = '';
+            $this->generateUniqueCode();
+            $this->resetErrorBag();
+            $this->dispatch('focus-accession-input');
+        } else {
+            $this->close();
+        }
     }
 
     public function close(): void

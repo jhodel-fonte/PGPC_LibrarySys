@@ -38,6 +38,8 @@ class Account extends Authenticatable
     protected $hidden = [
         'password_hash',
         'remember_token',
+        'failed_attempts',
+        'provider_id',
     ];
 
     protected $casts = [
@@ -113,15 +115,8 @@ class Account extends Authenticatable
             return (bool) $accountPermission->pivot->is_allowed;
         }
 
-        // 2. Role-based check
+        // 2. Role-based check (all roles evaluate assigned role permissions)
         if ($this->role) {
-            $roleName = strtolower(trim($this->role->name));
-            // Admins & Super Admins have unrestricted access
-            if (in_array($roleName, ['admin', 'super admin', 'superadmin', 'head librarian'])) {
-                return true;
-            }
-
-            // Check role_permissions table
             return $this->role->permissions()
                 ->where('permissions.name', $permissionName)
                 ->where(function ($query) {
