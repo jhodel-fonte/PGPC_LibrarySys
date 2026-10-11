@@ -67,4 +67,28 @@ class Student extends Model
     {
         return $this->hasMany(Fine::class);
     }
+
+    /**
+     * Get the resolved public URL for the student's profile image.
+     */
+    public function getImageUrlAttribute($value): ?string
+    {
+        if (empty($value)) {
+            return null;
+        }
+
+        if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://')) {
+            return $value;
+        }
+
+        if (str_starts_with($value, '/storage/') || str_starts_with($value, 'storage/')) {
+            return asset(ltrim($value, '/'));
+        }
+
+        $baseDir = config('settings.profile_image_dir.student', '/storage/image/profile/student/');
+        $filename = basename($value);
+
+        return asset(trim($baseDir, '/') . '/' . $filename);
+    }
 }
+

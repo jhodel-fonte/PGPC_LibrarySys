@@ -15,16 +15,19 @@
     }
 
     /* Tabular figures for codes, accession numbers, dates and monetary values */
-    .tabular-nums, .tnum {
+    .tabular-nums,
+    .tnum {
         font-feature-settings: "tnum" 1;
     }
 }
 
 @layer components {
+
     /* Shared PGPC Focus Ring standard */
     .focus-pgpc {
         outline: none;
     }
+
     .focus-pgpc:focus-visible {
         outline: none;
         box-shadow: 0 0 0 2px #FFFFFF, 0 0 0 4px #102B70;
@@ -35,14 +38,98 @@
         width: 5px;
         height: 5px;
     }
+
     .custom-scrollbar::-webkit-scrollbar-track {
         background: transparent;
     }
+
     .custom-scrollbar::-webkit-scrollbar-thumb {
         background-color: #CBD5E1;
         border-radius: 9999px;
     }
+
     .custom-scrollbar:hover::-webkit-scrollbar-thumb {
         background-color: #94A3B8;
+    }
+
+    /* PGPC TallStackUI Date Component Customization */
+    .pgpc-date-wrapper [x-ref="anchor"]>div {
+        height: 3.5rem !important;
+        /* 56px */
+        width: 100% !important;
+        border-radius: 1rem !important;
+        /* 16px */
+        border: 1px solid #E2E8F0 !important;
+        background-color: #F8FAFC !important;
+        box-shadow: none !important;
+        --tw-ring-offset-shadow: 0 0 #0000 !important;
+        --tw-ring-shadow: 0 0 #0000 !important;
+        transition: all 0.15s ease-in-out !important;
+    }
+
+    .pgpc-date-wrapper:hover [x-ref="anchor"]>div {
+        border-color: #CBD5E1 !important;
+        background-color: #FFFFFF !important;
+    }
+
+    .pgpc-date-wrapper:focus-within [x-ref="anchor"]>div {
+        border-color: #102B70 !important;
+        background-color: #FFFFFF !important;
+        box-shadow: 0 0 0 4px #EFF6FF !important;
+    }
+
+    .pgpc-date-wrapper.has-error [x-ref="anchor"]>div {
+        border-color: #EF4444 !important;
+        background-color: #FEF2F2 !important;
+    }
+
+    .pgpc-date-wrapper input {
+        height: 3.5rem !important;
+        /* 56px */
+        border: 0 !important;
+        background: transparent !important;
+        padding-left: 2.75rem !important;
+        /* pl-11 to align with left icon */
+        padding-right: 0.75rem !important;
+        font-size: 0.875rem !important;
+        /* 14px text-sm */
+        font-weight: 500 !important;
+        color: #0F172A !important;
+        outline: none !important;
+        border-radius: 1rem !important;
+    }
+
+    .pgpc-date-wrapper input::placeholder {
+        color: #94A3B8 !important;
+    }
+
+    .pgpc-date-wrapper [dusk="tallstackui_date_open_close"] svg {
+        color: #94A3B8 !important;
+        transition: color 0.15s ease-in-out;
+    }
+
+    .pgpc-date-wrapper [dusk="tallstackui_date_open_close"]:hover svg {
+        color: #102B70 !important;
+    }
+
+    .pgpc-date-wrapper [dusk="tallstackui_date_clear"] svg {
+        color: #94A3B8 !important;
+        transition: color 0.15s ease-in-out;
+    }
+
+    .pgpc-date-wrapper [dusk="tallstackui_date_clear"]:hover svg {
+        color: #EF4444 !important;
+    }
+
+    .pgpc-date-wrapper .text-primary-500 {
+        color: #102B70 !important;
+    }
+
+    .pgpc-date-wrapper .bg-primary-500 {
+        background-color: #102B70 !important;
+    }
+
+    .pgpc-date-wrapper .ring-primary-500 {
+        --tw-ring-color: #102B70 !important;
     }
 }

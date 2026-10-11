@@ -3,13 +3,34 @@
 namespace App\Livewire\Pages\Dashboard;
 
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 
-#[Layout('livewire.layouts.admin', ['title' => 'User Management', 'subpage' => 'Add New Student', 'activepageRoute' => 'admin.user-management'])]
+#[Layout('livewire.layouts.admin', ['title' => 'User Management', 'activepageRoute' => 'admin.user-management'])]
 class AddUser extends Component
 {
+    /**
+     * Which registration form to show. Driven by the ?type= query string
+     * set by the "Add Student" / "Add Librarian" buttons on User Management.
+     */
+    #[Url(as: 'type', except: 'student')]
+    public string $type = 'student';
+
+    protected const TYPES = ['student', 'librarian'];
+
+    public function mount(): void
+    {
+        // Fall back to the student form for any unexpected value.
+        if (! in_array($this->type, self::TYPES, true)) {
+            $this->type = 'student';
+        }
+    }
+
     public function render()
     {
-        return view('livewire.pages.dashboard.add-user');
+        return view('livewire.pages.dashboard.add-user')
+            ->layoutData([
+                'subpage' => $this->type === 'librarian' ? 'Add New Librarian' : 'Add New Student',
+            ]);
     }
 }

@@ -42,4 +42,28 @@ class Librarian extends Model
     {
         return $this->hasMany(FinePayment::class, 'received_by_id');
     }
+
+    /**
+     * Get the resolved public URL for the librarian's profile image.
+     */
+    public function getImageUrlAttribute($value): ?string
+    {
+        if (empty($value)) {
+            return null;
+        }
+
+        if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://')) {
+            return $value;
+        }
+
+        if (str_starts_with($value, '/storage/') || str_starts_with($value, 'storage/')) {
+            return asset(ltrim($value, '/'));
+        }
+
+        $baseDir = config('settings.profile_image_dir.librarian', '/storage/image/profile/librarian/');
+        $filename = basename($value);
+
+        return asset(trim($baseDir, '/') . '/' . $filename);
+    }
 }
+

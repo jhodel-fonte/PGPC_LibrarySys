@@ -28,7 +28,7 @@ class LibrarianPolicy
      */
     public function create(Account $user): bool
     {
-        return $user->hasPermission('manage_users');
+        return $user->hasPermission('manage_librarian') || $user->hasPermission('manage_users');
     }
 
     /**

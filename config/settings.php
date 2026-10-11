@@ -53,6 +53,10 @@ return [
     'coverFile_url' => env('COVERFILE_URL', '/storage/book_cover/'),
     'coverFile_default' => 'book-cover.webp',
 
+    'profile_image_dir' => [
+        'student' => env('STUDENT_PROFILE_IMAGE_DIR', '/storage/image/profile/student/'),
+        'librarian' => env('LIBRARIAN_PROFILE_IMAGE_DIR', '/storage/image/profile/librarian/'),
+    ],
     /*
     |--------------------------------------------------------------------------
     | System Email Configuration
@@ -199,6 +203,34 @@ return [
             'strip_spaces' => true, // removes spaces from names (e.g. "Dela Cruz" -> "delacruz")
             'fallback' => env('DEFAULT_ACCOUNT_PASSWORD_FALLBACK', 'Pgpc12345!'), // fallback password
             'force_change_on_first_login' => true, // require password update on initial login
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Default Librarian Role Permissions
+    |--------------------------------------------------------------------------
+    |
+    | Defines the default set of permissions assigned when creating a
+    | Librarian or Head Librarian account. Matches names in permissions table.
+    |
+    */
+    'librarian_role_permission' => [
+        'librarian_head' => [
+            'manage_users',
+            'manage_librarian',
+            'manage_catalog',
+            'manage_circulation',
+            'manage_fines',
+            'manage_system',
+            'view_catalog',
+        ],
+        'librarian' => [
+            'manage_users',
+            'manage_catalog',
+            'manage_circulation',
+            'manage_fines',
+            'view_catalog',
         ],
     ],
 ];
