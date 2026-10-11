@@ -38,6 +38,7 @@ class ConfirmReturn extends Component
         }
 
         $transactions = BorrowingTransaction::with([
+            'book' => fn ($q) => $q->withTrashed(),
             'book.bookDetail.bookData',
             'book.bookDetail.bookData.authors',
             'issuedCondition'
@@ -73,8 +74,8 @@ class ConfirmReturn extends Component
                 'author' => $authorName,
                 'accession' => $book ? $book->accession_number : 'N/A',
                 'cover_image' => $detail ? $detail->cover_image : null,
-                'issued_date' => $t->issued_date->format('M d, Y'),
-                'due_date' => $t->due_date->format('M d, Y'),
+                'issued_date' => $t->issued_date?->format('M d, Y') ?? 'N/A',
+                'due_date' => $t->due_date?->format('M d, Y') ?? 'N/A',
                 'overdue_days' => $overdueDays,
                 'fine_amount' => $fineAmount,
             ];
@@ -119,7 +120,7 @@ class ConfirmReturn extends Component
                 $now = Carbon::now();
                 $librarianId = auth()->user() && auth()->user()->librarian ? auth()->user()->librarian->id : 1;
 
-                $transactions = BorrowingTransaction::with('book')
+                $transactions = BorrowingTransaction::with(['book' => fn ($q) => $q->withTrashed()])
                     ->whereIn('id', $this->transactionIds)
                     ->get();
 

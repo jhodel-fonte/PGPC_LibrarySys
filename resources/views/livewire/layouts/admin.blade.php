@@ -46,6 +46,7 @@
             </div>
         </div>
         <x-toast-notification />
+        <x-offline-indicator />
         @livewireScripts
     </body>
 </html>

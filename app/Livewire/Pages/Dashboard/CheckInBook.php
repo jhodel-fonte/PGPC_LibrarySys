@@ -70,8 +70,10 @@ class CheckInBook extends Component
         }
 
         // 2. Check if the code matches a book accession number or unique code
-        $book = Book::where('accession_number', $code)
-            ->orWhere('code', $code)
+        $book = Book::withTrashed()
+            ->where(function ($q) use ($code) {
+                $q->where('accession_number', $code)->orWhere('code', $code);
+            })
             ->first();
 
         if ($book) {
@@ -136,7 +138,12 @@ class CheckInBook extends Component
         ];
 
         // Fetch their currently borrowed books (not yet returned)
-        $transactions = BorrowingTransaction::with(['book.bookDetail.bookData', 'book.bookDetail.bookData.authors'])
+        $transactions = BorrowingTransaction::with([
+                'book' => fn ($q) => $q->withTrashed(),
+                'book.bookDetail.bookData',
+                'book.bookDetail.bookData.authors',
+                'book.bookDetail.bookData.categories',
+            ])
             ->where('school_id', $student->id)
             ->whereNull('return_date')
             ->get();
@@ -152,22 +159,89 @@ class CheckInBook extends Component
                 })->implode(', ');
             }
 
-            $isPendingReturn = in_array($book->id, $this->returnedBooks);
+            $categoryName = 'General';
+            if ($data && $data->categories && $data->categories->isNotEmpty()) {
+                $categoryName = $data->categories->first()->name;
+            }
+
+            $isPendingReturn = $book ? in_array($book->id, $this->returnedBooks) : false;
+
+            // Check if overdue
+            $isOverdue = false;
+            $overdueDays = 0;
+            if ($t->due_date && Carbon::now()->isAfter($t->due_date)) {
+                $isOverdue = true;
+                $overdueDays = Carbon::now()->diffInDays($t->due_date);
+            }
 
             return [
                 'transaction_id' => $t->id,
                 'book_id' => $book ? $book->id : null,
                 'book' => $data ? $data->book_title : 'Unknown Book',
                 'author' => $authorName,
+                'category' => $categoryName,
+                'isbn' => $detail ? ($detail->isbn ?: 'N/A') : 'N/A',
+                'cover_url' => $detail ? $detail->cover_url : null,
                 'accession' => $book ? $book->accession_number : 'N/A',
+                'call_number' => $detail ? $detail->call_number : 'N/A',
                 'code' => $data ? ($data->subtitle ?: 'BOOK') : 'BOOK',
-                'borrowed_on' => $t->issued_date->format('M d, Y'),
-                'due_date' => $t->due_date->format('M d, Y'),
-                'status' => $isPendingReturn ? 'Returned' : 'Borrowed'
+                'borrowed_on' => $t->issued_date?->format('M d, Y') ?? 'N/A',
+                'due_date' => $t->due_date?->format('M d, Y') ?? 'N/A',
+                'status' => $isPendingReturn ? 'Returned' : ($isOverdue ? 'Overdue' : 'Borrowed'),
+                'is_overdue' => $isOverdue,
+                'overdue_days' => $overdueDays,
             ];
         })->toArray();
 
         $this->updateStats();
+    }
+
+    #[On('return-book')]
+    public function returnBookByAccession($accession)
+    {
+        $this->errorMessage = '';
+        $accession = trim($accession ?? '');
+        if (empty($accession) || $accession === 'N/A') return;
+
+        $book = Book::withTrashed()
+            ->where(function ($q) use ($accession) {
+                $q->where('accession_number', $accession)->orWhere('code', $accession);
+            })
+            ->first();
+
+        if ($book) {
+            $this->processBookReturn($book);
+        } else {
+            $this->errorMessage = 'Book with code/accession "' . $accession . '" could not be found.';
+        }
+    }
+
+    #[On('select-table-book')]
+    public function selectTableBook($accession)
+    {
+        $this->errorMessage = '';
+        $accession = trim($accession ?? '');
+        if (empty($accession) || $accession === 'N/A') return;
+
+        $item = collect($this->borrowedBooks)->firstWhere('accession', $accession);
+        if ($item) {
+            $isPendingReturn = !empty($item['book_id']) ? in_array($item['book_id'], $this->returnedBooks) : false;
+
+            $this->lastReturnedBook = [
+                'book_id' => $item['book_id'],
+                'title' => $item['book'],
+                'author' => $item['author'],
+                'category' => $item['category'] ?? 'General',
+                'isbn' => $item['isbn'] ?? 'N/A',
+                'cover_url' => $item['cover_url'] ?? null,
+                'accession' => $item['accession'],
+                'call_number' => $item['call_number'] ?? 'N/A',
+                'code' => $item['code'] ?? 'BOOK',
+                'borrowed_on' => $item['borrowed_on'],
+                'due_date' => $item['due_date'],
+                'is_returned' => $isPendingReturn,
+            ];
+        }
     }
 
     public function processBookReturn($book)
@@ -181,7 +255,13 @@ class CheckInBook extends Component
         }
 
         // Find active borrow transaction for this book copy (globally, so return works regardless of who is loaded)
-        $transaction = BorrowingTransaction::with(['student', 'book.bookDetail.bookData', 'book.bookDetail.bookData.authors'])
+        $transaction = BorrowingTransaction::with([
+                'student',
+                'book' => fn ($q) => $q->withTrashed(),
+                'book.bookDetail.bookData',
+                'book.bookDetail.bookData.authors',
+                'book.bookDetail.bookData.categories',
+            ])
             ->where('book_id', $book->id)
             ->whereNull('return_date')
             ->first();
@@ -215,14 +295,24 @@ class CheckInBook extends Component
             })->implode(', ');
         }
 
+        $categoryName = 'General';
+        if ($data && $data->categories && $data->categories->isNotEmpty()) {
+            $categoryName = $data->categories->first()->name;
+        }
+
         $this->lastReturnedBook = [
+            'book_id' => $book->id,
             'title' => $data ? $data->book_title : 'Unknown Book',
             'author' => $authorName,
+            'category' => $categoryName,
+            'isbn' => $detail ? ($detail->isbn ?: 'N/A') : 'N/A',
+            'cover_url' => $detail ? $detail->cover_url : null,
             'accession' => $book->accession_number,
             'call_number' => $detail ? $detail->call_number : 'N/A',
             'code' => $data ? ($data->subtitle ?: 'BOOK') : 'BOOK',
-            'borrowed_on' => $transaction->issued_date->format('M d, Y'),
-            'due_date' => $transaction->due_date->format('M d, Y')
+            'borrowed_on' => $transaction->issued_date?->format('M d, Y') ?? 'N/A',
+            'due_date' => $transaction->due_date?->format('M d, Y') ?? 'N/A',
+            'is_returned' => true,
         ];
 
         // Re-load the member to update their borrowed books list
@@ -237,15 +327,15 @@ class CheckInBook extends Component
     public function undoReturn($accessionNumber)
     {
         $this->errorMessage = '';
-        $book = Book::where('accession_number', $accessionNumber)->first();
+        $book = Book::withTrashed()->where('accession_number', $accessionNumber)->first();
         if ($book) {
-            // Reset lastReturnedBook if it matches
+            // Update lastReturnedBook state if it matches
             if ($this->lastReturnedBook && $this->lastReturnedBook['accession'] === $accessionNumber) {
-                $this->lastReturnedBook = null;
+                $this->lastReturnedBook['is_returned'] = false;
             }
 
             // Remove from temporary list
-            $this->returnedBooks = array_diff($this->returnedBooks, [$book->id]);
+            $this->returnedBooks = array_values(array_diff($this->returnedBooks, [$book->id]));
 
             // Re-load member
             if ($this->scannedMember) {

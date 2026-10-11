@@ -45,6 +45,7 @@
         </div>
 
     </div>
+    <x-offline-indicator />
     @livewireScripts
 </body>
 </html>

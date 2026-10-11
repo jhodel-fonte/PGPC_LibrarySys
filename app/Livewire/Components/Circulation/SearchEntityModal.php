@@ -4,7 +4,9 @@ namespace App\Livewire\Components\Circulation;
 
 use Livewire\Component;
 use App\Models\Student;
+use App\Models\Account;
 use App\Models\Book;
+use App\Models\OpacCatalogView;
 use Livewire\Attributes\On;
 
 class SearchEntityModal extends Component
@@ -127,16 +129,7 @@ class SearchEntityModal extends Component
             }
 
             foreach ($students as $student) {
-                $results[] = [
-                    'type' => 'member',
-                    'id' => $student->id,
-                    'code' => $student->school_id_number,
-                    'title' => trim($student->first_name . ' ' . ($student->middle_name ? $student->middle_name . ' ' : '') . $student->last_name),
-                    'subtitle' => trim(($student->program ?? '') . ' - ' . ($student->year_level ?? '')),
-                    'email' => $student->account ? $student->account->email : '',
-                    'status' => $student->libraryStatus ? $student->libraryStatus->status : 'Active',
-                    'icon' => 'user'
-                ];
+                $results[] = $this->formatStudentResult($student);
             }
         }
 
@@ -177,33 +170,7 @@ class SearchEntityModal extends Component
             }
 
             foreach ($books as $book) {
-                $detail = $book->bookDetail;
-                $data = $detail ? $detail->bookData : null;
-                $authorName = 'Unknown Author';
-                if ($data && $data->authors->isNotEmpty()) {
-                    $authorName = $data->authors->map(function($a) {
-                        return trim($a->first_name . ' ' . $a->last_name);
-                    })->implode(', ');
-                }
-
-                $titleWords = explode(' ', $data ? $data->book_title : 'BOOK');
-                $codeInitials = '';
-                foreach ($titleWords as $word) {
-                    $codeInitials .= strtoupper(substr($word, 0, 1));
-                    if (strlen($codeInitials) >= 4) break;
-                }
-
-                $results[] = [
-                    'type' => 'book',
-                    'id' => $book->id,
-                    'code' => $book->accession_number ?: $book->code,
-                    'title' => $data ? $data->book_title : 'Unknown Book',
-                    'subtitle' => trim($authorName . ' · Accession No. ' . ($book->accession_number ?? 'N/A')),
-                    'barcode' => $book->code,
-                    'code_tag' => $codeInitials ?: 'BOOK',
-                    'cover_url' => $detail ? $detail->cover_url : null,
-                    'icon' => 'book-open'
-                ];
+                $results[] = $this->formatBookResult($book);
             }
         }
 
@@ -219,79 +186,137 @@ class SearchEntityModal extends Component
             return;
         }
 
-        $query = \App\Services\SanitizeInput::escapeLike($rawQuery);
+        $searchTerm = $rawQuery;
 
-        // Build member query to count matches
-        $membersQuery = Student::where('school_id_number', 'ilike', "%{$query}%")
-            ->orWhere('first_name', 'ilike', "%{$query}%")
-            ->orWhere('middle_name', 'ilike', "%{$query}%")
-            ->orWhere('last_name', 'ilike', "%{$query}%");
+        // 1. Search Members via Laravel Scout (Student model & Account model)
+        $studentKeys = Student::search($searchTerm)->keys();
+        $accountKeys = Account::search($searchTerm)->keys();
+
+        $membersQuery = Student::where(function ($q) use ($studentKeys, $accountKeys, $searchTerm) {
+            $hasCondition = false;
+
+            if ($studentKeys->isNotEmpty()) {
+                $q->whereIn('students.id', $studentKeys);
+                $hasCondition = true;
+            }
+
+            if ($accountKeys->isNotEmpty()) {
+                $hasCondition ? $q->orWhereIn('students.account_id', $accountKeys) : $q->whereIn('students.account_id', $accountKeys);
+                $hasCondition = true;
+            }
+
+            // Fallback for multi-word full name search (e.g. "Juan Dela Cruz")
+            if (str_contains($searchTerm, ' ')) {
+                $clean = \App\Services\SanitizeInput::escapeLike($searchTerm);
+                if ($hasCondition) {
+                    $q->orWhereRaw("CONCAT(first_name, ' ', last_name) ILIKE ?", ["%{$clean}%"])
+                      ->orWhereRaw("CONCAT(first_name, ' ', middle_name, ' ', last_name) ILIKE ?", ["%{$clean}%"]);
+                } else {
+                    $q->whereRaw("CONCAT(first_name, ' ', last_name) ILIKE ?", ["%{$clean}%"])
+                      ->orWhereRaw("CONCAT(first_name, ' ', middle_name, ' ', last_name) ILIKE ?", ["%{$clean}%"]);
+                    $hasCondition = true;
+                }
+            }
+
+            if (!$hasCondition) {
+                $q->whereRaw('1 = 0');
+            }
+        });
+
+        // 2. Search Books via Laravel Scout (Book copy attributes & OpacCatalogView bibliographic attributes)
+        $copyKeys = Book::search($searchTerm)->keys();
+        $detailKeys = OpacCatalogView::search($searchTerm)->keys();
+
+        $booksQuery = Book::where(function ($q) use ($copyKeys, $detailKeys) {
+            if ($copyKeys->isNotEmpty() && $detailKeys->isNotEmpty()) {
+                $q->whereIn('books.id', $copyKeys)
+                  ->orWhereIn('books.book_detail_id', $detailKeys);
+            } elseif ($copyKeys->isNotEmpty()) {
+                $q->whereIn('books.id', $copyKeys);
+            } elseif ($detailKeys->isNotEmpty()) {
+                $q->whereIn('books.book_detail_id', $detailKeys);
+            } else {
+                $q->whereRaw('1 = 0');
+            }
+        });
+
+        // Compute counts
         $this->memberCount = $membersQuery->count();
-
-        // Build book query to count matches
-        $booksQuery = Book::where('code', 'ilike', "%{$query}%")
-            ->orWhere('accession_number', 'ilike', "%{$query}%")
-            ->orWhereHas('bookDetail.bookData', function($q) use ($query) {
-                $q->where('book_title', 'ilike', "%{$query}%");
-            });
         $this->bookCount = $booksQuery->count();
 
         $results = [];
 
         // 1. Fetch Members if tab matches
         if ($this->activeTab === 'all' || $this->activeTab === 'members') {
-            $students = $membersQuery->with(['libraryStatus', 'account'])->limit($this->perPage)->get();
+            $students = $membersQuery->with(['libraryStatus', 'account'])
+                ->orderBy('last_name')
+                ->orderBy('first_name')
+                ->limit($this->perPage)
+                ->get();
+
             foreach ($students as $student) {
-                $results[] = [
-                    'type' => 'member',
-                    'id' => $student->id,
-                    'code' => $student->school_id_number,
-                    'title' => trim($student->first_name . ' ' . ($student->middle_name ? $student->middle_name . ' ' : '') . $student->last_name),
-                    'subtitle' => trim(($student->program ?? '') . ' - ' . ($student->year_level ?? '')),
-                    'email' => $student->account ? $student->account->email : '',
-                    'status' => $student->libraryStatus ? $student->libraryStatus->status : 'Active',
-                    'icon' => 'user'
-                ];
+                $results[] = $this->formatStudentResult($student);
             }
         }
 
         // 2. Fetch Books if tab matches
         if ($this->activeTab === 'all' || $this->activeTab === 'books') {
-            $books = $booksQuery->with(['bookDetail.bookData.authors'])->limit($this->perPage)->get();
+            $books = $booksQuery->with(['bookDetail.bookData.authors'])
+                ->limit($this->perPage)
+                ->get();
+
             foreach ($books as $book) {
-                $detail = $book->bookDetail;
-                $data = $detail ? $detail->bookData : null;
-                $authorName = 'Unknown Author';
-                if ($data && $data->authors->isNotEmpty()) {
-                    $authorName = $data->authors->map(function($a) {
-                        return trim($a->first_name . ' ' . $a->last_name);
-                    })->implode(', ');
-                }
-
-                // Get book code initials (e.g. DBMS, SAD, REF)
-                $titleWords = explode(' ', $data ? $data->book_title : 'BOOK');
-                $codeInitials = '';
-                foreach ($titleWords as $word) {
-                    $codeInitials .= strtoupper(substr($word, 0, 1));
-                    if (strlen($codeInitials) >= 4) break;
-                }
-
-                $results[] = [
-                    'type' => 'book',
-                    'id' => $book->id,
-                    'code' => $book->accession_number ?: $book->code,
-                    'title' => $data ? $data->book_title : 'Unknown Book',
-                    'subtitle' => trim($authorName . ' · Accession No. ' . ($book->accession_number ?? 'N/A')),
-                    'barcode' => $book->code,
-                    'code_tag' => $codeInitials ?: 'BOOK',
-                    'cover_url' => $detail ? $detail->cover_url : null,
-                    'icon' => 'book-open'
-                ];
+                $results[] = $this->formatBookResult($book);
             }
         }
 
         $this->results = $results;
         $this->dispatch('search-completed');
+    }
+
+    protected function formatStudentResult($student): array
+    {
+        return [
+            'type' => 'member',
+            'id' => $student->id,
+            'code' => $student->school_id_number,
+            'title' => trim($student->first_name . ' ' . ($student->middle_name ? $student->middle_name . ' ' : '') . $student->last_name),
+            'subtitle' => trim(($student->program ?? '') . ' - ' . ($student->year_level ?? '')),
+            'email' => $student->account ? $student->account->email : '',
+            'status' => $student->libraryStatus ? $student->libraryStatus->status : 'Active',
+            'icon' => 'user'
+        ];
+    }
+
+    protected function formatBookResult($book): array
+    {
+        $detail = $book->bookDetail;
+        $data = $detail ? $detail->bookData : null;
+        $authorName = 'Unknown Author';
+        if ($data && $data->authors->isNotEmpty()) {
+            $authorName = $data->authors->map(function($a) {
+                return trim($a->first_name . ' ' . $a->last_name);
+            })->implode(', ');
+        }
+
+        $titleWords = explode(' ', $data ? $data->book_title : 'BOOK');
+        $codeInitials = '';
+        foreach ($titleWords as $word) {
+            $codeInitials .= strtoupper(substr($word, 0, 1));
+            if (strlen($codeInitials) >= 4) break;
+        }
+
+        return [
+            'type' => 'book',
+            'id' => $book->id,
+            'code' => $book->accession_number ?: $book->code,
+            'title' => $data ? $data->book_title : 'Unknown Book',
+            'subtitle' => trim($authorName . ' · Accession No. ' . ($book->accession_number ?? 'N/A')),
+            'barcode' => $book->code,
+            'code_tag' => $codeInitials ?: 'BOOK',
+            'cover_url' => $detail ? $detail->cover_url : null,
+            'icon' => 'book-open'
+        ];
     }
 
     public function selectEntity($type, $code)

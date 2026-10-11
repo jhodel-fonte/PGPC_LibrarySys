@@ -13,6 +13,9 @@ class Table extends Component
     #[Reactive]
     public $scannedMember = null;
 
+    #[Reactive]
+    public $selectedAccession = null;
+
     public $mode = 'check-in'; // check-in, check-out
     public $title = null;
     public $class = 'md:col-span-8 h-[400px] md:h-full';

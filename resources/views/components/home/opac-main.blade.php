@@ -433,11 +433,6 @@ function opacCatalog() {
                         x-show="!isLoading && results.length === 0"
                         class="rounded-2xl border border-slate-200/80 bg-white p-12 text-center"
                     >
-                        <div class="mx-auto w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-3">
-                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </div>
                         <h3 class="text-base font-bold text-[#0B2454]">No resources found</h3>
                         <p class="text-sm text-slate-500 mt-1 max-w-sm mx-auto">
                             We couldn't find any resources matching your search or filters. Try adjusting your search query or reset the filters.

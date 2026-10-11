@@ -1,6 +1,6 @@
 <div class="relative w-full h-auto lg:h-[calc(100vh-70px)] flex flex-col items-center justify-start pt-4 px-3 md:px-6 xl:px-12 pb-5 font-sans bg-[#F8FAFC] overflow-y-auto lg:overflow-hidden check-in-workstation">
 
-    <!-- Lock page layout scroll to prevent entire page scrolling on desktop when screen size permits -->
+    <!-- Lock page layout scroll -->
     <style>
         @media (min-width: 1024px) {
             @media (min-height: 800px) {
@@ -134,70 +134,153 @@
 
                         <!-- Scanned Book Details Card -->
                         @if($lastReturnedBook)
-                            <div class="bg-white rounded-3xl border border-[#E2E8F0] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.02)] min-h-[180px] lg:flex-1 flex flex-col justify-between gap-3 animate-fade-in">
+                            @php
+                                $isBookReturned = !empty($lastReturnedBook['is_returned']) || in_array($lastReturnedBook['book_id'] ?? null, $returnedBooks);
+                            @endphp
+                            <div class="bg-white rounded-3xl border border-[#E2E8F0] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.02)] min-h-[220px] lg:flex-1 flex flex-col justify-between gap-3.5 animate-fade-in overflow-y-auto">
                                 <div>
-                                    <div class="flex items-center justify-between pb-2.5 border-b border-[#E2E8F0]">
-                                        <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#DCFCE7] text-[#15803D] border border-[#BBF7D0]">
-                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
-                                            </svg>
-                                            Returned in Session
-                                        </span>
+                                    <div class="flex items-start gap-3.5">
+                                        <!-- Book Cover Thumbnail -->
+                                        <div
+                                            wire:key="scanned-book-cover-{{ $lastReturnedBook['accession'] ?? $lastReturnedBook['book_id'] ?? 'preview' }}"
+                                            x-data="{ imgLoaded: false, imgError: false }"
+                                            class="w-[84px] h-[116px] rounded-xl overflow-hidden border border-[#E2E8F0] shadow-sm shrink-0 bg-[#F8FAFC] relative"
+                                        >
+                                            <!-- Loading Spinner Overlay -->
+                                            <div
+                                                x-show="!imgLoaded && !imgError"
+                                                class="absolute inset-0 z-10 bg-[#F8FAFC] flex flex-col items-center justify-center gap-1.5"
+                                            >
+                                                <svg class="animate-spin h-5 w-5 text-[#102B70]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle>
+                                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                </svg>
+                                                <span class="text-[8.5px] font-bold text-[#64748B] uppercase tracking-wider">Loading</span>
+                                            </div>
 
-                                        <!-- Undo Return Action Button -->
-                                        <button type="button"
-                                                wire:click="undoReturn('{{ $lastReturnedBook['accession'] }}')"
-                                                class="h-7 px-2.5 border border-[#FECACA] bg-white hover:bg-[#FEF2F2] text-[#B91C1C] rounded-lg text-[10.5px] font-bold transition-all flex items-center gap-1 shadow-2xs focus:outline-none focus:ring-2 focus:ring-[#B91C1C]/20">
-                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path>
-                                            </svg>
-                                            Undo Return
-                                        </button>
-                                    </div>
+                                            @if(!empty($lastReturnedBook['cover_url']))
+                                                <img
+                                                    src="{{ $lastReturnedBook['cover_url'] }}"
+                                                    alt="{{ $lastReturnedBook['title'] ?? 'Book Cover' }}"
+                                                    loading="lazy"
+                                                    decoding="async"
+                                                    x-on:load="imgLoaded = true"
+                                                    x-on:error="imgError = true; imgLoaded = true"
+                                                    x-show="!imgError"
+                                                    :class="imgLoaded ? 'opacity-100' : 'opacity-0'"
+                                                    class="w-full h-full object-cover transition-opacity duration-200"
+                                                >
+                                            @endif
 
-                                    <div class="flex items-start gap-3 mt-3">
-                                        <!-- Miniature Book Icon Tile -->
-                                        <div class="w-10 h-12 rounded-lg bg-[#EFF6FF] text-[#102B70] border border-[#DBEAFE] flex items-center justify-center shrink-0 shadow-2xs">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
-                                            </svg>
+                                            <div
+                                                x-show="imgError || !'{{ $lastReturnedBook['cover_url'] ?? '' }}'"
+                                                style="{{ !empty($lastReturnedBook['cover_url']) ? 'display: none;' : '' }}"
+                                                class="h-full w-full flex items-center justify-center bg-[#F8FAFC]"
+                                            >
+                                                <img
+                                                    src="{{ asset('images/book-cover.webp') }}"
+                                                    alt="Default book cover"
+                                                    loading="lazy"
+                                                    decoding="async"
+                                                    x-on:load="imgLoaded = true"
+                                                    class="w-full h-full object-cover select-none pointer-events-none"
+                                                    draggable="false"
+                                                >
+                                            </div>
                                         </div>
 
+                                        <!-- Book Title, Author & ISBN Tag -->
                                         <div class="flex-1 min-w-0">
-                                            <h4 class="text-xs font-bold text-[#0F172A] leading-snug truncate" title="{{ $lastReturnedBook['title'] }}">
+                                            <h4 class="text-[15px] font-bold text-[#0F172A] leading-snug line-clamp-2" title="{{ $lastReturnedBook['title'] }}">
                                                 {{ $lastReturnedBook['title'] }}
                                             </h4>
-                                            <p class="text-[11px] text-[#475569] mt-0.5 truncate">{{ $lastReturnedBook['author'] }}</p>
+                                            <p class="text-[12px] text-[#64748B] font-medium mt-1 truncate">
+                                                {{ $lastReturnedBook['author'] }}
+                                            </p>
+                                            <div class="text-[13px] font-bold text-[#000000] mt-1.5">
+                                                <span class="truncate max-w-[150px]">ISBN: {{ !empty($lastReturnedBook['isbn']) && $lastReturnedBook['isbn'] !== 'N/A' ? $lastReturnedBook['isbn'] : 'N/A' }}</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div class="pt-2 border-t border-[#E2E8F0] flex flex-col gap-1 text-[11px] text-[#64748B]">
-                                    <div class="flex justify-between items-center">
-                                        <span>Accession No:</span>
-                                        <span class="font-mono text-[#0F172A] font-bold">{{ $lastReturnedBook['accession'] }}</span>
+                                <!-- Metadata & Action Section -->
+                                <div>
+                                    <div class="border-t border-[#F1F5F9] mb-1"></div>
+
+                                    <!-- Icon Metadata Rows -->
+                                    <div class="flex flex-col gap-2.5 text-[12.5px]">
+                                        <!-- Accession No. -->
+                                        <div class="flex items-center justify-between">
+                                            <div class="flex items-center gap-2 text-[#475569]">
+                                                <svg class="w-4 h-4 text-[#94A3B8] shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                                                    <path d="M2 5h2v14H2V5zm4 0h1v14H6V5zm3 0h3v14H9V5zm5 0h1v14h-1V5zm3 0h2v14h-2V5zm4 0h1v14h-1V5z"/>
+                                                </svg>
+                                                <span class="font-medium text-[#475569]">Accession No.</span>
+                                            </div>
+                                            <span class="font-bold text-xs text-[#000000]">{{ $lastReturnedBook['accession'] }}</span>
+                                        </div>
+
+                                        <!-- Borrowed Date -->
+                                        <div class="flex items-center justify-between">
+                                            <div class="flex items-center gap-2 text-[#475569]">
+                                                <svg class="w-4 h-4 text-[#94A3B8] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                                </svg>
+                                                <span class="font-medium text-[#475569]">Borrowed Date</span>
+                                            </div>
+                                            <span class="font-bold text-xs text-[#000000]">{{ $lastReturnedBook['borrowed_on'] }}</span>
+                                        </div>
+
+                                        <!-- Due Date -->
+                                        <div class="flex items-center justify-between">
+                                            <div class="flex items-center gap-2 text-[#475569]">
+                                                <svg class="w-4 h-4 text-[#94A3B8] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                                </svg>
+                                                <span class="font-medium text-[#475569]">Due Date</span>
+                                            </div>
+                                            <span class="font-bold text-xs text-[#000000]">{{ $lastReturnedBook['due_date'] }}</span>
+                                        </div>
                                     </div>
-                                    <div class="flex justify-between items-center">
-                                        <span>Borrowed:</span>
-                                        <span class="font-semibold text-[#334155]">{{ $lastReturnedBook['borrowed_on'] }}</span>
-                                    </div>
-                                    <div class="flex justify-between items-center">
-                                        <span>Due Date:</span>
-                                        <span class="font-semibold text-[#334155]">{{ $lastReturnedBook['due_date'] }}</span>
+
+                                    <!-- Bottom Action Button -->
+                                    <div class="mt-4">
+                                        @if($isBookReturned)
+                                            <button type="button"
+                                                    wire:click="undoReturn('{{ $lastReturnedBook['accession'] }}')"
+                                                    class="w-full h-10 bg-white border border-[#FECACA] hover:bg-[#FEF2F2] active:scale-[0.99] text-[#B91C1C] rounded-xl text-[13px] font-bold transition-all flex items-center justify-center gap-2 shadow-2xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#B91C1C]/20">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path>
+                                                </svg>
+                                                <span>Undo Return</span>
+                                            </button>
+                                        @else
+                                            <button type="button"
+                                                    wire:click="returnBookByAccession('{{ $lastReturnedBook['accession'] }}')"
+                                                    class="w-full h-10 bg-[#102B70] hover:bg-[#0B225E] active:scale-[0.99] text-white rounded-xl text-[13px] font-bold transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#102B70]/30">
+                                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
+                                                </svg>
+                                                <span>Add as Returned</span>
+                                            </button>
+                                        @endif
                                     </div>
                                 </div>
                             </div>
                         @else
-                            <div class="bg-white rounded-3xl border border-[#E2E8F0] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.02)] min-h-[180px] lg:flex-1 flex flex-col items-center justify-center text-center gap-2">
-                                <div class="w-10 h-10 rounded-full bg-[#EFF6FF] text-[#102B70] flex items-center justify-center">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                            <div class="bg-white rounded-3xl border border-[#E2E8F0] p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] min-h-[220px] lg:flex-1 flex flex-col items-center justify-center text-center gap-3">
+                                <div class="w-12 h-12 rounded-2xl bg-[#EFF6FF] text-[#102B70] border border-[#DBEAFE] flex items-center justify-center shadow-xs">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
                                     </svg>
                                 </div>
-                                <span class="text-[12px] font-bold text-[#334155] uppercase tracking-wider">Last Scanned Book</span>
-                                <p class="text-[10px] text-[#64748B] max-w-[180px] leading-relaxed">
-                                    Scan a book barcode or accession number to process return item.
-                                </p>
+                                <div>
+                                    <h4 class="text-[14px] font-bold text-[#0F172A]">Book Details Preview</h4>
+                                    <p class="text-[12px] text-[#64748B] max-w-[210px] leading-relaxed mt-1">
+                                        Scan a book barcode or click any borrowed book in the table to preview details.
+                                    </p>
+                                </div>
                             </div>
                         @endif
                     </div>
@@ -206,6 +289,7 @@
                     <livewire:components.circulation.table
                         :borrowed-books="$borrowedBooks"
                         :scanned-member="$scannedMember"
+                        :selected-accession="$lastReturnedBook['accession'] ?? null"
                         mode="check-in"
                         title="Borrowed Books on Account"
                         class="md:col-span-8 h-[400px] md:h-full"
@@ -214,29 +298,21 @@
                 </div>
             </div>
 
-            <!-- Right Section: Column 3 (col-span-3 Student Card + Return Summary Panel) -->
+            
             <div class="lg:col-span-3 h-auto lg:h-full flex flex-col gap-4 lg:overflow-hidden">
-                <!-- Student Card -->
-                <div wire:loading.class="opacity-65 transition-opacity duration-300" class="bg-white rounded-3xl border border-[#E2E8F0] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.02)] shrink-0 min-h-[220px] flex flex-col">
+            
+                <div wire:loading.class="opacity-65 transition-opacity duration-300" class="bg-white rounded-3xl border border-[#E2E8F0] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.02)] shrink-0 min-h-[150px] flex flex-col">
                     <div class="flex flex-col gap-3 flex-1">
-                        <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-widest">Student</span>
-
                         @if($scannedMember)
                             @php
-                                $initials = '';
                                 if (!empty($scannedMember['name'])) {
                                     $words = explode(' ', $scannedMember['name']);
                                     $initials = strtoupper(substr($words[0], 0, 1) . (count($words) > 1 ? substr(end($words), 0, 1) : ''));
                                 }
                                 $isStatusActive = strtolower($scannedMember['status'] ?? 'active') === 'active';
                             @endphp
-                            <div class="bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl p-4 flex flex-col gap-4 shadow-inner flex-1 justify-between">
+                            <div class="bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl p-4 flex flex-col flex-1 justify-between">
                                 <div class="flex items-center gap-3.5">
-                                    <!-- Avatar -->
-                                    <div class="w-12 h-12 rounded-full bg-[#102B70] text-[#FFFFFF] border-2 flex items-center justify-center shrink-0 shadow-sm text-sm font-bold tracking-wider select-none">
-                                        {{ $initials ?: 'S' }}
-                                    </div>
-
                                     <div class="min-w-0 flex-1">
                                         <div class="flex items-center gap-2 flex-wrap">
                                             <h3 class="text-[#0F172A] font-bold text-[15px] leading-tight truncate max-w-[130px] xl:max-w-none" title="{{ $scannedMember['name'] }}">{{ $scannedMember['name'] }}</h3>
@@ -257,10 +333,7 @@
                                     <button x-show="!confirmChange"
                                             type="button"
                                             @click="confirmChange = true"
-                                            class="h-8 px-3.5 border border-[#102B70] bg-white text-[#102B70] hover:bg-[#EFF6FF] rounded-xl text-[11px] font-bold transition-all flex items-center gap-1.5 shadow-sm">
-                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                                        </svg>
+                                            class="h-8 px-3.5 border border-[#102B70] bg-white text-[#102B70] hover:bg-[#EFF6FF] rounded-xl text-[11px] font-bold transition-all flex items-center gap-1.5 shadow-sm">                                 
                                         Change Student
                                     </button>
 
@@ -281,14 +354,8 @@
                                 </div>
                             </div>
                         @else
-                            <div class="bg-[#F8FAFC] border border-dashed border-[#CBD5E1] rounded-2xl p-6 flex flex-col items-center justify-center text-center gap-2.5 flex-1 mt-1 hover:border-[#102B70] transition-colors duration-200">
-                                <div class="w-12 h-12 rounded-full bg-[#EFF6FF] border border-[#DBEAFE] flex items-center justify-center text-[#102B70] shrink-0 shadow-sm">
-                                    <svg class="w-5.5 h-5.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.333 0 4 .667 4 2V17H5v-1c0-1.333 2.667-2 4-2z"></path>
-                                    </svg>
-                                </div>
-                                <span class="text-[13px] font-bold text-[#334155]">No Student Profile</span>
-                                <p class="text-[10.5px] text-[#64748B] max-w-[190px] leading-relaxed">Scan or enter member ID number to process returns.</p>
+                            <div class="bg-[#F8FAFC] border border-dashed border-[#CBD5E1] rounded-2xl p-6 flex flex-col items-center justify-center text-center gap-2.5 flex-1 mt-1">
+                                <span class="text-[12.5px] font-medium text-[#64748B] max-w-[190px] leading-relaxed">Scan or enter member ID number to process returns.</span>
                             </div>
                         @endif
                     </div>

@@ -111,8 +111,10 @@ class CheckOutBook extends Component
         }
 
         // 2. Check if the code matches a book accession number or unique code
-        $book = Book::where('accession_number', $code)
-            ->orWhere('code', $code)
+        $book = Book::with(['bookDetail.bookData.authors', 'condition'])
+            ->where(function ($q) use ($code) {
+                $q->where('accession_number', $code)->orWhere('code', $code);
+            })
             ->first();
 
         if ($book) {

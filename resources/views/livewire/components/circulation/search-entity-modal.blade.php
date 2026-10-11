@@ -88,13 +88,13 @@
             <!-- Search bar & Dropdown Selector -->
             <div class="flex gap-3">
                 <div class="relative flex-1">
-                    <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-[#64748B]">
+                    <span class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#64748B]">
                         <!-- Search Magnifying Glass (Hidden when loading) -->
-                        <svg wire:loading.remove wire:target="searchQuery, performSearch" class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg x-show="!isLoading" class="w-4 h-4 text-[#64748B]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                         </svg>
                         <!-- Spinner (Shown when loading search queries) -->
-                        <svg wire:loading wire:target="searchQuery, performSearch" class="animate-spin-custom h-4.5 w-4.5 text-[#102B70]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <svg x-show="isLoading" x-cloak class="animate-spin w-4 h-4 text-[#102B70]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
@@ -233,7 +233,7 @@
                                             <p class="text-xs text-[#64748B] font-medium mt-1 truncate">
                                                 <span>{{ $item['code'] }}</span>
                                                 <span class="mx-1 text-[#CBD5E1]">&bull;</span>
-                                                <span>{{ $item['subtitle'] }}</span>
+                                                {{-- <span>{{ $item['subtitle'] }}</span> --}}
                                                 @if($item['email'])
                                                     <span class="mx-1 text-[#CBD5E1]">&bull;</span>
                                                     <span class="text-[#94A3B8]">{{ $item['email'] }}</span>
@@ -247,9 +247,6 @@
                                             @click="open = false; $dispatch('set-search-value', { code: '{{ $item['code'] }}' })"
                                             class="h-8 px-4 border border-[#102B70] text-[#102B70] hover:bg-[#102B70] hover:text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm shrink-0"
                                     >
-                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                                        </svg>
                                         Select Student
                                     </button>
                                 </div>
@@ -303,9 +300,6 @@
                                             @click="open = false; $dispatch('set-search-value', { code: '{{ $item['code'] }}' })"
                                             class="h-8 px-4 border border-[#102B70] text-[#102B70] hover:bg-[#102B70] hover:text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm shrink-0"
                                     >
-                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
-                                        </svg>
                                         Select Book
                                     </button>
                                 </div>
