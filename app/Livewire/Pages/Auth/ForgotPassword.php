@@ -35,7 +35,7 @@ class ForgotPassword extends Component
             $emailKey = Str::lower(trim($savedEmail));
             $tokenRecord = DB::table('password_reset_tokens')->where('email', $savedEmail)->first();
 
-            $expireMinutes = (int) config('pgpc.email.reset_link_expiration', 30);
+            $expireMinutes = (int) config('settings.email.reset_link_expiration', 30);
             $expireSeconds = $expireMinutes * 60;
 
             // If token still exists in database and was requested within the expiration window
@@ -71,7 +71,7 @@ class ForgotPassword extends Component
         $email = Str::lower(trim($this->email));
 
         // 1. Check if user already reached the limit of 3 email sends for this link
-        $expireMinutes = (int) config('pgpc.email.reset_link_expiration', 30);
+        $expireMinutes = (int) config('settings.email.reset_link_expiration', 30);
         $currentSends = (int) Cache::get('password_reset_send_count:' . $email, 0);
         if ($currentSends >= self::MAX_SEND_LIMIT) {
             $this->linkSent = true;

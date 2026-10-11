@@ -38,7 +38,7 @@ class CheckOutBook extends Component
 
     public function getQrConfig()
     {
-        return config('pgpc', []);
+        return config('settings', []);
     }
 
     public function updateStats()

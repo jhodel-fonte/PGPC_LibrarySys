@@ -18,8 +18,8 @@ class AppServiceProvider extends ServiceProvider
             URL::forceScheme('https');
         }
 
-        // Synchronize password reset token expiration with pgpc configuration
-        if ($expiration = config('pgpc.email.reset_link_expiration')) {
+        // Synchronize password reset token expiration with settings configuration
+        if ($expiration = config('settings.email.reset_link_expiration')) {
             config(['auth.passwords.users.expire' => (int) $expiration]);
         }
     }

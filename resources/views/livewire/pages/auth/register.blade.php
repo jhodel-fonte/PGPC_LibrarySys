@@ -153,7 +153,7 @@
                         class="h-[52px] w-full appearance-none rounded-xl border border-slate-200/90 bg-[#F8FAFC] pl-4 pr-10 text-[15px] text-slate-900 outline-none transition hover:border-slate-300 focus:border-[#102b70] focus:bg-white focus:ring-4 focus:ring-blue-100 select-text cursor-pointer"
                     >
                         <option value="">Select program</option>
-                        @foreach (config('pgpc.college.programs', []) as $code => $name)
+                        @foreach (config('settings.college.programs', []) as $code => $name)
                             <option value="{{ $code }}">{{ $code }} ({{ $name }})</option>
                         @endforeach
                     </select>

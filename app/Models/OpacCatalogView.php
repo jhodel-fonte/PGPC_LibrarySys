@@ -150,7 +150,7 @@ class OpacCatalogView extends Model
      */
     public function getCoverUrlAttribute(): ?string
     {
-        $defaultImg = config('settings.coverFile_default', 'book-cover.webp');
+        $defaultImg = config('settings.book_covers.default', config('settings.coverFile_default', 'book-cover.webp'));
         $defaultUrl = asset('images/' . ltrim($defaultImg, '/'));
 
         if (empty($this->cover_image)) {
@@ -161,7 +161,7 @@ class OpacCatalogView extends Model
             return $this->cover_image;
         }
 
-        $baseUrl = config('settings.coverFile_url', '/storage/book_cover/');
+        $baseUrl = config('settings.book_covers.url', config('settings.coverFile_url', '/storage/book_cover/'));
         $filename = basename($this->cover_image);
 
         if (str_starts_with($baseUrl, 'http://') || str_starts_with($baseUrl, 'https://')) {

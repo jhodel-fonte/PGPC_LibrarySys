@@ -35,7 +35,7 @@ class RegisterForm extends Form
             'first_name' => ['required', 'string', 'max:255'],
             'middle_name' => ['nullable', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
-            'program' => ['required', 'string', \Illuminate\Validation\Rule::in(array_keys(config('pgpc.college.programs', [])))],
+            'program' => ['required', 'string', \Illuminate\Validation\Rule::in(array_keys(config('settings.college.programs', [])))],
             'year_level' => ['required', 'string', 'in:1st Year,2nd Year,3rd Year,4th Year'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:accounts,email'],
             'contact_num' => ['nullable', 'string', 'max:20'],

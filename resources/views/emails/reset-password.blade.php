@@ -73,7 +73,7 @@
                             <!-- Expiry notice -->
                             <div style="background-color: #EFF6FF; border-left: 4px solid #102B70; padding: 14px 16px; border-radius: 6px; margin-bottom: 24px;">
                                 <p style="margin: 0; font-size: 13px; line-height: 20px; color: #102B70;">
-                                    This password reset link will expire in <strong>{{ config('pgpc.email.reset_link_expiration', 30) }} minutes</strong>.
+                                    This password reset link will expire in <strong>{{ config('settings.email.reset_link_expiration', 30) }} minutes</strong>.
                                 </p>
                             </div>
 

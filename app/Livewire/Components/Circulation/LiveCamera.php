@@ -19,7 +19,7 @@ class LiveCamera extends Component
 
     public function getQrConfig()
     {
-        return config('pgpc', []);
+        return config('settings', []);
     }
 
     public function handleScan($code)

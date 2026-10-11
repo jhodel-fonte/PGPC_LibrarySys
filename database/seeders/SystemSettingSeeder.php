@@ -24,8 +24,8 @@ class SystemSettingSeeder extends Seeder
             ['setting_key' => 'library_name', 'setting_value' => 'Padre Garcia Polytechnic College Library', 'setting_type' => 'string', 'allowed_role' => 'admin', 'is_critical' => false],
             ['setting_key' => 'system_email', 'setting_value' => 'library@pgpc.edu.ph', 'setting_type' => 'string', 'allowed_role' => 'admin', 'is_critical' => false],
             ['setting_key' => 'system_phone', 'setting_value' => '+63 912 111 6789', 'setting_type' => 'string', 'allowed_role' => 'admin', 'is_critical' => false],
-            ['setting_key' => 'operating_hours', 'setting_value' => json_encode(config('pgpc.general.operating_hours', [])), 'setting_type' => 'json', 'allowed_role' => 'admin', 'is_critical' => false],
-            ['setting_key' => 'closures', 'setting_value' => json_encode(config('pgpc.general.closures', [])), 'setting_type' => 'json', 'allowed_role' => 'admin', 'is_critical' => false],
+            ['setting_key' => 'operating_hours', 'setting_value' => json_encode(config('settings.general.operating_hours', [])), 'setting_type' => 'json', 'allowed_role' => 'admin', 'is_critical' => false],
+            ['setting_key' => 'closures', 'setting_value' => json_encode(config('settings.general.closures', [])), 'setting_type' => 'json', 'allowed_role' => 'admin', 'is_critical' => false],
             
             // Circulation Rules
             ['setting_key' => 'borrowing_limit_student', 'setting_value' => '3', 'setting_type' => 'integer', 'allowed_role' => 'admin', 'is_critical' => false],
@@ -56,8 +56,8 @@ class SystemSettingSeeder extends Seeder
             ['setting_key' => 'cookie_require_acknowledgement', 'setting_value' => '0', 'setting_type' => 'boolean', 'allowed_role' => 'head_admin', 'is_critical' => true],
 
             // Notifications
-            ['setting_key' => 'notification_channels', 'setting_value' => json_encode(config('pgpc.notifications.channels', [])), 'setting_type' => 'json', 'allowed_role' => 'admin', 'is_critical' => false],
-            ['setting_key' => 'notification_templates', 'setting_value' => json_encode(config('pgpc.notifications.templates', [])), 'setting_type' => 'json', 'allowed_role' => 'admin', 'is_critical' => false],
+            ['setting_key' => 'notification_channels', 'setting_value' => json_encode(config('settings.notifications.channels', [])), 'setting_type' => 'json', 'allowed_role' => 'admin', 'is_critical' => false],
+            ['setting_key' => 'notification_templates', 'setting_value' => json_encode(config('settings.notifications.templates', [])), 'setting_type' => 'json', 'allowed_role' => 'admin', 'is_critical' => false],
             ['setting_key' => 'daily_cron_time', 'setting_value' => '01:00', 'setting_type' => 'string', 'allowed_role' => 'admin', 'is_critical' => true],
 
             // AI & Integrations

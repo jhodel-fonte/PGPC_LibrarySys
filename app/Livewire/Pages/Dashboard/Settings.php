@@ -37,8 +37,8 @@ class Settings extends Component
                 'library_name' => $dbSettings['library_name'] ?? 'Padre Garcia Polytechnic College Library',
                 'email' => $dbSettings['system_email'] ?? 'library@pgpc.edu.ph',
                 'phone' => $dbSettings['system_phone'] ?? '+63 912 111 6789',
-                'operating_hours' => json_decode($dbSettings['operating_hours'] ?? '[]', true) ?: config('pgpc.general.operating_hours'),
-                'closures' => json_decode($dbSettings['closures'] ?? '[]', true) ?: config('pgpc.general.closures'),
+                'operating_hours' => json_decode($dbSettings['operating_hours'] ?? '[]', true) ?: config('settings.general.operating_hours'),
+                'closures' => json_decode($dbSettings['closures'] ?? '[]', true) ?: config('settings.general.closures'),
             ],
 
             'circulation' => [
@@ -81,8 +81,8 @@ class Settings extends Component
             ],
 
             'notifications' => [
-                'channels' => json_decode($dbSettings['notification_channels'] ?? '[]', true) ?: config('pgpc.notifications.channels'),
-                'templates' => json_decode($dbSettings['notification_templates'] ?? '[]', true) ?: config('pgpc.notifications.templates'),
+                'channels' => json_decode($dbSettings['notification_channels'] ?? '[]', true) ?: config('settings.notifications.channels'),
+                'templates' => json_decode($dbSettings['notification_templates'] ?? '[]', true) ?: config('settings.notifications.templates'),
                 'daily_cron' => $dbSettings['daily_cron_time'] ?? '01:00',
             ],
 

@@ -192,7 +192,7 @@ class AddBookForm extends Component
 
     public function updatedCoverImage(): void
     {
-        $maxSetting = config('settings.coverFile_max_size', '5MB');
+        $maxSetting = config('settings.book_covers.max_size', config('settings.coverFile_max_size', '5MB'));
         $maxKb = $this->parseSizeToKilobytes($maxSetting);
 
         $this->validate([
@@ -229,7 +229,7 @@ class AddBookForm extends Component
         }
 
         // Validation
-        $maxSetting = config('settings.coverFile_max_size', '5MB');
+        $maxSetting = config('settings.book_covers.max_size', config('settings.coverFile_max_size', '5MB'));
         $maxKb = $this->parseSizeToKilobytes($maxSetting);
 
         $this->validate([

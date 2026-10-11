@@ -14,7 +14,7 @@
     'emptyMessage' => 'No records found matching the current search or filters.',
     'emptyColspan' => null,
     'textSize' => 'text-sm',
-    'headerTextSize' => 'text-[11px]',
+    'headerTextSize' => 'text-[13px]',
     'selectable' => false,
     'selectAllModel' => 'selectAll',
     'selectedCount' => 0,
@@ -377,12 +377,12 @@
                             <th wire:click="{{ $sortMethod }}('{{ $colIndex }}')"
                                 {!! $thXShow !!}
                                 style="{{ $width ? 'width: ' . $width . ';' : '' }}"
-                                class="sticky top-0 z-20 bg-slate-50 shadow-[inset_0_-1px_0_#E2E8F0] px-4 py-3.5 {{ $headerTextSize }} font-bold uppercase tracking-wider text-slate-500 cursor-pointer hover:bg-slate-100 hover:text-[#102B70] transition-colors group select-none leading-normal {{ $align === 'right' ? 'text-right' : ($align === 'center' ? 'text-center' : 'text-left') }}"
+                                class="sticky top-0 z-20 bg-slate-50 shadow-[inset_0_-1px_0_#E2E8F0] px-4 py-3.5 {{ $headerTextSize }} font-bold uppercase tracking-wider text-[#000000] cursor-pointer hover:bg-slate-100 transition-colors group select-none leading-normal {{ $align === 'right' ? 'text-right' : ($align === 'center' ? 'text-center' : 'text-left') }}"
                             >
                                 <div class="flex items-center gap-1 {{ $alignClass }}">
                                     <span class="leading-normal">{{ $header['label'] ?? '' }}</span>
                                     @if($isSorted)
-                                        <span class="text-[#102B70] font-bold">{{ $sortDir === 'asc' ? '↑' : '↓' }}</span>
+                                        <span class="text-[#000000] font-bold">{{ $sortDir === 'asc' ? '↑' : '↓' }}</span>
                                     @else
                                         <span class="text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity">↕</span>
                                     @endif
@@ -391,7 +391,7 @@
                         @else
                             <th {!! $thXShow !!}
                                 style="{{ $width ? 'width: ' . $width . ';' : '' }}"
-                                class="sticky top-0 z-20 bg-slate-50 shadow-[inset_0_-1px_0_#E2E8F0] px-4 py-3.5 {{ $headerTextSize }} font-bold uppercase tracking-wider text-slate-500 leading-normal {{ $align === 'right' ? 'text-right pr-6' : ($align === 'center' ? 'text-center' : 'text-left') }}"
+                                class="sticky top-0 z-20 bg-slate-50 shadow-[inset_0_-1px_0_#E2E8F0] px-4 py-3.5 {{ $headerTextSize }} font-bold uppercase tracking-wider text-[#000000] leading-normal {{ $align === 'right' ? 'text-right pr-6' : ($align === 'center' ? 'text-center' : 'text-left') }}"
                             >
                                 <span class="leading-normal">{{ $header['label'] ?? '' }}</span>
                             </th>

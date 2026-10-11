@@ -18,9 +18,9 @@ class UploadBookCoverImage extends Component
      */
     public function updatedCoverImage(): void
     {
-        $maxSetting = config('settings.coverFile_max_size', '5MB');
+        $maxSetting = config('settings.book_covers.max_size', config('settings.coverFile_max_size', '5MB'));
         $maxKb = $this->parseSizeToKilobytes($maxSetting);
-        $coverType = config('settings.coverFile_types', 'png,jpg,jpeg,webp');
+        $coverType = config('settings.book_covers.allowed_types', config('settings.coverFile_types', 'png,jpg,jpeg,webp'));
         $coverType = str_replace(',', '|', $coverType);
 
         $this->validate([

@@ -37,7 +37,7 @@ class CheckInBook extends Component
 
     public function getQrConfig()
     {
-        return config('pgpc', []);
+        return config('settings', []);
     }
 
     #[On('search-code')]
