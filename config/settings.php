@@ -197,8 +197,6 @@ return [
             'pattern' => env('DEFAULT_ACCOUNT_PASSWORD_PATTERN', '{lastname}{school_id}'),
             'case' => 'lowercase', // 'lowercase', 'uppercase', 'capitalize', or 'original'
             'strip_spaces' => true, // removes spaces from names (e.g. "Dela Cruz" -> "delacruz")
-            'prefix' => env('DEFAULT_ACCOUNT_PASSWORD_PREFIX', ''), // optional prefix (e.g. 'Pgpc@')
-            'suffix' => env('DEFAULT_ACCOUNT_PASSWORD_SUFFIX', ''), // optional suffix (e.g. '!')
             'fallback' => env('DEFAULT_ACCOUNT_PASSWORD_FALLBACK', 'Pgpc12345!'), // fallback password
             'force_change_on_first_login' => true, // require password update on initial login
         ],

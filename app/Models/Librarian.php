@@ -20,6 +20,7 @@ class Librarian extends Model
         'middle_name',
         'last_name',
         'contact_num',
+        'image_url',
     ];
 
     public function account()

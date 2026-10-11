@@ -26,6 +26,8 @@ class Student extends Model
             'contact_num' => $this->contact_num,
             'program' => $this->program,
             'year_level' => $this->year_level,
+            'enrollment_status' => $this->enrollment_status,
+            'enrollment_year' => $this->enrollment_year,
         ];
     }
 
@@ -36,10 +38,14 @@ class Student extends Model
         'middle_name',
         'last_name',
         'contact_num',
+        'date_of_birth',
+        'image_url',
         'library_status_id',
         'note',
         'program',
         'year_level',
+        'enrollment_status',
+        'enrollment_year',
     ];
 
     public function account(): BelongsTo
