@@ -26,6 +26,7 @@ class AddUserForm extends Component
     public string $firstName = '';
     public ?string $middleName = '';
     public string $lastName = '';
+    public string $gender = '';
     public ?string $dateOfBirth = '';
     public ?string $contactNum = '';
     public string $email = '';
@@ -104,6 +105,7 @@ class AddUserForm extends Component
             'firstName' => ['required', 'string', 'max:100', 'regex:/^[\pL\s\-.\']+$/u'],
             'middleName' => ['nullable', 'string', 'max:100', 'regex:/^[\pL\s\-.\']+$/u'],
             'lastName' => ['required', 'string', 'max:100', 'regex:/^[\pL\s\-.\']+$/u'],
+            'gender' => ['required', 'string', Rule::in(['Male', 'Female'])],
             'dateOfBirth' => [
                 'nullable',
                 'string',
@@ -154,6 +156,8 @@ class AddUserForm extends Component
             'middleName.regex' => 'Middle Name may only contain letters, spaces, hyphens, and apostrophes.',
             'lastName.required' => 'Last Name is required.',
             'lastName.regex' => 'Last Name may only contain letters, spaces, hyphens, and apostrophes.',
+            'gender.required' => 'Please select a gender.',
+            'gender.in' => 'The selected gender is invalid.',
             'contactNum.regex' => 'Please enter a valid contact number format.',
             'program.required' => 'Please select a valid Degree Program.',
             'program.in' => 'The selected Degree Program is invalid.',
@@ -174,6 +178,7 @@ class AddUserForm extends Component
         $this->firstName = (string) $this->cleanString($this->firstName);
         $this->middleName = $this->cleanString($this->middleName, nullable: true);
         $this->lastName = (string) $this->cleanString($this->lastName);
+        $this->gender = (string) $this->cleanString($this->gender);
         $this->dateOfBirth = $this->cleanString($this->dateOfBirth, nullable: true);
         $this->contactNum = $this->cleanString($this->contactNum, nullable: true);
         $this->email = (string) $this->cleanString($this->email);
@@ -213,6 +218,7 @@ class AddUserForm extends Component
             'firstName',
             'middleName',
             'lastName',
+            'gender',
             'dateOfBirth',
             'contactNum',
             'email',
@@ -288,6 +294,7 @@ class AddUserForm extends Component
                     'first_name' => $this->firstName,
                     'middle_name' => $this->middleName ?: null,
                     'last_name' => $this->lastName,
+                    'gender' => $this->gender ?: null,
                     'contact_num' => $this->contactNum ?: null,
                     'date_of_birth' => $this->normalizedDateOfBirth(),
                     'image_url' => null,

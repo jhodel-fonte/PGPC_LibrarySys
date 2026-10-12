@@ -23,6 +23,7 @@ class Student extends Model
             'first_name' => $this->first_name,
             'middle_name' => $this->middle_name,
             'last_name' => $this->last_name,
+            'gender' => $this->gender,
             'contact_num' => $this->contact_num,
             'program' => $this->program,
             'year_level' => $this->year_level,
@@ -39,6 +40,7 @@ class Student extends Model
         'last_name',
         'contact_num',
         'date_of_birth',
+        'gender',
         'image_url',
         'library_status_id',
         'note',
@@ -74,7 +76,10 @@ class Student extends Model
     public function getImageUrlAttribute($value): ?string
     {
         if (empty($value)) {
-            return null;
+            $isFemale = strtolower($this->gender ?? '') === 'female';
+            $defaultKey = $isFemale ? 'female' : 'male';
+            $defaultPath = config("settings.profile_image_dir.default.{$defaultKey}", "images/default-{$defaultKey}.webp");
+            return asset($defaultPath);
         }
 
         if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://')) {

@@ -70,6 +70,56 @@ class Account extends Authenticatable
         return $this->belongsTo(Role::class);
     }
 
+    /**
+     * Get the encrypted route key for this account in URLs.
+     */
+    public function getRouteKey(): string
+    {
+        return $this->encrypted_id;
+    }
+
+    /**
+     * Accessor for the encrypted, URL-safe ID.
+     */
+    public function getEncryptedIdAttribute(): string
+    {
+        return self::encodeId($this->id);
+    }
+
+    /**
+     * Encode an integer ID into an encrypted URL-safe string.
+     */
+    public static function encodeId(int|string $id): string
+    {
+        $encrypted = \Illuminate\Support\Facades\Crypt::encryptString((string) $id);
+        return rtrim(strtr(base64_encode($encrypted), '+/', '-_'), '=');
+    }
+
+    /**
+     * Decode an encrypted URL-safe string back to the integer ID.
+     */
+    public static function decodeId(mixed $value): ?int
+    {
+        if (empty($value)) {
+            return null;
+        }
+
+        try {
+            $data = base64_decode(strtr((string) $value, '-_', '+/'));
+            if ($data) {
+                return (int) \Illuminate\Support\Facades\Crypt::decryptString($data);
+            }
+        } catch (\Throwable $e) {
+            try {
+                return (int) \Illuminate\Support\Facades\Crypt::decryptString((string) $value);
+            } catch (\Throwable $e2) {
+                return is_numeric($value) ? (int) $value : null;
+            }
+        }
+
+        return is_numeric($value) ? (int) $value : null;
+    }
+
     public function getAuthPassword()
     {
         return $this->password_hash;

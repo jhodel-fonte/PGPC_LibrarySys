@@ -117,7 +117,7 @@
             <tr class="hover:bg-slate-50/70 transition-colors h-[72px] group">
                 <!-- STAFF INFO & AVATAR -->
                 <td x-show="cols['staff'] !== false" class="px-6 py-4 align-middle">
-                    <a href="{{ route('admin.user-details', $user->id) }}" wire:navigate class="flex items-center gap-3.5 group/user focus:outline-none">
+                    <a href="{{ route('admin.user-details', $user->encrypted_id) }}" wire:navigate class="flex items-center gap-3.5 group/user focus:outline-none">
                         @if($librarian?->image_url)
                             <img src="{{ $librarian->image_url }}" alt="{{ $fullName }}" class="w-10 h-10 rounded-full object-cover border border-[#CBD5E1] shrink-0">
                         @else
@@ -187,7 +187,7 @@
                     <div class="flex items-center justify-end">
                         <x-table-action-dot>
                             <a
-                                href="{{ route('admin.user-details', $user->id) }}"
+                                href="{{ route('admin.user-details', $user->encrypted_id) }}"
                                 wire:navigate
                                 @click="open = false"
                                 class="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-[#102B70] rounded-lg transition-colors"
@@ -197,7 +197,7 @@
                             </a>
 
                             <a
-                                href="{{ route('admin.user-details', $user->id) }}"
+                                href="{{ route('admin.user-management.edit', $user->encrypted_id) }}"
                                 wire:navigate
                                 @click="open = false"
                                 class="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-[#102B70] rounded-lg transition-colors"

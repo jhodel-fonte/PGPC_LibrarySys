@@ -8,6 +8,18 @@ use App\Models\Account;
 class StudentPolicy
 {
     /**
+     * Perform pre-authorization checks.
+     */
+    public function before(Account $user, string $ability): ?bool
+    {
+        if ($user->role?->name === 'Admin') {
+            return true;
+        }
+
+        return null;
+    }
+
+    /**
      * Determine whether the user can view any students.
      */
     public function viewAny(Account $user): bool

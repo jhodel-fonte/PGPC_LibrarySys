@@ -252,6 +252,38 @@
                         @enderror
                     </div>
 
+                    <!-- Gender * (students.gender) -->
+                    <div class="space-y-2 group">
+                        <label class="block text-sm font-semibold text-[#334155]">
+                            Gender <span class="text-[#EF4444] font-bold">*</span>
+                        </label>
+                        <div class="relative flex items-center">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#94A3B8] group-focus-within:text-[#102B70] transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                    <circle cx="10" cy="11" r="5" stroke-linecap="round" stroke-linejoin="round" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M14 7h4v4m0-4-4.5 4.5M10 16v5m-2.5-2.5h5" />
+                                </svg>
+                            </div>
+                            <select
+                                wire:model.live="gender"
+                                required
+                                class="h-14 w-full pl-11 pr-11 rounded-2xl border bg-[#F8FAFC] text-sm font-medium outline-none appearance-none cursor-pointer transition-all hover:bg-white focus:bg-white focus:ring-4 focus:ring-[#EFF6FF] {{ $errors->has('gender') ? 'border-[#EF4444] focus:border-[#EF4444]' : 'border-[#E2E8F0] hover:border-[#CBD5E1] focus:border-[#102B70]' }} {{ empty($gender) ? 'text-[#94A3B8]' : 'text-[#0F172A]' }}"
+                            >
+                                <option value="" disabled selected>Select Gender</option>
+                                <option value="Male" class="text-[#0F172A]">Male</option>
+                                <option value="Female" class="text-[#0F172A]">Female</option>
+                            </select>
+                            <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-[#94A3B8]">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                </svg>
+                            </div>
+                        </div>
+                        @error('gender')
+                            <p class="text-xs text-[#EF4444] font-medium mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
                     <!-- Date Of Birth (mm-yyyy)-->
                     <div class="space-y-2 group">
                         <div class="flex items-center justify-between">
@@ -396,6 +428,11 @@
                                     </option>
                                 @endforeach
                             </select>
+                            <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-[#94A3B8]">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                </svg>
+                            </div>
                         </div>
                         @error('program')
                             <p class="text-xs text-[#EF4444] font-medium mt-1">{{ $message }}</p>
@@ -424,6 +461,11 @@
                                 <option value="3rd Year" class="text-[#0F172A]">3rd Year (Junior)</option>
                                 <option value="4th Year" class="text-[#0F172A]">4th Year (Senior)</option>
                             </select>
+                            <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-[#94A3B8]">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                </svg>
+                            </div>
                         </div>
                         @error('yearLevel')
                             <p class="text-xs text-[#EF4444] font-medium mt-1">{{ $message }}</p>

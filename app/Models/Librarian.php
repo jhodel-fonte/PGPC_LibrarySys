@@ -19,6 +19,7 @@ class Librarian extends Model
         'first_name',
         'middle_name',
         'last_name',
+        'gender',
         'contact_num',
         'image_url',
     ];
@@ -49,7 +50,10 @@ class Librarian extends Model
     public function getImageUrlAttribute($value): ?string
     {
         if (empty($value)) {
-            return null;
+            $isFemale = strtolower($this->gender ?? '') === 'female';
+            $defaultKey = $isFemale ? 'female' : 'male';
+            $defaultPath = config("settings.profile_image_dir.default.{$defaultKey}", "images/default-{$defaultKey}.webp");
+            return asset($defaultPath);
         }
 
         if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://')) {

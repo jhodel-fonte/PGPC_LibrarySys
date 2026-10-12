@@ -20,6 +20,8 @@ Route::middleware(['auth', 'verified', 'role:Admin'])->prefix('admin')->name('ad
         Route::get('/dashboard', \App\Livewire\Pages\Dashboard\Dashboard::class)->name('dashboard');
         Route::get('/user-management', \App\Livewire\Pages\Dashboard\UserManagement::class)->name('user-management');
         Route::get('/user-management/add', \App\Livewire\Pages\Dashboard\AddUser::class)->name('user-management.add');
+        Route::get('/user-management/edit/{id}', \App\Livewire\Pages\Dashboard\EditUserPage::class)->name('user-management.edit');
+        Route::get('/user-management/{id}/edit', \App\Livewire\Pages\Dashboard\EditUserPage::class);
         Route::get('/user-management/{id}', \App\Livewire\Pages\Dashboard\UserDetails::class)->name('user-details');
 
         Route::prefix('circulation-desk')->name('circulation-desk.')->group(function () {

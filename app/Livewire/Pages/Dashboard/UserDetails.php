@@ -45,11 +45,30 @@ class UserDetails extends Component
 
     public function mount($id)
     {
-        $this->id = $id;
+        $resolvedId = Account::decodeId($id);
+
+        if (! $resolvedId) {
+            abort(404, 'User account not found.');
+        }
+
+        $this->id = $resolvedId;
         $user = $this->user;
 
         if (!$user) {
             abort(404, 'User account not found.');
+        }
+
+        // Authorization check
+        $currentUser = auth()->user();
+        if ($currentUser && $currentUser->role?->name !== 'Admin' && $currentUser->id !== $user->id) {
+            $isLibrarian = in_array($user->role?->name, ['Librarian', 'Head Librarian'], true) || (bool) $user->librarian;
+            $canView = $isLibrarian
+                ? ($currentUser->hasPermission('manage_librarian') || $currentUser->hasPermission('manage_users'))
+                : $currentUser->hasPermission('manage_users');
+
+            if (! $canView) {
+                abort(403, 'You do not have permission to view this user account.');
+            }
         }
 
         $this->selectedStatusId = $user->status_id;
@@ -359,6 +378,14 @@ class UserDetails extends Component
 
     public function render()
     {
-        return view('livewire.pages.dashboard.user-details');
+        $roleName = $this->user?->role?->name;
+        $isLibrarian = in_array($roleName, ['Librarian', 'Head Librarian']) || (bool) $this->user?->librarian;
+
+        return view('livewire.pages.dashboard.user-details')
+            ->layoutData([
+                'title' => 'User Management',
+                'subpage' => $isLibrarian ? 'Librarian Profile' : 'Student Profile',
+                'activepageRoute' => 'admin.user-management',
+            ]);
     }
 }

@@ -56,6 +56,10 @@ return [
     'profile_image_dir' => [
         'student' => env('STUDENT_PROFILE_IMAGE_DIR', '/storage/image/profile/student/'),
         'librarian' => env('LIBRARIAN_PROFILE_IMAGE_DIR', '/storage/image/profile/librarian/'),
+        'default' => [
+            'male' => 'images/default-male.webp',
+            'female' => 'images/default-female.webp',
+        ],
     ],
     /*
     |--------------------------------------------------------------------------

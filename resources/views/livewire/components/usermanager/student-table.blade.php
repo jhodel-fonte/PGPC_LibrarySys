@@ -133,7 +133,7 @@
             <tr class="hover:bg-slate-50/70 transition-colors h-[72px] group">
                 <!-- STUDENT INFO & AVATAR -->
                 <td x-show="cols['student'] !== false" class="px-6 py-4 align-middle">
-                    <a href="{{ route('admin.user-details', $user->id) }}" wire:navigate class="flex items-center gap-3.5 group/user focus:outline-none">
+                    <a href="{{ route('admin.user-details', $user->encrypted_id) }}" wire:navigate class="flex items-center gap-3.5 group/user focus:outline-none">
                         @if($student?->image_url)
                             <img src="{{ $student->image_url }}" alt="{{ $fullName }}" class="w-10 h-10 rounded-full object-cover border border-[#CBD5E1] shrink-0">
                         @else
@@ -195,20 +195,20 @@
                     <div class="flex items-center justify-end">
                         <x-table-action-dot>
                             <a
-                                href="{{ route('admin.user-details', $user->id) }}"
-                                wire:navigate
-                                @click="open = false"
-                                class="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-[#102B70] rounded-lg transition-colors"
+                                 href="{{ route('admin.user-details', $user->encrypted_id) }}"
+                                 wire:navigate
+                                 @click="open = false"
+                                 class="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-[#102B70] rounded-lg transition-colors"
                             >
                                 <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                 View Profile
                             </a>
 
                             <a
-                                href="{{ route('admin.user-details', $user->id) }}"
-                                wire:navigate
-                                @click="open = false"
-                                class="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-[#102B70] rounded-lg transition-colors"
+                                 href="{{ route('admin.user-management.edit', $user->encrypted_id) }}"
+                                 wire:navigate
+                                 @click="open = false"
+                                 class="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-[#102B70] rounded-lg transition-colors"
                             >
                                 <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                                 Edit Profile
