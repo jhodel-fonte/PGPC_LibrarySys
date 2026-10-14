@@ -120,6 +120,7 @@
     <!-- SECTION 2: DANGER ZONE -->
     @php
         $canDeleteStudent = auth()->check() && (auth()->user()->hasRole('Admin') || auth()->user()->hasPermission('delete_students') || auth()->user()->hasPermission('manage_users'));
+        $isTrashed = $user?->trashed();
     @endphp
     @if($canDeleteStudent)
     <div class="space-y-4 pt-4 border-t border-slate-100">
@@ -128,24 +129,67 @@
             <h3 class="text-base font-bold text-[#B91C1C]">Danger Zone</h3>
         </div>
 
-        <div class="rounded-2xl border border-[#FECACA] bg-[#FEF2F2]/60 p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div class="space-y-1">
-                <h4 class="text-sm font-bold text-[#0F172A]">Delete Student Record</h4>
-                <p class="text-xs text-[#64748B] max-w-xl leading-relaxed">
-                    Permanently delete this student account and revoke library access and privileges. This action cannot be undone.
-                </p>
+        <div class="space-y-3.5">
+            <!-- Action 1: Disable / Enable Account (Soft Delete) -->
+            <div class="rounded-2xl border {{ $isTrashed ? 'border-emerald-200 bg-emerald-50/50' : 'border-amber-200 bg-amber-50/40' }} p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div class="space-y-1">
+                    <h4 class="text-sm font-bold text-[#0F172A]">
+                        {{ $isTrashed ? 'Enable Student Account' : 'Disable Student Account' }}
+                    </h4>
+                    <p class="text-xs text-[#64748B] max-w-xl leading-relaxed">
+                        @if($isTrashed)
+                            This account is currently soft-deleted (disabled). Re-enable this account to restore system access and reactivate library borrow privileges.
+                        @else
+                            Temporarily suspend this student's login access and library borrow privileges by soft-deleting the account. All profile data and borrowing history are preserved.
+                        @endif
+                    </p>
+                </div>
+
+                @if($isTrashed)
+                    <button
+                        type="button"
+                        wire:click="enableAccount"
+                        class="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold shadow-xs transition-all active:scale-[0.98] cursor-pointer shrink-0 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                    >
+                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+                        </svg>
+                        <span>Enable Account</span>
+                    </button>
+                @else
+                    <button
+                        type="button"
+                        wire:click="openDisableModal"
+                        class="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs sm:text-sm font-bold shadow-xs transition-all active:scale-[0.98] cursor-pointer shrink-0 focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+                    >
+                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />
+                        </svg>
+                        <span>Disable Account</span>
+                    </button>
+                @endif
             </div>
 
-            <button
-                type="button"
-                wire:click="openDeleteModal"
-                class="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-[#EF4444] hover:bg-[#DC2626] text-white text-xs sm:text-sm font-bold shadow-xs transition-all active:scale-[0.98] cursor-pointer shrink-0 focus:outline-none focus:ring-2 focus:ring-[#EF4444]/40"
-            >
-                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                </svg>
-                <span>Delete Account</span>
-            </button>
+            <!-- Action 2: Delete Student Record -->
+            <div class="rounded-2xl border border-[#FECACA] bg-[#FEF2F2]/60 p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div class="space-y-1">
+                    <h4 class="text-sm font-bold text-[#0F172A]">Delete Student Record</h4>
+                    <p class="text-xs text-[#64748B] max-w-xl leading-relaxed">
+                        Permanently delete this student account and revoke library access and privileges. This action cannot be undone.
+                    </p>
+                </div>
+
+                <button
+                    type="button"
+                    wire:click="openDeleteModal"
+                    class="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-[#EF4444] hover:bg-[#DC2626] text-white text-xs sm:text-sm font-bold shadow-xs transition-all active:scale-[0.98] cursor-pointer shrink-0 focus:outline-none focus:ring-2 focus:ring-[#EF4444]/40"
+                >
+                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                    </svg>
+                    <span>Delete Account</span>
+                </button>
+            </div>
         </div>
     </div>
     @endif

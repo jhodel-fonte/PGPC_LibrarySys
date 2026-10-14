@@ -388,11 +388,6 @@
                                     <option value="{{ $code }} - {{ $title }}" class="text-[#0F172A]">{{ $code }} - {{ $title }}</option>
                                 @endforeach
                             </select>
-                            <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-[#94A3B8]">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-                                </svg>
-                            </div>
                         </div>
                         @error('program')
                             <p class="text-xs text-[#EF4444] font-medium mt-1">{{ $message }}</p>
@@ -421,11 +416,6 @@
                                 <option value="3rd Year" class="text-[#0F172A]">3rd Year</option>
                                 <option value="4th Year" class="text-[#0F172A]">4th Year</option>
                             </select>
-                            <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-[#94A3B8]">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-                                </svg>
-                            </div>
                         </div>
                         @error('yearLevel')
                             <p class="text-xs text-[#EF4444] font-medium mt-1">{{ $message }}</p>
@@ -452,11 +442,6 @@
                                 <option value="Transferee" class="text-[#0F172A]">Transferee</option>
                                 <option value="Returnee" class="text-[#0F172A]">Returnee</option>
                             </select>
-                            <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-[#94A3B8]">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-                                </svg>
-                            </div>
                         </div>
                         @error('enrollmentStatus')
                             <p class="text-xs text-[#EF4444] font-medium mt-1">{{ $message }}</p>
@@ -510,11 +495,6 @@
                                 <option value="3" class="text-[#0F172A]">Suspended</option>
                                 <option value="4" class="text-[#0F172A]">Barred</option>
                             </select>
-                            <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-[#94A3B8]">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-                                </svg>
-                            </div>
                         </div>
                         @error('libraryStatus')
                             <p class="text-xs text-[#EF4444] font-medium mt-1">{{ $message }}</p>

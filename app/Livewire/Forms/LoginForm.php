@@ -69,8 +69,8 @@ class LoginForm extends Form
         $loginInput = trim($this->email);
         $isEmail = filter_var($loginInput, FILTER_VALIDATE_EMAIL);
 
-        // 1. Locate the user account by email, username, or school ID scoped to allowed roles
-        $accountQuery = Account::with('role', 'status');
+        // 1. Locate the user account by email, username, or school ID scoped to allowed roles (including soft-deleted accounts)
+        $accountQuery = Account::withTrashed()->with('role', 'status');
         if (! empty($allowedRoles)) {
             $accountQuery->whereHas('role', function ($q) use ($allowedRoles) {
                 $q->whereIn('name', $allowedRoles);
@@ -87,7 +87,7 @@ class LoginForm extends Form
 
             // Try librarian school ID (only if staff roles are allowed)
             if (! $account && (empty($allowedRoles) || array_intersect(['Admin', 'Head Librarian', 'Librarian'], $allowedRoles))) {
-                $librarian = Librarian::where('school_id_number', $loginInput)->first();
+                $librarian = Librarian::withTrashed()->where('school_id_number', $loginInput)->first();
                 if ($librarian && $librarian->account_id) {
                     $account = (clone $accountQuery)->where('id', $librarian->account_id)->first();
                 }
@@ -95,7 +95,7 @@ class LoginForm extends Form
 
             // Try student school ID (only if student role is allowed)
             if (! $account && (empty($allowedRoles) || in_array('Student', $allowedRoles))) {
-                $student = Student::where('school_id_number', $loginInput)->first();
+                $student = Student::withTrashed()->where('school_id_number', $loginInput)->first();
                 if ($student && $student->account_id) {
                     $account = (clone $accountQuery)->where('id', $student->account_id)->first();
                 }
@@ -127,14 +127,20 @@ class LoginForm extends Form
             }
         }
 
-        // 4. Verify account status
-        if ($account->status && strtolower($account->status->status_name) !== 'active') {
-            $statusName = strtolower($account->status->status_name);
+        // 4. Verify account status and soft-delete state (Account Deactivated Check)
+        $isDeactivated = $account->trashed()
+            || ($account->status && in_array(strtolower($account->status->status_name), ['inactive', 'disabled', 'suspended', 'deactivated']))
+            || ($account->student()->withTrashed()->whereNotNull('deleted_at')->exists())
+            || ($account->librarian()->withTrashed()->whereNotNull('deleted_at')->exists());
+
+        if ($isDeactivated) {
             RateLimiter::hit($this->throttleKey());
 
-            throw ValidationException::withMessages([
-                'form.email' => "Your account is currently {$statusName}. Please contact the library administrator.",
-            ]);
+            if (isset($this->component)) {
+                $this->component->redirect(route('account.deactivated'), navigate: false);
+            }
+
+            throw new \App\Exceptions\AccountDeactivatedException();
         }
 
         // 5. Update login stats on success

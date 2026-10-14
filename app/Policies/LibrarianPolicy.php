@@ -56,7 +56,11 @@ class LibrarianPolicy
      */
     public function delete(Account $user, Librarian $librarian): bool
     {
-        return $user->hasPermission('manage_users');
+        $canManage = $user->hasPermission('manage_librarian') 
+            || $user->hasPermission('manage_librarians') 
+            || $user->hasPermission('manage_users');
+
+        return $canManage && $user->id !== $librarian->account_id;
     }
 
     /**
@@ -64,7 +68,9 @@ class LibrarianPolicy
      */
     public function restore(Account $user, Librarian $librarian): bool
     {
-        return $user->hasPermission('manage_users');
+        return $user->hasPermission('manage_librarian') 
+            || $user->hasPermission('manage_librarians') 
+            || $user->hasPermission('manage_users');
     }
 
     /**
@@ -72,6 +78,10 @@ class LibrarianPolicy
      */
     public function forceDelete(Account $user, Librarian $librarian): bool
     {
-        return $user->hasPermission('manage_users');
+        $canManage = $user->hasPermission('manage_librarian') 
+            || $user->hasPermission('manage_librarians') 
+            || $user->hasPermission('manage_users');
+
+        return $canManage && $user->id !== $librarian->account_id;
     }
 }

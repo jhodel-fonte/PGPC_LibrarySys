@@ -174,15 +174,16 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Default User Account Generation Rules
+    | Default User Account Generation Rules (Students & Patrons)
     |--------------------------------------------------------------------------
     |
     | Rules for generating default usernames and initial passwords when creating
-    | new accounts for students and librarians. Adjusting these rules changes
-    | how accounts are auto-generated across the entire system.
+    | new accounts for students. Adjusting these rules changes how accounts
+    | are auto-generated across the entire system.
     |
     | Supported Pattern Placeholders:
-    |   {school_id}  - Student or Librarian ID number (e.g. "23-39114")
+    |   {id}         - Student ID number (e.g. "23-1234")
+    |   {school_id}  - Alias for Student ID number (e.g. "23-1234")
     |   {lastname}   - User's Last Name (e.g. "Santos")
     |   {firstname}  - User's First Name (e.g. "Juan")
     |   {email}      - User's Email Address (e.g. "student@pgpc.edu.ph")
@@ -193,19 +194,58 @@ return [
         
         // Username generation rules
         'username' => [
-            // Strategy: 'school_id' (e.g. 23-39114), 'email', or custom pattern '{school_id}'
+            // Strategy: 'school_id' (e.g. 23-1234), 'id', 'email', or custom pattern '{id}'
             'strategy' => env('DEFAULT_ACCOUNT_USERNAME_STRATEGY', 'school_id'),
             'case' => 'lowercase', // 'lowercase', 'uppercase', or 'original'
             'fallback' => 'email', // fallback attribute if primary ID is not available
         ],
 
         // Password generation rules
-        // Default pattern '{lastname}{school_id}' produces e.g. "santos23-39114"
+        // Default pattern '{lastname}{id}' produces e.g. "santos23-1234"
         'password' => [
-            'pattern' => env('DEFAULT_ACCOUNT_PASSWORD_PATTERN', '{lastname}{school_id}'),
+            'pattern' => env('DEFAULT_ACCOUNT_PASSWORD_PATTERN', '{lastname}{id}'),
             'case' => 'lowercase', // 'lowercase', 'uppercase', 'capitalize', or 'original'
             'strip_spaces' => true, // removes spaces from names (e.g. "Dela Cruz" -> "delacruz")
             'fallback' => env('DEFAULT_ACCOUNT_PASSWORD_FALLBACK', 'Pgpc12345!'), // fallback password
+            'force_change_on_first_login' => true, // require password update on initial login
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Default Librarian Account Generation Rules (Library Staff & Head Librarians)
+    |--------------------------------------------------------------------------
+    |
+    | Rules for generating default usernames and initial passwords when creating
+    | new accounts for library staff and librarians.
+    |
+    | Supported Pattern Placeholders:
+    |   {id}           - Librarian Employee ID number (e.g. "LIB-2026-001" or "23-1234")
+    |   {school_id}    - Alias for Librarian Employee ID number
+    |   {employee_id}  - Alias for Librarian Employee ID number
+    |   {lastname}     - Staff Last Name (e.g. "Santos")
+    |   {firstname}    - Staff First Name (e.g. "Juan")
+    |   {email}        - Staff Email Address (e.g. "librarian@pgpc.edu.ph")
+    |   {year}         - Current Year (e.g. "2026")
+    |
+    */
+    'default_librarian_account' => [
+        
+        // Username generation rules
+        'username' => [
+            // Strategy: 'school_id' (e.g. LIB-2026-001), 'id', 'email', or custom pattern '{id}'
+            'strategy' => env('DEFAULT_LIBRARIAN_USERNAME_STRATEGY', 'school_id'),
+            'case' => 'lowercase', // 'lowercase', 'uppercase', or 'original'
+            'fallback' => 'email', // fallback attribute if primary ID is not available
+        ],
+
+        // Password generation rules
+        // Default pattern '{lastname}{id}' produces e.g. "santos23-1234"
+        'password' => [
+            'pattern' => env('DEFAULT_LIBRARIAN_PASSWORD_PATTERN', '{lastname}{id}'),
+            'case' => 'lowercase', // 'lowercase', 'uppercase', 'capitalize', or 'original'
+            'strip_spaces' => true, // removes spaces from names (e.g. "Dela Cruz" -> "delacruz")
+            'fallback' => env('DEFAULT_LIBRARIAN_PASSWORD_FALLBACK', 'PgpcLib12345!'), // fallback password
             'force_change_on_first_login' => true, // require password update on initial login
         ],
     ],
@@ -233,9 +273,6 @@ return [
             'edit_book',
             'delete_book',
             'manage_circulation',
-            'view_circulation',
-            'borrow_book',
-            'return_book',
             'manage_fines',
             'manage_system',
             'view_reports',
@@ -253,9 +290,6 @@ return [
             'edit_book',
             'delete_book',
             'manage_circulation',
-            'view_circulation',
-            'borrow_book',
-            'return_book',
             'manage_fines',
             'manage_system',
             'view_reports',
@@ -270,9 +304,6 @@ return [
             'create_book',
             'edit_book',
             'manage_circulation',
-            'view_circulation',
-            'borrow_book',
-            'return_book',
             'manage_fines',
             'view_reports',
         ],

@@ -2,9 +2,11 @@
     $role = request()->is('librarian*') ? 'librarian' : 'admin';
     $checkInRoute = route($role . '.circulation-desk.return');
     $checkOutRoute = route($role . '.circulation-desk.borrow');
+    $borrowedBooksRoute = route($role . '.circulation-desk.borrowed-books');
     $user = auth()->user();
     $canBorrow = $user && ($user->hasRole('Admin') || $user->hasPermission('borrow_book') || $user->hasPermission('manage_circulation'));
     $canReturn = $user && ($user->hasRole('Admin') || $user->hasPermission('return_book') || $user->hasPermission('manage_circulation'));
+    $activeLoansCount = \App\Models\BorrowingTransaction::whereNull('return_date')->count();
 @endphp
 
 <section class="h-full min-h-0 overflow-hidden bg-[#F8FBFF] font-sans text-[#132657]" aria-labelledby="circulation-title">
@@ -52,6 +54,29 @@
                 </span>
             </a>
             @endif
+        </div>
+        
+        <!-- Active Borrowers Full-Width Card (Same width as combined cards above) -->
+        <div class="w-full shrink-0 overflow-hidden rounded-2xl border border-[#D5E2F0] bg-white p-3.5 sm:p-4 lg:px-7 lg:py-4 shadow-[0_8px_24px_rgba(16,43,112,0.06)] flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-4">
+
+            <div class="flex items-center gap-3.5 sm:gap-5 min-w-0">
+                <div class="min-w-0">
+                    <h2 class="text-xs sm:text-sm lg:text-base font-extrabold tracking-[-0.02em] text-[#102B70] leading-tight">
+                        Active Borrowers
+                    </h2>
+                    <p class="mt-0.5 text-[10px] sm:text-xs lg:text-sm font-medium text-[#52627F] leading-snug">
+                        View students with books currently on loan and check their due dates.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Action Button -->
+            <a href="{{ $borrowedBooksRoute }}" wire:navigate class="group inline-flex items-center justify-center gap-2 rounded-xl bg-[#102B70] px-5 py-2.5 sm:px-6 sm:py-3 text-xs sm:text-sm font-bold text-white shadow-[0_8px_18px_rgba(16,43,112,.18)] transition-all duration-200 hover:bg-[#0B225E] hover:shadow-[0_12px_24px_rgba(16,43,112,.25)] focus-visible:ring-4 focus-visible:ring-[#2563EB]/25 shrink-0">
+                <span>View Borrowers</span>
+                <svg class="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1 motion-reduce:transform-none motion-reduce:transition-none" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14m-6-6 6 6-6 6" />
+                </svg>
+            </a>
         </div>
         
         <ol class="grid shrink-0 grid-cols-3 border-y border-[#DDE6F1] py-2 sm:py-3 lg:py-4" aria-label="Circulation workflow">

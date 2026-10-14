@@ -12,6 +12,8 @@
 @toast.window="addToast($event.detail[0]?.message || $event.detail?.message || $event.detail, $event.detail[0]?.type || $event.detail?.type || 'success')"
 @if(session()->has('successMessage'))
     x-init="addToast('{{ session('successMessage') }}', 'success')"
+@elseif(session()->has('status'))
+    x-init="addToast('{{ session('status') }}', 'success')"
 @elseif(session()->has('errorMessage'))
     x-init="addToast('{{ session('errorMessage') }}', 'error')"
 @endif

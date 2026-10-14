@@ -29,30 +29,43 @@
             </p>
         </div>
 
-        <!-- Top Right Actions: Change Status & Edit Librarian Information -->
-        <div class="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
-            <button
-                type="button"
-                wire:click="openStatusModal"
-                class="h-11 px-4 sm:px-5 rounded-2xl border border-[#CBD5E1] bg-white hover:bg-slate-50 hover:border-[#102B70] text-[#102B70] text-xs sm:text-sm font-bold transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#102B70]"
-            >
-                <svg class="w-4 h-4 text-[#102B70]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                </svg>
-                <span>Update Status</span>
-            </button>
+        @php
+            $routePrefix = request()->is('librarian*') ? 'librarian.' : 'admin.';
+            $canManageLibrarian = auth()->check() && (
+                auth()->user()->hasRole('Admin') ||
+                auth()->user()->hasPermission('manage_librarian') ||
+                auth()->user()->hasPermission('manage_librarians') ||
+                auth()->user()->hasPermission('manage_users')
+            );
+            $isSelf = auth()->check() && (auth()->id() === $user?->id);
+            $isTrashed = $user?->trashed();
+        @endphp
+        @if($canManageLibrarian)
+            <!-- Top Right Actions: Change Status, Disable/Enable, Delete, & Edit -->
+            <div class="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
+                <button
+                    type="button"
+                    wire:click="openStatusModal"
+                    class="h-11 px-4 sm:px-5 rounded-2xl border border-[#CBD5E1] bg-white hover:bg-slate-50 hover:border-[#102B70] text-[#102B70] text-xs sm:text-sm font-bold transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#102B70]"
+                >
+                    <svg class="w-4 h-4 text-[#102B70]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                    <span>Update Status</span>
+                </button>
 
-            <a
-                href="{{ route('admin.user-management.edit', $user?->encrypted_id ?? \App\Models\Account::encodeId($this->userId)) }}"
-                wire:navigate
-                class="h-11 px-5 sm:px-6 rounded-2xl bg-[#102B70] hover:bg-[#0B225E] text-white text-xs sm:text-sm font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#EFF6FF]"
-            >
-                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125" />
-                </svg>
-                <span>Edit Librarian Information</span>
-            </a>
-        </div>
+                <a
+                    href="{{ route($routePrefix . 'user-management.edit', $user?->encrypted_id ?? \App\Models\Account::encodeId($this->userId)) }}"
+                    wire:navigate
+                    class="h-11 px-5 sm:px-6 rounded-2xl bg-[#102B70] hover:bg-[#0B225E] text-white text-xs sm:text-sm font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#EFF6FF]"
+                >
+                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125" />
+                    </svg>
+                    <span>Edit Librarian Information</span>
+                </a>
+            </div>
+        @endif
     </div>
 
     <!-- ======================================================== -->
@@ -189,9 +202,9 @@
                         </div>
                     </div>
 
-                    <!-- Official Email Address -->
+                    <!-- Email Address -->
                     <div class="space-y-2">
-                        <label class="block text-sm font-semibold text-[#334155]">Official Email Address</label>
+                        <label class="block text-sm font-semibold text-[#334155]">Email Address</label>
                         <div class="relative flex items-center">
                             <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#94A3B8]">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
@@ -341,6 +354,79 @@
                 </div>
             </div>
 
+            <!-- SECTION 3: DANGER ZONE -->
+            @if($canManageLibrarian && !$isSelf)
+                <div class="space-y-4 pt-4 border-t border-slate-100">
+                    <div class="flex items-center gap-2.5 pb-2 border-b border-slate-100">
+                        <div class="h-6 w-1 bg-[#EF4444] rounded-full"></div>
+                        <h3 class="text-base font-bold text-[#B91C1C]">Danger Zone</h3>
+                    </div>
+
+                    <div class="space-y-3.5">
+                        <!-- Action 1: Disable / Enable Account (Soft Delete) -->
+                        <div class="rounded-2xl border {{ $isTrashed ? 'border-emerald-200 bg-emerald-50/50' : 'border-amber-200 bg-amber-50/40' }} p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div class="space-y-1">
+                                <h4 class="text-sm font-bold text-[#0F172A]">
+                                    {{ $isTrashed ? 'Enable Librarian Account' : 'Disable Librarian Account (Soft Delete)' }}
+                                </h4>
+                                <p class="text-xs text-[#64748B] max-w-xl leading-relaxed">
+                                    @if($isTrashed)
+                                        This account is currently soft-deleted (disabled). Re-enable this account to restore system access and reactivate the librarian profile.
+                                    @else
+                                        Temporarily suspend this librarian's login access by soft-deleting the account. All profile data and historical circulation transactions will remain safely intact in the database.
+                                    @endif
+                                </p>
+                            </div>
+
+                            @if($isTrashed)
+                                <button
+                                    type="button"
+                                    wire:click="enableAccount"
+                                    class="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold shadow-xs transition-all active:scale-[0.98] cursor-pointer shrink-0 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                                >
+                                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+                                    </svg>
+                                    <span>Enable Account</span>
+                                </button>
+                            @else
+                                <button
+                                    type="button"
+                                    wire:click="openDisableModal"
+                                    class="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs sm:text-sm font-bold shadow-xs transition-all active:scale-[0.98] cursor-pointer shrink-0 focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+                                >
+                                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />
+                                    </svg>
+                                    <span>Disable Account</span>
+                                </button>
+                            @endif
+                        </div>
+
+                        <!-- Action 2: Permanently Delete Account (Hard Delete) -->
+                        <div class="rounded-2xl border border-[#FECACA] bg-[#FEF2F2]/60 p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div class="space-y-1">
+                                <h4 class="text-sm font-bold text-[#0F172A]">Permanently Delete Librarian (Hard Delete)</h4>
+                                <p class="text-xs text-[#64748B] max-w-xl leading-relaxed">
+                                    Permanently purge this librarian account and associated records from the database. This action uses a complete hard delete and cannot be undone.
+                                </p>
+                            </div>
+
+                            <button
+                                type="button"
+                                wire:click="openDeleteModal"
+                                class="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-[#EF4444] hover:bg-[#DC2626] text-white text-xs sm:text-sm font-bold shadow-xs transition-all active:scale-[0.98] cursor-pointer shrink-0 focus:outline-none focus:ring-2 focus:ring-[#EF4444]/40"
+                            >
+                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                </svg>
+                                <span>Delete Permanently</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
         </div>
     </div>
 
@@ -408,5 +494,51 @@
             </div>
         </div>
     @endif
+
+    <!-- ======================================================== -->
+    <!-- MODAL: DISABLE LIBRARIAN (SOFT DELETE)                   -->
+    <!-- ======================================================== -->
+    @include('livewire.components.usermanager.alert-modal', [
+        'show' => $showDisableModal,
+        'type' => 'disable',
+        'title' => 'Disable Librarian Account',
+        'subtitle' => 'Soft Delete / Account Deactivation',
+        'targetRole' => 'librarian',
+        'targetName' => $fullName,
+        'targetId' => $schoolId,
+        'bulletPoints' => [
+            'The account will be soft-deleted and marked as <strong>Inactive</strong>.',
+            'The librarian will no longer be able to log in or perform system tasks.',
+            'All transaction records and circulation history are preserved.',
+            'You can re-enable this account at any time.',
+        ],
+        'closeAction' => 'closeDisableModal',
+        'confirmAction' => 'disableAccount',
+        'confirmText' => 'Disable Account',
+    ])
+
+    <!-- ======================================================== -->
+    <!-- MODAL: PERMANENT DELETE (HARD DELETE)                    -->
+    <!-- ======================================================== -->
+    @php
+        $totalLibrarianTransactions = (int)($issuedCount + $receivedCount + $paymentsCount);
+    @endphp
+    @include('livewire.components.usermanager.alert-modal', [
+        'show' => $showDeleteModal,
+        'type' => 'danger',
+        'isHardDelete' => true,
+        'title' => 'Permanently Delete Librarian',
+        'subtitle' => 'Irreversible Hard Delete',
+        'targetRole' => 'librarian',
+        'targetName' => $fullName,
+        'targetId' => $schoolId,
+        'hasHistory' => ($totalLibrarianTransactions > 0),
+        'historyCount' => $totalLibrarianTransactions,
+        'historyMessage' => 'This librarian has recorded <strong>' . $totalLibrarianTransactions . '</strong> library transaction(s) (' . $issuedCount . ' loans, ' . $receivedCount . ' returns, ' . $paymentsCount . ' fine payments).',
+        'closeAction' => 'closeDeleteModal',
+        'confirmAction' => 'deleteLibrarian',
+        'confirmText' => 'Permanently Delete',
+        'confirmLoadingTarget' => 'deleteLibrarian',
+    ])
 
 </div>

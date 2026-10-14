@@ -41,7 +41,7 @@ class BookPolicy
      */
     public function create(Account $user): bool
     {
-        return $user->hasPermission('create_book');
+        return $user->hasPermission('create_book') || $user->hasPermission('manage_catalog');
     }
 
     /**
@@ -49,7 +49,7 @@ class BookPolicy
      */
     public function update(Account $user, ?Book $book = null): bool
     {
-        return $user->hasPermission('edit_book');
+        return $user->hasPermission('edit_book') || $user->hasPermission('manage_catalog');
     }
 
     /**
@@ -57,7 +57,7 @@ class BookPolicy
      */
     public function delete(Account $user, ?Book $book = null): bool
     {
-        return $user->hasPermission('delete_book');
+        return $user->hasPermission('delete_book') || $user->hasPermission('manage_catalog');
     }
 
     /**
@@ -65,7 +65,7 @@ class BookPolicy
      */
     public function restore(Account $user, ?Book $book = null): bool
     {
-        return $user->hasPermission('delete_book');
+        return $user->hasPermission('delete_book') || $user->hasPermission('manage_catalog');
     }
 
     /**
@@ -73,6 +73,6 @@ class BookPolicy
      */
     public function forceDelete(Account $user, ?Book $book = null): bool
     {
-        return $user->hasPermission('delete_book');
+        return $user->hasPermission('delete_book') || $user->hasPermission('manage_catalog');
     }
 }

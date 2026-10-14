@@ -42,12 +42,9 @@ class EditLibrarianForm extends Component
         'delete_book' => false,
         'manage_catalog' => false,
 
-        // Circulation
-        'view_circulation' => false,
-        'borrow_book' => false,
-        'return_book' => false,
-        'manage_fines' => false,
+        // Circulation Desk
         'manage_circulation' => false,
+        'manage_fines' => false,
 
         // User Administration
         'view_students' => false,
@@ -73,7 +70,11 @@ class EditLibrarianForm extends Component
     public function mount($userId): void
     {
         $this->userId = $userId;
-        $account = Account::with(['librarian', 'role', 'permissions'])->findOrFail($this->userId);
+        $account = Account::withTrashed()->with([
+            'librarian' => fn($q) => $q->withTrashed(),
+            'role',
+            'permissions',
+        ])->findOrFail($this->userId);
         $librarian = $account->librarian;
 
         if (! $librarian) {
@@ -206,7 +207,16 @@ class EditLibrarianForm extends Component
 
         $this->errorMessage = '';
         $this->sanitizeInputs();
-        $this->validate();
+
+        try {
+            $this->validate();
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $firstField = array_key_first($e->errors());
+            $firstMessage = $e->validator->errors()->first();
+            $this->dispatch('scroll-to-error', field: $firstField, message: $firstMessage);
+            $this->dispatch('toast', message: $firstMessage ?: 'Please check required fields.', type: 'error');
+            throw $e;
+        }
 
         $disk = config('settings.user_images.disk', 'public');
         $imagePathToSave = $librarian->getRawOriginal('image_url');
@@ -261,12 +271,20 @@ class EditLibrarianForm extends Component
 
                 // Sync custom account permissions
                 if (!empty($this->permissions)) {
-                    $permissionRecords = Permission::whereIn('name', array_keys($this->permissions))
+                    $permissionsToSync = $this->permissions;
+                    if (array_key_exists('manage_circulation', $permissionsToSync)) {
+                        $isCircAllowed = (bool) $permissionsToSync['manage_circulation'];
+                        $permissionsToSync['view_circulation'] = $isCircAllowed;
+                        $permissionsToSync['borrow_book'] = $isCircAllowed;
+                        $permissionsToSync['return_book'] = $isCircAllowed;
+                    }
+
+                    $permissionRecords = Permission::whereIn('name', array_keys($permissionsToSync))
                         ->get()
                         ->keyBy('name');
 
                     $syncData = [];
-                    foreach ($this->permissions as $permName => $isAllowed) {
+                    foreach ($permissionsToSync as $permName => $isAllowed) {
                         if (isset($permissionRecords[$permName])) {
                             $syncData[$permissionRecords[$permName]->id] = [
                                 'is_allowed' => (bool) $isAllowed,
@@ -288,6 +306,8 @@ class EditLibrarianForm extends Component
         } catch (\Throwable $e) {
             Log::error('Failed to update librarian: ' . $e->getMessage(), ['exception' => $e]);
             $this->errorMessage = 'Failed to update librarian profile. ' . $e->getMessage();
+            $this->dispatch('scroll-to-error', field: 'error-banner', message: $this->errorMessage);
+            $this->dispatch('toast', message: $this->errorMessage, type: 'error');
         }
     }
 

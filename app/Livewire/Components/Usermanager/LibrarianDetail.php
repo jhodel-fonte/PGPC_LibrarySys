@@ -16,6 +16,10 @@ class LibrarianDetail extends Component
     public bool $showStatusModal = false;
     public ?int $selectedStatusId = null;
 
+    // Delete & Disable modals
+    public bool $showDeleteModal = false;
+    public bool $showDisableModal = false;
+
     // Edit profile modal
     public bool $showEditModal = false;
     public string $editFirstName = '';
@@ -45,12 +49,14 @@ class LibrarianDetail extends Component
     #[Computed]
     public function user()
     {
-        return Account::with([
+        return Account::withTrashed()->with([
             'role',
             'status',
-            'librarian.issuedTransactions',
-            'librarian.receivedTransactions',
-            'librarian.receivedPayments',
+            'librarian' => fn($q) => $q->withTrashed()->with([
+                'issuedTransactions',
+                'receivedTransactions',
+                'receivedPayments',
+            ]),
             'permissions',
         ])->find($this->userId);
     }
@@ -294,6 +300,169 @@ class LibrarianDetail extends Component
         } catch (\Throwable $e) {
             $this->dispatch('toast', message: 'Failed to send password reset email: ' . $e->getMessage(), type: 'error');
         }
+    }
+
+    public function openDisableModal(): void
+    {
+        $this->showDisableModal = true;
+    }
+
+    public function closeDisableModal(): void
+    {
+        $this->showDisableModal = false;
+    }
+
+    public function disableAccount(): void
+    {
+        $user = $this->user;
+        if (!$user) {
+            $this->dispatch('toast', message: 'User account not found.', type: 'error');
+            $this->showDisableModal = false;
+            return;
+        }
+
+        if (auth()->check()) {
+            $authUser = auth()->user();
+            if ($authUser->id === $user->id) {
+                $this->dispatch('toast', message: 'You cannot disable your own account.', type: 'error');
+                $this->showDisableModal = false;
+                return;
+            }
+
+            if (!$authUser->hasRole('Admin') && !$authUser->hasPermission('manage_librarian') && !$authUser->hasPermission('manage_librarians') && !$authUser->hasPermission('manage_users')) {
+                abort(403, 'Unauthorized action. You do not have permission to disable librarian accounts.');
+            }
+        }
+
+        // 1. Soft-delete the associated librarian profile record if present
+        if ($user->librarian) {
+            $user->librarian->delete();
+        }
+
+        // 2. Set status to Inactive if available
+        $inactiveStatus = AccountStatus::where('status_name', 'Inactive')->first();
+        if ($inactiveStatus) {
+            $user->update(['status_id' => $inactiveStatus->id]);
+        }
+
+        // 3. Soft-delete the account record
+        $user->delete();
+
+        $this->showDisableModal = false;
+        unset($this->user);
+
+        $this->dispatch('toast', message: 'Librarian account has been disabled (soft-deleted). Login access is suspended.', type: 'success');
+    }
+
+    public function enableAccount(): void
+    {
+        $user = $this->user;
+        if (!$user) {
+            $this->dispatch('toast', message: 'User account not found.', type: 'error');
+            return;
+        }
+
+        if (auth()->check()) {
+            $authUser = auth()->user();
+            if (!$authUser->hasRole('Admin') && !$authUser->hasPermission('manage_librarian') && !$authUser->hasPermission('manage_librarians') && !$authUser->hasPermission('manage_users')) {
+                abort(403, 'Unauthorized action. You do not have permission to enable librarian accounts.');
+            }
+        }
+
+        // 1. Restore the account record
+        $user->restore();
+
+        // 2. Restore the associated librarian profile record if present
+        if ($user->librarian) {
+            $user->librarian->restore();
+        }
+
+        // 3. Set status back to Active
+        $activeStatus = AccountStatus::where('status_name', 'Active')->first();
+        if ($activeStatus) {
+            $user->update(['status_id' => $activeStatus->id]);
+        }
+
+        unset($this->user);
+
+        $this->dispatch('toast', message: 'Librarian account has been successfully enabled and set to Active.', type: 'success');
+    }
+
+    public function openDeleteModal(): void
+    {
+        $this->showDeleteModal = true;
+    }
+
+    public function closeDeleteModal(): void
+    {
+        $this->showDeleteModal = false;
+    }
+
+    public function deleteLibrarian(): void
+    {
+        $user = $this->user;
+        if (!$user) {
+            $this->dispatch('toast', message: 'User account not found.', type: 'error');
+            $this->showDeleteModal = false;
+            return;
+        }
+
+        if (auth()->check()) {
+            $authUser = auth()->user();
+            if ($authUser->id === $user->id) {
+                $this->dispatch('toast', message: 'You cannot delete your own account.', type: 'error');
+                $this->showDeleteModal = false;
+                return;
+            }
+
+            if (!$authUser->hasRole('Admin') && !$authUser->hasPermission('manage_librarian') && !$authUser->hasPermission('manage_librarians') && !$authUser->hasPermission('manage_users')) {
+                abort(403, 'Unauthorized action. You do not have permission to delete librarian accounts.');
+            }
+        }
+
+        $librarian = $user->librarian;
+
+        // Check if librarian has associated borrowing transactions or fine payments (foreign key constraint)
+        $hasTransactions = $librarian && (
+            $librarian->issuedTransactions()->exists() ||
+            $librarian->receivedTransactions()->exists() ||
+            $librarian->receivedPayments()->exists()
+        );
+
+        if ($hasTransactions) {
+            $this->showDeleteModal = false;
+            $this->dispatch('toast', message: 'Cannot permanently delete this librarian account because they are linked to existing circulation transactions and audit records. Use "Disable Account" instead to deactivate access while preserving library history.', type: 'error');
+            return;
+        }
+
+        $librarianName = $this->fullName;
+
+        // 1. Detach permissions
+        $user->permissions()->detach();
+
+        // 2. Remove profile photo if uploaded locally
+        if ($librarian && !empty($librarian->getRawOriginal('image_url'))) {
+            $rawImg = $librarian->getRawOriginal('image_url');
+            if (\Illuminate\Support\Facades\Storage::disk('public')->exists($rawImg)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($rawImg);
+            }
+        }
+
+        // 3. HARD DELETE: Permanently delete the librarian record from DB
+        if ($librarian) {
+            $librarian->forceDelete();
+        }
+
+        // 4. HARD DELETE: Permanently delete the account record from DB
+        $user->forceDelete();
+
+        session()->flash('toast', [
+            'message' => "Librarian account for {$librarianName} has been permanently deleted from the database.",
+            'type' => 'success',
+        ]);
+
+        $prefix = request()->is('librarian*') ? 'librarian.' : 'admin.';
+        $this->redirect(route($prefix . 'user-management', ['type' => 'librarian']), navigate: true);
     }
 
     public function render()

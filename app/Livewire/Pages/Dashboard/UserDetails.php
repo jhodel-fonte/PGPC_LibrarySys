@@ -77,11 +77,11 @@ class UserDetails extends Component
     #[Computed]
     public function user()
     {
-        return Account::with([
+        return Account::withTrashed()->with([
             'role',
             'status',
             'student.libraryStatus',
-            'librarian',
+            'librarian' => fn($q) => $q->withTrashed(),
         ])->find($this->id);
     }
 

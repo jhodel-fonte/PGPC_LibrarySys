@@ -141,7 +141,7 @@
             <tr class="hover:bg-slate-50/70 transition-colors h-[72px] group">
                 <!-- STUDENT INFO & AVATAR -->
                 <td x-show="cols['student'] !== false" class="px-6 py-4 align-middle">
-                    <a href="{{ route('admin.user-details', $user->encrypted_id) }}" wire:navigate class="flex items-center gap-3.5 group/user focus:outline-none">
+                    <a href="{{ route($routePrefix . 'user-details', $user->encrypted_id) }}" wire:navigate class="flex items-center gap-3.5 group/user focus:outline-none">
                         @if($student?->image_url)
                             <img src="{{ $student->image_url }}" alt="{{ $fullName }}" class="w-10 h-10 rounded-full object-cover border border-[#CBD5E1] shrink-0">
                         @else
@@ -173,18 +173,24 @@
 
                 <!-- ACCOUNT STATUS -->
                 <td x-show="cols['status'] !== false" class="px-6 py-4 align-middle">
-                    @php
-                        $statusName = $user->status?->status_name ?? 'Unknown';
-                        $statusClass = match(strtolower($statusName)) {
-                            'active' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
-                            'locked', 'suspended' => 'bg-red-50 text-red-700 border-red-200',
-                            'pending' => 'bg-amber-50 text-amber-700 border-amber-200',
-                            default => 'bg-slate-100 text-slate-600 border-slate-200'
-                        };
-                    @endphp
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border {{ $statusClass }}">
-                        {{ $statusName }}
-                    </span>
+                    @if($user->trashed())
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+                            Disabled
+                        </span>
+                    @else
+                        @php
+                            $statusName = $user->status?->status_name ?? 'Unknown';
+                            $statusClass = match(strtolower($statusName)) {
+                                'active' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                                'locked', 'suspended' => 'bg-red-50 text-red-700 border-red-200',
+                                'pending' => 'bg-amber-50 text-amber-700 border-amber-200',
+                                default => 'bg-slate-100 text-slate-600 border-slate-200'
+                            };
+                        @endphp
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border {{ $statusClass }}">
+                            {{ $statusName }}
+                        </span>
+                    @endif
                 </td>
 
                 <!-- LAST LOGIN -->

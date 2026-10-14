@@ -488,9 +488,17 @@
                 >
                     Close
                 </button>
-                @can('update', \App\Models\Book::class)
+                @php
+                    $editPrefix = request()->is('librarian*') ? 'librarian.' : 'admin.';
+                    $canEditBook = auth()->check() && (
+                        auth()->user()->hasRole('Admin') ||
+                        auth()->user()->hasPermission('edit_book') ||
+                        auth()->user()->hasPermission('manage_catalog')
+                    );
+                @endphp
+                @if($canEditBook)
                     <a
-                        href="{{ $bookDetail ? route('admin.book-management.edit', $bookDetail->id) : '#' }}"
+                        href="{{ $bookDetail ? route($editPrefix . 'book-management.edit', $bookDetail->id) : '#' }}"
                         wire:navigate
                         :class="isFetching ? 'opacity-40 pointer-events-none' : ''"
                         class="inline-flex h-9 items-center gap-2 rounded-lg bg-[#102B70] px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#0B225E] active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70] focus-visible:ring-offset-2"
@@ -498,7 +506,7 @@
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="m14.7 6.3 3 3M5 19l3.7-.7L19 8a2.1 2.1 0 0 0-3-3L5.7 15.3 5 19Z"/></svg>
                         <span>Edit Book</span>
                     </a>
-                @endcan
+                @endif
             </footer>
         </section>
     </div>

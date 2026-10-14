@@ -18,7 +18,10 @@ class PermissionMiddleware
         $user = $request->user();
 
         if (! $user) {
-            abort(403, 'Unauthorized action.');
+            if ($request->is('admin*') || $request->is('librarian*') || $request->is('staff*') || $request->is('employee*')) {
+                return redirect()->guest(route('employee.login'));
+            }
+            return redirect()->guest(route('login'));
         }
 
         // Super Admin bypasses all individual permission requirements

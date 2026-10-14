@@ -1,7 +1,7 @@
 @props(['activepage' => 'Dashboard', 'subpage' => null, 'activepageRoute' => null])
 
 @php
-    $staffRole = ucfirst(auth()->user()?->role?->name ?? 'Librarian');
+    $staffRole = ucfirst(auth()->user()?->role?->name ?? (request()->is('student*') ? 'Student' : 'Librarian'));
 
     $isSubpage = !empty($subpage);
 
@@ -12,7 +12,8 @@
         } elseif (url()->previous() !== url()->current() && str_starts_with(url()->previous(), request()->root())) {
             $mainPageUrl = url()->previous();
         } else {
-            $mainPageUrl = \Illuminate\Support\Facades\Route::has('admin.dashboard') ? route('admin.dashboard') : url('/');
+            $defaultRoute = request()->is('student*') ? 'student.dashboard' : (request()->is('librarian*') ? 'librarian.dashboard' : 'admin.dashboard');
+            $mainPageUrl = \Illuminate\Support\Facades\Route::has($defaultRoute) ? route($defaultRoute) : url('/');
         }
     }
 

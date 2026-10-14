@@ -42,12 +42,9 @@ class AddLibrarianForm extends Component
         'delete_book' => false,
         'manage_catalog' => false,
 
-        // Circulation
-        'view_circulation' => false,
-        'borrow_book' => false,
-        'return_book' => false,
-        'manage_fines' => false,
+        // Circulation Desk
         'manage_circulation' => false,
+        'manage_fines' => false,
 
         // User Administration
         'view_students' => false,
@@ -189,7 +186,16 @@ class AddLibrarianForm extends Component
 
         $this->errorMessage = '';
         $this->sanitizeInputs();
-        $this->validate();
+
+        try {
+            $this->validate();
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $firstField = array_key_first($e->errors());
+            $firstMessage = $e->validator->errors()->first();
+            $this->dispatch('scroll-to-error', field: $firstField, message: $firstMessage);
+            $this->dispatch('toast', message: $firstMessage ?: 'Please check required fields.', type: 'error');
+            throw $e;
+        }
 
         $disk = config('settings.user_images.disk', 'public');
         $storedPath = null;
@@ -212,7 +218,8 @@ class AddLibrarianForm extends Component
                 'email' => $this->email,
                 'first_name' => $this->firstName,
                 'last_name' => $this->lastName,
-            ]);
+                'role' => $this->role,
+            ], role: $this->role ?: 'librarian');
 
             // Ensure unique username with collision resolution
             $baseUsername = $credentials['username'];
@@ -251,12 +258,20 @@ class AddLibrarianForm extends Component
 
                 // Sync custom account permissions
                 if (!empty($this->permissions)) {
-                    $permissionRecords = Permission::whereIn('name', array_keys($this->permissions))
+                    $permissionsToSync = $this->permissions;
+                    if (array_key_exists('manage_circulation', $permissionsToSync)) {
+                        $isCircAllowed = (bool) $permissionsToSync['manage_circulation'];
+                        $permissionsToSync['view_circulation'] = $isCircAllowed;
+                        $permissionsToSync['borrow_book'] = $isCircAllowed;
+                        $permissionsToSync['return_book'] = $isCircAllowed;
+                    }
+
+                    $permissionRecords = Permission::whereIn('name', array_keys($permissionsToSync))
                         ->get()
                         ->keyBy('name');
 
                     $syncData = [];
-                    foreach ($this->permissions as $permName => $isAllowed) {
+                    foreach ($permissionsToSync as $permName => $isAllowed) {
                         if (isset($permissionRecords[$permName])) {
                             $syncData[$permissionRecords[$permName]->id] = [
                                 'is_allowed' => (bool) $isAllowed,
@@ -290,6 +305,7 @@ class AddLibrarianForm extends Component
 
             $fullName = e(trim("{$librarian->first_name} {$librarian->last_name}"));
             session()->flash('status', "Librarian account for {$fullName} ({$librarian->school_id_number}) created successfully.");
+            session()->flash('successMessage', "Librarian account for {$fullName} ({$librarian->school_id_number}) created successfully.");
 
             $prefix = request()->is('librarian*') ? 'librarian.' : 'admin.';
             return $this->redirect(route($prefix . 'user-management'), navigate: true);
@@ -301,6 +317,7 @@ class AddLibrarianForm extends Component
 
             Log::warning('Duplicate entry conflict when registering librarian: Employee ID or Email collision');
             $this->errorMessage = 'A staff account with this Employee ID Number or Email Address already exists.';
+            $this->dispatch('scroll-to-error', field: 'schoolIdNumber', message: $this->errorMessage);
             $this->dispatch('toast', message: $this->errorMessage, type: 'error');
 
         } catch (\Throwable $e) {
@@ -313,6 +330,7 @@ class AddLibrarianForm extends Component
             ]);
 
             $this->errorMessage = 'Failed to create the librarian account. Please try again.';
+            $this->dispatch('scroll-to-error', field: 'error-banner', message: $this->errorMessage);
             $this->dispatch('toast', message: $this->errorMessage, type: 'error');
         }
     }

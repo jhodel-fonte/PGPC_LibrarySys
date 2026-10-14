@@ -91,9 +91,13 @@ class StudentTable extends Component
 
     public function render()
     {
-        $query = Account::whereHas('role', function ($q) {
+        $query = Account::withTrashed()->whereHas('role', function ($q) {
             $q->whereIn('name', ['Student', 'Member']);
-        })->with(['role', 'status', 'student']);
+        })->with([
+            'role',
+            'status',
+            'student' => fn($q) => $q->withTrashed(),
+        ]);
 
         // 1. Tab quick filter
         if ($this->activeTab === 'Active') {
@@ -160,7 +164,7 @@ class StudentTable extends Component
         $students = $query->paginate(10);
 
         // Calculate count metrics for tabs
-        $baseStudentQuery = Account::whereHas('role', fn ($q) => $q->whereIn('name', ['Student', 'Member']));
+        $baseStudentQuery = Account::withTrashed()->whereHas('role', fn ($q) => $q->whereIn('name', ['Student', 'Member']));
         $totalStudents = (clone $baseStudentQuery)->count();
         $activeStudents = (clone $baseStudentQuery)->whereHas('status', fn ($q) => $q->where('status_name', 'Active'))->count();
         $inactiveStudents = (clone $baseStudentQuery)->whereHas('status', fn ($q) => $q->where('status_name', 'Inactive'))->count();

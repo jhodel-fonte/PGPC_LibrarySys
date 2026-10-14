@@ -261,7 +261,8 @@ class AddUserForm extends Component
                 'email' => $this->email,
                 'first_name' => $this->firstName,
                 'last_name' => $this->lastName,
-            ]);
+                'role' => 'student',
+            ], role: 'student');
 
             // Ensure unique username with collision resolution
             $baseUsername = $credentials['username'];
@@ -325,6 +326,7 @@ class AddUserForm extends Component
 
             $fullName = e(trim("{$student->first_name} {$student->last_name}"));
             session()->flash('status', "Student account for {$fullName} ({$student->school_id_number}) created successfully.");
+            session()->flash('successMessage', "Student account for {$fullName} ({$student->school_id_number}) created successfully.");
 
             $prefix = request()->is('librarian*') ? 'librarian.' : 'admin.';
             return $this->redirect(route($prefix . 'user-management'), navigate: true);

@@ -41,20 +41,27 @@ class GoogleAuthController extends Controller
         $email = strtolower(trim($googleUser->getEmail()));
         $googleId = (string) $googleUser->getId();
 
-        // 1. Look for existing account with matching Google provider ID
-        $account = Account::where('provider', 'google')
+        // 1. Look for existing account with matching Google provider ID (including soft-deleted accounts)
+        $account = Account::withTrashed()
+            ->where('provider', 'google')
             ->where('provider_id', $googleId)
             ->first();
 
         // 2. Or check by verified email match
         if (! $account) {
-            $account = Account::where('email', $email)->first();
+            $account = Account::withTrashed()->where('email', $email)->first();
         }
 
-        // If an existing account is found, log them in directly
+        // If an existing account is found, check if deactivated or disabled
         if ($account) {
-            if ($account->status_id && $account->status_id !== 1) {
-                return redirect()->route('login')->with('error', 'Your account is deactivated or suspended. Please contact the library administrator.');
+            $isDeactivated = $account->trashed()
+                || ($account->status_id && $account->status_id !== 1)
+                || ($account->status && in_array(strtolower($account->status->status_name), ['inactive', 'disabled', 'suspended', 'deactivated']))
+                || ($account->student()->withTrashed()->whereNotNull('deleted_at')->exists())
+                || ($account->librarian()->withTrashed()->whereNotNull('deleted_at')->exists());
+
+            if ($isDeactivated) {
+                return redirect()->route('account.deactivated');
             }
 
             // Update Google link and verify email if not already set

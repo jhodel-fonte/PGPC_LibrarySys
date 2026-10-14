@@ -28,7 +28,7 @@ class EmployeeLogin extends Component
                     $this->redirect(route('librarian.dashboard'), navigate: false);
                 }
             } else {
-                $this->redirect(url('/'), navigate: false);
+                $this->redirect(route('student.dashboard'), navigate: false);
             }
         }
     }
@@ -63,6 +63,9 @@ class EmployeeLogin extends Component
             } else {
                 $this->redirect(route('librarian.dashboard'), navigate: false);
             }
+        } catch (\App\Exceptions\AccountDeactivatedException $e) {
+            $this->redirect(route('account.deactivated'), navigate: false);
+            return;
         } catch (\Illuminate\Validation\ValidationException $e) {
             $this->dispatch('login-failed');
             $this->dispatch('auth-error', [

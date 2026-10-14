@@ -24,7 +24,7 @@ class StudentLogin extends Component
             if (in_array($roleName, ['admin', 'headlibrarian', 'librarian'])) {
                 $this->redirect(route('admin.dashboard'), navigate: false);
             } else {
-                $this->redirect(url('/'), navigate: false);
+                $this->redirect(route('student.dashboard'), navigate: false);
             }
         }
     }
@@ -40,7 +40,10 @@ class StudentLogin extends Component
 
             Session::regenerate();
 
-            $this->redirectIntended(default: url('/'), navigate: false);
+            $this->redirectIntended(default: route('student.dashboard'), navigate: false);
+        } catch (\App\Exceptions\AccountDeactivatedException $e) {
+            $this->redirect(route('account.deactivated'), navigate: false);
+            return;
         } catch (\Illuminate\Validation\ValidationException $e) {
             $this->dispatch('login-failed');
             $this->dispatch('auth-error', [

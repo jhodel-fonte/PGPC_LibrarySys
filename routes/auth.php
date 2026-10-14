@@ -23,7 +23,33 @@ Route::middleware('unauthenticated')->group(function () {
     Route::redirect('login', '/student/');
     Route::redirect('staff/login', '/employee/');
     Route::redirect('portal/staff', '/employee/');
+    Route::redirect('admin/login', '/employee/');
+    Route::redirect('librarian/login', '/employee/');
 });
+
+// 401 Error Page for deactivated / disabled accounts
+Route::get('/account/deactivated', function () {
+    if (request()->expectsJson()) {
+        return response()->json([
+            'error' => [
+                'type' => 'invalid_request_error',
+                'code' => 'account_deactivated',
+                'message' => 'You do not have an account because it has been deleted or deactivated.',
+            ],
+        ], 401);
+    }
+
+    return response()->view('errors.401', [
+        'code' => 401,
+        'errorCode' => 'account_deactivated',
+        'errorType' => 'invalid_request_error',
+        'title' => 'Account Deactivated',
+        'bodyTitle' => 'Account Deactivated',
+        'message' => 'You do not have an account because it has been deleted or deactivated.',
+    ], 401);
+})->name('account.deactivated');
+
+Route::redirect('/account-deactivated', '/account/deactivated');
 
 Route::middleware('auth')->group(function () {
     Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)->middleware(['signed', 'throttle:6,1'])->name('verification.verify');

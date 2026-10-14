@@ -110,8 +110,50 @@
             this.role = '';
             Object.keys(this.permissions).forEach(k => this.permissions[k] = false);
             $wire.clearForm();
+        },
+
+        scrollToError(detail) {
+            const field = typeof detail === 'string' ? detail : (detail?.field || '');
+            const fieldMap = {
+                'firstName': 'librarian-first-name',
+                'middleName': 'librarian-middle-name',
+                'lastName': 'librarian-last-name',
+                'schoolIdNumber': 'librarian-school-id',
+                'contactNum': 'librarian-contact',
+                'email': 'librarian-email',
+                'role': 'librarian-role',
+                'photo': 'librarian-photo-container',
+                'error-banner': 'form-error-banner'
+            };
+            const targetId = fieldMap[field] || field;
+            let el = document.getElementById(targetId);
+            if (!el && field) {
+                el = document.querySelector(`[name="${field}"]`)
+                    || document.querySelector(`[wire\\:model*="${field}"]`)
+                    || document.querySelector(`[wire\\:model\\.blur*="${field}"]`);
+            }
+            if (!el) {
+                el = document.getElementById('form-error-banner');
+            }
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // Temporary focus ring highlight to catch the user's attention
+                el.classList.add('ring-4', 'ring-[#EF4444]', 'ring-offset-2');
+                setTimeout(() => {
+                    el.classList.remove('ring-4', 'ring-[#EF4444]', 'ring-offset-2');
+                }, 2500);
+                setTimeout(() => {
+                    if (typeof el.focus === 'function') {
+                        try {
+                            el.focus({ preventScroll: true });
+                        } catch (err) {}
+                    }
+                }, 350);
+            }
         }
     }"
+    x-init="$wire.on('scroll-to-error', data => scrollToError(data))"
+    @scroll-to-error.window="scrollToError($event.detail)"
     class="font-sans antialiased text-[#0F172A]"
 >
     <!-- Main Form Card Container -->
@@ -183,7 +225,7 @@
 
             <!-- Global Form Error & Validation Banner -->
             @if($errorMessage || $errors->any())
-                <div class="rounded-2xl border border-[#FECACA] bg-[#FEF2F2] p-4 sm:p-5 shadow-[0_4px_20px_rgba(239,68,68,0.06)] animate-fade-in transition-all">
+                <div id="form-error-banner" class="rounded-2xl border border-[#FECACA] bg-[#FEF2F2] p-4 sm:p-5 shadow-[0_4px_20px_rgba(239,68,68,0.06)] animate-fade-in transition-all">
                     <div class="flex items-start justify-between gap-3">
                         <div class="flex items-start gap-3">
                             <div class="flex-1 min-w-0 pt-0.5">
@@ -317,7 +359,7 @@
                                 id="librarian-school-id"
                                 type="text"
                                 wire:model.blur="schoolIdNumber"
-                                placeholder="e.g. EMP-{{ date('y') }}-001"
+                                placeholder="e.g. 12-3456"
                                 required
                                 class="h-14 w-full pl-11 pr-4 rounded-2xl border bg-[#F8FAFC] text-sm font-medium text-[#0F172A] placeholder:text-[#94A3B8] outline-none transition-all hover:bg-white focus:bg-white focus:ring-4 focus:ring-[#EFF6FF] {{ $errors->has('schoolIdNumber') ? 'border-[#EF4444] focus:border-[#EF4444]' : 'border-[#E2E8F0] hover:border-[#CBD5E1] focus:border-[#102B70]' }}"
                             >
@@ -379,6 +421,14 @@
                         @enderror
                     </div>
 
+                    <!-- Default Account Credentials Notice -->
+                    <div class="col-span-1 md:col-span-2 lg:col-span-3 rounded-2xl border border-[#DBEAFE] bg-[#EFF6FF] p-4 text-sm font-medium text-[#1E3A8A] flex items-start gap-3">
+                        <div class="space-y-0.5 leading-relaxed">
+                            <span class="font-bold text-[#102B70]">Default Login Credentials:</span>
+                            <span class="text-slate-600">The account username is automatically assigned from the Employee ID (or email). Initial default password is generated as <span class="font-semibold text-[#102B70]">lastname{id}</span> (e.g. <span class="font-semibold text-[#102B70]">lastname23-1234</span>).</span>
+                        </div>
+                    </div>
+
                 </div>
             </div>
 
@@ -427,22 +477,10 @@
                         'title' => 'Circulation Desk',
                         'icon' => 'M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5',
                         'permissions' => [
-                            'view_circulation' => [
-                                'label' => 'View Circulation Logs',
-                                'description' => 'Inspect active loans, borrow histories, and real-time overdue lists.',
-                                'icon' => 'M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z',
-                                'elevated' => false,
-                            ],
-                            'borrow_book' => [
-                                'label' => 'Issue Loans (Borrow)',
-                                'description' => 'Issue book borrowings and check out physical copies to patrons.',
-                                'icon' => 'M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3',
-                                'elevated' => false,
-                            ],
-                            'return_book' => [
-                                'label' => 'Process Returns (Check-In)',
-                                'description' => 'Receive returned copies, inspect book condition, and check in.',
-                                'icon' => 'M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18',
+                            'manage_circulation' => [
+                                'label' => 'Circulation Desk (Loans & Returns)',
+                                'description' => 'Issue book borrowings, process returns (check-in), and inspect circulation logs.',
+                                'icon' => 'M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5',
                                 'elevated' => false,
                             ],
                             'manage_fines' => [
@@ -450,12 +488,6 @@
                                 'description' => 'Assess overdue penalties, receive payments, and waive fine obligations.',
                                 'icon' => 'M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 0 0 3 15h-.75M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm3 0h.008v.008H18V10.5Zm-12 0h.008v.008H6V10.5Z',
                                 'elevated' => false,
-                            ],
-                            'manage_circulation' => [
-                                'label' => 'Full Circulation Operations',
-                                'description' => 'Complete control over circulation policies, overrides, and reservation queues.',
-                                'icon' => 'M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z',
-                                'elevated' => true,
                             ],
                         ],
                     ],
@@ -524,7 +556,7 @@
             <div class="space-y-4 pt-2">
                 <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between pb-2 border-b border-slate-100">
                     <div>
-                        <h3 class="text-base font-bold text-[#102B70]">Role &amp; Granular Permissions</h3>
+                        <h3 class="text-base font-bold text-[#102B70]">Role &amp; Permissions</h3>
                         <p class="text-xs text-slate-500 font-medium mt-0.5">Select a staff role to apply standard baseline privileges, or toggle fine-grained access below.</p>
                     </div>
                     <div class="flex items-center gap-2 shrink-0" x-show="role" x-cloak>
@@ -578,13 +610,12 @@
                             <div>
                                 <template x-if="!role">
                                     <p class="text-xs font-medium text-slate-500 leading-relaxed">
-                                        Select a user type above to load preset permissions. You can then toggle specific granular privileges below.
+                                        Select a user type above to load preset permissions. You can then toggle specific privileges below.
                                     </p>
                                 </template>
                                 <template x-if="role === 'librarian'">
                                     <div>
                                         <div class="flex items-center gap-2">
-                                            <span class="h-2 w-2 rounded-full bg-blue-500"></span>
                                             <p class="text-sm font-bold text-[#0F172A]">Librarian Role</p>
                                         </div>
                                         <p class="text-xs font-medium text-slate-500 mt-1 leading-relaxed">
@@ -595,11 +626,10 @@
                                 <template x-if="role === 'librarian_head' || role === 'head_librarian'">
                                     <div>
                                         <div class="flex items-center gap-2">
-                                            <span class="h-2 w-2 rounded-full bg-[#FCC719]"></span>
                                             <p class="text-sm font-bold text-[#0F172A]">Head Librarian Role</p>
                                         </div>
                                         <p class="text-xs font-medium text-slate-500 mt-1 leading-relaxed">
-                                            Full administrative authority. All 18 granular cataloging, circulation, staff management, and system settings are enabled by default.
+                                            Full administrative authority. All cataloging, circulation, staff management, and system settings are enabled by default.
                                         </p>
                                     </div>
                                 </template>
@@ -654,7 +684,7 @@
                         </div>
                     </div>
 
-                    <!-- Granular Permission Categories -->
+                    
                     <div class="lg:col-span-2 space-y-5">
                         @foreach ($permissionCategories as $catKey => $category)
                             @php
@@ -671,7 +701,7 @@
                                         </div>
                                         <div>
                                             <h4 class="text-sm font-bold text-[#0F172A]">{{ $category['title'] }}</h4>
-                                            <p class="text-[11px] text-slate-500 font-medium hidden sm:block">{{ count($category['permissions']) }} granular permissions</p>
+                                            <p class="text-[11px] text-slate-500 font-medium hidden sm:block">{{ count($category['permissions']) }} permissions</p>
                                         </div>
                                     </div>
 
@@ -773,6 +803,7 @@
                 >
 
                 <div
+                    id="librarian-photo-container"
                     @dragover.prevent="isDragging = true"
                     @dragleave.prevent="isDragging = false"
                     @drop.prevent="handleDrop($event)"

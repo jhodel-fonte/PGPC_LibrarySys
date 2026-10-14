@@ -183,13 +183,22 @@ class Account extends Authenticatable
 
         // 2. Role-based check (all roles evaluate assigned role permissions)
         if ($this->role) {
-            return $this->role->permissions()
+            $hasRolePermission = $this->role->permissions()
                 ->where('permissions.name', $permissionName)
                 ->where(function ($query) {
                     $query->where('role_permissions.is_allowed', true)
                         ->orWhereNull('role_permissions.is_allowed');
                 })
                 ->exists();
+
+            if ($hasRolePermission) {
+                return true;
+            }
+        }
+
+        // 3. Consolidated circulation fallback: manage_circulation covers loans, returns, and log viewing
+        if (in_array($permissionName, ['view_circulation', 'borrow_book', 'return_book'], true)) {
+            return $this->hasPermission('manage_circulation');
         }
 
         return false;

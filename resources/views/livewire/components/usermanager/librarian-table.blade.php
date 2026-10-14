@@ -7,7 +7,12 @@
 
     @php
         $routePrefix = request()->is('librarian*') ? 'librarian.' : 'admin.';
-        $canManageLibrarians = auth()->check() && (auth()->user()->hasRole('Admin') || auth()->user()->hasPermission('manage_librarians'));
+        $canManageLibrarians = auth()->check() && (
+            auth()->user()->hasRole('Admin') ||
+            auth()->user()->hasPermission('manage_librarian') ||
+            auth()->user()->hasPermission('manage_librarians') ||
+            auth()->user()->hasPermission('manage_users')
+        );
     @endphp
 
     <!-- 1. Page Header -->
@@ -124,7 +129,7 @@
             <tr class="hover:bg-slate-50/70 transition-colors h-[72px] group">
                 <!-- STAFF INFO & AVATAR -->
                 <td x-show="cols['staff'] !== false" class="px-6 py-4 align-middle">
-                    <a href="{{ route('admin.user-details', $user->encrypted_id) }}" wire:navigate class="flex items-center gap-3.5 group/user focus:outline-none">
+                    <a href="{{ route($routePrefix . 'user-details', $user->encrypted_id) }}" wire:navigate class="flex items-center gap-3.5 group/user focus:outline-none">
                         @if($librarian?->image_url)
                             <img src="{{ $librarian->image_url }}" alt="{{ $fullName }}" class="w-10 h-10 rounded-full object-cover border border-[#CBD5E1] shrink-0">
                         @else
@@ -164,18 +169,25 @@
 
                 <!-- ACCOUNT STATUS -->
                 <td x-show="cols['status'] !== false" class="px-6 py-4 align-middle">
-                    @php
-                        $statusName = $user->status?->status_name ?? 'Unknown';
-                        $statusClass = match(strtolower($statusName)) {
-                            'active' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
-                            'locked', 'suspended' => 'bg-red-50 text-red-700 border-red-200',
-                            'pending' => 'bg-amber-50 text-amber-700 border-amber-200',
-                            default => 'bg-slate-100 text-slate-600 border-slate-200'
-                        };
-                    @endphp
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border {{ $statusClass }}">
-                        {{ $statusName }}
-                    </span>
+                    @if($user->trashed())
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+                            <span class="h-1.5 w-1.5 rounded-full bg-rose-500"></span>
+                            Disabled
+                        </span>
+                    @else
+                        @php
+                            $statusName = $user->status?->status_name ?? 'Unknown';
+                            $statusClass = match(strtolower($statusName)) {
+                                'active' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                                'locked', 'suspended' => 'bg-red-50 text-red-700 border-red-200',
+                                'pending' => 'bg-amber-50 text-amber-700 border-amber-200',
+                                default => 'bg-slate-100 text-slate-600 border-slate-200'
+                            };
+                        @endphp
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border {{ $statusClass }}">
+                            {{ $statusName }}
+                        </span>
+                    @endif
                 </td>
 
                 <!-- LAST LOGIN -->
@@ -213,6 +225,46 @@
                                     <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                                     Edit Profile
                                 </a>
+
+                                @if(auth()->id() !== $user->id)
+                                    @if($user->trashed())
+                                        <button
+                                            type="button"
+                                            wire:click="enableLibrarian({{ $user->id }})"
+                                            @click="open = false"
+                                            class="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-bold text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
+                                        >
+                                            <svg class="h-3.5 w-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+                                            </svg>
+                                            Enable Account
+                                        </button>
+                                    @else
+                                        <button
+                                            type="button"
+                                            wire:click="confirmDisable({{ $user->id }})"
+                                            @click="open = false"
+                                            class="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-bold text-amber-700 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer"
+                                        >
+                                            <svg class="h-3.5 w-3.5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />
+                                            </svg>
+                                            Disable Account
+                                        </button>
+                                    @endif
+
+                                    <button
+                                        type="button"
+                                        wire:click="confirmDelete({{ $user->id }})"
+                                        @click="open = false"
+                                        class="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-bold text-[#B91C1C] hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                                    >
+                                        <svg class="h-3.5 w-3.5 text-[#EF4444]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                        </svg>
+                                        Delete Permanently
+                                    </button>
+                                @endif
                             @endif
                         </x-table-action-dot>
                     </div>
@@ -230,4 +282,44 @@
             </tr>
         @endforelse
     </x-data-table>
+
+    <!-- ======================================================== -->
+    <!-- MODAL: DISABLE LIBRARIAN (SOFT DELETE)                   -->
+    <!-- ======================================================== -->
+    @include('livewire.components.usermanager.alert-modal', [
+        'show' => $showDisableModal,
+        'type' => 'disable',
+        'title' => 'Disable Librarian Account',
+        'subtitle' => 'Soft Delete / Account Deactivation',
+        'targetRole' => 'librarian',
+        'targetName' => $selectedLibrarianName,
+        'bulletPoints' => [
+            'The account will be soft-deleted and marked as <strong>Inactive</strong>.',
+            'The librarian will no longer be able to log in or perform system tasks.',
+            'All transaction records and circulation history are preserved.',
+            'You can re-enable this account at any time.',
+        ],
+        'closeAction' => 'closeDisableModal',
+        'confirmAction' => 'disableLibrarian',
+        'confirmText' => 'Disable Account',
+    ])
+
+    <!-- ======================================================== -->
+    <!-- MODAL: HARD DELETE LIBRARIAN                             -->
+    <!-- ======================================================== -->
+    @include('livewire.components.usermanager.alert-modal', [
+        'show' => $showDeleteModal,
+        'type' => 'danger',
+        'isHardDelete' => true,
+        'title' => 'Permanently Delete Librarian',
+        'subtitle' => 'Irreversible Hard Delete',
+        'targetRole' => 'librarian',
+        'targetName' => $selectedLibrarianName,
+        'hasHistory' => $selectedLibrarianHasTransactions,
+        'historyMessage' => '<strong class="text-slate-900">' . e($selectedLibrarianName) . '</strong> has recorded library transactions (loans, returns, or payments).',
+        'closeAction' => 'closeDeleteModal',
+        'confirmAction' => 'hardDeleteLibrarian',
+        'confirmText' => 'Permanently Delete',
+        'confirmLoadingTarget' => 'hardDeleteLibrarian',
+    ])
 </div>

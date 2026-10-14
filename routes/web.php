@@ -29,6 +29,7 @@ Route::middleware(['auth', 'verified', 'role:Admin'])->prefix('admin')->name('ad
             Route::get('/return', \App\Livewire\Pages\Dashboard\CheckInBook::class)->name('return');
             Route::get('/return/confirm', \App\Livewire\Pages\Dashboard\ConfirmReturn::class)->name('return.confirm');
             Route::get('/borrow', \App\Livewire\Pages\Dashboard\CheckOutBook::class)->name('borrow');
+            Route::get('/borrowed-books', \App\Livewire\Pages\Dashboard\BorrowedList::class)->name('borrowed-books');
         });
 
         Route::prefix('book-management')->name('book-management.')->group(function () {
@@ -64,6 +65,7 @@ Route::middleware(['auth', 'verified', 'role:Librarian,Head Librarian,Admin'])->
             Route::get('/return', \App\Livewire\Pages\Dashboard\CheckInBook::class)->name('return')->middleware('permission:manage_circulation,return_book');
             Route::get('/return/confirm', \App\Livewire\Pages\Dashboard\ConfirmReturn::class)->name('return.confirm')->middleware('permission:manage_circulation,return_book');
             Route::get('/borrow', \App\Livewire\Pages\Dashboard\CheckOutBook::class)->name('borrow')->middleware('permission:manage_circulation,borrow_book');
+            Route::get('/borrowed-books', \App\Livewire\Pages\Dashboard\BorrowedList::class)->name('borrowed-books');
         });
 
         Route::middleware('permission:manage_catalog,view_catalog')->prefix('book-management')->name('book-management.')->group(function () {
@@ -107,13 +109,10 @@ Route::get('/preview-reset-email', function () {
 
 
 
-// Route::middleware(['auth', 'verified'])->group(function () {
-//     Route::get('/policy/review', \App\Livewire\PolicyReview::class)->name('policy.review');
-// });
-
-// Route::middleware(['auth', 'verified', 'check_policy'])->group(function () {
-//     // Add user dashboard / authenticated routes here later if they don't exist yet
-//     // For now we just wrap the auth.php requirements or the main user flow.
-// });
+Route::middleware(['auth', 'verified', 'role:Student,Admin,Librarian,Head Librarian'])->prefix('student')->name('student.')->group(function () {
+    Route::get('/dashboard', \App\Livewire\Pages\Student\Dashboard::class)->name('dashboard');
+    Route::get('/borrow', \App\Livewire\Pages\Student\Borrow::class)->name('borrow');
+    Route::get('/profile', \App\Livewire\Pages\Student\Profile::class)->name('profile');
+});
 
 require __DIR__.'/auth.php';

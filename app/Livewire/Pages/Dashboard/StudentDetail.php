@@ -19,8 +19,9 @@ class StudentDetail extends Component
     public bool $showStatusModal = false;
     public ?int $selectedStatusId = null;
 
-    // Delete student modal
+    // Delete & Disable student modals
     public bool $showDeleteModal = false;
+    public bool $showDisableModal = false;
 
     // Edit profile modal
     public bool $showEditModal = false;
@@ -69,16 +70,18 @@ class StudentDetail extends Component
             return null;
         }
 
-        return Account::with([
+        return Account::withTrashed()->with([
             'role',
             'status',
-            'student.libraryStatus',
-            'student.borrowingTransactions.book.bookDetail.bookData.authors',
-            'student.borrowingTransactions.issuedBy',
-            'student.borrowingTransactions.receivedBy',
-            'student.borrowingTransactions.borrowType',
-            'student.borrowingTransactions.fines',
-            'student.fines',
+            'student' => fn($q) => $q->withTrashed()->with([
+                'libraryStatus',
+                'borrowingTransactions.book.bookDetail.bookData.authors',
+                'borrowingTransactions.issuedBy',
+                'borrowingTransactions.receivedBy',
+                'borrowingTransactions.borrowType',
+                'borrowingTransactions.fines',
+                'fines',
+            ]),
         ])->find($this->userId);
     }
 
@@ -265,6 +268,97 @@ class StudentDetail extends Component
             ]);
         }
         $this->showStatusModal = false;
+    }
+
+    #[On('open-disable-modal')]
+    public function openDisableModal(): void
+    {
+        $this->showDisableModal = true;
+    }
+
+    public function closeDisableModal(): void
+    {
+        $this->showDisableModal = false;
+    }
+
+    #[On('disable-student-account')]
+    public function disableAccount(): void
+    {
+        $user = $this->user;
+        $student = $this->student;
+
+        if (!$user) {
+            $this->dispatch('toast', message: 'Student account not found.', type: 'error');
+            $this->showDisableModal = false;
+            return;
+        }
+
+        if (auth()->check()) {
+            $authUser = auth()->user();
+            if ($authUser->id === $user->id) {
+                $this->dispatch('toast', message: 'You cannot disable your own account.', type: 'error');
+                $this->showDisableModal = false;
+                return;
+            }
+
+            if (!$authUser->hasRole('Admin') && !$authUser->hasPermission('delete_students') && !$authUser->hasPermission('manage_users')) {
+                abort(403, 'Unauthorized action. You do not have permission to disable student accounts.');
+            }
+        }
+
+        // Soft-delete student record
+        if ($student) {
+            $student->delete();
+        }
+
+        // Set status to Inactive
+        $inactiveStatus = \App\Models\AccountStatus::where('status_name', 'Inactive')->first();
+        if ($inactiveStatus) {
+            $user->update(['status_id' => $inactiveStatus->id]);
+        }
+
+        // Soft-delete account record
+        $user->delete();
+
+        $this->showDisableModal = false;
+        unset($this->user);
+
+        $this->dispatch('toast', message: 'Student account has been disabled (soft-deleted). System access and borrowing privileges are suspended.', type: 'success');
+    }
+
+    #[On('enable-student-account')]
+    public function enableAccount(): void
+    {
+        $user = $this->user;
+        $student = $this->student;
+
+        if (!$user) {
+            $this->dispatch('toast', message: 'Student account not found.', type: 'error');
+            return;
+        }
+
+        if (auth()->check()) {
+            $authUser = auth()->user();
+            if (!$authUser->hasRole('Admin') && !$authUser->hasPermission('delete_students') && !$authUser->hasPermission('manage_users') && !$authUser->hasPermission('edit_students')) {
+                abort(403, 'Unauthorized action. You do not have permission to enable student accounts.');
+            }
+        }
+
+        // Restore account and student records
+        $user->restore();
+        if ($student) {
+            $student->restore();
+        }
+
+        // Set status back to Active
+        $activeStatus = \App\Models\AccountStatus::where('status_name', 'Active')->first();
+        if ($activeStatus) {
+            $user->update(['status_id' => $activeStatus->id]);
+        }
+
+        unset($this->user);
+
+        $this->dispatch('toast', message: 'Student account has been successfully enabled and set to Active.', type: 'success');
     }
 
     #[On('open-delete-modal')]

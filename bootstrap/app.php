@@ -12,6 +12,28 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->redirectGuestsTo(function (Request $request) {
+            if ($request->is('admin*') || $request->is('librarian*') || $request->is('staff*') || $request->is('employee*')) {
+                return route('employee.login');
+            }
+
+            return route('login');
+        });
+
+        $middleware->redirectUsersTo(function (Request $request) {
+            $user = auth()->user();
+            if ($user) {
+                $roleName = strtolower(str_replace(' ', '', $user->role?->name ?? ''));
+                if ($roleName === 'admin') {
+                    return route('admin.dashboard');
+                } elseif (in_array($roleName, ['librarian', 'headlibrarian'])) {
+                    return route('librarian.dashboard');
+                }
+                return route('student.dashboard');
+            }
+            return '/';
+        });
+
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,
             'permission' => \App\Http\Middleware\PermissionMiddleware::class,
@@ -20,6 +42,27 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        $exceptions->render(function (\App\Exceptions\AccountDeactivatedException $e, Request $request) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'error' => [
+                        'type' => $e->errorType,
+                        'code' => $e->errorCode,
+                        'message' => $e->getMessage(),
+                    ],
+                ], 401);
+            }
+
+            return response()->view('errors.401', [
+                'code' => 401,
+                'errorCode' => $e->errorCode,
+                'errorType' => $e->errorType,
+                'title' => 'Account Deactivated',
+                'bodyTitle' => 'Account Deactivated',
+                'message' => $e->getMessage(),
+            ], 401);
+        });
+
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*'),
         );

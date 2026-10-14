@@ -95,6 +95,40 @@
                             {{ $student?->year_level ?: '2nd Year' }}
                         </p>
                     </div>
+                @elseif($librarian)
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                        <div class="space-y-0.5 min-w-0">
+                            <div class="flex items-center gap-1.5 text-[11px] font-bold text-blue-200 uppercase tracking-wider">
+                                <svg class="w-3.5 h-3.5 text-[#FCC719] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                                </svg>
+                                <span>Role</span>
+                            </div>
+                            <p class="text-xs sm:text-sm font-bold text-white truncate">
+                                {{ $user?->role?->name ?? 'Librarian' }}
+                            </p>
+                        </div>
+
+                        <div class="space-y-0.5">
+                            <div class="flex items-center gap-1.5 text-[11px] font-bold text-blue-200 uppercase tracking-wider">
+                                <svg class="w-3.5 h-3.5 text-[#FCC719] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                </svg>
+                                <span>Status</span>
+                            </div>
+                            <div>
+                                @if($user?->trashed())
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 text-[14px] font-bold">
+                                        Disabled
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 text-[14px] font-bold">
+                                        {{ $statusName }}
+                                    </span>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
                 @endif
             </div>
 
