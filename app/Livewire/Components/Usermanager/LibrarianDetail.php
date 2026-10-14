@@ -96,9 +96,30 @@ class LibrarianDetail extends Component
         $defaultPerms = config('settings.librarian_role_permission.' . ($isHead ? 'librarian_head' : 'librarian'), []);
 
         $catalog = [
+            // Administration
             'manage_users' => [
                 'title' => 'User Management',
-                'description' => 'Create, view, update student and patron profiles.',
+                'description' => 'Full access to student profile operations.',
+                'group' => 'Administration',
+            ],
+            'view_students' => [
+                'title' => 'View Student Records',
+                'description' => 'Search, filter, and view student profiles and library cards.',
+                'group' => 'Administration',
+            ],
+            'create_students' => [
+                'title' => 'Register Students',
+                'description' => 'Register new student accounts into the system.',
+                'group' => 'Administration',
+            ],
+            'edit_students' => [
+                'title' => 'Edit Student Info',
+                'description' => 'Update student identity, contact numbers, and year levels.',
+                'group' => 'Administration',
+            ],
+            'delete_students' => [
+                'title' => 'Delete Students',
+                'description' => 'Soft-delete student patron accounts and revoke access.',
                 'group' => 'Administration',
             ],
             'manage_librarian' => [
@@ -106,19 +127,53 @@ class LibrarianDetail extends Component
                 'description' => 'Manage library staff accounts and role privileges.',
                 'group' => 'Administration',
             ],
+
+            // Cataloging
             'manage_catalog' => [
                 'title' => 'Catalog Management',
-                'description' => 'Add, edit, and organize bibliographic records & copies.',
+                'description' => 'Full access to bibliographic records, copies, and classifications.',
                 'group' => 'Cataloging',
             ],
             'view_catalog' => [
-                'title' => 'Catalog Access',
+                'title' => 'Catalog Access (View Only)',
                 'description' => 'Search and browse through collection items and metadata.',
                 'group' => 'Cataloging',
             ],
+            'create_book' => [
+                'title' => 'Add Books & Copies',
+                'description' => 'Register new titles and physical accession copies.',
+                'group' => 'Cataloging',
+            ],
+            'edit_book' => [
+                'title' => 'Edit Book Metadata',
+                'description' => 'Edit classifications, publishers, editions, and copy status.',
+                'group' => 'Cataloging',
+            ],
+            'delete_book' => [
+                'title' => 'Delete Book Copies',
+                'description' => 'Archive or delete physical copies and book records.',
+                'group' => 'Cataloging',
+            ],
+
+            // Circulation
             'manage_circulation' => [
                 'title' => 'Circulation Operations',
-                'description' => 'Process borrow checkouts, check-ins, and reservations.',
+                'description' => 'Full access to issue books, process returns, and reservations.',
+                'group' => 'Circulation',
+            ],
+            'view_circulation' => [
+                'title' => 'View Circulation Logs',
+                'description' => 'Inspect active loans, overdue lists, and return logs.',
+                'group' => 'Circulation',
+            ],
+            'borrow_book' => [
+                'title' => 'Issue Loans (Borrow)',
+                'description' => 'Check out physical books to authenticated students.',
+                'group' => 'Circulation',
+            ],
+            'return_book' => [
+                'title' => 'Process Returns (Check-In)',
+                'description' => 'Receive returned copies and record physical conditions.',
                 'group' => 'Circulation',
             ],
             'manage_fines' => [
@@ -126,10 +181,17 @@ class LibrarianDetail extends Component
                 'description' => 'Assess overdue penalties and collect fine payments.',
                 'group' => 'Circulation',
             ],
+
+            // System & Reports
             'manage_system' => [
                 'title' => 'System Settings',
                 'description' => 'Access system configuration, policies, and backups.',
-                'group' => 'System',
+                'group' => 'System & Reports',
+            ],
+            'view_reports' => [
+                'title' => 'Analytics & Reports',
+                'description' => 'Generate and export circulation, inventory, and activity reports.',
+                'group' => 'System & Reports',
             ],
         ];
 

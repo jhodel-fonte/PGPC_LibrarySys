@@ -458,7 +458,8 @@ class AddBookForm extends Component
             });
 
             session()->flash('successMessage', 'Book "' . $this->bookTitle . '" registered successfully into library catalog.');
-            return $this->redirect(route('admin.book-management.index'), navigate: true);
+            $prefix = request()->is('librarian*') ? 'librarian.' : 'admin.';
+            return $this->redirect(route($prefix . 'book-management.index'), navigate: true);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             $this->errorMessage = 'Please review and fix the highlighted fields before submitting.';

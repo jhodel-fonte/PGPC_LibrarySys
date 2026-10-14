@@ -326,7 +326,8 @@ class AddUserForm extends Component
             $fullName = e(trim("{$student->first_name} {$student->last_name}"));
             session()->flash('status', "Student account for {$fullName} ({$student->school_id_number}) created successfully.");
 
-            return $this->redirect(route('admin.user-management'), navigate: true);
+            $prefix = request()->is('librarian*') ? 'librarian.' : 'admin.';
+            return $this->redirect(route($prefix . 'user-management'), navigate: true);
 
         } catch (UniqueConstraintViolationException $e) {
             if ($storedPath) {

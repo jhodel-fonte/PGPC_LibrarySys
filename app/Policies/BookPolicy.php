@@ -8,7 +8,17 @@ use Illuminate\Auth\Access\Response;
 
 class BookPolicy
 {
+    /**
+     * Perform pre-authorization checks.
+     */
+    public function before(Account $user, string $ability): ?bool
+    {
+        if ($user->role?->name === 'Admin') {
+            return true;
+        }
 
+        return null;
+    }
 
     /**
      * Determine whether the user can view any books.
@@ -31,7 +41,7 @@ class BookPolicy
      */
     public function create(Account $user): bool
     {
-        return $user->hasPermission('manage_catalog');
+        return $user->hasPermission('create_book');
     }
 
     /**
@@ -39,7 +49,7 @@ class BookPolicy
      */
     public function update(Account $user, ?Book $book = null): bool
     {
-        return $user->hasPermission('manage_catalog');
+        return $user->hasPermission('edit_book');
     }
 
     /**
@@ -47,7 +57,7 @@ class BookPolicy
      */
     public function delete(Account $user, ?Book $book = null): bool
     {
-        return $user->hasPermission('manage_catalog');
+        return $user->hasPermission('delete_book');
     }
 
     /**
@@ -55,7 +65,7 @@ class BookPolicy
      */
     public function restore(Account $user, ?Book $book = null): bool
     {
-        return $user->hasPermission('manage_catalog');
+        return $user->hasPermission('delete_book');
     }
 
     /**
@@ -63,6 +73,6 @@ class BookPolicy
      */
     public function forceDelete(Account $user, ?Book $book = null): bool
     {
-        return $user->hasPermission('manage_catalog');
+        return $user->hasPermission('delete_book');
     }
 }

@@ -307,7 +307,8 @@ class EditStudentForm extends Component
             $fullName = e(trim("{$student->first_name} {$student->last_name}"));
             session()->flash('status', "Student information for {$fullName} ({$student->school_id_number}) updated successfully.");
 
-            return $this->redirect(route('admin.user-details', $account->encrypted_id), navigate: true);
+            $prefix = request()->is('librarian*') ? 'librarian.' : 'admin.';
+            return $this->redirect(route($prefix . 'user-details', $account->encrypted_id), navigate: true);
         } catch (\Throwable $e) {
             Log::error('Failed to update student: ' . $e->getMessage(), ['exception' => $e]);
             $this->errorMessage = 'Failed to update student record. ' . $e->getMessage();

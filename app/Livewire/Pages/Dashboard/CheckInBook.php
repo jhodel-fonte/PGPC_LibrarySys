@@ -32,6 +32,11 @@ class CheckInBook extends Component
 
     public function mount()
     {
+        $user = auth()->user();
+        if ($user && ! $user->hasRole('Admin') && ! $user->hasPermission('return_book') && ! $user->hasPermission('manage_circulation')) {
+            abort(403, 'Unauthorized action. You do not have permission to process book returns.');
+        }
+
         $this->updateStats();
     }
 

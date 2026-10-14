@@ -35,13 +35,31 @@ class AddLibrarianForm extends Component
     // Role & Permissions
     public string $role = '';
     public array $permissions = [
+        // Cataloging
+        'view_catalog' => false,
+        'create_book' => false,
+        'edit_book' => false,
+        'delete_book' => false,
+        'manage_catalog' => false,
+
+        // Circulation
+        'view_circulation' => false,
+        'borrow_book' => false,
+        'return_book' => false,
+        'manage_fines' => false,
+        'manage_circulation' => false,
+
+        // User Administration
+        'view_students' => false,
+        'create_students' => false,
+        'edit_students' => false,
+        'delete_students' => false,
         'manage_users' => false,
         'manage_librarian' => false,
-        'manage_catalog' => false,
-        'manage_circulation' => false,
-        'manage_fines' => false,
+
+        // System & Reports
+        'view_reports' => false,
         'manage_system' => false,
-        'view_catalog' => false,
     ];
 
     // Profile Photo
@@ -127,6 +145,17 @@ class AddLibrarianForm extends Component
         $this->validateOnly($propertyName);
     }
 
+    public function updatedRole($value): void
+    {
+        $roleKey = ($value === 'head_librarian' || $value === 'librarian_head') ? 'librarian_head' : $value;
+        $presets = config('settings.librarian_role_permission', []);
+        $allowed = $presets[$roleKey] ?? $presets[$value] ?? [];
+
+        foreach (array_keys($this->permissions) as $key) {
+            $this->permissions[$key] = in_array($key, $allowed, true);
+        }
+    }
+
     public function removePhoto(): void
     {
         $this->photo = null;
@@ -147,15 +176,9 @@ class AddLibrarianForm extends Component
             'errorMessage',
         ]);
 
-        $this->permissions = [
-            'manage_users' => false,
-            'manage_librarian' => false,
-            'manage_catalog' => false,
-            'manage_circulation' => false,
-            'manage_fines' => false,
-            'manage_system' => false,
-            'view_catalog' => false,
-        ];
+        foreach (array_keys($this->permissions) as $key) {
+            $this->permissions[$key] = false;
+        }
 
         $this->resetErrorBag();
     }
@@ -268,7 +291,8 @@ class AddLibrarianForm extends Component
             $fullName = e(trim("{$librarian->first_name} {$librarian->last_name}"));
             session()->flash('status', "Librarian account for {$fullName} ({$librarian->school_id_number}) created successfully.");
 
-            return $this->redirect(route('admin.user-management'), navigate: true);
+            $prefix = request()->is('librarian*') ? 'librarian.' : 'admin.';
+            return $this->redirect(route($prefix . 'user-management'), navigate: true);
 
         } catch (UniqueConstraintViolationException $e) {
             if ($storedPath) {

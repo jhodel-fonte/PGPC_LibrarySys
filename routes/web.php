@@ -41,8 +41,41 @@ Route::middleware(['auth', 'verified', 'role:Admin'])->prefix('admin')->name('ad
         Route::get('/publishers/search', [\App\Http\Controllers\PublisherController::class, 'search'])->name('publishers.search');
 
         Route::get('/settings', \App\Livewire\Pages\Dashboard\Settings::class)->name('settings');
-        // Route::get('/profile', \App\Livewire\Pages\Dashboard\Profile::class)->name('profile');
-        // Route::view('/profile', 'livewire.pages.admin.profile')->name('profile');
+});
+
+Route::middleware(['auth', 'verified', 'role:Librarian,Head Librarian,Admin'])->prefix('librarian')->name('librarian.')->group(function () {
+
+        Route::get('/', function () {
+            return redirect()->route('librarian.dashboard');
+        });
+
+        Route::get('/dashboard', \App\Livewire\Pages\Dashboard\Dashboard::class)->name('dashboard');
+
+        Route::middleware('permission:manage_users,view_students,manage_librarians')->group(function () {
+            Route::get('/user-management', \App\Livewire\Pages\Dashboard\UserManagement::class)->name('user-management');
+            Route::get('/user-management/add', \App\Livewire\Pages\Dashboard\AddUser::class)->name('user-management.add')->middleware('permission:manage_users,create_students,manage_librarians');
+            Route::get('/user-management/edit/{id}', \App\Livewire\Pages\Dashboard\EditUserPage::class)->name('user-management.edit')->middleware('permission:manage_users,edit_students,manage_librarians');
+            Route::get('/user-management/{id}/edit', \App\Livewire\Pages\Dashboard\EditUserPage::class)->middleware('permission:manage_users,edit_students,manage_librarians');
+            Route::get('/user-management/{id}', \App\Livewire\Pages\Dashboard\UserDetails::class)->name('user-details');
+        });
+
+        Route::middleware('permission:manage_circulation,view_circulation')->prefix('circulation-desk')->name('circulation-desk.')->group(function () {
+            Route::get('/', \App\Livewire\Pages\Dashboard\CirculationDesk::class)->name('index');
+            Route::get('/return', \App\Livewire\Pages\Dashboard\CheckInBook::class)->name('return')->middleware('permission:manage_circulation,return_book');
+            Route::get('/return/confirm', \App\Livewire\Pages\Dashboard\ConfirmReturn::class)->name('return.confirm')->middleware('permission:manage_circulation,return_book');
+            Route::get('/borrow', \App\Livewire\Pages\Dashboard\CheckOutBook::class)->name('borrow')->middleware('permission:manage_circulation,borrow_book');
+        });
+
+        Route::middleware('permission:manage_catalog,view_catalog')->prefix('book-management')->name('book-management.')->group(function () {
+            Route::get('/', \App\Livewire\Pages\Dashboard\BookManager::class)->name('index');
+            Route::get('/add', \App\Livewire\Pages\Dashboard\AddBook::class)->name('add')->middleware('permission:manage_catalog,create_book');
+            Route::get('/edit/{id}', \App\Livewire\Pages\Dashboard\EditBook::class)->name('edit')->middleware('permission:manage_catalog,edit_book');
+        });
+
+        Route::get('/authors/search', [\App\Http\Controllers\AuthorController::class, 'search'])->name('authors.search');
+        Route::get('/publishers/search', [\App\Http\Controllers\PublisherController::class, 'search'])->name('publishers.search');
+
+        Route::get('/settings', \App\Livewire\Pages\Dashboard\Settings::class)->name('settings')->middleware('permission:manage_settings');
 });
 
 Route::get('/send-test-email', function () {

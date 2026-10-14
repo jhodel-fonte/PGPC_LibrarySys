@@ -13,10 +13,10 @@ class PermissionSeeder extends Seeder
     {
         $now = Carbon::now();
 
-        // Consolidated Module-Based Permissions
+        // Consolidated Module-Based & Granular Permissions
         $permissions = [
             // ==========================================
-            // STAFF / ADMIN PERMISSIONS
+            // STAFF / ADMIN BASE MODULE PERMISSIONS
             // ==========================================
             [
                 'name' => 'manage_users',
@@ -40,16 +40,76 @@ class PermissionSeeder extends Seeder
             ],
             [
                 'name' => 'manage_system',
-                'description' => 'Full access to system settings, roles, permissions, and reports.',
+                'description' => 'Full access to system settings, roles, permissions, and configuration.',
             ],
-            
+
             // ==========================================
-            // STUDENT / PATRON PERMISSIONS
+            // GRANULAR CATALOGING PERMISSIONS
             // ==========================================
             [
                 'name' => 'view_catalog',
                 'description' => 'Can browse, search, and view book details in the library catalog.',
             ],
+            [
+                'name' => 'create_book',
+                'description' => 'Can add new books and register physical accession copies.',
+            ],
+            [
+                'name' => 'edit_book',
+                'description' => 'Can edit book metadata, publishers, classifications, and copy details.',
+            ],
+            [
+                'name' => 'delete_book',
+                'description' => 'Can delete or archive physical copies and book records.',
+            ],
+
+            // ==========================================
+            // GRANULAR CIRCULATION DESK PERMISSIONS
+            // ==========================================
+            [
+                'name' => 'view_circulation',
+                'description' => 'Can view borrowing transactions, active loans, and overdue lists.',
+            ],
+            [
+                'name' => 'borrow_book',
+                'description' => 'Can issue book borrowings and check out books to patrons.',
+            ],
+            [
+                'name' => 'return_book',
+                'description' => 'Can check in returned books and inspect return conditions.',
+            ],
+
+            // ==========================================
+            // GRANULAR STUDENT MANAGEMENT PERMISSIONS
+            // ==========================================
+            [
+                'name' => 'view_students',
+                'description' => 'Can view student patron profiles and library membership status.',
+            ],
+            [
+                'name' => 'create_students',
+                'description' => 'Can register new student patron accounts.',
+            ],
+            [
+                'name' => 'edit_students',
+                'description' => 'Can update student identity, contact info, and enrollment details.',
+            ],
+            [
+                'name' => 'delete_students',
+                'description' => 'Can soft-delete student accounts and revoke library access.',
+            ],
+
+            // ==========================================
+            // GRANULAR SYSTEM & REPORTING PERMISSIONS
+            // ==========================================
+            [
+                'name' => 'view_reports',
+                'description' => 'Can view and export circulation analytics and inventory summaries.',
+            ],
+
+            // ==========================================
+            // PATRON / STUDENT SELF-SERVICE PERMISSIONS
+            // ==========================================
             [
                 'name' => 'view_own_loans',
                 'description' => 'Can view their own active book loans, transaction history, and fines.',

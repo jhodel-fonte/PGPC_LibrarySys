@@ -20,6 +20,18 @@ class AddUser extends Component
 
     public function mount(): void
     {
+        $user = auth()->user();
+        $canCreateStudent = $user && ($user->hasRole('Admin') || $user->hasPermission('create_students') || $user->hasPermission('manage_users'));
+        $canManageLibrarians = $user && ($user->hasRole('Admin') || $user->hasPermission('manage_librarians'));
+
+        if ($this->type === 'librarian' && ! $canManageLibrarians) {
+            abort(403, 'Unauthorized action. You do not have permission to add library staff.');
+        }
+
+        if ($this->type === 'student' && ! $canCreateStudent) {
+            abort(403, 'Unauthorized action. You do not have permission to add students.');
+        }
+
         // Fall back to the student form for any unexpected value.
         if (! in_array($this->type, self::TYPES, true)) {
             $this->type = 'student';

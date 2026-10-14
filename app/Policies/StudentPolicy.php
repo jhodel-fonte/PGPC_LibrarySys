@@ -24,15 +24,17 @@ class StudentPolicy
      */
     public function viewAny(Account $user): bool
     {
-        return $user->hasPermission('manage_users');
+        return $user->hasPermission('view_students') || $user->hasPermission('manage_users');
     }
 
     /**
-     * Determine whether the user can view the student (own profile or has manage_users permission).
+     * Determine whether the user can view the student (own profile or has permission).
      */
     public function view(Account $user, Student $student): bool
     {
-        return $user->id === $student->account_id || $user->hasPermission('manage_users');
+        return $user->id === $student->account_id 
+            || $user->hasPermission('view_students') 
+            || $user->hasPermission('manage_users');
     }
 
     /**
@@ -40,15 +42,16 @@ class StudentPolicy
      */
     public function create(Account $user): bool
     {
-        return $user->hasPermission('manage_users');
+        return $user->hasPermission('create_students');
     }
 
     /**
-     * Determine whether the user can update the student (own profile or has manage_users permission).
+     * Determine whether the user can update the student (own profile or has permission).
      */
     public function update(Account $user, Student $student): bool
     {
-        return $user->id === $student->account_id || $user->hasPermission('manage_users');
+        return $user->id === $student->account_id 
+            || $user->hasPermission('edit_students');
     }
 
     /**
@@ -56,7 +59,7 @@ class StudentPolicy
      */
     public function delete(Account $user, Student $student): bool
     {
-        return $user->hasPermission('manage_users');
+        return $user->hasPermission('delete_students');
     }
 
     /**
@@ -64,7 +67,7 @@ class StudentPolicy
      */
     public function restore(Account $user, Student $student): bool
     {
-        return $user->hasPermission('manage_users');
+        return $user->hasPermission('delete_students');
     }
 
     /**
@@ -72,6 +75,6 @@ class StudentPolicy
      */
     public function forceDelete(Account $user, Student $student): bool
     {
-        return $user->hasPermission('manage_users');
+        return $user->hasPermission('delete_students');
     }
 }

@@ -55,16 +55,16 @@ class EditUserPage extends Component
 
         // 3. Role-based check depending on whether the target is a Librarian or Student
         if ($this->isLibrarian) {
-            // Editing a librarian requires 'manage_librarian' or Admin permission
-            $canEditLibrarian = $currentUser->hasPermission('manage_librarian')
+            // Editing a librarian requires 'manage_librarians' or Head Librarian role
+            $canEditLibrarian = $currentUser->hasPermission('manage_librarians')
                 || $currentUser->role?->name === 'Head Librarian';
 
             if (! $canEditLibrarian) {
                 abort(403, 'You do not have permission to edit librarian staff profiles.');
             }
         } else {
-            // Editing a student requires 'manage_users' permission
-            $canEditStudent = $currentUser->hasPermission('manage_users');
+            // Editing a student requires 'edit_students' or 'manage_users' permission
+            $canEditStudent = $currentUser->hasPermission('edit_students') || $currentUser->hasPermission('manage_users');
 
             if (! $canEditStudent) {
                 abort(403, 'You do not have permission to edit student information.');

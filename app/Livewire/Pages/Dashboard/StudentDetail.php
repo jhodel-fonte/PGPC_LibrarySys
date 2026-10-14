@@ -6,17 +6,21 @@ use App\Models\Account;
 use App\Models\AccountStatus;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 #[Layout('livewire.layouts.admin', ['title' => 'User Management', 'subpage' => 'Student Details', 'activepageRoute' => 'admin.user-management'])]
 class StudentDetail extends Component
 {
     public int|string|null $userId = null;
-    public string $activeTab = 'overview'; // 'overview', 'personal', 'history'
+    public string $activeTab = 'overview'; // 'overview', 'personal', 'account', 'history'
 
     // Status management modal
     public bool $showStatusModal = false;
     public ?int $selectedStatusId = null;
+
+    // Delete student modal
+    public bool $showDeleteModal = false;
 
     // Edit profile modal
     public bool $showEditModal = false;
@@ -36,6 +40,14 @@ class StudentDetail extends Component
         $user = $this->user;
 
         if ($user) {
+            $authUser = auth()->user();
+            if ($authUser && !$authUser->hasRole('Admin') && $authUser->id !== $user->id) {
+                $canView = $authUser->hasPermission('view_students') || $authUser->hasPermission('manage_users');
+                if (!$canView) {
+                    abort(403, 'Unauthorized action. You do not have permission to view student information.');
+                }
+            }
+
             $this->selectedStatusId = $user->status_id;
             $student = $user->student;
             $this->editFirstName = $student->first_name ?? '';
@@ -253,6 +265,61 @@ class StudentDetail extends Component
             ]);
         }
         $this->showStatusModal = false;
+    }
+
+    #[On('open-delete-modal')]
+    public function openDeleteModal(): void
+    {
+        $this->showDeleteModal = true;
+    }
+
+    public function closeDeleteModal(): void
+    {
+        $this->showDeleteModal = false;
+    }
+
+    public function deleteStudent(): void
+    {
+        $user = $this->user;
+        $student = $this->student;
+
+        if (!$user) {
+            $this->dispatch('toast', message: 'Student account not found.', type: 'error');
+            $this->showDeleteModal = false;
+            return;
+        }
+
+        if (auth()->check()) {
+            $authUser = auth()->user();
+            if ($authUser->id === $user->id) {
+                $this->dispatch('toast', message: 'You cannot delete your own account.', type: 'error');
+                $this->showDeleteModal = false;
+                return;
+            }
+
+            if ($student && !$authUser->can('delete', $student)) {
+                abort(403, 'Unauthorized action. You do not have permission to delete student accounts.');
+            }
+        }
+
+        if ($this->activeLoansCount > 0) {
+            $this->dispatch('toast', message: 'Cannot delete student with active borrowed books. Please return all borrowed items first.', type: 'error');
+            $this->showDeleteModal = false;
+            return;
+        }
+
+        if ($student) {
+            $student->delete();
+        }
+        $user->delete();
+
+        session()->flash('toast', [
+            'message' => 'Student account has been successfully deleted.',
+            'type' => 'success',
+        ]);
+
+        $prefix = request()->is('librarian*') ? 'librarian.' : 'admin.';
+        $this->redirect(route($prefix . 'user-management', ['type' => 'student']), navigate: true);
     }
 
     public function render()

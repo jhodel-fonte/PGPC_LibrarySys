@@ -1,7 +1,10 @@
 @php
-    $role = request()->segment(1) ?: 'admin';
+    $role = request()->is('librarian*') ? 'librarian' : 'admin';
     $checkInRoute = route($role . '.circulation-desk.return');
     $checkOutRoute = route($role . '.circulation-desk.borrow');
+    $user = auth()->user();
+    $canBorrow = $user && ($user->hasRole('Admin') || $user->hasPermission('borrow_book') || $user->hasPermission('manage_circulation'));
+    $canReturn = $user && ($user->hasRole('Admin') || $user->hasPermission('return_book') || $user->hasPermission('manage_circulation'));
 @endphp
 
 <section class="h-full min-h-0 overflow-hidden bg-[#F8FBFF] font-sans text-[#132657]" aria-labelledby="circulation-title">
@@ -11,7 +14,8 @@
             <p class="mt-1.5 max-w-xl text-[11px] font-medium leading-snug text-[#52627F] sm:text-xs lg:mt-2 lg:text-base">Process book loans and returns quickly and efficiently.</p>
         </div>
 
-        <div class="grid shrink-0 grid-cols-1 gap-2.5 sm:gap-3 lg:grid-cols-2 lg:gap-6">
+        <div class="grid shrink-0 grid-cols-1 gap-2.5 sm:gap-3 {{ ($canBorrow && $canReturn) ? 'lg:grid-cols-2' : 'lg:grid-cols-1 max-w-xl mx-auto w-full' }} lg:gap-6">
+            @if($canBorrow)
             <a href="{{ $checkOutRoute }}" wire:navigate class="group flex items-center gap-3 overflow-hidden rounded-2xl border border-[#D5E2F0] bg-gradient-to-br from-white to-[#F2F8FF] p-3 shadow-[0_8px_24px_rgba(16,43,112,0.06)] outline-none transition duration-200 hover:-translate-y-0.5 hover:border-[#B8C8DC] hover:shadow-[0_18px_38px_rgba(16,43,112,0.12)] focus-visible:ring-4 focus-visible:ring-[#2563EB]/25 motion-reduce:transform-none motion-reduce:transition-none sm:gap-5 sm:p-4 lg:flex-col lg:items-stretch lg:p-8 lg:text-center" aria-label="Go to Check-Out">
                 <div class="flex aspect-square h-[76px] shrink-0 items-center justify-center rounded-full bg-[#E8F2FF] sm:h-24 lg:mx-auto lg:h-32">
                     <img src="{{ asset('images/checkout-book.webp') }}" alt="" class="h-[82%] w-[82%] object-contain drop-shadow-sm transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-1 motion-reduce:transform-none motion-reduce:transition-none">
@@ -28,7 +32,9 @@
                     <svg class="h-5 w-5 transition-transform duration-200 group-hover:translate-x-1 motion-reduce:transform-none motion-reduce:transition-none" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 12h14m-6-6 6 6-6 6" /></svg>
                 </span>
             </a>
+            @endif
 
+            @if($canReturn)
             <a href="{{ $checkInRoute }}" wire:navigate class="group flex items-center gap-3 overflow-hidden rounded-2xl border border-[#D5E2F0] bg-gradient-to-br from-white to-[#F2F8FF] p-3 shadow-[0_8px_24px_rgba(16,43,112,0.06)] outline-none transition duration-200 hover:-translate-y-0.5 hover:border-[#B8C8DC] hover:shadow-[0_18px_38px_rgba(16,43,112,0.12)] focus-visible:ring-4 focus-visible:ring-[#2563EB]/25 motion-reduce:transform-none motion-reduce:transition-none sm:gap-5 sm:p-4 lg:flex-col lg:items-stretch lg:p-8 lg:text-center" aria-label="Go to Check-In">
                 <div class="flex aspect-square h-[76px] shrink-0 items-center justify-center rounded-full bg-[#E8F2FF] sm:h-24 lg:mx-auto lg:h-32">
                     <img src="{{ asset('images/checkin-book.webp') }}" alt="" class="h-[82%] w-[82%] object-contain drop-shadow-sm transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-1 motion-reduce:transform-none motion-reduce:transition-none">
@@ -45,6 +51,7 @@
                     <svg class="h-5 w-5 transition-transform duration-200 group-hover:translate-x-1 motion-reduce:transform-none motion-reduce:transition-none" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 12h14m-6-6 6 6-6 6" /></svg>
                 </span>
             </a>
+            @endif
         </div>
         
         <ol class="grid shrink-0 grid-cols-3 border-y border-[#DDE6F1] py-2 sm:py-3 lg:py-4" aria-label="Circulation workflow">

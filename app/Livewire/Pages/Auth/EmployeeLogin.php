@@ -22,7 +22,11 @@ class EmployeeLogin extends Component
             $roleName = strtolower(str_replace(' ', '', $user->role?->name ?? ''));
 
             if (in_array($roleName, ['admin', 'headlibrarian', 'librarian'])) {
-                $this->redirect(route('admin.dashboard'), navigate: false);
+                if ($roleName === 'admin') {
+                    $this->redirect(route('admin.dashboard'), navigate: false);
+                } else {
+                    $this->redirect(route('librarian.dashboard'), navigate: false);
+                }
             } else {
                 $this->redirect(url('/'), navigate: false);
             }
@@ -40,13 +44,25 @@ class EmployeeLogin extends Component
 
             Session::regenerate();
 
+            $user = auth()->user();
+            $roleName = strtolower(str_replace(' ', '', $user->role?->name ?? ''));
+
             $intended = session()->pull('url.intended');
             if ($intended && ! str_contains($intended, '/portal') && ! str_contains($intended, '/login')) {
+                if ($roleName !== 'admin' && str_contains($intended, '/admin')) {
+                    $intended = str_replace('/admin', '/librarian', $intended);
+                } elseif ($roleName === 'admin' && str_contains($intended, '/librarian')) {
+                    $intended = str_replace('/librarian', '/admin', $intended);
+                }
                 $this->redirect($intended, navigate: false);
                 return;
             }
 
-            $this->redirect(route('admin.dashboard'), navigate: false);
+            if ($roleName === 'admin') {
+                $this->redirect(route('admin.dashboard'), navigate: false);
+            } else {
+                $this->redirect(route('librarian.dashboard'), navigate: false);
+            }
         } catch (\Illuminate\Validation\ValidationException $e) {
             $this->dispatch('login-failed');
             $this->dispatch('auth-error', [

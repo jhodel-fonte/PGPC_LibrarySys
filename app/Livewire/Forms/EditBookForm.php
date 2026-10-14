@@ -113,8 +113,8 @@ class EditBookForm extends Component
         }
 
         if (!$bookDetail) {
-            session()->flash('errorMessage', 'Book record not found.');
-            return redirect()->route('admin.book-management.index');
+            $prefix = request()->is('librarian*') ? 'librarian.' : 'admin.';
+            return redirect()->route($prefix . 'book-management.index');
         }
 
         $this->bookDetailId = $bookDetail->id;
@@ -588,7 +588,8 @@ class EditBookForm extends Component
             session()->flash('successMessage', 'Book "' . $this->bookTitle . '" updated successfully.');
             $this->dispatch('toast', message: 'Book updated successfully.', type: 'success');
 
-            return redirect()->route('admin.book-management.index');
+            $prefix = request()->is('librarian*') ? 'librarian.' : 'admin.';
+            return redirect()->route($prefix . 'book-management.index');
         } catch (\Throwable $e) {
             Log::error('Edit Book Error: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString(),

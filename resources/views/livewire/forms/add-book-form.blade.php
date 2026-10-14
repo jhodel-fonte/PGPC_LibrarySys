@@ -374,7 +374,7 @@
                     }
                     this.isLoading = true;
                     this.debounceTimer = setTimeout(() => {
-                        fetch('{{ route('admin.authors.search') }}?query=' + encodeURIComponent(this.query.trim()), {
+                        fetch('{{ route((request()->is('librarian*') ? 'librarian.' : 'admin.') . 'authors.search') }}?query=' + encodeURIComponent(this.query.trim()), {
                             headers: {
                                 'Accept': 'application/json',
                                 'X-Requested-With': 'XMLHttpRequest'
@@ -742,7 +742,7 @@
         <!-- Bottom Action Buttons Bar -->
         <div class="pt-6 border-t border-[#F1F5F9] flex items-center justify-end gap-3">
             <a
-                href="{{ route('admin.book-management.index') }}"
+                href="{{ route((request()->is('librarian*') ? 'librarian.' : 'admin.') . 'book-management.index') }}"
                 wire:navigate
                 class="px-6 h-12 rounded-2xl border border-[#E2E8F0] bg-white hover:bg-slate-50 text-slate-700 text-sm font-semibold transition-colors flex items-center justify-center focus:outline-none"
             >

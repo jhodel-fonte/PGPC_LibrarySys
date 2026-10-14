@@ -50,6 +50,13 @@
     class="bg-[#F8FAFC] flex flex-col min-h-0 flex-1 overflow-hidden"
 >
     <div class="mx-auto w-full max-w-[1600px] p-3 sm:p-4 lg:p-6 relative flex flex-col gap-3 sm:gap-4 min-h-0 flex-1">
+        @php
+            $routePrefix = request()->is('librarian*') ? 'librarian.' : 'admin.';
+            $canCreateBook = auth()->check() && auth()->user()->can('create', \App\Models\Book::class);
+            $canUpdateBook = auth()->check() && auth()->user()->can('update', \App\Models\Book::class);
+            $canDeleteBook = auth()->check() && auth()->user()->can('delete', \App\Models\Book::class);
+        @endphp
+
         <!-- 1. Page Header -->
         <div class="relative z-10 flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-start sm:justify-between lg:shrink-0">
             <div class="flex min-w-0 items-start gap-3.5">
@@ -61,17 +68,19 @@
 
             <!-- Primary Action -->
             <div class="grid grid-cols-2 gap-2 sm:flex sm:shrink-0 sm:items-center">
-                <a href="{{ route('admin.book-management.add') }}" wire:navigate
-                    class="inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-[#102B70] px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#0B225E] active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70] focus-visible:ring-offset-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
-                    <span>Add Book</span>
-                </a>
+                @if($canCreateBook)
+                    <a href="{{ route($routePrefix . 'book-management.add') }}" wire:navigate
+                        class="inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-[#102B70] px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#0B225E] active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70] focus-visible:ring-offset-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                        <span>Add Book</span>
+                    </a>
 
-                <!-- Secondary Action -->
-                <button type="button" onclick="alert('Book Import feature coming soon!')" class="inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-[#CBD5E1] bg-white px-4 text-sm font-semibold text-[#102B70] shadow-sm transition-colors hover:border-[#102B70] hover:bg-slate-50 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70] focus-visible:ring-offset-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
-                    <span>Import Book</span>
-                </button>
+                    <!-- Secondary Action -->
+                    <button type="button" onclick="alert('Book Import feature coming soon!')" class="inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-[#CBD5E1] bg-white px-4 text-sm font-semibold text-[#102B70] shadow-sm transition-colors hover:border-[#102B70] hover:bg-slate-50 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70] focus-visible:ring-offset-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+                        <span>Import Book</span>
+                    </button>
+                @endif
             </div>
         </div>
 
@@ -269,21 +278,23 @@
 
         <!-- Bulk Actions Slot -->
         <x-slot:bulkActions>
-            <button
-                type="button"
-                wire:click="openBulkLocationModal"
-                class="rounded-lg border border-slate-300 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70]"
-            >
-                Change Location
-            </button>
+            @if($canUpdateBook)
+                <button
+                    type="button"
+                    wire:click="openBulkLocationModal"
+                    class="rounded-lg border border-slate-300 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70]"
+                >
+                    Change Location
+                </button>
 
-            <button
-                type="button"
-                wire:click="openBulkConditionModal"
-                class="rounded-lg border border-slate-300 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70]"
-            >
-                Update Condition
-            </button>
+                <button
+                    type="button"
+                    wire:click="openBulkConditionModal"
+                    class="rounded-lg border border-slate-300 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70]"
+                >
+                    Update Condition
+                </button>
+            @endif
 
             <button
                 type="button"
@@ -293,14 +304,16 @@
                 Print Labels
             </button>
 
-            <button
-                type="button"
-                wire:click="bulkDelete"
-                onclick="confirm('Are you sure you want to delete the selected copies?') || event.stopImmediatePropagation()"
-                class="rounded-lg bg-red-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-red-700 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600"
-            >
-                Delete
-            </button>
+            @if($canDeleteBook)
+                <button
+                    type="button"
+                    wire:click="bulkDelete"
+                    onclick="confirm('Are you sure you want to delete the selected copies?') || event.stopImmediatePropagation()"
+                    class="rounded-lg bg-red-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-red-700 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600"
+                >
+                    Delete
+                </button>
+            @endif
 
             <button
                 type="button"
@@ -417,35 +430,37 @@
                                         View Details
                                     </button>
 
-                                    <a
-                                        href="{{ route('admin.book-management.edit', $book->book_detail_id ?? $book->id) }}"
-                                        wire:navigate
-                                        @click="open = false"
-                                        class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 rounded-xl transition-colors"
-                                    >
-                                        <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                                        Edit Book
-                                    </a>
+                                    @if($canUpdateBook)
+                                        <a
+                                            href="{{ route($routePrefix . 'book-management.edit', $book->book_detail_id ?? $book->id) }}"
+                                            wire:navigate
+                                            @click="open = false"
+                                            class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 rounded-xl transition-colors"
+                                        >
+                                            <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                            Edit Book
+                                        </a>
 
-                                    <button
-                                        type="button"
-                                        wire:click="editCopy({{ $book->id }})"
-                                        @click="open = false"
-                                        class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 rounded-xl transition-colors"
-                                    >
-                                        <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                                        Change Location
-                                    </button>
+                                        <button
+                                            type="button"
+                                            wire:click="editCopy({{ $book->id }})"
+                                            @click="open = false"
+                                            class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 rounded-xl transition-colors"
+                                        >
+                                            <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                            Change Location
+                                        </button>
 
-                                    <button
-                                        type="button"
-                                        wire:click="editCopy({{ $book->id }})"
-                                        @click="open = false"
-                                        class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 rounded-xl transition-colors"
-                                    >
-                                        <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
-                                        Update Condition
-                                    </button>
+                                        <button
+                                            type="button"
+                                            wire:click="editCopy({{ $book->id }})"
+                                            @click="open = false"
+                                            class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 rounded-xl transition-colors"
+                                        >
+                                            <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                                            Update Condition
+                                        </button>
+                                    @endif
 
                                     <button
                                         type="button"
@@ -457,19 +472,21 @@
                                         View History
                                     </button>
 
-                                    <div class="border-t border-slate-100 my-1"></div>
+                                    @if($canDeleteBook)
+                                        <div class="border-t border-slate-100 my-1"></div>
 
-                                    <button
-                                        type="button"
-                                        wire:click="deleteCopy({{ $book->id }})"
-                                        @disabled($book->status === 'borrowed')
-                                        @click="open = false"
-                                        onclick="confirm('Are you sure you want to delete copy {{ $book->accession_number }}?') || event.stopImmediatePropagation()"
-                                        class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-xl transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                                    >
-                                        <svg class="h-3.5 w-3.5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                        Delete Copy
-                                    </button>
+                                        <button
+                                            type="button"
+                                            wire:click="deleteCopy({{ $book->id }})"
+                                            @disabled($book->status === 'borrowed')
+                                            @click="open = false"
+                                            onclick="confirm('Are you sure you want to delete copy {{ $book->accession_number }}?') || event.stopImmediatePropagation()"
+                                            class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-xl transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                        >
+                                            <svg class="h-3.5 w-3.5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                            Delete Copy
+                                        </button>
+                                    @endif
                                 </x-table-action-dot>
                             </div>
                         </div>

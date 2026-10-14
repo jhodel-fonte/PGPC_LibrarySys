@@ -114,23 +114,6 @@
                 </div>
             </div>
 
-            <!-- Email Address -->
-            <div class="space-y-2">
-                <div class="flex items-center justify-between">
-                    <label class="block text-sm font-semibold text-[#334155]">Email Address</label>
-                </div>
-                <div class="relative flex items-center">
-                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#94A3B8]">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
-                        </svg>
-                    </div>
-                    <div class="h-14 w-full pl-11 pr-4 rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] text-base font-semibold text-[#0F172A] flex items-center truncate">
-                        {{ $user->email ?? 'Not provided' }}
-                    </div>
-                </div>
-            </div>
-
         </div>
     </div>
 
@@ -216,61 +199,6 @@
                         <span class="inline-flex items-center gap-1.5 text-base font-bold text-emerald-700 px-2.5 py-1 rounded-xl">
                             {{ $student?->enrollment_status ?: 'Active Enrolled' }}
                         </span>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-    </div>
-
-    <!-- SECTION 4: ACCOUNT CREDENTIALS & SECURITY -->
-    <div class="space-y-4 pt-2">
-        <div class="flex items-center gap-2.5 pb-2 border-b border-slate-100">
-            <div class="h-6 w-1 bg-[#102B70] rounded-full"></div>
-            <h3 class="text-base font-bold text-[#102B70]">Account Credentials & Security Details</h3>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 pt-1">
-            
-            <!-- Username -->
-            <div class="space-y-2">
-                <label class="block text-sm font-semibold text-[#334155]">System Username</label>
-                <div class="relative flex items-center">
-                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#94A3B8]">
-                        <span class="font-bold text-sm w-4 text-center">@</span>
-                    </div>
-                    <div class="h-14 w-full pl-11 pr-4 rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] text-base font-semibold text-[#0F172A] flex items-center truncate">
-                        {{ $user->username ?? 'N/A' }}
-                    </div>
-                </div>
-            </div>
-
-            <!-- Last Login -->
-            <div class="space-y-2">
-                <label class="block text-sm font-semibold text-[#334155]">Last System Login</label>
-                <div class="relative flex items-center">
-                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#94A3B8]">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                        </svg>
-                    </div>
-                    <div class="h-14 w-full pl-11 pr-4 rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] text-base font-semibold text-[#0F172A] flex items-center truncate">
-                        {{ $user->last_login ? $user->last_login->format('M d, Y h:i A') : 'Never logged in' }}
-                    </div>
-                </div>
-            </div>
-
-            <!-- Account Created -->
-            <div class="space-y-2">
-                <label class="block text-sm font-semibold text-[#334155]">Account Registered</label>
-                <div class="relative flex items-center">
-                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#94A3B8]">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                        </svg>
-                    </div>
-                    <div class="h-14 w-full pl-11 pr-4 rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] text-base font-semibold text-[#0F172A] flex items-center truncate">
-                        {{ $user->created_at ? $user->created_at->format('M d, Y') : 'Date unavailable' }}
                     </div>
                 </div>
             </div>

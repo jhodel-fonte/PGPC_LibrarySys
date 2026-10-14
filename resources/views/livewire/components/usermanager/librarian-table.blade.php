@@ -5,6 +5,11 @@
         <img src="{{ asset('images/logo.webp') }}" class="w-2/3 max-w-[800px] object-contain" alt="">
     </div>
 
+    @php
+        $routePrefix = request()->is('librarian*') ? 'librarian.' : 'admin.';
+        $canManageLibrarians = auth()->check() && (auth()->user()->hasRole('Admin') || auth()->user()->hasPermission('manage_librarians'));
+    @endphp
+
     <!-- 1. Page Header -->
     <div class="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between lg:shrink-0">
         <div>
@@ -12,10 +17,12 @@
             <p class="mt-1 text-sm text-slate-500 font-medium">Manage library staff, roles, and administrative access.</p>
         </div>
         <div class="flex items-center gap-3 shrink-0">
-            <a href="{{ route('admin.user-management.add', ['type' => 'librarian']) }}" wire:navigate class="inline-flex items-center justify-center gap-2 h-10 px-5 rounded-lg bg-[#102B70] hover:bg-[#0B225E] text-white text-sm font-semibold transition-colors shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70] focus-visible:ring-offset-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
-                <span>Add Librarian</span>
-            </a>
+            @if($canManageLibrarians)
+                <a href="{{ route($routePrefix . 'user-management.add', ['type' => 'librarian']) }}" wire:navigate class="inline-flex items-center justify-center gap-2 h-10 px-5 rounded-lg bg-[#102B70] hover:bg-[#0B225E] text-white text-sm font-semibold transition-colors shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70] focus-visible:ring-offset-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+                    <span>Add Librarian</span>
+                </a>
+            @endif
         </div>
     </div>
 
@@ -187,7 +194,7 @@
                     <div class="flex items-center justify-end">
                         <x-table-action-dot>
                             <a
-                                href="{{ route('admin.user-details', $user->encrypted_id) }}"
+                                href="{{ route($routePrefix . 'user-details', $user->encrypted_id) }}"
                                 wire:navigate
                                 @click="open = false"
                                 class="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-[#102B70] rounded-lg transition-colors"
@@ -196,15 +203,17 @@
                                 View Profile
                             </a>
 
-                            <a
-                                href="{{ route('admin.user-management.edit', $user->encrypted_id) }}"
-                                wire:navigate
-                                @click="open = false"
-                                class="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-[#102B70] rounded-lg transition-colors"
-                            >
-                                <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                                Edit Profile
-                            </a>
+                            @if($canManageLibrarians)
+                                <a
+                                    href="{{ route($routePrefix . 'user-management.edit', $user->encrypted_id) }}"
+                                    wire:navigate
+                                    @click="open = false"
+                                    class="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-[#102B70] rounded-lg transition-colors"
+                                >
+                                    <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                    Edit Profile
+                                </a>
+                            @endif
                         </x-table-action-dot>
                     </div>
                 </td>

@@ -119,7 +119,7 @@
                     </button>
                     <div class="my-1 border-t border-slate-100"></div>
                     <a
-                        href="{{ route('admin.user-management') }}"
+                        href="{{ route((request()->is('librarian*') ? 'librarian.' : 'admin.') . 'user-management') }}"
                         wire:navigate
                         class="flex w-full items-center gap-2 px-3.5 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-50 hover:text-slate-800 transition-colors"
                     >
@@ -633,7 +633,7 @@
             <div class="pt-6 border-t border-[#F1F5F9] flex flex-col-reverse sm:flex-row items-center justify-end gap-3.5">
                 <!-- Cancel Button -->
                 <a
-                    href="{{ route('admin.user-management') }}"
+                    href="{{ route((request()->is('librarian*') ? 'librarian.' : 'admin.') . 'user-management') }}"
                     wire:navigate
                     class="w-full sm:w-auto h-12 px-7 rounded-2xl border border-[#E2E8F0] bg-white hover:bg-slate-100 text-[#334155] hover:text-[#0F172A] text-sm font-semibold transition-colors shadow-xs flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
                 >

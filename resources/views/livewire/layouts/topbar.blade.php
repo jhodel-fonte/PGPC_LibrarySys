@@ -9,12 +9,17 @@
 
     $mainPageUrl = null;
     if ($isSubpage) {
-        if (!empty($activepageRoute) && \Illuminate\Support\Facades\Route::has($activepageRoute)) {
+        $prefix = request()->is('librarian*') ? 'librarian.' : 'admin.';
+        $resolvedRoute = !empty($activepageRoute) ? str_replace(['admin.', 'librarian.'], $prefix, $activepageRoute) : null;
+        if (!empty($resolvedRoute) && \Illuminate\Support\Facades\Route::has($resolvedRoute)) {
+            $mainPageUrl = route($resolvedRoute);
+        } elseif (!empty($activepageRoute) && \Illuminate\Support\Facades\Route::has($activepageRoute)) {
             $mainPageUrl = route($activepageRoute);
         } elseif (url()->previous() !== url()->current() && str_starts_with(url()->previous(), request()->root())) {
             $mainPageUrl = url()->previous();
         } else {
-            $mainPageUrl = \Illuminate\Support\Facades\Route::has('admin.dashboard') ? route('admin.dashboard') : url('/');
+            $dashRoute = request()->is('librarian*') ? 'librarian.dashboard' : 'admin.dashboard';
+            $mainPageUrl = \Illuminate\Support\Facades\Route::has($dashRoute) ? route($dashRoute) : url('/');
         }
     }
 

@@ -63,8 +63,8 @@ class UserDetails extends Component
         if ($currentUser && $currentUser->role?->name !== 'Admin' && $currentUser->id !== $user->id) {
             $isLibrarian = in_array($user->role?->name, ['Librarian', 'Head Librarian'], true) || (bool) $user->librarian;
             $canView = $isLibrarian
-                ? ($currentUser->hasPermission('manage_librarian') || $currentUser->hasPermission('manage_users'))
-                : $currentUser->hasPermission('manage_users');
+                ? ($currentUser->hasPermission('manage_librarians') || $currentUser->hasPermission('manage_users'))
+                : ($currentUser->hasPermission('view_students') || $currentUser->hasPermission('manage_users'));
 
             if (! $canView) {
                 abort(403, 'You do not have permission to view this user account.');

@@ -25,16 +25,23 @@ class ConfirmReturn extends Component
 
     public function mount()
     {
+        $user = auth()->user();
+        if ($user && ! $user->hasRole('Admin') && ! $user->hasPermission('return_book') && ! $user->hasPermission('manage_circulation')) {
+            abort(403, 'Unauthorized action. You do not have permission to confirm book returns.');
+        }
+
         $this->studentId = session('confirm_return_student_id');
         $this->transactionIds = session('confirm_return_transaction_ids', []);
 
+        $prefix = request()->is('librarian*') ? 'librarian.' : 'admin.';
+
         if (!$this->studentId || empty($this->transactionIds)) {
-            return $this->redirect(route('admin.circulation-desk.return'), navigate: true);
+            return $this->redirect(route($prefix . 'circulation-desk.return'), navigate: true);
         }
 
         $this->student = Student::with('libraryStatus')->find($this->studentId);
         if (!$this->student) {
-            return $this->redirect(route('admin.circulation-desk.return'), navigate: true);
+            return $this->redirect(route($prefix . 'circulation-desk.return'), navigate: true);
         }
 
         $transactions = BorrowingTransaction::with([

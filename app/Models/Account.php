@@ -171,6 +171,10 @@ class Account extends Authenticatable
      */
     public function hasPermission(string $permissionName): bool
     {
+        if ($this->hasRole('Admin')) {
+            return true;
+        }
+
         // 1. Direct account permission override check
         $accountPermission = $this->permissions()->where('permissions.name', $permissionName)->first();
         if ($accountPermission) {

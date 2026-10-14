@@ -35,13 +35,31 @@ class EditLibrarianForm extends Component
     // Role & Permissions
     public string $role = '';
     public array $permissions = [
+        // Cataloging
+        'view_catalog' => false,
+        'create_book' => false,
+        'edit_book' => false,
+        'delete_book' => false,
+        'manage_catalog' => false,
+
+        // Circulation
+        'view_circulation' => false,
+        'borrow_book' => false,
+        'return_book' => false,
+        'manage_fines' => false,
+        'manage_circulation' => false,
+
+        // User Administration
+        'view_students' => false,
+        'create_students' => false,
+        'edit_students' => false,
+        'delete_students' => false,
         'manage_users' => false,
         'manage_librarian' => false,
-        'manage_catalog' => false,
-        'manage_circulation' => false,
-        'manage_fines' => false,
+
+        // System & Reports
+        'view_reports' => false,
         'manage_system' => false,
-        'view_catalog' => false,
     ];
 
     // Profile Photo
@@ -80,7 +98,8 @@ class EditLibrarianForm extends Component
 
         // Load permissions from presets
         $presets = config('settings.librarian_role_permission', []);
-        $allowed = $presets[$this->role] ?? [];
+        $roleKey = ($this->role === 'head_librarian' || $this->role === 'librarian_head') ? 'librarian_head' : $this->role;
+        $allowed = $presets[$roleKey] ?? $presets[$this->role] ?? [];
         foreach (array_keys($this->permissions) as $key) {
             $this->permissions[$key] = in_array($key, $allowed, true);
         }
@@ -157,6 +176,17 @@ class EditLibrarianForm extends Component
         }
 
         $this->validateOnly($propertyName);
+    }
+
+    public function updatedRole($value): void
+    {
+        $roleKey = ($value === 'head_librarian' || $value === 'librarian_head') ? 'librarian_head' : $value;
+        $presets = config('settings.librarian_role_permission', []);
+        $allowed = $presets[$roleKey] ?? $presets[$value] ?? [];
+
+        foreach (array_keys($this->permissions) as $key) {
+            $this->permissions[$key] = in_array($key, $allowed, true);
+        }
     }
 
     public function removePhoto(): void
@@ -253,7 +283,8 @@ class EditLibrarianForm extends Component
             $fullName = e(trim("{$librarian->first_name} {$librarian->last_name}"));
             session()->flash('status', "Librarian profile for {$fullName} ({$librarian->school_id_number}) updated successfully.");
 
-            return $this->redirect(route('admin.user-details', $account->encrypted_id), navigate: true);
+            $prefix = request()->is('librarian*') ? 'librarian.' : 'admin.';
+            return $this->redirect(route($prefix . 'user-details', $account->encrypted_id), navigate: true);
         } catch (\Throwable $e) {
             Log::error('Failed to update librarian: ' . $e->getMessage(), ['exception' => $e]);
             $this->errorMessage = 'Failed to update librarian profile. ' . $e->getMessage();

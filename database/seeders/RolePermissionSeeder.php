@@ -23,10 +23,19 @@ class RolePermissionSeeder extends Seeder
         
         $assistantPermissionNames = [
             'manage_users',
+            'view_students',
+            'create_students',
+            'edit_students',
             'manage_catalog',
-            'manage_circulation',
-            'manage_fines',
             'view_catalog',
+            'create_book',
+            'edit_book',
+            'manage_circulation',
+            'view_circulation',
+            'borrow_book',
+            'return_book',
+            'manage_fines',
+            'view_reports',
         ];
 
         $assistantPermissionIds = DB::table('permissions')

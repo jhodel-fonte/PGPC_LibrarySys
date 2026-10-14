@@ -20,9 +20,20 @@ class UserManagement extends Component
 
     public function mount(): void
     {
-        // Fall back to student for any unexpected value.
-        if (! in_array($this->type, self::TYPES, true)) {
+        $user = auth()->user();
+        $canManageLibrarians = $user && ($user->hasRole('Admin') || $user->hasPermission('manage_librarians'));
+        $canManageStudents = $user && ($user->hasRole('Admin') || $user->hasPermission('manage_users') || $user->hasPermission('view_students'));
+
+        if ($this->type === 'librarian' && ! $canManageLibrarians) {
             $this->type = 'student';
+        }
+
+        if (! in_array($this->type, self::TYPES, true)) {
+            $this->type = $canManageStudents ? 'student' : ($canManageLibrarians ? 'librarian' : 'student');
+        }
+
+        if ($this->type === 'student' && ! $canManageStudents && ! $canManageLibrarians) {
+            abort(403, 'Unauthorized action. You do not have permission to view users.');
         }
     }
 
