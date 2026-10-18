@@ -24,10 +24,10 @@
 <body class="antialiased font-sans min-h-dvh flex flex-col relative overflow-x-hidden bg-[#071943] text-slate-100">
 
     <!-- Preloader -->
-    <x-preloader />
+    <x-loader.preloader />
 
     @persist('top-loader')
-        <livewire:components.top-loader />
+        <livewire:components.widgets.top-loader />
     @endpersist
 
     <div id="portal-content" class="opacity-0 transition-opacity duration-700 ease-in-out flex flex-col flex-1 w-full relative">

@@ -122,7 +122,7 @@
         $canDeleteStudent = auth()->check() && (auth()->user()->hasRole('Admin') || auth()->user()->hasPermission('delete_students') || auth()->user()->hasPermission('manage_users'));
         $isTrashed = $user?->trashed();
     @endphp
-    @if($canDeleteStudent)
+    @if(! ($this->isProfile ?? false) && $canDeleteStudent)
     <div class="space-y-4 pt-4 border-t border-slate-100">
         <div class="flex items-center gap-2.5 pb-2 border-b border-slate-100">
             <div class="h-6 w-1 bg-[#EF4444] rounded-full"></div>

@@ -19,6 +19,7 @@
         "livewire/livewire": "^3.6.4",
         "livewire/volt": "^1.7.0",
         "phpmailer/phpmailer": "^7.1",
+        "scriptotek/marc": "^3.0",
         "tallstackui/tallstackui": "^3.5"
     },
     "require-dev": {

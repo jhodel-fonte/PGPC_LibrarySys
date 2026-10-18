@@ -28,7 +28,7 @@
 
         <!-- Header / Logo Area -->
         <div class="min-h-[60px] pt-6 px-4 flex items-center justify-between shrink-0" :class="sidebarMinimized ? 'justify-center' : ''">
-            <x-brand-title href="{{ route($routePrefix . 'dashboard') }}" />
+            <x-widget.brand-title href="{{ route($routePrefix . 'dashboard') }}" />
 
             <!-- Close Button for Mobile -->
             <button @click="sidebarOpen = false" class="md:hidden p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-white/30 shrink-0" aria-label="Close Sidebar">

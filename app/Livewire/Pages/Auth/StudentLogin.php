@@ -21,8 +21,10 @@ class StudentLogin extends Component
             $user = auth()->user();
             $roleName = strtolower(str_replace(' ', '', $user->role?->name ?? ''));
 
-            if (in_array($roleName, ['admin', 'headlibrarian', 'librarian'])) {
+            if ($roleName === 'admin') {
                 $this->redirect(route('admin.dashboard'), navigate: false);
+            } elseif (in_array($roleName, ['librarian', 'headlibrarian'])) {
+                $this->redirect(route('librarian.dashboard'), navigate: false);
             } else {
                 $this->redirect(route('student.dashboard'), navigate: false);
             }
@@ -39,8 +41,9 @@ class StudentLogin extends Component
             $this->form->authenticate(['Student']);
 
             Session::regenerate();
+            session()->forget('url.intended');
 
-            $this->redirectIntended(default: route('student.dashboard'), navigate: false);
+            $this->redirect(route('student.dashboard'), navigate: false);
         } catch (\App\Exceptions\AccountDeactivatedException $e) {
             $this->redirect(route('account.deactivated'), navigate: false);
             return;

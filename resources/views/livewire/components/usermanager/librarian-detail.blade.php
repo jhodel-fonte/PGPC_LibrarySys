@@ -23,9 +23,11 @@
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
             <!-- Page Title & Subtitle -->
-            <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-[#102B70]">Librarian Information Details</h1>
+            <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-[#102B70]">
+                {{ $this->isProfile ? 'My Profile' : 'Librarian Information Details' }}
+            </h1>
             <p class="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
-                View the librarian's profile, credentials, and system privileges.
+                {{ $this->isProfile ? 'View your profile, credentials, and system privileges.' : "View the librarian's profile, credentials, and system privileges." }}
             </p>
         </div>
 
@@ -40,7 +42,7 @@
             $isSelf = auth()->check() && (auth()->id() === $user?->id);
             $isTrashed = $user?->trashed();
         @endphp
-        @if($canManageLibrarian)
+        @if(! $this->isProfile && $canManageLibrarian)
             <!-- Top Right Actions: Change Status, Disable/Enable, Delete, & Edit -->
             <div class="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
                 <button
@@ -355,7 +357,7 @@
             </div>
 
             <!-- SECTION 3: DANGER ZONE -->
-            @if($canManageLibrarian && !$isSelf)
+            @if(! ($this->isProfile ?? false) && $canManageLibrarian && !$isSelf)
                 <div class="space-y-4 pt-4 border-t border-slate-100">
                     <div class="flex items-center gap-2.5 pb-2 border-b border-slate-100">
                         <div class="h-6 w-1 bg-[#EF4444] rounded-full"></div>

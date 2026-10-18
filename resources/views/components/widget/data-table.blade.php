@@ -427,7 +427,7 @@
             <div class="flex items-center gap-3 sm:gap-4">
                 @if(method_exists($paginator, 'hasPages') && $paginator->hasPages())
                     <div class="flex items-center">
-                        {{ $paginator->links('components.pagination') }}
+                        {{ $paginator->links('components.widget.pagination') }}
                     </div>
                 @endif
 

@@ -32,7 +32,7 @@
     </div>
 
     <!-- 2. Table Card -->
-    <x-data-table
+    <x-widget.data-table
         :headers="$this->headers"
         :sort="$sort"
         :tabs="[
@@ -204,7 +204,7 @@
                 <!-- ACTIONS -->
                 <td class="px-6 py-4 align-middle text-right pr-6">
                     <div class="flex items-center justify-end">
-                        <x-table-action-dot>
+                        <x-widget.table-action-dot>
                             <a
                                 href="{{ route($routePrefix . 'user-details', $user->encrypted_id) }}"
                                 wire:navigate
@@ -266,7 +266,7 @@
                                     </button>
                                 @endif
                             @endif
-                        </x-table-action-dot>
+                        </x-widget.table-action-dot>
                     </div>
                 </td>
             </tr>
@@ -281,7 +281,7 @@
                 </td>
             </tr>
         @endforelse
-    </x-data-table>
+    </x-widget.data-table>
 
     <!-- ======================================================== -->
     <!-- MODAL: DISABLE LIBRARIAN (SOFT DELETE)                   -->

@@ -75,13 +75,17 @@ class GoogleAuthController extends Controller
 
             Auth::login($account, remember: true);
             $request->session()->regenerate();
+            $request->session()->forget('url.intended');
 
-            // Redirect based on role
-            if ($account->role && in_array($account->role->name, ['Admin', 'Librarian', 'Staff'])) {
-                return redirect()->intended(route('admin.dashboard'));
+            // Redirect based on role directly to appropriate dashboard
+            $roleName = strtolower(str_replace(' ', '', $account->role?->name ?? ''));
+            if ($roleName === 'admin') {
+                return redirect()->route('admin.dashboard');
+            } elseif (in_array($roleName, ['librarian', 'headlibrarian', 'staff'])) {
+                return redirect()->route('librarian.dashboard');
             }
 
-            return redirect()->intended(url('/'));
+            return redirect()->route('student.dashboard');
         }
 
         // 3. Brand-new user: Store Google details in session and redirect to complete registration

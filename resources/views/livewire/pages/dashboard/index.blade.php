@@ -10,7 +10,7 @@
         <!-- Top Row: Hero and Attention -->
         <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,2.05fr)_minmax(320px,1fr)] gap-5">
             <!-- Greeting Banner -->
-            <x-greeting-banner staffName="{{ Auth::user()->name ?? 'Admin' }}" />
+            <x-widget.greeting-banner staffName="{{ Auth::user()->name ?? 'Admin' }}" />
             
             <!-- Requires Attention -->
             <div class="h-full">
@@ -51,7 +51,7 @@
                 </div>
 
                 <!-- TallStackUI Multiple Series Chart -->
-                <x-chart 
+                <x-widget.chart 
                     :series="$borrowingTrendsSeries" 
                     :labels="$borrowingTrendsLabels" 
                     line 
@@ -78,7 +78,7 @@
                 </div>
 
                 <!-- TallStackUI Donut Chart -->
-                <x-chart 
+                <x-widget.chart 
                     :series="$categoryDonutSeries" 
                     :labels="$categoryDonutLabels" 
                     donut 
@@ -114,7 +114,7 @@
                 </div>
 
                 <!-- TallStackUI Grouped Bar Chart -->
-                <x-chart 
+                <x-widget.chart 
                     :series="$monthlyActivitySeries" 
                     :labels="$monthlyActivityLabels" 
                     bar 

@@ -34,7 +34,7 @@
         </div>
 
         <!-- 2. Data Table Component (Identical to Users & Book Manager Tables) -->
-        <x-data-table
+        <x-widget.data-table
             :headers="$this->headers"
             :sort="$sort"
             :tabs="[
@@ -265,7 +265,7 @@
                     <!-- 6. ACTIONS -->
                     <td class="px-6 py-4 align-middle text-right pr-6">
                         <div class="flex items-center justify-end">
-                            <x-table-action-dot>
+                            <x-widget.table-action-dot>
                                 @if(!$isReturned)
                                     <a href="{{ route($routePrefix . 'circulation-desk.return') }}" wire:navigate class="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-[#102B70] hover:bg-slate-50 rounded-lg transition-colors">
                                         <svg class="w-4 h-4 text-[#102B70]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
@@ -292,13 +292,13 @@
                                         View in OPAC
                                     </a>
                                 @endif
-                            </x-table-action-dot>
+                            </x-widget.table-action-dot>
                         </div>
                     </td>
                 </tr>
             @empty
             @endforelse
-        </x-data-table>
+        </x-widget.data-table>
 
     </div>
 </div>

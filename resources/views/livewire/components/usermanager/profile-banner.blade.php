@@ -95,7 +95,7 @@
                             {{ $student?->year_level ?: '2nd Year' }}
                         </p>
                     </div>
-                @elseif($librarian)
+                @else
                     <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
                         <div class="space-y-0.5 min-w-0">
                             <div class="flex items-center gap-1.5 text-[11px] font-bold text-blue-200 uppercase tracking-wider">

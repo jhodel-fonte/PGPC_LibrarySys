@@ -22,10 +22,10 @@
     </head>
     <body class="font-sans antialiased bg-[#F8FAFC] text-[#0F172A]">
         @persist('preloader')
-            <x-preloader />
+            <x-loader.preloader />
         @endpersist
         @persist('top-loader')
-            <livewire:components.top-loader />
+            <livewire:components.widgets.top-loader />
         @endpersist
         <div x-data="{
             sidebarOpen: false,
@@ -37,16 +37,17 @@
 
             <!-- Page Content -->
             <div :class="sidebarMinimized ? 'md:ml-[80px]' : 'md:ml-[280px]'" class="flex-1 flex flex-col min-w-0 h-screen transition-all duration-300 ease-in-out w-full bg-[#F8FAFC]">
-                <x-top-navbar :activepage="$title ?? 'Dashboards'" :subpage="$subpage ?? null" :activepageRoute="$activepageRoute ?? null" />
+                <x-widget.top-navbar :activepage="$title ?? 'Dashboards'" :subpage="$subpage ?? null" :activepageRoute="$activepageRoute ?? null" />
 
                 <main class="flex-1 flex flex-col min-h-0 overflow-y-auto bg-[#F8FAFC]">
-                    <livewire:components.global-announcement-banner />
+                    <livewire:components.notification.global-announcement-banner />
                     {{ $slot }}
                 </main>
             </div>
         </div>
-        <x-toast-notification />
-        <x-offline-indicator />
+        <livewire:components.widgets.modal />
+        <x-notification.toast-notification />
+        <x-notification.offline-indicator />
         @livewireScripts
     </body>
 </html>

@@ -2,12 +2,8 @@
 
 namespace App\Livewire\Components;
 
-use Livewire\Component;
+use App\Livewire\Components\Widgets\TableActionDot as BaseTableActionDot;
 
-class TableActionDot extends Component
+class TableActionDot extends BaseTableActionDot
 {
-    public function render()
-    {
-        return view('livewire.components.table-action-dot');
-    }
 }

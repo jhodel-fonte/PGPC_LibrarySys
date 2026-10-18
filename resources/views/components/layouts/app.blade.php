@@ -26,10 +26,10 @@
 <body class="antialiased font-sans min-h-dvh flex flex-col relative overflow-x-hidden bg-gray-50">
 
     <!-- Preloader -->
-    <x-preloader />
+    <x-loader.preloader />
 
     @persist('top-loader')
-        <livewire:components.top-loader />
+        <livewire:components.widgets.top-loader />
     @endpersist
 
 
@@ -45,7 +45,7 @@
         </div>
 
     </div>
-    <x-offline-indicator />
+    <x-notification.offline-indicator />
     @livewireScripts
 </body>
 </html>

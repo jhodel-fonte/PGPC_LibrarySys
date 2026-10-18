@@ -35,6 +35,7 @@ Route::middleware(['auth', 'verified', 'role:Admin'])->prefix('admin')->name('ad
         Route::prefix('book-management')->name('book-management.')->group(function () {
             Route::get('/', \App\Livewire\Pages\Dashboard\BookManager::class)->name('index');
             Route::get('/add', \App\Livewire\Pages\Dashboard\AddBook::class)->name('add');
+            Route::get('/import', \App\Livewire\Pages\Dashboard\Import::class)->name('import');
             Route::get('/edit/{id}', \App\Livewire\Pages\Dashboard\EditBook::class)->name('edit');
         });
 
@@ -42,6 +43,7 @@ Route::middleware(['auth', 'verified', 'role:Admin'])->prefix('admin')->name('ad
         Route::get('/publishers/search', [\App\Http\Controllers\PublisherController::class, 'search'])->name('publishers.search');
 
         Route::get('/settings', \App\Livewire\Pages\Dashboard\Settings::class)->name('settings');
+        Route::get('/profile', \App\Livewire\Pages\Student\Profile::class)->name('profile');
 });
 
 Route::middleware(['auth', 'verified', 'role:Librarian,Head Librarian,Admin'])->prefix('librarian')->name('librarian.')->group(function () {
@@ -71,6 +73,7 @@ Route::middleware(['auth', 'verified', 'role:Librarian,Head Librarian,Admin'])->
         Route::middleware('permission:manage_catalog,view_catalog')->prefix('book-management')->name('book-management.')->group(function () {
             Route::get('/', \App\Livewire\Pages\Dashboard\BookManager::class)->name('index');
             Route::get('/add', \App\Livewire\Pages\Dashboard\AddBook::class)->name('add')->middleware('permission:manage_catalog,create_book');
+            Route::get('/import', \App\Livewire\Pages\Dashboard\Import::class)->name('import')->middleware('permission:manage_catalog,create_book');
             Route::get('/edit/{id}', \App\Livewire\Pages\Dashboard\EditBook::class)->name('edit')->middleware('permission:manage_catalog,edit_book');
         });
 
@@ -78,6 +81,7 @@ Route::middleware(['auth', 'verified', 'role:Librarian,Head Librarian,Admin'])->
         Route::get('/publishers/search', [\App\Http\Controllers\PublisherController::class, 'search'])->name('publishers.search');
 
         Route::get('/settings', \App\Livewire\Pages\Dashboard\Settings::class)->name('settings')->middleware('permission:manage_settings');
+        Route::get('/profile', \App\Livewire\Pages\Student\Profile::class)->name('profile');
 });
 
 Route::get('/send-test-email', function () {
@@ -109,7 +113,7 @@ Route::get('/preview-reset-email', function () {
 
 
 
-Route::middleware(['auth', 'verified', 'role:Student,Admin,Librarian,Head Librarian'])->prefix('student')->name('student.')->group(function () {
+Route::middleware(['auth', 'verified', 'role:Student'])->prefix('student')->name('student.')->group(function () {
     Route::get('/dashboard', \App\Livewire\Pages\Student\Dashboard::class)->name('dashboard');
     Route::get('/borrow', \App\Livewire\Pages\Student\Borrow::class)->name('borrow');
     Route::get('/profile', \App\Livewire\Pages\Student\Profile::class)->name('profile');

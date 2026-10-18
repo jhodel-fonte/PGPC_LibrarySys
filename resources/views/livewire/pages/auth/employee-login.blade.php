@@ -108,7 +108,7 @@
 
         <!-- Cloudflare Turnstile Widget -->
         <div class="mt-4">
-            <x-turnstile model="form.turnstileToken" action="login" />
+            <x-turnstile.turnstile model="form.turnstileToken" action="login" />
         </div>
 
         <div class="mt-5">

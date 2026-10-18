@@ -76,10 +76,10 @@
                     </a>
 
                     <!-- Secondary Action -->
-                    <button type="button" onclick="alert('Book Import feature coming soon!')" class="inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-[#CBD5E1] bg-white px-4 text-sm font-semibold text-[#102B70] shadow-sm transition-colors hover:border-[#102B70] hover:bg-slate-50 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70] focus-visible:ring-offset-2">
+                    <a href="{{ route($routePrefix . 'book-management.import') }}" wire:navigate class="inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-[#CBD5E1] bg-white px-4 text-sm font-semibold text-[#102B70] shadow-sm transition-colors hover:border-[#102B70] hover:bg-slate-50 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70] focus-visible:ring-offset-2">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
                         <span>Import Book</span>
-                    </button>
+                    </a>
                 @endif
             </div>
         </div>
@@ -89,7 +89,7 @@
     @endphp
 
     <!-- 2. Data Table Component -->
-    <x-data-table
+    <x-widget.data-table
         :headers="$this->headers"
         :sort="$sort"
         headerTextSize="text-xs"
@@ -420,7 +420,7 @@
 
                             <!-- 3-Dots Actions Menu -->
                             <div class="shrink-0 -mr-1">
-                                <x-table-action-dot>
+                                <x-widget.table-action-dot>
                                     <button
                                         type="button"
                                         @click="open = false; $dispatch('open-book-details', { id: {{ $book->book_detail_id ?? $book->id }}, bookId: {{ $book->id }} })"
@@ -487,7 +487,7 @@
                                             Delete Copy
                                         </button>
                                     @endif
-                                </x-table-action-dot>
+                                </x-widget.table-action-dot>
                             </div>
                         </div>
 
@@ -598,7 +598,7 @@
                 <!-- Actions -->
                 <td class="desktop-cell px-4 py-3 align-middle text-right pr-6">
                     <div class="flex items-center justify-end gap-3">
-                        <x-table-action-dot>
+                        <x-widget.table-action-dot>
                             <button
                                 type="button"
                                 @click="open = false; $dispatch('open-book-details', { id: {{ $book->book_detail_id ?? $book->id }}, bookId: {{ $book->id }} })"
@@ -661,7 +661,7 @@
                                 <svg class="h-3.5 w-3.5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                 Delete Copy
                             </button>
-                        </x-table-action-dot>
+                        </x-widget.table-action-dot>
                     </div>
                 </td>
             </tr>
@@ -681,7 +681,7 @@
                 </td>
             </tr>
         @endforelse
-    </x-data-table>
+    </x-widget.data-table>
     </div>
 
     <!-- 3. SINGLE EDIT MODAL -->

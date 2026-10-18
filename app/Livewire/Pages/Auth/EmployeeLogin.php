@@ -43,20 +43,10 @@ class EmployeeLogin extends Component
             $this->form->authenticate(['Admin', 'Head Librarian', 'Librarian']);
 
             Session::regenerate();
+            session()->forget('url.intended');
 
             $user = auth()->user();
             $roleName = strtolower(str_replace(' ', '', $user->role?->name ?? ''));
-
-            $intended = session()->pull('url.intended');
-            if ($intended && ! str_contains($intended, '/portal') && ! str_contains($intended, '/login')) {
-                if ($roleName !== 'admin' && str_contains($intended, '/admin')) {
-                    $intended = str_replace('/admin', '/librarian', $intended);
-                } elseif ($roleName === 'admin' && str_contains($intended, '/librarian')) {
-                    $intended = str_replace('/librarian', '/admin', $intended);
-                }
-                $this->redirect($intended, navigate: false);
-                return;
-            }
 
             if ($roleName === 'admin') {
                 $this->redirect(route('admin.dashboard'), navigate: false);

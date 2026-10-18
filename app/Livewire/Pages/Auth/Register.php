@@ -19,7 +19,15 @@ class Register extends Component
     public function mount(): void
     {
         if (auth()->check()) {
-            $this->redirect(url('/'), navigate: false);
+            $user = auth()->user();
+            $roleName = strtolower(str_replace(' ', '', $user->role?->name ?? ''));
+            if ($roleName === 'admin') {
+                $this->redirect(route('admin.dashboard'), navigate: false);
+            } elseif (in_array($roleName, ['headlibrarian', 'librarian'])) {
+                $this->redirect(route('librarian.dashboard'), navigate: false);
+            } else {
+                $this->redirect(route('student.dashboard'), navigate: false);
+            }
             return;
         }
 
@@ -61,8 +69,9 @@ class Register extends Component
             Auth::login($account);
 
             session()->regenerate();
+            session()->forget('url.intended');
 
-            $this->redirect(url('/'), navigate: false);
+            $this->redirect(route('student.dashboard'), navigate: false);
         } catch (\Illuminate\Validation\ValidationException $e) {
             $this->dispatch('registration-failed');
             $this->dispatch('scroll-to-error');

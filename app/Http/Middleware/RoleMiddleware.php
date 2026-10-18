@@ -17,9 +17,9 @@ class RoleMiddleware
     {
         if (! $request->user()) {
             if ($request->is('admin*') || $request->is('librarian*') || $request->is('staff*') || $request->is('employee*')) {
-                return redirect()->guest(route('employee.login'));
+                return redirect()->route('employee.login');
             }
-            return redirect()->guest(route('login'));
+            return redirect()->route('login');
         }
 
         if (! $request->user()->role) {

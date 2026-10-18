@@ -272,5 +272,4 @@
             </div>
         </div>
     </div>
-    <livewire:components.modal />
 </div>

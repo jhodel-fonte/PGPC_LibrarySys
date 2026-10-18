@@ -9,8 +9,9 @@ use Livewire\Component;
 
 class LibrarianDetail extends Component
 {
-    public int|string $userId;
+    public int|string|null $userId = null;
     public string $activeTab = 'personal'; // 'personal', 'account'
+    public bool $isProfile = false;
 
     // Status management modal
     public bool $showStatusModal = false;
@@ -29,9 +30,13 @@ class LibrarianDetail extends Component
     public string $editContact = '';
     public string $editSchoolId = '';
 
-    public function mount($userId): void
+    public function mount($userId = null, $isProfile = false): void
     {
-        $this->userId = $userId;
+        $this->isProfile = $isProfile;
+        $this->userId = $userId ?? request()->route('id') ?? request()->route('userId') ?? request()->route('user');
+        if (! $this->userId && auth()->check()) {
+            $this->userId = auth()->id();
+        }
         $user = $this->user;
 
         if ($user) {

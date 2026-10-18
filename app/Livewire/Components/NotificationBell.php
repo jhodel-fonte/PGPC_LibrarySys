@@ -2,12 +2,8 @@
 
 namespace App\Livewire\Components;
 
-use Livewire\Component;
+use App\Livewire\Components\Notification\NotificationBell as BaseNotificationBell;
 
-class NotificationBell extends Component
+class NotificationBell extends BaseNotificationBell
 {
-    public function render()
-    {
-        return view('livewire.components.notification-bell');
-    }
 }

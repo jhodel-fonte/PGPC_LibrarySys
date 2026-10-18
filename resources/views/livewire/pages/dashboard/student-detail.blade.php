@@ -24,12 +24,12 @@
     <!-- ======================================================== -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-            
-
             <!-- Page Title & Subtitle -->
-            <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-[#102B70]">Student Information Details</h1>
+            <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-[#102B70]">
+                {{ $this->isProfile ? 'My Profile' : 'Student Information Details' }}
+            </h1>
             <p class="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
-                View the student's profile, enrollment, and library activity.
+                {{ $this->isProfile ? 'View your personal profile, enrollment, and library activity.' : "View the student's profile, enrollment, and library activity." }}
             </p>
         </div>
 
@@ -41,7 +41,7 @@
                 auth()->user()->hasPermission('manage_users')
             );
         @endphp
-        @if($canEditStudent)
+        @if(! $this->isProfile && $canEditStudent)
             <!-- Top Right Actions: Edit Student Information & Change Status -->
             <div class="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
                 <button

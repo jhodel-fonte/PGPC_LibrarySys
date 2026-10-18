@@ -111,7 +111,7 @@
 
         <!-- Cloudflare Turnstile Widget -->
         <div class="mt-4">
-            <x-turnstile model="form.turnstileToken" action="login" />
+            <x-turnstile.turnstile model="form.turnstileToken" action="login" />
         </div>
 
         <!-- Primary Submit Button (Stays loading even during redirect) -->

@@ -30,10 +30,10 @@
 <body class="min-h-dvh bg-slate-100 font-sans text-slate-900 antialiased select-none cursor-default">
 
     <!-- Preloader -->
-    <x-preloader />
+    <x-loader.preloader />
 
     @persist('top-loader')
-        <livewire:components.top-loader />
+        <livewire:components.widgets.top-loader />
     @endpersist
 
     <main id="portal-content"

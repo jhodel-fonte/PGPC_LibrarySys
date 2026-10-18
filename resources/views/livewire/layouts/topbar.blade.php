@@ -109,12 +109,12 @@
         </a>
 
         <!-- Live Clock powered entirely by Alpine.js -->
-        <x-clock />
+        <x-widget.clock />
 
         <!-- Overdue items notification bell -->
-        <x-notification-card />
+        <x-notification.notification-card />
 
-        <x-profile />
+        <x-widget.profile />
     </div>
 </div>
 

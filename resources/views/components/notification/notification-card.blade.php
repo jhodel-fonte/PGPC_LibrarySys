@@ -28,7 +28,7 @@
 
         <!-- Content -->
         <div class="max-h-80 overflow-y-auto">
-            <livewire:components.notification-content />
+            <livewire:components.notification.notification-content />
         </div>
         
         <!-- Footer -->

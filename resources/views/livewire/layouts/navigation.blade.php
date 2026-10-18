@@ -24,7 +24,7 @@ new class extends Component
                 <!-- Logo -->
                 <div class="flex items-center">
                     <a href="{{ route('admin.dashboard') }}" wire:navigate>
-                        <x-application-logo class="block h-12 w-auto fill-current text-gray-800" />
+                        <x-widget.application-logo class="block h-12 w-auto fill-current text-gray-800" />
                     </a>
                 </div>
 

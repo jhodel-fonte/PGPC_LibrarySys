@@ -14,6 +14,7 @@ class StudentDetail extends Component
 {
     public int|string|null $userId = null;
     public string $activeTab = 'overview'; // 'overview', 'personal', 'account', 'history'
+    public bool $isProfile = false;
 
     // Status management modal
     public bool $showStatusModal = false;
@@ -35,9 +36,13 @@ class StudentDetail extends Component
     public string $editGender = '';
     public string $editNote = '';
 
-    public function mount($userId = null, $id = null): void
+    public function mount($userId = null, $id = null, $isProfile = false): void
     {
+        $this->isProfile = $isProfile;
         $this->userId = $userId ?? $id ?? request()->route('id') ?? request()->route('userId') ?? request()->route('user');
+        if (! $this->userId && auth()->check()) {
+            $this->userId = auth()->id();
+        }
         $user = $this->user;
 
         if ($user) {

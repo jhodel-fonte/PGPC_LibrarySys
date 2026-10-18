@@ -103,13 +103,13 @@
         </a>
 
         <!-- Live Clock powered by Alpine.js -->
-        <x-clock />
+        <x-widget.clock />
 
         <!-- Overdue items notification card -->
-        <x-notification-card />
+        <x-notification.notification-card />
 
         <!-- Profile Avatar / Dropdown -->
-        <x-profile />
+        <x-widget.profile />
     </div>
 </div>
 

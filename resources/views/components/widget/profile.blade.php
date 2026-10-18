@@ -1,8 +1,10 @@
 <!-- Topbar Profile Button & Dropdown -->
 @php
     $studentProfile = auth()->user()?->student;
-    $profileName = $studentProfile ? ($studentProfile->first_name . ' ' . $studentProfile->last_name) : (auth()->user()?->name ?? auth()->user()?->username ?? 'Student');
-    $initialChar = strtoupper(substr($studentProfile?->first_name ?? auth()->user()?->name ?? auth()->user()?->username ?? 'S', 0, 1));
+    $librarianProfile = auth()->user()?->librarian;
+    $personProfile = $studentProfile ?? $librarianProfile;
+    $profileName = $personProfile ? ($personProfile->first_name . ' ' . $personProfile->last_name) : (auth()->user()?->name ?? auth()->user()?->username ?? 'Profile');
+    $initialChar = strtoupper(substr($personProfile?->first_name ?? auth()->user()?->name ?? auth()->user()?->username ?? 'P', 0, 1));
 @endphp
 <div x-data="{ dropdownOpen: false }" class="relative">
     <button @click="dropdownOpen = !dropdownOpen" @click.away="dropdownOpen = false" class="flex items-center gap-3 pl-3 md:pl-4 border-l border-white/10 md:border-gray-200 group focus:outline-none" title="My Profile">
@@ -32,6 +34,6 @@
                  x-transition:leave-end="opacity-0 scale-95 translate-y-2"
                  style="display: none;"
                  class="absolute right-0 top-full mt-2 w-56 z-50">
-                <x-profile-actions />
+                <x-widget.profile-actions />
             </div>
         </div>
