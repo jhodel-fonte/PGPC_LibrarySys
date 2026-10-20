@@ -4,7 +4,7 @@
         <!-- Top Navigation: Back Button -->
         <div class="mb-5 flex items-center justify-between">
             <a
-                href="{{ url()->previous() !== url()->current() ? url()->previous() : route('opac.index') }}"
+                href="{{ (url()->previous() !== url()->current() && str_contains(url()->previous(), request()->getHost())) ? url()->previous() : route('opac.index') }}"
                 class="inline-flex items-center gap-2 text-[14px] font-semibold text-[#102B70] hover:text-[#0B225E] transition-colors group"
             >
                 <svg width="18" height="18" class="h-4.5 w-4.5 transition-transform group-hover:-translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -13,19 +13,21 @@
                 <span>Back to Results</span>
             </a>
 
-            @if(auth()->check() && auth()->user()->role === 'Admin')
-                @if(!empty($book['id']))
-                    <a
-                        href="{{ route('admin.book-management.edit', $book['id']) }}"
-                        wire:navigate
-                        class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#102B70] text-white text-xs font-bold hover:bg-[#0B225E] transition-colors shadow-xs"
-                    >
-                        <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                        </svg>
-                        <span>Edit Book</span>
-                    </a>
-                @endif
+            @php
+                $canEditBook = \App\Services\EmployeeRoleService::canEditBook();
+                $editPrefix = \App\Services\EmployeeRoleService::getRoutePrefix();
+            @endphp
+            @if($canEditBook && !empty($book['id']))
+                <a
+                    href="{{ route($editPrefix . 'book-management.edit', $book['id']) }}"
+                    wire:navigate
+                    class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#102B70] text-white text-xs font-bold hover:bg-[#0B225E] transition-colors shadow-xs"
+                >
+                    <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                    <span>Edit Book</span>
+                </a>
             @endif
         </div>
 
@@ -112,42 +114,162 @@
                     <!-- 1.1 Left: Book Cover -->
                     <div
                         wire:key="book-cover-{{ $book['id'] ?? 'public' }}"
-                        x-data="{ imgLoaded: false, imgError: false }"
-                        class="w-[185px] sm:w-[205px] h-[270px] sm:h-[300px] shrink-0 rounded-xl overflow-hidden shadow-[0_8px_24px_rgba(7,26,61,0.14)] border border-slate-200 bg-slate-100 relative mx-auto lg:mx-0"
+                        x-data="{
+                            imgLoaded: false,
+                            imgError: false,
+                            fallbackError: false,
+                            lightboxOpen: false,
+                            coverSrc: @js($book['cover_url'] ?? null),
+                            fallbackCover: @js($book['default_cover'] ?? asset('images/' . config('settings.book_covers.default', config('settings.coverFile_default', 'book-cover.webp'))))
+                        }"
+                        x-init="
+                            if (!coverSrc) {
+                                imgError = true;
+                                imgLoaded = true;
+                            } else {
+                                $nextTick(() => {
+                                    const img = $refs.mainCoverImg;
+                                    if (img && img.complete) {
+                                        if (img.naturalHeight === 0) {
+                                            imgError = true;
+                                        } else {
+                                            imgLoaded = true;
+                                        }
+                                    }
+                                });
+                            }
+                        "
+                        class="group w-[185px] sm:w-[205px] h-[270px] sm:h-[300px] shrink-0 rounded-xl overflow-hidden shadow-[0_8px_24px_rgba(7,26,61,0.14)] border border-slate-200 bg-slate-100 relative mx-auto lg:mx-0 select-none"
                     >
+                        <!-- Loading Shimmer State (Visible while image is loading) -->
+                        <div
+                            x-show="!imgLoaded && !imgError && Boolean(coverSrc)"
+                            class="absolute inset-0 bg-slate-200/90 animate-pulse flex flex-col items-center justify-center text-slate-400 z-10"
+                        >
+                            <svg class="h-10 w-10 text-slate-300 animate-pulse mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                            </svg>
+                            <span class="text-[11px] font-semibold text-slate-400 tracking-wide">Loading cover...</span>
+                        </div>
+
+                        <!-- Primary Book Cover Image -->
                         @if(!empty($book['cover_url']))
-                            <div
-                                x-show="!imgLoaded && !imgError"
-                                class="absolute inset-0 bg-slate-200/80 animate-pulse flex items-center justify-center"
-                            >
-                                <svg class="h-8 w-8 text-slate-300 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
-                            </div>
                             <img
-                                src="{{ $book['cover_url'] }}"
+                                x-ref="mainCoverImg"
+                                :src="coverSrc"
                                 alt="{{ $book['title'] ?? 'Book Cover' }}"
                                 loading="eager"
                                 decoding="async"
-                                x-on:load="imgLoaded = true"
-                                x-on:error="imgError = true; imgLoaded = false"
+                                x-on:load="imgLoaded = true; imgError = false;"
+                                x-on:error="imgError = true; imgLoaded = true;"
                                 x-show="!imgError"
                                 :class="imgLoaded ? 'opacity-100' : 'opacity-0'"
-                                class="w-full h-full object-cover transition-opacity duration-300"
+                                class="w-full h-full object-cover select-none group-hover:scale-105 transition-all duration-300"
                             >
                         @endif
+
+                        <!-- Fallback State: Shown when coverSrc is missing OR primary image failed to load -->
                         <div
-                            x-show="imgError || !'{{ $book['cover_url'] ?? '' }}'"
-                            style="{{ !empty($book['cover_url']) ? 'display: none;' : '' }}"
-                            class="h-full w-full flex items-center justify-center bg-slate-100"
+                            x-show="imgError || !coverSrc"
+                            x-cloak
+                            class="absolute inset-0 h-full w-full bg-slate-100 flex items-center justify-center overflow-hidden"
                         >
                             <img
-                                src="{{ asset('images/book-cover.webp') }}"
-                                alt="No cover available"
-                                class="w-full h-full object-cover select-none pointer-events-none"
+                                :src="fallbackCover"
+                                alt="{{ $book['title'] ?? 'Default Cover' }}"
+                                x-on:error="fallbackError = true"
+                                x-show="!fallbackError"
+                                class="w-full h-full object-cover select-none pointer-events-none group-hover:scale-105 transition-transform duration-300"
                                 draggable="false"
                             >
+
+                            <!-- Ultimate SVG Fallback: In case the default-cover webp file itself is missing or cannot load -->
+                            <div
+                                x-show="fallbackError"
+                                class="h-full w-full flex flex-col items-center justify-center p-4 bg-gradient-to-b from-[#EFF6FF] to-slate-100 text-center"
+                            >
+                                <div class="w-14 h-14 rounded-2xl bg-[#102B70]/10 flex items-center justify-center text-[#102B70] mb-2 shadow-xs">
+                                    <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                                    </svg>
+                                </div>
+                                <p class="text-[12px] font-bold text-[#0B2454] line-clamp-2 leading-tight">
+                                    {{ $book['title'] ?? 'PGPC Library' }}
+                                </p>
+                                <span class="text-[10px] text-[#64748B] mt-1 font-semibold uppercase tracking-wider">No Cover Image</span>
+                            </div>
                         </div>
+
+                        <!-- Hover Action: Zoom / Preview Cover Lightbox Trigger -->
+                        <button
+                            type="button"
+                            @click="lightboxOpen = true"
+                            class="absolute bottom-2.5 right-2.5 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-black/60 hover:bg-black/80 text-white text-[11px] font-semibold backdrop-blur-xs shadow-md transition-all opacity-0 group-hover:opacity-100 focus:opacity-100 cursor-pointer"
+                            title="View Full Cover"
+                            aria-label="View Full Cover"
+                        >
+                            <svg class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7" />
+                            </svg>
+                            <span>Zoom</span>
+                        </button>
+
+                        <!-- Cover Lightbox Modal -->
+                        <template x-teleport="body">
+                            <div
+                                x-show="lightboxOpen"
+                                x-cloak
+                                @keydown.escape.window="lightboxOpen = false"
+                                class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
+                                aria-modal="true"
+                                role="dialog"
+                            >
+                                <div
+                                    @click="lightboxOpen = false"
+                                    x-show="lightboxOpen"
+                                    x-transition:enter="ease-out duration-200"
+                                    x-transition:enter-start="opacity-0"
+                                    x-transition:enter-end="opacity-100"
+                                    x-transition:leave="ease-in duration-150"
+                                    x-transition:leave-start="opacity-100"
+                                    x-transition:leave-end="opacity-0"
+                                    class="fixed inset-0 bg-slate-950/80 backdrop-blur-xs"
+                                ></div>
+
+                                <div
+                                    x-show="lightboxOpen"
+                                    x-transition:enter="ease-out duration-200"
+                                    x-transition:enter-start="opacity-0 scale-95"
+                                    x-transition:enter-end="opacity-100 scale-100"
+                                    x-transition:leave="ease-in duration-150"
+                                    x-transition:leave-start="opacity-100 scale-100"
+                                    x-transition:leave-end="opacity-0 scale-95"
+                                    class="relative z-10 max-w-lg w-full max-h-[90vh] flex flex-col items-center"
+                                >
+                                    <div class="relative bg-white rounded-2xl p-2.5 shadow-2xl border border-white/20 max-h-[85vh] overflow-hidden flex flex-col items-center">
+                                        <button
+                                            type="button"
+                                            @click="lightboxOpen = false"
+                                            class="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-slate-900/70 hover:bg-slate-900 text-white flex items-center justify-center transition shadow-md cursor-pointer"
+                                            title="Close"
+                                            aria-label="Close"
+                                        >
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                        <img
+                                            :src="!imgError && coverSrc ? coverSrc : fallbackCover"
+                                            alt="{{ $book['title'] ?? 'Book Cover' }}"
+                                            class="max-h-[75vh] w-auto object-contain rounded-xl select-none"
+                                        >
+                                        <p class="mt-2 text-xs font-semibold text-[#0B2454] text-center px-4 line-clamp-1">
+                                            {{ $book['title'] ?? 'Book Cover' }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
                     </div>
 
                     <!-- 1.2 Center: Book Metadata & Identifiers -->
@@ -267,9 +389,7 @@
                         <!-- Notice Banner -->
                         @if(($book['status'] ?? '') === 'available')
                             <div class="rounded-xl border border-[#BBF7D0] bg-[#F0FDF4] p-3 flex items-start gap-2.5">
-                                <svg width="18" height="18" class="h-4.5 w-4.5 text-emerald-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
+
                                 <div>
                                     <p class="text-[13px] font-bold text-emerald-950 leading-tight">
                                         This item is available for borrowing.
@@ -281,9 +401,6 @@
                             </div>
                         @elseif(($book['status'] ?? '') === 'checked_out')
                             <div class="rounded-xl border border-rose-200 bg-rose-50/80 p-3 flex items-start gap-2.5">
-                                <svg width="18" height="18" class="h-4.5 w-4.5 text-rose-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
                                 <div>
                                     <p class="text-[13px] font-bold text-rose-950 leading-tight">
                                         All copies currently checked out.
@@ -293,11 +410,8 @@
                                     </p>
                                 </div>
                             </div>
-                        @else
+                        @elseif(($book['status'] ?? '') === 'reserved')
                             <div class="rounded-xl border border-amber-200 bg-amber-50/80 p-3 flex items-start gap-2.5">
-                                <svg width="18" height="18" class="h-4.5 w-4.5 text-amber-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                </svg>
                                 <div>
                                     <p class="text-[13px] font-bold text-amber-950 leading-tight">
                                         Reserved by another borrower.
@@ -307,34 +421,22 @@
                                     </p>
                                 </div>
                             </div>
+                        @elseif(($book['status'] ?? '') === 'reference_only')
+                            <div class="rounded-xl border border-blue-200 bg-blue-50/80 p-3 flex items-start gap-2.5">
+                                <div>
+                                    <p class="text-[13px] font-bold text-blue-950 leading-tight">
+                                        Reference copy only.
+                                    </p>
+                                    <p class="text-[12.5px] text-blue-700 leading-tight mt-0.5">
+                                        In-library reading only; not available for loan.
+                                    </p>
+                                </div>
+                            </div>
                         @endif
+                        
+                        
 
-                        <!-- Button 1: Reserve This Item (Primary Gold #FCC719) -->
-                        @if(!empty($book['can_reserve']))
-                            <button
-                                type="button"
-                                wire:click="openReserveModal"
-                                class="w-full h-[44px] rounded-xl bg-[#FCC719] hover:bg-[#E9B500] text-[#071A3D] font-bold text-[14.5px] flex items-center justify-center gap-2 shadow-xs hover:shadow transition-all active:scale-[0.99] cursor-pointer"
-                            >
-                                <svg width="17" height="17" class="h-4 w-4 fill-current text-[#071A3D]" viewBox="0 0 24 24">
-                                    <path d="M5 4a2 2 0 012-2h10a2 2 0 012 2v18l-7-4-7 4V4z" />
-                                </svg>
-                                <span>Reserve This Item</span>
-                            </button>
-                        @else
-                            <button
-                                type="button"
-                                disabled
-                                class="w-full h-[44px] rounded-xl bg-slate-100 text-slate-400 font-bold text-[14.5px] flex items-center justify-center gap-2 cursor-not-allowed border border-slate-200"
-                            >
-                                <svg width="17" height="17" class="h-4 w-4 fill-current text-slate-400" viewBox="0 0 24 24">
-                                    <path d="M5 4a2 2 0 012-2h10a2 2 0 012 2v18l-7-4-7 4V4z" />
-                                </svg>
-                                <span>Unavailable to Reserve</span>
-                            </button>
-                        @endif
-
-                        <!-- Button 2: Share (Copies link to clipboard via Alpine) -->
+                        <!-- Button 3: Share (Copies link to clipboard via Alpine) -->
                         <div x-data="{ copied: false }" class="w-full">
                             <button
                                 type="button"
@@ -413,9 +515,12 @@
                                     <div class="flex flex-wrap gap-2">
                                         @if(!empty($book['keywords']))
                                             @foreach($book['keywords'] as $keyword)
-                                                <span class="inline-block px-3 py-1 rounded-full text-[12.5px] font-medium bg-[#F1F5F9] text-[#334155] hover:bg-[#E2E8F0] transition cursor-pointer">
+                                                <a
+                                                    href="{{ route('opac.index', ['search' => $keyword]) }}"
+                                                    class="inline-block px-3 py-1 rounded-full text-[12.5px] font-medium bg-[#F1F5F9] text-[#334155] hover:bg-[#E2E8F0] hover:text-[#102B70] transition cursor-pointer"
+                                                >
                                                     {{ $keyword }}
-                                                </span>
+                                                </a>
                                             @endforeach
                                         @else
                                             <span class="text-xs text-slate-400">None</span>
@@ -479,80 +584,97 @@
 
                         <!-- Table Header Bar -->
                         <div class="flex items-center justify-between mb-3.5">
-                            <h3 class="text-[16px] font-bold text-[#0B2454]">
+                            <h3 class="text-base font-bold text-[#0B2454]">
                                 Availability at PGPC Library
                             </h3>
-                            <span class="text-[13px] font-semibold text-[#64748B]">
-                                Total Copies: {{ $book['total_copies'] ?? 0 }}
+                            <span class="text-sm font-semibold text-[#64748B]">
+                                Total Copies: {{ $book['total_copies'] ?? 0 }} <span class="text-emerald-700">({{ $book['available_copies'] ?? 0 }} Available)</span>
                             </span>
                         </div>
 
-                        <!-- Table Container -->
-                        <div class="overflow-x-auto rounded-xl border border-[#E2E8F0]">
+                        <!-- Table Container with Vertical & Horizontal Scroll -->
+                        <div class="overflow-x-auto overflow-y-auto max-h-[380px] rounded-xl border border-[#E2E8F0] shadow-2xs">
                             <table class="w-full text-left border-collapse">
-                                <thead>
-                                    <tr class="bg-[#F8FAFC] border-b border-[#E2E8F0]">
-                                        <th class="py-2.5 px-3.5 text-[12.5px] font-bold text-[#475569] uppercase tracking-wider">
+                                <thead class="sticky top-0 z-10 bg-[#F8FAFC] shadow-2xs">
+                                    <tr class="border-b border-[#E2E8F0]">
+                                        <th class="py-3 px-3.5 text-xs font-bold text-[#475569] uppercase tracking-wider">
+                                            Accession No.
+                                        </th>
+                                        <th class="py-3 px-3.5 text-xs font-bold text-[#475569] uppercase tracking-wider">
                                             Location
                                         </th>
-                                        <th class="py-2.5 px-3.5 text-[12.5px] font-bold text-[#475569] uppercase tracking-wider">
-                                            Collection
-                                        </th>
-                                        <th class="py-2.5 px-3.5 text-[12.5px] font-bold text-[#475569] uppercase tracking-wider">
-                                            Call No.
-                                        </th>
-                                        <th class="py-2.5 px-3.5 text-[12.5px] font-bold text-[#475569] uppercase tracking-wider">
+                                        <th class="py-3 px-3.5 text-xs font-bold text-[#475569] uppercase tracking-wider">
                                             Status
                                         </th>
-                                        <th class="py-2.5 px-3.5 text-[12.5px] font-bold text-[#475569] uppercase tracking-wider">
+                                        <th class="py-3 px-3.5 text-xs font-bold text-[#475569] uppercase tracking-wider">
                                             Due Date
+                                        </th>
+                                        <th class="py-3 px-3.5 text-xs font-bold text-[#475569] uppercase tracking-wider text-right">
+                                            Action
                                         </th>
                                     </tr>
                                 </thead>
-                                <tbody class="divide-y divide-[#E2E8F0] text-[13.5px]">
+                                <tbody class="divide-y divide-[#E2E8F0] text-base">
                                     @if(!empty($book['holdings']))
                                         @forelse($book['holdings'] as $copy)
                                             <tr class="hover:bg-slate-50/70 transition-colors">
+                                                <!-- Accession No. -->
+                                                <td class="py-3.5 px-3.5 font-mono text-base font-bold text-[#0B2454] whitespace-nowrap">
+                                                    {{ $copy['accession_no'] ?? 'N/A' }}
+                                                </td>
+
                                                 <!-- Location -->
-                                                <td class="py-3 px-3.5 font-medium text-[#1E293B] whitespace-nowrap">
+                                                <td class="py-3.5 px-3.5 font-medium text-base text-[#1E293B] whitespace-nowrap">
                                                     {{ $copy['location'] ?? 'Main Library' }}
                                                 </td>
 
-                                                <!-- Collection -->
-                                                <td class="py-3 px-3.5 text-[#64748B] whitespace-nowrap">
-                                                    {{ $copy['collection'] ?? 'General Collection' }}
-                                                </td>
-
-                                                <!-- Call No. -->
-                                                <td class="py-3 px-3.5 font-mono text-[13px] text-[#334155] whitespace-nowrap">
-                                                    {{ $copy['call_no'] ?? 'N/A' }}
-                                                </td>
-
-                                                <!-- Status with colored dot -->
-                                                <td class="py-3 px-3.5 whitespace-nowrap">
+                                                <!-- Status with colored label -->
+                                                <td class="py-3.5 px-3.5 whitespace-nowrap">
                                                     <div class="inline-flex items-center gap-1.5">
-                                                        <span class="h-2 w-2 rounded-full {{ $copy['dot_color'] ?? 'bg-emerald-500' }}"></span>
-                                                        <span class="font-semibold {{ $copy['status_color'] ?? 'text-emerald-700' }}">
+                                                        <span class="font-semibold text-base {{ $copy['status_color'] ?? 'text-emerald-700' }}">
                                                             {{ $copy['status_label'] ?? 'Available' }}
                                                         </span>
                                                     </div>
                                                 </td>
 
                                                 <!-- Due Date -->
-                                                <td class="py-3 px-3.5 whitespace-nowrap {{ ($copy['status'] ?? '') === 'reserved' ? 'text-amber-700 font-medium text-[12.5px]' : 'text-[#64748B]' }}">
+                                                <td class="py-3.5 px-3.5 whitespace-nowrap text-base {{ ($copy['status'] ?? '') === 'reserved' ? 'text-amber-700 font-medium' : 'text-[#64748B]' }}">
                                                     {{ $copy['due_date'] ?? '—' }}
+                                                </td>
+
+                                                <!-- Action: Show QR Code -->
+                                                <td class="py-3.5 px-3.5 text-right whitespace-nowrap">
+                                                    <button
+                                                        type="button"
+                                                        @click="$dispatch('open-qr-modal', {
+                                                            value: @js($copy['accession_no'] ?? ''),
+                                                            title: 'Physical Copy QR Code',
+                                                            subtitle: 'Accession / Barcode QR',
+                                                            name: @js($book['title'] ?? 'Book Copy'),
+                                                            label: 'Accession No.:',
+                                                            secondaryInfo: @js('Code: ' . ($copy['code'] ?? 'N/A') . ($copy['location'] ? ' • Shelf: ' . $copy['location'] : '')),
+                                                            instruction: 'Present this QR code during checkout, return, or inventory audit.'
+                                                        })"
+                                                        class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:border-[#102B70] hover:bg-[#F5F9FF] hover:text-[#102B70] active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70] cursor-pointer"
+                                                        title="Show QR Code"
+                                                        aria-label="Show QR Code for copy {{ $copy['accession_no'] ?? '' }}"
+                                                    >
+                                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                                                        </svg>
+                                                    </button>
                                                 </td>
                                             </tr>
                                         @empty
                                             <tr>
-                                                <td colspan="5" class="py-4 text-center text-slate-400 text-xs">
+                                                <td colspan="5" class="py-6 text-center text-slate-400 text-sm">
                                                     No individual holding copies cataloged.
                                                 </td>
                                             </tr>
                                         @endforelse
                                     @else
                                         <tr>
-                                            <td colspan="5" class="py-4 text-center text-slate-400 text-xs">
+                                            <td colspan="5" class="py-6 text-center text-slate-400 text-sm">
                                                 No copies cataloged.
                                             </td>
                                         </tr>
@@ -562,7 +684,7 @@
                         </div>
 
                         <!-- Footer text -->
-                        <p class="text-[12px] text-[#94A3B8] mt-2.5">
+                        <p class="text-xs text-[#94A3B8] mt-2.5">
                             Availability updates in real-time.
                         </p>
 
@@ -622,9 +744,16 @@
                                 <button
                                     type="button"
                                     wire:click="confirmReservation"
-                                    class="px-5 py-2 rounded-xl bg-[#FCC719] hover:bg-[#E9B500] text-[#071A3D] text-xs font-bold transition shadow-xs cursor-pointer flex items-center gap-1.5"
+                                    wire:loading.attr="disabled"
+                                    wire:target="confirmReservation"
+                                    class="px-5 py-2 rounded-xl bg-[#FCC719] hover:bg-[#E9B500] text-[#071A3D] text-xs font-bold transition shadow-xs cursor-pointer flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    <span>Confirm Reservation</span>
+                                    <svg wire:loading wire:target="confirmReservation" class="animate-spin -ml-1 mr-1.5 h-4 w-4 text-[#071A3D]" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <span wire:loading.remove wire:target="confirmReservation">Confirm Reservation</span>
+                                    <span wire:loading wire:target="confirmReservation">Reserving...</span>
                                 </button>
                             @endif
                         </div>

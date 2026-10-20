@@ -6,6 +6,7 @@ use App\Models\BorrowingTransaction;
 use App\Models\Fine;
 use App\Models\Student;
 use Illuminate\Support\Facades\Auth;
+use Linkxtr\QrCode\Facades\QrCode;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -19,6 +20,16 @@ class Dashboard extends Component
         // Find student profile for authenticated user, with fallback for admin/staff preview
         $student = $user?->student ?? Student::with(['libraryStatus', 'account'])->first();
         $studentId = $student?->id;
+        $studentIdValue = $student?->school_id_number ?: ($student?->id ? (string) $student->id : null);
+
+        $qrCodeSvg = null;
+        if ($studentIdValue) {
+            try {
+                $qrCodeSvg = \App\Services\QrCodeServices::svg($studentIdValue);
+            } catch (\Throwable $e) {
+                $qrCodeSvg = null;
+            }
+        }
 
         // Active loans (books currently checked out: return_date is null)
         $activeLoans = $studentId
@@ -65,6 +76,8 @@ class Dashboard extends Component
         return view('livewire.pages.student.dashboard', [
             'user' => $user,
             'student' => $student,
+            'studentIdValue' => $studentIdValue,
+            'qrCodeSvg' => $qrCodeSvg,
             'activeLoans' => $activeLoans,
             'activeCount' => $activeCount,
             'overdueCount' => $overdueCount,

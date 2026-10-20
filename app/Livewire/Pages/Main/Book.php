@@ -301,6 +301,8 @@ class Book extends Component
                 'description' => $bdata->description ?: ($bdata->note ?: 'No detailed description cataloged for this resource.'),
                 'keywords' => $keywords,
                 'cover_url' => $record->cover_url ?: null,
+                'has_custom_cover' => !empty($record->cover_image),
+                'default_cover' => asset('images/' . config('settings.book_covers.default', config('settings.coverFile_default', 'book-cover.webp'))),
                 'publisher' => $record->publisher ? $record->publisher->name : 'N/A',
                 'edition' => $record->edition ?: 'N/A',
                 'classification' => $record->ddc_classification ?: ($record->classification ?: 'N/A'),
@@ -345,7 +347,9 @@ class Book extends Component
             $similar = $query->limit(8)->get();
 
             if ($similar->isNotEmpty()) {
-                return $similar->map(function ($item) {
+                $defaultCover = asset('images/' . config('settings.book_covers.default', config('settings.coverFile_default', 'book-cover.webp')));
+
+                return $similar->map(function ($item) use ($defaultCover) {
                     $data = $item->bookData;
                     $copies = $item->books ?: collect();
                     $availableCopies = $copies->filter(fn($c) => strtolower($c->status ?? '') === 'available')->count();
@@ -360,6 +364,8 @@ class Book extends Component
                             ? $data->authors->map(fn($a) => trim($a->first_name . ' ' . $a->last_name))->filter()->implode(', ')
                             : 'Unknown Author',
                         'cover_url' => $item->cover_url ?: null,
+                        'has_custom_cover' => !empty($item->cover_image),
+                        'default_cover' => $defaultCover,
                         'call_no' => $item->call_number ?: 'N/A',
                         'year' => $item->publication_year ?: ($data?->copyright_year ?: 'N/A'),
                         'type' => $item->bookType ? $item->bookType->name : 'Book',

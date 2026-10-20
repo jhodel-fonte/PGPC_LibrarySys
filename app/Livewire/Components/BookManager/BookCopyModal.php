@@ -5,6 +5,7 @@ namespace App\Livewire\Components\BookManager;
 use App\Models\Book;
 use App\Models\BookCondition;
 use App\Models\BookDetail;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -12,6 +13,8 @@ class BookCopyModal extends Component
 {
     public bool $isOpen = false;
     public bool $isMultiple = false;
+    public bool $isEditing = false;
+    public ?int $copyId = null;
     public int $addedCount = 0;
     public ?int $bookDetailId = null;
     public ?BookDetail $bookDetail = null;
@@ -25,9 +28,17 @@ class BookCopyModal extends Component
 
     protected function rules(): array
     {
+        $accessionRule = Rule::unique('books', 'accession_number');
+        $codeRule = Rule::unique('books', 'code');
+
+        if ($this->isEditing && $this->copyId) {
+            $accessionRule = $accessionRule->ignore($this->copyId);
+            $codeRule = $codeRule->ignore($this->copyId);
+        }
+
         return [
-            'accessionNumber' => ['required', 'string', 'max:255', 'unique:books,accession_number'],
-            'uniqueCode' => ['nullable', 'string', 'max:255', 'unique:books,code'],
+            'accessionNumber' => ['required', 'string', 'max:255', $accessionRule],
+            'uniqueCode' => ['nullable', 'string', 'max:255', $codeRule],
             'location' => ['required', 'string', 'max:255'],
             'conditionId' => ['required', 'exists:book_conditions,id'],
             'status' => ['required', 'string', 'in:available,borrowed,reserved,damaged,lost,maintenance'],
@@ -43,6 +54,7 @@ class BookCopyModal extends Component
             'location.required' => 'Shelf location is required.',
             'conditionId.required' => 'Physical condition is required.',
             'status.required' => 'Status is required.',
+            'uniqueCode.unique' => 'This unique code is already assigned to another book copy.',
         ];
     }
 
@@ -50,6 +62,9 @@ class BookCopyModal extends Component
     #[On('open-book-copy-modal')]
     public function openAddCopy($bookDetailId = null, $isMultiple = false): void
     {
+        $this->isEditing = false;
+        $this->copyId = null;
+
         $id = is_array($bookDetailId) ? ($bookDetailId['bookDetailId'] ?? $bookDetailId['id'] ?? null) : $bookDetailId;
         if (is_array($bookDetailId) && isset($bookDetailId['isMultiple'])) {
             $this->isMultiple = (bool) $bookDetailId['isMultiple'];
@@ -94,6 +109,42 @@ class BookCopyModal extends Component
         $this->dispatch('focus-accession-input');
     }
 
+    #[On('open-edit-copy')]
+    public function openEditCopy($copyId = null): void
+    {
+        $id = is_array($copyId) ? ($copyId['copyId'] ?? $copyId['id'] ?? null) : $copyId;
+        if (!$id) {
+            return;
+        }
+
+        $copy = Book::with([
+            'bookDetail.bookData.authors',
+            'bookDetail.publisher',
+            'condition',
+        ])->find($id);
+
+        if (!$copy) {
+            return;
+        }
+
+        $this->resetErrorBag();
+        $this->isEditing = true;
+        $this->isMultiple = false;
+        $this->copyId = $copy->id;
+        $this->bookDetailId = $copy->book_detail_id;
+        $this->bookDetail = $copy->bookDetail;
+
+        $this->accessionNumber = (string) $copy->accession_number;
+        $this->uniqueCode = (string) ($copy->code ?? '');
+        $this->location = (string) ($copy->location ?? '');
+        $this->conditionId = $copy->book_condition_id;
+        $this->status = (string) ($copy->status ?? 'available');
+        $this->notes = '';
+
+        $this->isOpen = true;
+        $this->dispatch('focus-accession-input');
+    }
+
     public function generateUniqueCode(): void
     {
         $this->uniqueCode = 'BK-' . date('Y') . '-' . strtoupper(substr(uniqid(), -5));
@@ -101,6 +152,36 @@ class BookCopyModal extends Component
 
     public function saveCopy(): void
     {
+        if ($this->isEditing) {
+            if (auth()->check() && !auth()->user()->can('update', Book::class)) {
+                abort(403, 'Unauthorized action. You do not have permission to update book copies.');
+            }
+
+            $this->validate();
+
+            if (!$this->copyId) {
+                return;
+            }
+
+            $book = Book::find($this->copyId);
+            if ($book) {
+                $book->update([
+                    'book_condition_id' => $this->conditionId,
+                    'accession_number' => trim($this->accessionNumber),
+                    'code' => trim($this->uniqueCode) ?: null,
+                    'location' => trim($this->location),
+                    'status' => strtolower($this->status),
+                ]);
+
+                $this->dispatch('toast', message: "Physical copy '{$book->accession_number}' updated successfully.", type: 'success');
+                $this->dispatch('copy-updated', bookDetailId: $this->bookDetailId, copyId: $this->copyId);
+                $this->dispatch('book-details-updated');
+            }
+
+            $this->close();
+            return;
+        }
+
         if (auth()->check() && !auth()->user()->can('create', Book::class)) {
             abort(403, 'Unauthorized action. You do not have permission to add book copies.');
         }
@@ -115,7 +196,7 @@ class BookCopyModal extends Component
             'book_detail_id' => $this->bookDetailId,
             'book_condition_id' => $this->conditionId,
             'accession_number' => trim($this->accessionNumber),
-            'code' => $this->uniqueCode ?: null,
+            'code' => trim($this->uniqueCode) ?: null,
             'location' => trim($this->location),
             'status' => strtolower($this->status),
             'date_acquired' => now(),
@@ -136,9 +217,90 @@ class BookCopyModal extends Component
         }
     }
 
+    public bool $showDeleteModal = false;
+
+    public function confirmDelete(): void
+    {
+        if (!$this->copyId) {
+            return;
+        }
+
+        $book = Book::find($this->copyId);
+        if ($book && $book->status === 'borrowed') {
+            $this->dispatch('toast', message: 'Cannot delete a book copy that is currently checked out / borrowed.', type: 'error');
+            return;
+        }
+
+        $this->showDeleteModal = true;
+    }
+
+    public function cancelDelete(): void
+    {
+        $this->showDeleteModal = false;
+    }
+
+    public function deleteCopy(): void
+    {
+        if (auth()->check() && !auth()->user()->can('delete', Book::class)) {
+            $this->dispatch('toast', message: 'Unauthorized action. You do not have permission to delete book copies.', type: 'error');
+            $this->cancelDelete();
+            return;
+        }
+
+        if (!$this->copyId) {
+            return;
+        }
+
+        $book = Book::find($this->copyId);
+        if ($book) {
+            if ($book->status === 'borrowed') {
+                $this->dispatch('toast', message: 'Cannot delete a book copy that is currently checked out / borrowed.', type: 'error');
+                $this->cancelDelete();
+                return;
+            }
+
+            $accNum = $book->accession_number;
+            $deletedId = $book->id;
+            $book->delete();
+
+            $this->dispatch('toast', [
+                'message' => "Physical copy '{$accNum}' has been deleted successfully.",
+                'type' => 'success',
+                'undoEvent' => 'restore-book-copy',
+                'undoPayload' => ['copyId' => $deletedId],
+                'duration' => 10000,
+            ]);
+            $this->dispatch('copy-deleted', bookDetailId: $this->bookDetailId);
+            $this->dispatch('book-details-updated');
+        }
+
+        $this->showDeleteModal = false;
+        $this->close();
+    }
+
+    #[On('restore-book-copy')]
+    public function restoreBookCopy($copyId = null): void
+    {
+        $id = is_array($copyId) ? ($copyId['copyId'] ?? $copyId['id'] ?? null) : $copyId;
+        if (!$id) {
+            return;
+        }
+
+        $book = Book::withTrashed()->find($id);
+        if ($book && $book->trashed()) {
+            $book->restore();
+            $this->dispatch('toast', message: "Physical copy '{$book->accession_number}' was restored successfully.", type: 'success');
+            $this->dispatch('copy-updated', bookDetailId: $book->book_detail_id, copyId: $book->id);
+            $this->dispatch('book-details-updated');
+        }
+    }
+
     public function close(): void
     {
         $this->isOpen = false;
+        $this->isEditing = false;
+        $this->copyId = null;
+        $this->showDeleteModal = false;
         $this->resetErrorBag();
         $this->dispatch('close-add-copy');
     }

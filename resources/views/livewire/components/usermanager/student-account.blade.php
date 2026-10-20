@@ -119,7 +119,7 @@
 
     <!-- SECTION 2: DANGER ZONE -->
     @php
-        $canDeleteStudent = auth()->check() && (auth()->user()->hasRole('Admin') || auth()->user()->hasPermission('delete_students') || auth()->user()->hasPermission('manage_users'));
+        $canDeleteStudent = \App\Services\EmployeeRoleService::canDeleteStudent();
         $isTrashed = $user?->trashed();
     @endphp
     @if(! ($this->isProfile ?? false) && $canDeleteStudent)

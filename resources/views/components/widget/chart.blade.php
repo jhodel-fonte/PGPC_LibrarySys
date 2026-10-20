@@ -118,6 +118,8 @@
             <!-- Donut SVG with Center Label -->
             <div class="relative shrink-0 flex items-center justify-center">
                 <svg viewBox="0 0 180 180" class="w-40 h-40">
+                    <!-- Base ring background track -->
+                    <circle cx="90" cy="90" r="62" fill="none" stroke="#F1F5F9" stroke-width="28" />
                     @foreach ($slices as $slice)
                         <path 
                             d="{{ $slice['d'] }}" 

@@ -7,9 +7,12 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
 use App\Models\Student;
 use App\Models\BorrowingTransaction;
+use App\Models\Librarian;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
+
+use App\Services\EmployeeRoleService;
 
 #[Layout('livewire.layouts.admin', ['title' => 'Circulation Desk', 'subpage' => 'Confirm Return', 'activepageRoute' => 'admin.circulation-desk.index'])]
 class ConfirmReturn extends Component
@@ -22,18 +25,16 @@ class ConfirmReturn extends Component
     public $transactionsData = [];
     public $totalFine = 0.00;
     public $overdueCount = 0;
+    public ?string $errorMessage = null;
 
     public function mount()
     {
-        $user = auth()->user();
-        if ($user && ! $user->hasRole('Admin') && ! $user->hasPermission('return_book') && ! $user->hasPermission('manage_circulation')) {
-            abort(403, 'Unauthorized action. You do not have permission to confirm book returns.');
-        }
+        EmployeeRoleService::authorizeReturn('Unauthorized action. You do not have permission to confirm book returns.');
 
         $this->studentId = session('confirm_return_student_id');
         $this->transactionIds = session('confirm_return_transaction_ids', []);
 
-        $prefix = request()->is('librarian*') ? 'librarian.' : 'admin.';
+        $prefix = EmployeeRoleService::getRoutePrefix();
 
         if (!$this->studentId || empty($this->transactionIds)) {
             return $this->redirect(route($prefix . 'circulation-desk.return'), navigate: true);
@@ -101,13 +102,18 @@ class ConfirmReturn extends Component
     public function getFineAmount($dueDate)
     {
         $overdueDays = $this->getOverdueDays($dueDate);
-        return $overdueDays * 20.00; // 20 PHP fine per day
+        $penaltyPerDay = (float) config('settings.library_config.penalty_fee', config('settings.penalty_fee', 50.00));
+        return $overdueDays * $penaltyPerDay;
     }
 
     public function confirmReturn()
     {
+        $this->errorMessage = null;
+        $prefix = EmployeeRoleService::getRoutePrefix();
+        $returnUrl = route($prefix . 'circulation-desk.return');
+
         if (empty($this->transactionIds)) {
-            return redirect()->route('admin.circulation-desk.return');
+            return $this->redirect($returnUrl, navigate: true);
         }
 
         // Backend duplicate check: if transactions are already marked as returned, do not process again
@@ -118,18 +124,23 @@ class ConfirmReturn extends Component
         if ($alreadyProcessed) {
             session()->forget(['confirm_return_student_id', 'confirm_return_transaction_ids']);
             session()->flash('success_message', 'Books returned successfully (already processed).');
-            $this->dispatch('return-completed', redirectUrl: route('admin.circulation-desk.return'));
+            $this->dispatch('return-completed', redirectUrl: $returnUrl);
             return;
         }
 
         try {
             DB::transaction(function () {
                 $now = Carbon::now();
-                $librarianId = auth()->user() && auth()->user()->librarian ? auth()->user()->librarian->id : 1;
+                $librarianId = auth()->user()?->librarian?->id ?? Librarian::first()?->id ?? null;
 
                 $transactions = BorrowingTransaction::with(['book' => fn ($q) => $q->withTrashed()])
                     ->whereIn('id', $this->transactionIds)
                     ->get();
+
+                // Safely resolve Overdue fine type ID
+                $overdueFineTypeId = DB::table('fine_types')->where('name', 'Overdue')->value('id')
+                    ?? DB::table('fine_types')->value('id')
+                    ?? 1;
 
                 foreach ($transactions as $transaction) {
                     // Update borrowing transaction in database
@@ -151,7 +162,7 @@ class ConfirmReturn extends Component
                         DB::table('fines')->insert([
                             'borrowing_transaction_id' => $transaction->id,
                             'student_id' => $this->studentId,
-                            'fine_type_id' => 1, // Overdue fine type
+                            'fine_type_id' => $overdueFineTypeId,
                             'fine_due_date' => (clone $now)->addDays(7),
                             'amount' => $fineAmount,
                             'note' => 'Overdue fine accumulated for ' . $this->getOverdueDays($transaction->due_date) . ' days.',
@@ -164,8 +175,9 @@ class ConfirmReturn extends Component
                 }
             });
         } catch (\Throwable $e) {
-            Log::error('Return Database Error: ' . $e->getMessage());
-            $this->dispatch('return-failed', message: 'A database error occurred during return processing. Please try again.');
+            Log::error('Return Database Error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            $this->errorMessage = 'A database error occurred during return processing: ' . $e->getMessage();
+            $this->dispatch('return-failed', message: $this->errorMessage);
             return;
         }
 
@@ -176,11 +188,15 @@ class ConfirmReturn extends Component
         session()->flash('success_message', 'Books returned and transaction confirmed successfully!');
 
         // Dispatch return-completed event to show the frontend countdown success modal
-        $this->dispatch('return-completed', redirectUrl: route('admin.circulation-desk.return'));
+        $this->dispatch('return-completed', redirectUrl: $returnUrl);
     }
 
     public function render()
     {
-        return view('livewire.pages.dashboard.confirm-return');
+        $prefix = EmployeeRoleService::getRoutePrefix();
+        return view('livewire.pages.dashboard.confirm-return', [
+            'returnUrl' => route($prefix . 'circulation-desk.return'),
+        ]);
     }
 }
+

@@ -32,10 +32,7 @@ class CheckInBook extends Component
 
     public function mount()
     {
-        $user = auth()->user();
-        if ($user && ! $user->hasRole('Admin') && ! $user->hasPermission('return_book') && ! $user->hasPermission('manage_circulation')) {
-            abort(403, 'Unauthorized action. You do not have permission to process book returns.');
-        }
+        \App\Services\EmployeeRoleService::authorizeReturn('Unauthorized action. You do not have permission to process book returns.');
 
         $this->updateStats();
     }
@@ -329,13 +326,17 @@ class CheckInBook extends Component
         $this->dispatch('clear-search-input');
     }
 
-    public function undoReturn($accessionNumber)
+    #[On('undo-return')]
+    public function undoReturn($accession = null, $accessionNumber = null)
     {
         $this->errorMessage = '';
-        $book = Book::withTrashed()->where('accession_number', $accessionNumber)->first();
+        $targetAccession = $accession ?? $accessionNumber;
+        if (empty($targetAccession)) return;
+
+        $book = Book::withTrashed()->where('accession_number', $targetAccession)->first();
         if ($book) {
             // Update lastReturnedBook state if it matches
-            if ($this->lastReturnedBook && $this->lastReturnedBook['accession'] === $accessionNumber) {
+            if ($this->lastReturnedBook && ($this->lastReturnedBook['accession'] ?? '') === $targetAccession) {
                 $this->lastReturnedBook['is_returned'] = false;
             }
 

@@ -129,7 +129,7 @@
 
                 <!-- Animated CSS Spinner Content -->
                 <span wire:loading.flex wire:target="login" x-show="isLoggingIn" style="display: none;" class="inline-flex items-center justify-center gap-2.5">
-                    <span class="inline-block h-4 w-4 animate-spin animate-pgpc-spin rounded-full border-2 border-white/30 border-t-white"></span>
+                    <span class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>
                     <span>Signing in...</span>
                 </span>
             </button>
@@ -164,11 +164,11 @@
 
         <p class="text-[12px] text-slate-400 pt-1">
             By signing in, you agree to our
-            <a href="#" class="font-semibold text-[#102b70] underline decoration-[#fcc719] decoration-2 underline-offset-2 hover:text-blue-800 transition">
+            <a href="{{ route('terms') }}" wire:navigate class="font-semibold text-[#102b70] underline decoration-[#fcc719] decoration-2 underline-offset-2 hover:text-blue-800 transition">
                 Terms of Service
             </a>
             and
-            <a href="#" class="font-semibold text-[#102b70] underline decoration-[#fcc719] decoration-2 underline-offset-2 hover:text-blue-800 transition">
+            <a href="{{ route('privacy') }}" wire:navigate class="font-semibold text-[#102b70] underline decoration-[#fcc719] decoration-2 underline-offset-2 hover:text-blue-800 transition">
                 Privacy Policy.
             </a>
         </p>

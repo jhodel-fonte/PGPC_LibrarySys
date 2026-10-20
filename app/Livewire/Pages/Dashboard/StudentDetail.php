@@ -47,11 +47,8 @@ class StudentDetail extends Component
 
         if ($user) {
             $authUser = auth()->user();
-            if ($authUser && !$authUser->hasRole('Admin') && $authUser->id !== $user->id) {
-                $canView = $authUser->hasPermission('view_students') || $authUser->hasPermission('manage_users');
-                if (!$canView) {
-                    abort(403, 'Unauthorized action. You do not have permission to view student information.');
-                }
+            if ($authUser && $authUser->id !== $user->id && !\App\Services\EmployeeRoleService::canViewStudents($authUser)) {
+                abort(403, 'Unauthorized action. You do not have permission to view student information.');
             }
 
             $this->selectedStatusId = $user->status_id;
@@ -306,7 +303,7 @@ class StudentDetail extends Component
                 return;
             }
 
-            if (!$authUser->hasRole('Admin') && !$authUser->hasPermission('delete_students') && !$authUser->hasPermission('manage_users')) {
+            if (!\App\Services\EmployeeRoleService::canDeleteStudent($authUser)) {
                 abort(403, 'Unauthorized action. You do not have permission to disable student accounts.');
             }
         }
@@ -323,15 +320,23 @@ class StudentDetail extends Component
         }
 
         // Soft-delete account record
+        $userId = $user->id;
         $user->delete();
 
         $this->showDisableModal = false;
         unset($this->user);
 
-        $this->dispatch('toast', message: 'Student account has been disabled (soft-deleted). System access and borrowing privileges are suspended.', type: 'success');
+        $this->dispatch('toast', [
+            'message' => 'Student account has been disabled (soft-deleted). System access and borrowing privileges are suspended.',
+            'type' => 'success',
+            'undoEvent' => 'enable-student-account',
+            'undoPayload' => ['userId' => $userId],
+            'duration' => 10000,
+        ]);
     }
 
     #[On('enable-student-account')]
+    #[On('undo-disable-student')]
     public function enableAccount(): void
     {
         $user = $this->user;
@@ -344,7 +349,7 @@ class StudentDetail extends Component
 
         if (auth()->check()) {
             $authUser = auth()->user();
-            if (!$authUser->hasRole('Admin') && !$authUser->hasPermission('delete_students') && !$authUser->hasPermission('manage_users') && !$authUser->hasPermission('edit_students')) {
+            if (!\App\Services\EmployeeRoleService::canEditStudent($authUser) && !\App\Services\EmployeeRoleService::canDeleteStudent($authUser)) {
                 abort(403, 'Unauthorized action. You do not have permission to enable student accounts.');
             }
         }

@@ -55,9 +55,6 @@
     <div class="w-full max-w-[1460px] flex flex-col h-auto lg:h-full lg:overflow-hidden">
         <!-- Header Area -->
         <div class="w-full flex flex-col mb-4 md:mt-2 relative z-10 shrink-0">
-            <!-- Top Row: Back Link -->
-            @include('livewire.components.circulation.circulation-tab')
-
             <!-- Title Row -->
             <div class="flex flex-col md:flex-row pt-2 justify-between items-start md:items-center">
                 <div>
@@ -134,24 +131,19 @@
                             <livewire:components.circulation.live-camera />
                         </div>
 
-                        <!-- Scanned Book Details Card (Empty representation in Checkout mode) -->
-                        <div class="bg-white rounded-3xl border border-[#E2E8F0] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.02)] min-h-[180px] lg:flex-1 flex flex-col items-center justify-center text-center gap-2">
-                            <div class="w-10 h-10 rounded-full bg-[#EFF6FF] text-[#102B70] flex items-center justify-center">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
-                                </svg>
-                            </div>
-                            <span class="text-[12px] font-bold text-[#334155] uppercase tracking-wider">Checkout Guide</span>
-                            <p class="text-[10px] text-[#64748B] max-w-[180px] leading-relaxed">
-                                Students may checkout up to 3 books total. Overdue records and pending fines block check-out.
-                            </p>
-                        </div>
+                        <!-- Reusable Scanned Book Details Preview Component -->
+                        <livewire:components.widgets.circulation-book-preview
+                            :book="$lastScannedBook"
+                            mode="check-out"
+                            :checkout-books="$checkoutBooks"
+                        />
                     </div>
 
                     <!-- COLUMN 2: Reusable Table Component (md:col-span-8) -->
                     <livewire:components.circulation.table
                         :borrowed-books="$checkoutBooks"
                         :scanned-member="$scannedMember"
+                        :selected-accession="$lastScannedBook['accession'] ?? null"
                         mode="check-out"
                         title="Books to Check Out"
                         class="md:col-span-8 h-[400px] md:h-full"

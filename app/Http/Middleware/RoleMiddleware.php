@@ -22,23 +22,17 @@ class RoleMiddleware
             return redirect()->route('login');
         }
 
-        if (! $request->user()->role) {
-            abort(403, 'Unauthorized action.');
-        }
-
-        $userRole = strtolower(str_replace(' ', '', $request->user()->role->name));
-
         $allowedRoles = [];
         foreach ($roles as $role) {
             foreach (explode(',', $role) as $r) {
-                $cleaned = strtolower(str_replace(' ', '', trim($r)));
-                if ($cleaned !== '') {
-                    $allowedRoles[] = $cleaned;
+                $trimmed = trim($r);
+                if ($trimmed !== '') {
+                    $allowedRoles[] = $trimmed;
                 }
             }
         }
 
-        if (! in_array($userRole, $allowedRoles, true)) {
+        if (! method_exists($request->user(), 'hasRole') || ! $request->user()->hasRole($allowedRoles)) {
             abort(403, 'Unauthorized action.');
         }
 

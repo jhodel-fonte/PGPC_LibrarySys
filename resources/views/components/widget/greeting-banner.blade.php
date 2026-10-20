@@ -4,21 +4,12 @@
     'staffName' => null,
 ])
 @php
-    $routePrefix = request()->is('librarian*') ? 'librarian.' : 'admin.';
+    $routePrefix = \App\Services\EmployeeRoleService::getRoutePrefix();
     $resolvedCheckInRoute = $checkInRoute ?? route($routePrefix . 'circulation-desk.return');
     $resolvedCheckOutRoute = $checkOutRoute ?? route($routePrefix . 'circulation-desk.borrow');
 
-    $authUser = auth()->user();
-    $canCheckIn = $authUser && (
-        $authUser->hasRole('Admin') ||
-        $authUser->hasPermission('manage_circulation') ||
-        $authUser->hasPermission('return_book')
-    );
-    $canCheckOut = $authUser && (
-        $authUser->hasRole('Admin') ||
-        $authUser->hasPermission('manage_circulation') ||
-        $authUser->hasPermission('borrow_book')
-    );
+    $canCheckIn = \App\Services\EmployeeRoleService::canReturn();
+    $canCheckOut = \App\Services\EmployeeRoleService::canBorrow();
 @endphp
 <div class="bg-[#17357A] rounded-[16px] p-5 sm:p-7 lg:p-8 relative overflow-hidden flex flex-col justify-between min-h-[260px] h-full">
     <!-- Background Decoration -->

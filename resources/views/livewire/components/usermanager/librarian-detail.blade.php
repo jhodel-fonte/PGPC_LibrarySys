@@ -32,13 +32,8 @@
         </div>
 
         @php
-            $routePrefix = request()->is('librarian*') ? 'librarian.' : 'admin.';
-            $canManageLibrarian = auth()->check() && (
-                auth()->user()->hasRole('Admin') ||
-                auth()->user()->hasPermission('manage_librarian') ||
-                auth()->user()->hasPermission('manage_librarians') ||
-                auth()->user()->hasPermission('manage_users')
-            );
+            $routePrefix = \App\Services\EmployeeRoleService::getRoutePrefix();
+            $canManageLibrarian = \App\Services\EmployeeRoleService::canManageLibrarians();
             $isSelf = auth()->check() && (auth()->id() === $user?->id);
             $isTrashed = $user?->trashed();
         @endphp

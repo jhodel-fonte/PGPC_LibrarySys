@@ -21,6 +21,9 @@
         }
     }"
     x-init="
+        if ($wire.bookDetailId) {
+            isFetching = false;
+        }
         $wire.$watch('bookDetailId', (val) => {
             if (val) {
                 isFetching = false;
@@ -30,8 +33,10 @@
     x-on:open-book-details.window="show()"
     x-on:book-details-loaded.window="isFetching = false; isAddingCopy = false"
     x-on:open-add-copy.window="isAddingCopy = true"
+    x-on:open-edit-copy.window="isAddingCopy = true"
     x-on:close-add-copy.window="isAddingCopy = false"
     x-on:copy-added.window="if (!$event.detail || !$event.detail.isMultiple) { isAddingCopy = false }"
+    x-on:copy-updated.window="isAddingCopy = false"
     x-on:keydown.escape.window="if (isAddingCopy) { isAddingCopy = false } else if (open) { hide() }"
     x-cloak
 >
@@ -396,58 +401,112 @@
                                     @endcan
                                 </div>
 
-                                <div class="overflow-x-auto rounded-lg border border-[#DCE3EC] max-h-[500px] custom-scrollbar overflow-y-[100px]">
-                                    <table class="w-full min-w-[520px] text-left text-sm">
-                                        <thead class="sticky top-0 z-10 bg-[#F5F8FC] text-sm font-semibold text-slate-600 border-b border-[#DCE3EC]">
+                                <div class="overflow-x-auto rounded-lg border border-[#DCE3EC] max-h-[500px] custom-scrollbar overflow-y-auto">
+                                    <table class="w-full min-w-[500px] text-left text-sm">
+                                        <thead class="sticky top-0 z-10 bg-[#F5F8FC] text-xs font-semibold text-slate-600 border-b border-[#DCE3EC]">
                                             <tr>
-                                                <th class="px-3 py-2.5">Accession No.</th>
-                                                <th class="px-3 py-2.5">Unique Code</th>
-                                                <th class="px-3 py-2.5">Location</th>
-                                                <th class="px-3 py-2.5">Condition</th>
-                                                <th class="px-3 py-2.5">Status</th>
+                                                <th class="px-3.5 py-2.5">Accession No.</th>
+                                                <th class="px-3.5 py-2.5">Unique Code</th>
+                                                <th class="px-3.5 py-2.5">Status</th>
+                                                <th class="px-3.5 py-2.5 text-right">Action</th>
                                             </tr>
                                         </thead>
                                         <tbody class="divide-y divide-slate-100 text-slate-700">
                                             @forelse($copies as $copy)
                                                 @php
-                                                    $cond = strtolower($copy->condition ? $copy->condition->status : 'good');
-                                                    $condTextClass = match($cond) {
-                                                        'new' => 'text-emerald-600 font-semibold',
-                                                        'good' => 'text-blue-600 font-semibold',
-                                                        'worn', 'fair' => 'text-amber-600 font-semibold',
-                                                        'damaged' => 'text-orange-600 font-semibold',
-                                                        'lost' => 'text-red-600 font-semibold',
-                                                        default => 'text-slate-600 font-semibold'
-                                                    };
-
                                                     $stat = strtolower($copy->status);
-                                                    $statTextClass = match($stat) {
-                                                        'available' => 'text-emerald-600 font-semibold',
-                                                        'borrowed' => 'text-blue-600 font-semibold',
-                                                        'damaged' => 'text-orange-600 font-semibold',
-                                                        'lost' => 'text-red-600 font-semibold',
-                                                        'reserved' => 'text-amber-600 font-semibold',
-                                                        default => 'text-slate-600 font-semibold'
+                                                    $statBadgeClass = match($stat) {
+                                                        'available' => 'bg-emerald-50 text-emerald-700 border-emerald-200/80',
+                                                        'borrowed' => 'bg-blue-50 text-[#102B70] border-blue-200/80',
+                                                        'reserved' => 'bg-amber-50 text-amber-700 border-amber-200/80',
+                                                        'damaged', 'lost' => 'bg-rose-50 text-rose-700 border-rose-200/80',
+                                                        default => 'bg-slate-100 text-slate-700 border-slate-200'
                                                     };
                                                 @endphp
-                                                <tr class="hover:bg-slate-50">
-                                                    <td class="px-3 py-2.5 text-sm font-semibold tabular-nums text-black">{{ $copy->accession_number }}</td>
-                                                    <td class="px-3 py-2.5 text-sm font-medium tabular-nums text-slate-600">{{ $copy->code ?: 'Not assigned' }}</td>
-                                                    <td class="px-3 py-2.5 text-sm font-medium text-slate-700">{{ $copy->location ?: 'Main Library' }}</td>
-                                                    <td class="px-3 py-2.5">
-                                                        <span class="text-sm {{ $condTextClass }}">
-                                                            {{ $copy->condition ? $copy->condition->status : 'Good' }}
-                                                        </span>
+                                                <tr class="hover:bg-slate-50/80 transition-colors">
+                                                    <td class="px-3.5 py-2.5 text-sm font-semibold tabular-nums text-black">
+                                                        {{ $copy->accession_number }}
                                                     </td>
-                                                    <td class="px-3 py-2.5">
-                                                        <span class="text-sm {{ $statTextClass }}">
+                                                    <td class="px-3.5 py-2.5 text-xs font-medium tabular-nums text-slate-600">
+                                                        {{ $copy->code ?: 'Not assigned' }}
+                                                    </td>
+                                                    <td class="px-3.5 py-2.5">
+                                                        <span class="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold border {{ $statBadgeClass }}">
                                                             {{ ucfirst($copy->status) }}
                                                         </span>
+                                                    </td>
+                                                    <td class="px-3.5 py-2.5 text-right">
+                                                        <div class="inline-flex items-center justify-end gap-1.5">
+                                                            {{-- Show QR Code --}}
+                                                            <button
+                                                                type="button"
+                                                                @click="$dispatch('open-qr-modal', {
+                                                                    value: @js($copy->accession_number),
+                                                                    title: 'Physical Copy QR Code',
+                                                                    subtitle: 'Accession / Barcode QR',
+                                                                    name: @js($data?->book_title ?? 'Book Copy'),
+                                                                    label: 'Accession No.:',
+                                                                    secondaryInfo: @js('Code: ' . ($copy->code ?: 'Not assigned') . ($copy->location ? ' • Shelf: ' . $copy->location : '')),
+                                                                    instruction: 'Present this QR code during checkout, return, or inventory audit.'
+                                                                })"
+                                                                class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:border-[#102B70] hover:bg-[#F5F9FF] hover:text-[#102B70] active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70]"
+                                                                title="Show QR Code"
+                                                                aria-label="Show QR Code for copy {{ $copy->accession_number }}"
+                                                            >
+                                                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                                                                </svg>
+                                                            </button>
+
+                                                            {{-- Edit Copy --}}
+                                                            @can('update', \App\Models\Book::class)
+                                                                <button
+                                                                    type="button"
+                                                                    @click="$dispatch('open-edit-copy', { copyId: {{ $copy->id }} })"
+                                                                    class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:border-[#102B70] hover:bg-[#F5F9FF] hover:text-[#102B70] active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70]"
+                                                                    title="Edit Copy"
+                                                                    aria-label="Edit copy {{ $copy->accession_number }}"
+                                                                >
+                                                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                                        <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                                                                    </svg>
+                                                                </button>
+                                                            @endcan
+
+                                                            {{-- Delete Copy --}}
+                                                            @can('delete', \App\Models\Book::class)
+                                                                @if($copy->status === 'borrowed')
+                                                                    <button
+                                                                        type="button"
+                                                                        disabled
+                                                                        class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-300 cursor-not-allowed"
+                                                                        title="Cannot delete borrowed copy"
+                                                                        aria-label="Cannot delete borrowed copy {{ $copy->accession_number }}"
+                                                                    >
+                                                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                                            <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                                                        </svg>
+                                                                    </button>
+                                                                @else
+                                                                    <button
+                                                                        type="button"
+                                                                        wire:click="confirmDeleteCopy({{ $copy->id }})"
+                                                                        class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-600 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                                                                        title="Delete Copy"
+                                                                        aria-label="Delete copy {{ $copy->accession_number }}"
+                                                                    >
+                                                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                                            <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                                                        </svg>
+                                                                    </button>
+                                                                @endif
+                                                            @endcan
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             @empty
                                                 <tr>
-                                                    <td colspan="5" class="px-4 py-8 text-center text-sm font-medium text-slate-500">
+                                                    <td colspan="4" class="px-4 py-8 text-center text-sm font-medium text-slate-500">
                                                         No physical copies recorded for this title yet.
                                                     </td>
                                                 </tr>
@@ -489,12 +548,8 @@
                     Close
                 </button>
                 @php
-                    $editPrefix = request()->is('librarian*') ? 'librarian.' : 'admin.';
-                    $canEditBook = auth()->check() && (
-                        auth()->user()->hasRole('Admin') ||
-                        auth()->user()->hasPermission('edit_book') ||
-                        auth()->user()->hasPermission('manage_catalog')
-                    );
+                    $editPrefix = \App\Services\EmployeeRoleService::getRoutePrefix();
+                    $canEditBook = \App\Services\EmployeeRoleService::canEditBook();
                 @endphp
                 @if($canEditBook)
                     <a
@@ -510,4 +565,18 @@
             </footer>
         </section>
     </div>
+
+    {{-- Reusable Confirmation Modal for Physical Copy Deletion --}}
+    @include('livewire.components.usermanager.alert-modal', [
+        'show' => $showDeleteCopyModal,
+        'type' => 'danger',
+        'title' => 'Delete Physical Copy',
+        'subtitle' => 'Confirm Copy Deletion',
+        'targetRole' => 'copy',
+        'targetName' => $copyAccessionToDelete,
+        'message' => 'Are you sure you want to delete physical copy <strong>' . e($copyAccessionToDelete) . '</strong>? This copy will be permanently removed from circulation records.',
+        'closeAction' => 'cancelDeleteCopy',
+        'confirmAction' => 'deleteCopy',
+        'confirmText' => 'Delete Copy',
+    ])
 </div>

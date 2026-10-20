@@ -19,7 +19,7 @@
 </x-widget.sidebar-button>
 
 <!-- CIRCULATION SECTION -->
-@if($signedInUser && ($signedInUser->hasRole('Admin') || $signedInUser->hasPermission('manage_circulation') || $signedInUser->hasPermission('view_circulation')))
+@if($signedInUser && $signedInUser->canManageCirculation())
     <div class="px-2 mt-6 mb-2" x-show="!sidebarMinimized" x-transition.opacity.duration.300ms>
         <span class="text-xs font-bold text-white/50 uppercase tracking-wider">Circulation</span>
     </div>
@@ -35,7 +35,7 @@
 @endif
 
 <!-- CATALOG SECTION -->
-@if($signedInUser && ($signedInUser->hasRole('Admin') || $signedInUser->hasPermission('manage_catalog') || $signedInUser->hasPermission('view_catalog')))
+@if($signedInUser && $signedInUser->canManageCatalog())
     <div class="px-2 mt-6 mb-2" x-show="!sidebarMinimized" x-transition.opacity.duration.300ms>
         <span class="text-xs font-bold text-white/50 uppercase tracking-wider">Catalog</span>
     </div>
@@ -52,8 +52,8 @@
 
 <!-- USERS SECTION -->
 @php
-    $canManageStudents = $signedInUser && ($signedInUser->hasRole('Admin') || $signedInUser->hasPermission('manage_users') || $signedInUser->hasPermission('view_students'));
-    $canManageLibrarians = $signedInUser && ($signedInUser->hasRole('Admin') || $signedInUser->hasPermission('manage_librarians'));
+    $canManageStudents = $signedInUser && $signedInUser->canManageStudents();
+    $canManageLibrarians = $signedInUser && $signedInUser->canManageLibrarians();
 @endphp
 @if($canManageStudents || $canManageLibrarians)
     <div class="px-2 mt-6 mb-2" x-show="!sidebarMinimized" x-transition.opacity.duration.300ms>
@@ -99,7 +99,7 @@
 @endif
 
 <!-- SYSTEM SECTION -->
-@if($signedInUser && ($signedInUser->hasRole('Admin') || $signedInUser->hasPermission('manage_settings')))
+@if($signedInUser && $signedInUser->canManageSettings())
     <div class="px-2 mt-6 mb-2" x-show="!sidebarMinimized" x-transition.opacity.duration.300ms>
         <span class="text-xs font-bold text-white/50 uppercase tracking-wider">System</span>
     </div>

@@ -1,4 +1,7 @@
-<div class="relative w-full h-auto lg:h-[calc(100vh-70px)] flex flex-col items-center justify-start pt-4 px-3 md:px-6 xl:px-12 pb-5 font-sans bg-[#F8FAFC] overflow-y-auto lg:overflow-hidden check-in-workstation">
+<div class="relative w-full h-auto lg:h-[calc(100vh-70px)] flex flex-col items-center justify-start pt-4 px-3 md:px-6 xl:px-12 pb-5 font-sans bg-[#F8FAFC] overflow-y-auto lg:overflow-hidden check-in-workstation"
+     x-data="completedModalHandler()"
+     @return-completed.window="triggerModal($event.detail)"
+     @return-failed.window="triggerErrorModal($event.detail)">
     <style>
         @media (min-width: 1024px) {
             @media (min-height: 800px) {
@@ -35,6 +38,10 @@
             animation: spin 1s linear infinite !important;
             transform-origin: center !important;
         }
+
+        [x-cloak] {
+            display: none !important;
+        }
     </style>
 
     <div class="w-full max-w-[1460px] flex flex-col h-auto lg:h-full lg:overflow-hidden">
@@ -43,7 +50,7 @@
         <div class="w-full flex flex-col mb-4 md:mt-2 relative z-10 shrink-0">
             <!-- Back Link -->
             <div class="flex items-center gap-2 mb-3">
-                <a href="{{ route('admin.circulation-desk.return') }}" wire:navigate class="inline-flex items-center gap-2 text-[#64748B] hover:text-[#102B70] font-semibold text-[13px] transition-colors group">
+                <a href="{{ $returnUrl }}" wire:navigate class="inline-flex items-center gap-2 text-[#64748B] hover:text-[#102B70] font-semibold text-[13px] transition-colors group">
                     <svg class="w-4 h-4 transform transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path>
                     </svg>
@@ -59,18 +66,36 @@
             </div>
         </div>
 
+        <!-- Inline Error Banner -->
+        @if($errorMessage)
+            <div class="w-full mb-4 bg-[#FEF2F2] border border-[#FECACA] rounded-2xl p-4 flex items-start justify-between gap-3 text-[#B91C1C] shadow-sm shrink-0">
+                <div class="flex items-start gap-3">
+                    <svg class="w-5 h-5 text-[#EF4444] shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div class="flex flex-col">
+                        <span class="font-bold text-sm leading-tight">Return Processing Error</span>
+                        <span class="text-xs text-[#B91C1C] mt-0.5">{{ $errorMessage }}</span>
+                    </div>
+                </div>
+                <button type="button" wire:click="$set('errorMessage', null)" class="text-[#EF4444] hover:text-[#991B1B] text-lg font-bold leading-none p-1 focus:outline-none">
+                    &times;
+                </button>
+            </div>
+        @endif
+
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 overflow-hidden mb-2 items-stretch">
 
             <!-- Left Column: Return Items -->
             <div class="lg:col-span-7 flex flex-col gap-4 overflow-hidden h-full">
                 <div class="flex-1 flex flex-col overflow-hidden bg-white border border-[#E2E8F0] rounded-2xl p-6 shadow-sm">
-                    <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-widest mb-4 shrink-0">Items to be Returned ({{ count($transactionsData) }})</span>
+                    <span class="block text-base font-bold text-[#102B70] uppercase tracking-wider mb-4 shrink-0">Items to be Returned ({{ count($transactionsData) }})</span>
 
                     <!-- Table Container -->
                     <div class="overflow-x-auto flex-1 overflow-y-auto border border-[#E2E8F0] rounded-2xl bg-white shadow-inner mb-4 custom-scrollbar">
                         <table class="w-full text-left border-collapse min-w-[600px]">
                             <thead class="sticky top-0 bg-white z-10 border-b border-[#E2E8F0]">
-                                <tr class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">
+                                <tr class="text-xs md:text-sm font-bold text-[#64748B] uppercase tracking-wider">
                                     <th class="py-3 px-5 w-[40%] bg-white">Book Details</th>
                                     <th class="py-3 px-5 w-[20%] bg-white">Borrowed Date</th>
                                     <th class="py-3 px-5 w-[20%] bg-white">Due Date</th>
@@ -89,28 +114,28 @@
                                                     </svg>
                                                 </div>
                                                 <div class="flex flex-col min-w-0">
-                                                    <span class="font-bold text-[14.5px] leading-tight text-[#0F172A] truncate">{{ $item['title'] }}</span>
-                                                    <span class="text-[12.5px] text-[#64748B] mt-0.5 truncate">{{ $item['author'] }}</span>
-                                                    <span class="text-[11px] text-[#94A3B8] mt-0.5">Accession No. {{ $item['accession'] }}</span>
+                                                    <span class="font-bold text-base leading-tight text-[#0F172A] truncate">{{ $item['title'] }}</span>
+                                                    <span class="text-sm text-[#64748B] mt-0.5 truncate">{{ $item['author'] }}</span>
+                                                    <span class="text-xs text-[#94A3B8] mt-0.5">Accession No. {{ $item['accession'] }}</span>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td class="py-4 px-5 font-semibold text-[#64748B]">
+                                        <td class="py-4 px-5 font-semibold text-sm text-[#64748B]">
                                             {{ $item['issued_date'] }}
                                         </td>
-                                        <td class="py-4 px-5 font-semibold text-[#64748B]">
+                                        <td class="py-4 px-5 font-semibold text-sm text-[#64748B]">
                                             {{ $item['due_date'] }}
                                         </td>
                                         <td class="py-4 px-5 text-right">
                                             @if($item['fine_amount'] > 0)
                                                 <div class="flex flex-col items-end gap-1">
-                                                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10.5px] font-bold bg-[#FEF2F2] text-[#B91C1C] border border-[#FECACA]">
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-[#FEF2F2] text-[#B91C1C] border border-[#FECACA]">
                                                         {{ round($item['overdue_days']) }} {{ Str::plural('day', round($item['overdue_days'])) }} overdue
                                                     </span>
-                                                    <span class="font-bold text-sm text-[#EF4444]">₱{{ number_format($item['fine_amount'], 2) }}</span>
+                                                    <span class="font-bold text-base text-[#EF4444]">₱{{ number_format($item['fine_amount'], 2) }}</span>
                                                 </div>
                                             @else
-                                                <span class="inline-flex items-center gap-1.5 text-[12px] font-bold text-[#10B981]">
+                                                <span class="inline-flex items-center gap-1.5 text-sm font-bold text-[#10B981]">
                                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
                                                     </svg>
@@ -129,7 +154,7 @@
                         <svg class="w-5 h-5 text-[#10B981] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
-                        <span class="text-xs font-semibold text-[#15803D]">All items are ready to be returned.</span>
+                        <span class="text-sm font-semibold text-[#15803D]">All items are ready to be returned.</span>
                     </div>
                 </div>
             </div>
@@ -201,15 +226,15 @@
 
                         <!-- Return Summary -->
                         <div>
-                            <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-widest mb-4">Return Summary</span>
+                            <span class="block text-base font-bold text-[#102B70] uppercase tracking-wider mb-4">Return Summary</span>
 
                             @php
                                 $totalBooks = count($transactionsData);
                             @endphp
 
                             <div class="flex justify-between items-center">
-                                <span class="text-[#64748B] font-bold text-[13px]">Scanned Books</span>
-                                <span class="text-[#0F172A] font-bold text-[14px]">{{ $totalBooks }} {{ Str::plural('book', $totalBooks) }}</span>
+                                <span class="text-[#64748B] font-bold text-sm">Scanned Books</span>
+                                <span class="text-[#0F172A] font-bold text-base">{{ $totalBooks }} {{ Str::plural('book', $totalBooks) }}</span>
                             </div>
 
                             @if($totalFine > 0)
@@ -219,13 +244,13 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
                                     </svg>
                                     <div class="flex flex-col gap-1 w-full">
-                                        <span class="text-[13.5px] font-extrabold text-[#B91C1C]">Overdue Fine: ₱{{ number_format($totalFine, 2) }}</span>
-                                        <span class="text-[11.5px] font-bold text-[#B91C1C] leading-relaxed">This amount will be added to the student's pending balance.</span>
+                                        <span class="text-sm font-extrabold text-[#B91C1C]">Overdue Fine: ₱{{ number_format($totalFine, 2) }}</span>
+                                        <span class="text-xs font-bold text-[#B91C1C] leading-relaxed">This amount will be added to the student's pending balance.</span>
                                     </div>
                                 </div>
                             @else
                                 <div class="mt-4 flex justify-between items-center">
-                                    <span class="text-[#64748B] font-bold text-[13px]">Overdue Fines</span>
+                                    <span class="text-[#64748B] font-bold text-sm">Overdue Fines</span>
                                     <span class="font-extrabold text-base text-[#10B981]">₱0.00</span>
                                 </div>
                             @endif
@@ -235,30 +260,26 @@
                     <!-- Action Buttons -->
                     <div class="mt-6 border-t border-[#E2E8F0] pt-5 flex flex-col gap-3">
                         <button type="button"
-                                x-data="{ submitting: false }"
-                                @click="submitting = true; $wire.confirmReturn()"
-                                :disabled="submitting"
-                                wire:click="showConfirmModal"
+                                wire:click="confirmReturn"
                                 wire:loading.attr="disabled"
+                                wire:target="confirmReturn"
                                 class="w-full h-12 bg-[#102B70] hover:bg-[#0B225E] text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2.5 shadow-sm hover:shadow-md outline-none disabled:opacity-65 disabled:cursor-not-allowed group">
-                            <span x-show="!submitting" class="flex items-center gap-2.5">
                             <span wire:loading.remove wire:target="confirmReturn" class="flex items-center gap-2.5">
                                 <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
                                 </svg>
                                 <span class="text-xs uppercase tracking-wider">Confirm Return</span>
                             </span>
-                            <span x-show="submitting" x-cloak class="text-xs uppercase tracking-wider flex items-center gap-2">
                             <span wire:loading.flex wire:target="confirmReturn" class="text-xs uppercase tracking-wider items-center gap-2">
                                 <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle>
                                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                 </svg>
-                                Completing...
+                                Completing Return...
                             </span>
                         </button>
 
-                        <a href="{{ route('admin.circulation-desk.return') }}" wire:navigate
+                        <a href="{{ $returnUrl }}" wire:navigate
                            class="w-full py-2 hover:text-[#102B70] text-[#64748B] text-xs font-bold transition-all flex items-center justify-center gap-1.5 focus:outline-none hover:underline">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -272,4 +293,189 @@
             </div>
         </div>
     </div>
+
+    <!-- TRANSACTION SUCCESS COMPLETED COUNTDOWN MODAL -->
+    <div x-show="isOpen"
+         x-cloak
+         class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0">
+
+         <div class="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl flex flex-col items-center text-center gap-5 border border-slate-100 relative"
+              x-show="isOpen"
+              x-transition:enter="transition ease-out duration-300 transform"
+              x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+              x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+              x-transition:leave="transition ease-in duration-200 transform"
+              x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+              x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95">
+
+              <!-- Success Icon -->
+              <div class="w-16 h-16 rounded-full bg-emerald-50 border-2 border-emerald-500 text-emerald-500 flex items-center justify-center shrink-0 shadow-md">
+                  <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                  </svg>
+              </div>
+
+              <!-- Content -->
+              <div class="flex flex-col gap-1.5">
+                  <h3 class="text-xl font-bold text-[#102B70]">Books Returned Successfully</h3>
+                  <p class="text-xs text-[#64748B] font-semibold leading-relaxed px-4">
+                      All books have been marked as returned and inventory status updated.
+                  </p>
+              </div>
+
+              <!-- Circular Progress and Timer -->
+              <div class="flex flex-col items-center justify-center relative mt-2 gap-2">
+                  <div class="relative w-20 h-20 flex items-center justify-center">
+                      <svg class="w-20 h-20 transform -rotate-90">
+                          <circle cx="40" cy="40" r="34" class="stroke-slate-100" stroke-width="4.5" fill="transparent" />
+                          <circle cx="40" cy="40" r="34"
+                                  class="stroke-[#102B70]"
+                                  stroke-width="4.5"
+                                  fill="transparent"
+                                  stroke-dasharray="214"
+                                  :stroke-dashoffset="dashOffset"
+                                  stroke-linecap="round"
+                                  style="transition: stroke-dashoffset 0.1s linear;" />
+                      </svg>
+                      <span class="absolute text-lg font-extrabold text-[#102B70]" x-text="countdown">3</span>
+                  </div>
+                  <span class="text-[11px] text-[#94A3B8] font-bold uppercase tracking-widest mt-1">Redirecting to workstation...</span>
+              </div>
+
+              <!-- Instant Redirect Button -->
+              <button type="button"
+                      @click="navigateNow()"
+                      class="w-full h-11 bg-[#102B70] hover:bg-[#0B225E] text-white font-bold rounded-2xl text-xs uppercase tracking-wider transition-colors focus:outline-none shadow-sm flex items-center justify-center gap-2">
+                  <span>Return to Workstation Now</span>
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                  </svg>
+              </button>
+         </div>
+    </div>
+
+    <!-- TRANSACTION FAILURE ERROR MODAL -->
+    <div x-show="isErrorOpen"
+         x-cloak
+         class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0">
+
+         <div class="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl flex flex-col items-center text-center gap-5 border border-slate-100 relative"
+              x-show="isErrorOpen"
+              x-transition:enter="transition ease-out duration-300 transform"
+              x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+              x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+              x-transition:leave="transition ease-in duration-200 transform"
+              x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+              x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95">
+
+              <!-- Error Icon -->
+              <div class="w-16 h-16 rounded-full bg-red-50 border-2 border-red-500 text-red-500 flex items-center justify-center shrink-0 shadow-md">
+                  <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                  </svg>
+              </div>
+
+              <!-- Content -->
+              <div class="flex flex-col gap-1.5">
+                  <h3 class="text-xl font-bold text-[#B91C1C]">Return Processing Failed</h3>
+                  <p class="text-xs text-[#64748B] font-semibold leading-relaxed px-4 break-words" x-text="errorMessage">
+                      An error occurred during submission. Please check conditions and try again.
+                  </p>
+              </div>
+
+              <button type="button"
+                      @click="isErrorOpen = false"
+                      class="w-full h-11 bg-slate-100 hover:bg-slate-200 text-[#64748B] font-bold rounded-2xl text-xs uppercase tracking-wider transition-colors focus:outline-none">
+                  Dismiss
+              </button>
+         </div>
+    </div>
+
+    <script>
+        function completedModalHandler() {
+            return {
+                isOpen: false,
+                isErrorOpen: false,
+                errorMessage: '',
+                countdown: 3,
+                timeRemaining: 3.0,
+                dashOffset: 0,
+                redirectUrl: '{{ $returnUrl }}',
+                timer: null,
+
+                triggerModal(detail) {
+                    this.redirectUrl = detail.redirectUrl || '{{ $returnUrl }}';
+                    this.isOpen = true;
+                    this.countdown = 3;
+                    this.timeRemaining = 3.0;
+                    this.dashOffset = 0;
+
+                    if (this.timer) clearInterval(this.timer);
+
+                    const intervalMs = 100;
+                    const totalDuration = 3000;
+                    let elapsed = 0;
+
+                    this.timer = setInterval(() => {
+                        elapsed += intervalMs;
+                        this.timeRemaining = Math.max(0, (totalDuration - elapsed) / 1000);
+                        this.countdown = Math.ceil(this.timeRemaining);
+                        this.dashOffset = (elapsed / totalDuration) * 214;
+
+                        if (elapsed >= totalDuration) {
+                            this.navigateNow();
+                        }
+                    }, intervalMs);
+                },
+
+                navigateNow() {
+                    if (this.timer) clearInterval(this.timer);
+                    if (window.Livewire) {
+                        window.Livewire.navigate(this.redirectUrl);
+                    } else {
+                        window.location.href = this.redirectUrl;
+                    }
+                },
+
+                triggerErrorModal(detail) {
+                    this.errorMessage = detail.message || 'An unexpected error occurred during the return process.';
+                    this.isErrorOpen = true;
+                }
+            }
+        }
+
+        // Global network interceptor for client/server connection dropouts (supports wire:navigate)
+        function registerLivewireHooks() {
+            const hookCallback = ({ fail }) => {
+                fail(({ status, content, preventDefault }) => {
+                    window.dispatchEvent(new CustomEvent('return-failed', {
+                        detail: { message: 'A server connection or database error occurred (Status: ' + status + '). Please verify network status and try again.' }
+                    }));
+                    preventDefault();
+                });
+            };
+
+            if (window.Livewire) {
+                Livewire.hook('request', hookCallback);
+            } else {
+                document.addEventListener('livewire:init', () => {
+                    Livewire.hook('request', hookCallback);
+                });
+            }
+        }
+        registerLivewireHooks();
+    </script>
 </div>
+

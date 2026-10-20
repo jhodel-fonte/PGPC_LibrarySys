@@ -25,7 +25,7 @@ class PermissionMiddleware
         }
 
         // Super Admin bypasses all individual permission requirements
-        if (method_exists($user, 'hasRole') && $user->hasRole('Admin')) {
+        if (method_exists($user, 'hasRole') && $user->hasRole(\App\Services\EmployeeRoleService::ROLE_ADMIN)) {
             return $next($request);
         }
 
@@ -45,10 +45,8 @@ class PermissionMiddleware
         }
 
         // Check if user has ANY of the permitted abilities
-        foreach ($requiredPermissions as $permissionName) {
-            if (method_exists($user, 'hasPermission') && $user->hasPermission($permissionName)) {
-                return $next($request);
-            }
+        if (\App\Services\EmployeeRoleService::hasAnyPermission($requiredPermissions, $user)) {
+            return $next($request);
         }
 
         abort(403, 'You do not have the required permissions to access this page or resource.');

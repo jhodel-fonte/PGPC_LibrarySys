@@ -10,6 +10,13 @@ Route::get('opac/advanced-search', [\App\Http\Controllers\OpacController::class,
 Route::get('opac/book/{identifier?}', \App\Livewire\Pages\Main\Book::class)->name('opac.book.detail');
 Route::post('opac/reserve/{bookId}', [\App\Http\Controllers\OpacController::class, 'reserve'])->name('opac.reserve');
 
+// Public Legal & Policy Pages
+Route::view('/terms', 'main.terms')->name('terms');
+Route::view('/privacy', 'main.privacy')->name('privacy');
+Route::redirect('/terms-and-conditions', '/terms');
+Route::redirect('/terms-of-service', '/terms');
+Route::redirect('/privacy-policy', '/privacy');
+
 
 Route::middleware(['auth', 'verified', 'role:Admin'])->prefix('admin')->name('admin.')->group(function () {
 

@@ -165,11 +165,11 @@
     <div class="pt-2 text-center space-y-3">
         <p class="text-[12px] text-slate-400 pt-1">
             By signing in, you agree to our
-            <a href="#" class="font-semibold text-[#102b70] underline decoration-[#fcc719] decoration-2 underline-offset-2 hover:text-blue-800 transition">
+            <a href="{{ route('terms') }}" wire:navigate class="font-semibold text-[#102b70] underline decoration-[#fcc719] decoration-2 underline-offset-2 hover:text-blue-800 transition">
                 Terms of Service
             </a>
             and
-            <a href="#" class="font-semibold text-[#102b70] underline decoration-[#fcc719] decoration-2 underline-offset-2 hover:text-blue-800 transition">
+            <a href="{{ route('privacy') }}" wire:navigate class="font-semibold text-[#102b70] underline decoration-[#fcc719] decoration-2 underline-offset-2 hover:text-blue-800 transition">
                 Privacy Policy
             </a>.
         </p>

@@ -15,6 +15,19 @@ class BookDetail extends Component
     public bool $isOpen = false;
     public bool $isLoading = false;
 
+    // Delete copy confirmation modal properties
+    public bool $showDeleteCopyModal = false;
+    public ?int $copyIdToDelete = null;
+    public ?string $copyAccessionToDelete = null;
+
+    public function mount(): void
+    {
+        $detailId = request()->query('detail');
+        if (!empty($detailId)) {
+            $this->loadBookDetail((int) $detailId);
+        }
+    }
+
     #[On('open-book-details')]
     public function loadBookDetail($id = null, $bookDetailId = null, $bookId = null): void
     {
@@ -39,10 +52,89 @@ class BookDetail extends Component
     }
 
     #[On('copy-added')]
+    #[On('copy-updated')]
+    #[On('copy-deleted')]
     #[On('book-details-updated')]
     public function refreshBookDetail(): void
     {
         // Re-renders view with updated copies count and relationships
+    }
+
+    public function confirmDeleteCopy(int $copyId): void
+    {
+        $book = Book::find($copyId);
+        if (!$book) {
+            return;
+        }
+
+        if ($book->status === 'borrowed') {
+            $this->dispatch('toast', message: 'Cannot delete a book copy that is currently checked out / borrowed.', type: 'error');
+            return;
+        }
+
+        $this->copyIdToDelete = $copyId;
+        $this->copyAccessionToDelete = $book->accession_number;
+        $this->showDeleteCopyModal = true;
+    }
+
+    public function cancelDeleteCopy(): void
+    {
+        $this->copyIdToDelete = null;
+        $this->copyAccessionToDelete = null;
+        $this->showDeleteCopyModal = false;
+    }
+
+    public function deleteCopy(?int $copyId = null): void
+    {
+        if (auth()->check() && !auth()->user()->can('delete', Book::class)) {
+            $this->dispatch('toast', message: 'Unauthorized action. You do not have permission to delete book copies.', type: 'error');
+            $this->cancelDeleteCopy();
+            return;
+        }
+
+        $targetId = $copyId ?? $this->copyIdToDelete;
+        if (!$targetId) {
+            return;
+        }
+
+        $book = Book::find($targetId);
+        if ($book) {
+            if ($book->status === 'borrowed') {
+                $this->dispatch('toast', message: 'Cannot delete a book copy that is currently checked out / borrowed.', type: 'error');
+                $this->cancelDeleteCopy();
+                return;
+            }
+
+            $accNum = $book->accession_number;
+            $deletedId = $book->id;
+            $book->delete();
+            $this->dispatch('toast', [
+                'message' => "Physical copy '{$accNum}' has been deleted successfully.",
+                'type' => 'success',
+                'undoEvent' => 'restore-book-copy',
+                'undoPayload' => ['copyId' => $deletedId],
+                'duration' => 10000,
+            ]);
+            $this->dispatch('book-details-updated');
+        }
+
+        $this->cancelDeleteCopy();
+    }
+
+    #[On('restore-book-copy')]
+    public function restoreBookCopy($copyId = null): void
+    {
+        $id = is_array($copyId) ? ($copyId['copyId'] ?? $copyId['id'] ?? null) : $copyId;
+        if (!$id) {
+            return;
+        }
+
+        $book = Book::withTrashed()->find($id);
+        if ($book && $book->trashed()) {
+            $book->restore();
+            $this->dispatch('toast', message: "Physical copy '{$book->accession_number}' was restored successfully.", type: 'success');
+            $this->dispatch('book-details-updated');
+        }
     }
 
     public function close(): void
@@ -51,6 +143,7 @@ class BookDetail extends Component
         $this->bookDetailId = null;
         $this->bookId = null;
         $this->isLoading = false;
+        $this->cancelDeleteCopy();
     }
 
     public function render()

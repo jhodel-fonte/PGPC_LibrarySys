@@ -75,6 +75,17 @@
                         </span>
                         <h2 class="text-sm font-bold text-slate-900 leading-tight">Most Borrowed Book Categories</h2>
                     </div>
+
+                    <div class="relative">
+                        <select wire:model.live="categoryFilter" class="text-[11px] font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 pr-6 appearance-none cursor-pointer focus:outline-none focus:border-[#0284c7]">
+                            <option value="all_time">All Time</option>
+                            <option value="this_month">This Month</option>
+                            <option value="this_year">This Year</option>
+                        </select>
+                        <span class="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
+                        </span>
+                    </div>
                 </div>
 
                 <!-- TallStackUI Donut Chart -->

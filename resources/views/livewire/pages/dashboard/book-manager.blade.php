@@ -698,8 +698,27 @@
 
                 <form wire:submit.prevent="saveCopy" class="p-6 space-y-4">
                     <div class="space-y-1.5">
-                        <label class="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Item Code / Barcode</label>
-                        <input type="text" value="{{ $editCode }}" disabled class="h-[42px] w-full cursor-not-allowed rounded-lg border border-[#E2E8F0] bg-slate-50 px-3.5 text-xs font-bold text-slate-500 outline-none">
+                        <div class="flex items-center justify-between">
+                            <label for="editCode" class="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Item Code / Barcode</label>
+                            <button
+                                type="button"
+                                wire:click="generateEditCode"
+                                class="text-[11px] font-bold text-[#102B70] hover:text-[#0B225E] hover:underline flex items-center gap-1 select-none cursor-pointer"
+                                title="Auto-generate a new unique code"
+                            >
+                                <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                                <span>Generate Code</span>
+                            </button>
+                        </div>
+                        <input
+                            wire:model="editCode"
+                            type="text"
+                            id="editCode"
+                            placeholder="e.g. BK-2026-XXXX or custom code"
+                            class="h-[42px] w-full rounded-lg border border-[#E2E8F0] bg-white px-3.5 text-xs font-semibold text-[#0F172A] outline-none transition-colors focus:border-[#102B70] focus:ring-2 focus:ring-[#EFF6FF]"
+                        >
+                        @error('editCode') <span class="text-xs font-bold text-red-500">{{ $message }}</span> @enderror
+                        <p class="text-[11px] text-slate-400 font-medium">Auto-generated or enter your own custom barcode/code.</p>
                     </div>
 
                     <div class="space-y-1.5">

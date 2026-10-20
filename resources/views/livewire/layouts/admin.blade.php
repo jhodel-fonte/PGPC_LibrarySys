@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-         <title>{{ isset($title) ? "{$title} | Padre Garcia Polytechnic College Library System" : config('app.name', 'Padre Garcia Polytechnic College Library System') }}</title>
+         <title>{{ isset($subpage) ? "{$subpage} - " : '' }}{{ isset($title) ? "{$title} | " : '' }}Padre Garcia Polytechnic College Library System</title>
 
         <!-- Logo -->
         <link rel="icon" href="{{ asset('logo.ico') }}" type="image/x-icon">
@@ -46,6 +46,7 @@
             </div>
         </div>
         <livewire:components.widgets.modal />
+        <livewire:components.widgets.qr-modal />
         <x-notification.toast-notification />
         <x-notification.offline-indicator />
         @livewireScripts

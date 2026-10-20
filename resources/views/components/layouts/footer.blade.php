@@ -7,8 +7,8 @@
         ['label' => 'Home', 'url' => url('/')],
         ['label' => 'About Us', 'url' => url('/#about')],
         ['label' => 'OPAC Search', 'url' => url('/opac.index')],
-        ['label' => 'Privacy Policy', 'url' => url('/#privacy')],
-        ['label' => 'Terms of Service', 'url' => url('/#terms')],
+        ['label' => 'Privacy Policy', 'url' => route('privacy')],
+        ['label' => 'Terms of Service', 'url' => route('terms')],
         // ['label' => 'Student Portal', 'url' => url('/student')],
     ],
 

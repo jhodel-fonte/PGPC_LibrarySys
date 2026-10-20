@@ -19,12 +19,6 @@
 
             <!-- Header Action Buttons -->
             <div class="flex flex-wrap items-center gap-2.5 sm:shrink-0">
-                <a href="{{ route($routePrefix . 'circulation-desk.index') }}" wire:navigate
-                    class="inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-[#CBD5E1] bg-white px-4 text-sm font-semibold text-[#102B70] shadow-sm transition-colors hover:border-[#102B70] hover:bg-slate-50 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70] focus-visible:ring-offset-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5m7 7-7-7 7-7"/></svg>
-                    <span>Return to Circulation Desk</span>
-                </a>
-
                 <a href="{{ route($routePrefix . 'circulation-desk.borrow') }}" wire:navigate
                     class="inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-[#102B70] px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#0B225E] active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70] focus-visible:ring-offset-2">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
@@ -38,10 +32,10 @@
             :headers="$this->headers"
             :sort="$sort"
             :tabs="[
+                'all' => 'All Records (' . $totalHistoryCount . ')',
                 'active' => 'Active Loans (' . $activeCount . ')',
                 'overdue' => 'Overdue (' . $overdueCount . ')',
                 'returned' => 'Returned (' . $returnedCount . ')',
-                'all' => 'All Records (' . $totalHistoryCount . ')'
             ]"
             :activeTab="$activeTab"
             tabMethod="setTab"
@@ -297,6 +291,98 @@
                     </td>
                 </tr>
             @empty
+                <tr>
+                    <td colspan="6" class="px-6 py-16 text-center">
+                        <div class="mx-auto flex max-w-md flex-col items-center">
+                            @if(!empty(trim($search)) || $this->activeFilterCount > 0)
+                                <h3 class="text-base font-bold text-[#0F172A]">No matching borrowing records</h3>
+                                <p class="mt-1 text-xs sm:text-sm text-[#64748B] max-w-sm">
+                                    @if(!empty(trim($search)) && $this->activeFilterCount > 0)
+                                        No records found matching <span class="font-semibold text-[#0F172A]">"{{ $search }}"</span> with the selected filters.
+                                    @elseif(!empty(trim($search)))
+                                        No records found matching <span class="font-semibold text-[#0F172A]">"{{ $search }}"</span>.
+                                    @else
+                                        No records found matching the active filter criteria.
+                                    @endif
+                                </p>
+                                <div class="mt-4 flex flex-wrap items-center justify-center gap-2">
+                                    @if(!empty(trim($search)) && $this->activeFilterCount > 0)
+                                        <button
+                                            type="button"
+                                            wire:click="resetAllFilters"
+                                            class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg bg-[#102B70] text-white hover:bg-[#0B225E] shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70]"
+                                        >
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.25">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                            <span>Clear search & filters</span>
+                                        </button>
+                                    @else
+                                        @if(!empty(trim($search)))
+                                            <button
+                                                type="button"
+                                                wire:click="resetSearch"
+                                                class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg border border-[#CBD5E1] bg-white text-[#334155] hover:bg-slate-50 hover:border-[#102B70] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70]"
+                                            >
+                                                <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
+                                                <span>Clear search</span>
+                                            </button>
+                                        @endif
+                                        @if($this->activeFilterCount > 0)
+                                            <button
+                                                type="button"
+                                                wire:click="clearFilters"
+                                                class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg border border-[#CBD5E1] bg-white text-[#334155] hover:bg-slate-50 hover:border-[#102B70] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70]"
+                                            >
+                                                <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                                                </svg>
+                                                <span>Reset filters ({{ $this->activeFilterCount }})</span>
+                                            </button>
+                                        @endif
+                                    @endif
+                                </div>
+                            @elseif($activeTab === 'overdue')
+                                <!-- State: Overdue Tab Empty -->
+                                <h3 class="text-base font-bold text-[#0F172A]">No overdue book loans</h3>
+                                <p class="mt-1 text-xs sm:text-sm text-[#64748B] max-w-sm">
+                                    All current borrowers are in good standing with no overdue items requiring follow-up.
+                                </p>
+                            @elseif($activeTab === 'returned')
+                                <!-- State: Returned Tab Empty -->
+                                <h3 class="text-base font-bold text-[#0F172A]">No returned book records</h3>
+                                <p class="mt-1 text-xs sm:text-sm text-[#64748B] max-w-sm">
+                                    No completed book returns have been archived in this view yet.
+                                </p>
+                            @elseif($activeTab === 'active')
+                                <!-- State: Active Loans Tab Empty -->
+                                <h3 class="text-base font-bold text-[#0F172A]">No active book loans</h3>
+                                <p class="mt-1 text-xs sm:text-sm text-[#64748B] max-w-sm">
+                                    There are currently no active book loans out in circulation.
+                                </p>
+                                <a href="{{ route($routePrefix . 'circulation-desk.borrow') }}" wire:navigate
+                                    class="mt-4 inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg bg-[#102B70] text-white hover:bg-[#0B225E] shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70]">
+                                    <span>Check-Out Book</span>
+                                </a>
+                            @else
+                                <!-- State: All Records Empty (No records at all) -->
+                                <h3 class="text-base font-bold text-[#0F172A]">No borrowing records found</h3>
+                                <p class="mt-1 text-xs sm:text-sm text-[#64748B] max-w-sm">
+                                    There are no circulation records cataloged in the system yet.
+                                </p>
+                                <a href="{{ route($routePrefix . 'circulation-desk.borrow') }}" wire:navigate
+                                    class="mt-4 inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg bg-[#102B70] text-white hover:bg-[#0B225E] shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70]">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.25">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                    </svg>
+                                    <span>Check-Out Book</span>
+                                </a>
+                            @endif
+                        </div>
+                    </td>
+                </tr>
             @endforelse
         </x-widget.data-table>
 

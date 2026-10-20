@@ -5,6 +5,7 @@ namespace App\Livewire\Components\Usermanager;
 use App\Models\Account;
 use App\Models\AccountStatus;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 class LibrarianDetail extends Component
@@ -334,7 +335,7 @@ class LibrarianDetail extends Component
                 return;
             }
 
-            if (!$authUser->hasRole('Admin') && !$authUser->hasPermission('manage_librarian') && !$authUser->hasPermission('manage_librarians') && !$authUser->hasPermission('manage_users')) {
+            if (!\App\Services\EmployeeRoleService::canManageLibrarians($authUser)) {
                 abort(403, 'Unauthorized action. You do not have permission to disable librarian accounts.');
             }
         }
@@ -351,12 +352,25 @@ class LibrarianDetail extends Component
         }
 
         // 3. Soft-delete the account record
+        $userId = $user->id;
         $user->delete();
 
         $this->showDisableModal = false;
         unset($this->user);
 
-        $this->dispatch('toast', message: 'Librarian account has been disabled (soft-deleted). Login access is suspended.', type: 'success');
+        $this->dispatch('toast', [
+            'message' => 'Librarian account has been disabled (soft-deleted). Login access is suspended.',
+            'type' => 'success',
+            'undoEvent' => 'undo-disable-librarian',
+            'undoPayload' => ['userId' => $userId],
+            'duration' => 10000,
+        ]);
+    }
+
+    #[On('undo-disable-librarian')]
+    public function undoDisableLibrarian(): void
+    {
+        $this->enableAccount();
     }
 
     public function enableAccount(): void
@@ -369,7 +383,7 @@ class LibrarianDetail extends Component
 
         if (auth()->check()) {
             $authUser = auth()->user();
-            if (!$authUser->hasRole('Admin') && !$authUser->hasPermission('manage_librarian') && !$authUser->hasPermission('manage_librarians') && !$authUser->hasPermission('manage_users')) {
+            if (!\App\Services\EmployeeRoleService::canManageLibrarians($authUser)) {
                 abort(403, 'Unauthorized action. You do not have permission to enable librarian accounts.');
             }
         }
@@ -420,7 +434,7 @@ class LibrarianDetail extends Component
                 return;
             }
 
-            if (!$authUser->hasRole('Admin') && !$authUser->hasPermission('manage_librarian') && !$authUser->hasPermission('manage_librarians') && !$authUser->hasPermission('manage_users')) {
+            if (!\App\Services\EmployeeRoleService::canManageLibrarians($authUser)) {
                 abort(403, 'Unauthorized action. You do not have permission to delete librarian accounts.');
             }
         }

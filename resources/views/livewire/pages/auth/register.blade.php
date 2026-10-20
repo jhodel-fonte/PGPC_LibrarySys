@@ -430,20 +430,36 @@
     <!-- Terms Modal -->
     <dialog id="terms_modal" class="modal modal-bottom sm:modal-middle rounded-2xl p-0 backdrop:bg-slate-900/60">
         <div class="relative w-full max-w-3xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
-            <div class="flex justify-end">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <span class="text-xs font-bold uppercase tracking-wider text-[#102B70]">Institutional Terms</span>
                 <button type="button" onclick="document.getElementById('terms_modal').close()" class="grid h-8 w-8 place-items-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 transition">✕</button>
             </div>
             <x-auth.termsCard />
+            <div class="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
+                <a href="{{ route('terms') }}" target="_blank" class="inline-flex items-center gap-1.5 text-xs font-semibold text-[#102B70] hover:text-[#0B225E] hover:underline">
+                    <span>Open full Terms & Conditions page</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                </a>
+                <button type="button" onclick="document.getElementById('terms_modal').close()" class="px-4 py-2 bg-[#102B70] text-white text-xs font-bold rounded-xl hover:bg-[#0B225E] transition">I Understand</button>
+            </div>
         </div>
     </dialog>
 
     <!-- Privacy Modal -->
     <dialog id="privacy_modal" class="modal modal-bottom sm:modal-middle rounded-2xl p-0 backdrop:bg-slate-900/60">
         <div class="relative w-full max-w-3xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
-            <div class="flex justify-end">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <span class="text-xs font-bold uppercase tracking-wider text-[#102B70]">Data Privacy</span>
                 <button type="button" onclick="document.getElementById('privacy_modal').close()" class="grid h-8 w-8 place-items-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 transition">✕</button>
             </div>
             <x-auth.privacypolicyCard />
+            <div class="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
+                <a href="{{ route('privacy') }}" target="_blank" class="inline-flex items-center gap-1.5 text-xs font-semibold text-[#102B70] hover:text-[#0B225E] hover:underline">
+                    <span>Open full Privacy Policy page</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                </a>
+                <button type="button" onclick="document.getElementById('privacy_modal').close()" class="px-4 py-2 bg-[#102B70] text-white text-xs font-bold rounded-xl hover:bg-[#0B225E] transition">I Understand</button>
+            </div>
         </div>
     </dialog>
 </div>

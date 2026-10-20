@@ -23,10 +23,8 @@
                             $isOverdue = !empty($item['is_overdue']) || !empty($item['overdue_days']);
                             $isSelected = ($selectedAccession ?? null) === ($item['accession'] ?? null);
                         @endphp
-                        <tr @if($mode === 'check-in')
-                                @click="$dispatch('select-table-book', { accession: '{{ $item['accession'] ?? '' }}' })"
-                            @endif
-                            class="align-middle transition-colors {{ $mode === 'check-in' ? 'cursor-pointer' : '' }} {{ $isSelected ? 'bg-[#EFF6FF] ring-1 ring-inset ring-[#102B70]/30 shadow-2xs' : ($isReturned ? 'bg-[#EFF6FF]/40 hover:bg-[#EFF6FF]/60' : 'hover:bg-[#F8FAFC]') }}"
+                        <tr @click="$dispatch('select-table-book', { accession: '{{ $item['accession'] ?? '' }}' })"
+                            class="align-middle transition-colors cursor-pointer {{ $isSelected ? 'bg-[#EFF6FF] ring-1 ring-inset ring-[#102B70]/30 shadow-2xs' : ($isReturned ? 'bg-[#EFF6FF]/40 hover:bg-[#EFF6FF]/60' : 'hover:bg-[#F8FAFC]') }}"
                         >
                             <td class="py-3.5 px-4">
                                 <div class="flex items-start gap-3">

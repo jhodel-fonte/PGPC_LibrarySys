@@ -6,9 +6,11 @@ use App\Models\Book;
 use App\Models\BookCondition;
 use App\Models\BookDetail;
 use App\Models\OpacCatalogView;
+use Illuminate\Validation\Rule;
+use Livewire\Attributes\Layout;
+use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
-use Livewire\Attributes\Layout;
 
 #[Layout('livewire.layouts.admin', ['title' => 'Book Management'])]
 class BookManager extends Component
@@ -60,11 +62,33 @@ class BookManager extends Component
     public $showHistoryModal = false;
     public $historyBookId = null;
 
-    protected $rules = [
-        'editLocation' => 'nullable|string|max:100',
-        'editConditionId' => 'required|exists:book_conditions,id',
-        'editStatus' => 'required|string|in:available,borrowed,reserved,damaged,lost,maintenance',
-    ];
+    protected function rules(): array
+    {
+        $codeRule = Rule::unique('books', 'code');
+        if ($this->editingBookId) {
+            $codeRule = $codeRule->ignore($this->editingBookId);
+        }
+
+        return [
+            'editCode' => ['nullable', 'string', 'max:255', $codeRule],
+            'editLocation' => 'nullable|string|max:100',
+            'editConditionId' => 'required|exists:book_conditions,id',
+            'editStatus' => 'required|string|in:available,borrowed,reserved,damaged,lost,maintenance',
+        ];
+    }
+
+    public function mount(): void
+    {
+        $searchParam = request()->query('search');
+        if (!empty($searchParam)) {
+            $this->search = trim($searchParam);
+        }
+
+        $detailId = request()->query('detail');
+        if (!empty($detailId)) {
+            $this->dispatch('open-book-details', id: (int) $detailId);
+        }
+    }
 
     public function updatedSearch()
     {
@@ -181,12 +205,17 @@ class BookManager extends Component
         if ($book) {
             $this->editingBookId = $book->id;
             $this->editAccessionNumber = $book->accession_number;
-            $this->editCode = $book->code ?: 'N/A';
+            $this->editCode = $book->code ?? '';
             $this->editLocation = $book->location ?? '';
             $this->editConditionId = $book->book_condition_id;
             $this->editStatus = $book->status;
             $this->showEditModal = true;
         }
+    }
+
+    public function generateEditCode(): void
+    {
+        $this->editCode = 'BK-' . date('Y') . '-' . strtoupper(substr(uniqid(), -5));
     }
 
     public function closeEditModal()
@@ -211,6 +240,7 @@ class BookManager extends Component
         $book = Book::find($this->editingBookId);
         if ($book) {
             $book->update([
+                'code' => trim($this->editCode) ?: null,
                 'location' => trim($this->editLocation) ?: null,
                 'book_condition_id' => $this->editConditionId,
                 'status' => $this->editStatus,
@@ -262,9 +292,37 @@ class BookManager extends Component
             }
 
             $accNum = $book->accession_number;
+            $deletedId = $book->id;
             $book->delete();
-            $this->dispatch('toast', message: 'Book copy "' . $accNum . '" has been deleted.', type: 'info');
+
+            $this->dispatch('toast', [
+                'message' => 'Book copy "' . $accNum . '" has been deleted.',
+                'type' => 'success',
+                'undoEvent' => 'restore-book-copy',
+                'undoPayload' => ['copyId' => $deletedId],
+                'duration' => 10000,
+            ]);
             $this->clearSelection();
+        }
+    }
+
+    #[On('restore-book-copy')]
+    public function restoreBookCopy($copyId = null): void
+    {
+        $id = is_array($copyId) ? ($copyId['copyId'] ?? $copyId['id'] ?? null) : $copyId;
+        if (!$id) return;
+
+        if (auth()->check() && !auth()->user()->can('update', Book::class) && !auth()->user()->can('create', Book::class)) {
+            $this->dispatch('toast', message: 'Unauthorized action to restore book copy.', type: 'error');
+            return;
+        }
+
+        $book = Book::withTrashed()->find($id);
+        if ($book && $book->trashed()) {
+            $book->restore();
+            $this->dispatch('toast', message: 'Book copy "' . $book->accession_number . '" was restored successfully.', type: 'success');
+            $this->dispatch('copy-updated', bookDetailId: $book->book_detail_id, copyId: $book->id);
+            $this->dispatch('book-details-updated');
         }
     }
 
@@ -374,7 +432,9 @@ class BookManager extends Component
             ->get();
 
         $deletedCount = 0;
+        $deletedIds = [];
         foreach ($deletable as $b) {
+            $deletedIds[] = $b->id;
             $b->delete();
             $deletedCount++;
         }
@@ -385,12 +445,36 @@ class BookManager extends Component
             if ($skipped > 0) {
                 $msg .= " ({$skipped} borrowed copies were skipped)";
             }
-            $this->dispatch('toast', message: $msg, type: 'info');
+            $this->dispatch('toast', [
+                'message' => $msg,
+                'type' => 'success',
+                'undoEvent' => 'restore-book-copies',
+                'undoPayload' => ['copyIds' => $deletedIds],
+                'duration' => 10000,
+            ]);
         } else {
             $this->dispatch('toast', message: 'No selected copies could be deleted (they might be checked out).', type: 'error');
         }
 
         $this->clearSelection();
+    }
+
+    #[On('restore-book-copies')]
+    public function restoreBookCopies($copyIds = null): void
+    {
+        $ids = is_array($copyIds) && isset($copyIds['copyIds']) ? $copyIds['copyIds'] : (array) $copyIds;
+        if (empty($ids)) return;
+
+        if (auth()->check() && !auth()->user()->can('update', Book::class) && !auth()->user()->can('create', Book::class)) {
+            $this->dispatch('toast', message: 'Unauthorized action to restore book copies.', type: 'error');
+            return;
+        }
+
+        $count = Book::withTrashed()->whereIn('id', $ids)->whereNotNull('deleted_at')->restore();
+        if ($count > 0) {
+            $this->dispatch('toast', message: "Restored {$count} book copies successfully.", type: 'success');
+            $this->dispatch('book-details-updated');
+        }
     }
 
     protected function getCurrentPageBookIds(): array

@@ -155,11 +155,11 @@
 
     <!-- Organic Bottom Wave Divider with Gold Accent Line -->
     <div class="absolute bottom-0 left-0 right-0 w-full overflow-hidden leading-none pointer-events-none z-10">
-        <svg class="relative block w-full h-[48px] sm:h-[64px]" viewBox="0 0 1440 80" fill="none" preserveAspectRatio="none">
+        {{-- <svg class="relative block w-full h-[48px] sm:h-[64px]" viewBox="0 0 1440 80" fill="none" preserveAspectRatio="none">
             <!-- Smooth Wave Fill (Transitions into page background #F8FAFC) -->
             <path d="M0,45 C280,75 560,15 900,48 C1150,72 1320,35 1440,45 L1440,80 L0,80 Z" fill="#F8FAFC" />
             <!-- Gold Accent Line along the Wave Curve -->
             <path d="M0,45 C280,75 560,15 900,48 C1150,72 1320,35 1440,45" stroke="#FCC719" stroke-width="3.5" fill="none" />
-        </svg>
+        </svg> --}}
     </div>
 </section>

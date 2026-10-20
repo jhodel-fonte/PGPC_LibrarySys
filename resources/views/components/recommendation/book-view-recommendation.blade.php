@@ -184,55 +184,66 @@
             >
                 <!-- Book Cover Box -->
                 <div
-                    x-data="{ imgLoaded: false, imgError: false }"
+                    x-data="{
+                        imgLoaded: false,
+                        imgError: false,
+                        coverUrl: book.cover || book.cover_url || null,
+                        fallbackCover: '{{ asset('images/' . config('settings.book_covers.default', 'book-cover.webp')) }}'
+                    }"
+                    x-init="
+                        if (!coverUrl) {
+                            imgError = true;
+                            imgLoaded = true;
+                        } else {
+                            $nextTick(() => {
+                                const img = $el.querySelector('img.book-rec-img');
+                                if (img && img.complete) {
+                                    if (img.naturalHeight === 0) {
+                                        imgError = true;
+                                    } else {
+                                        imgLoaded = true;
+                                    }
+                                }
+                            });
+                        }
+                    "
                     class="relative w-full aspect-[2/3] rounded-xl overflow-hidden bg-slate-100 border border-slate-200/90 shadow-xs transition-all duration-200 group-hover:shadow-md group-hover:-translate-y-0.5 group-hover:border-[#102B70]/40"
                 >
                     <!-- Image loading state -->
-                    <template x-if="book.cover || book.cover_url">
-                        <div class="w-full h-full">
+                    <template x-if="coverUrl">
+                        <div class="w-full h-full relative">
                             <div
                                 x-show="!imgLoaded && !imgError"
                                 class="absolute inset-0 bg-slate-200/80 animate-pulse"
                             ></div>
                             <img
-                                :src="book.cover || book.cover_url"
+                                :src="coverUrl"
                                 :alt="book.title"
                                 loading="lazy"
                                 decoding="async"
-                                x-on:load="imgLoaded = true"
-                                x-on:error="imgError = true; imgLoaded = false"
+                                x-on:load="imgLoaded = true; imgError = false;"
+                                x-on:error="imgError = true; imgLoaded = true;"
                                 x-show="!imgError"
                                 :class="imgLoaded ? 'opacity-100' : 'opacity-0'"
-                                class="w-full h-full object-cover transition-opacity duration-300"
+                                class="book-rec-img w-full h-full object-cover transition-opacity duration-300"
                             >
                         </div>
                     </template>
 
                     <!-- Fallback Cover -->
                     <div
-                        x-show="imgError || (!book.cover && !book.cover_url)"
+                        x-show="imgError || !coverUrl"
                         class="h-full w-full flex items-center justify-center bg-slate-100"
                     >
                         <img
-                            src="{{ asset('images/book-cover.webp') }}"
+                            :src="fallbackCover"
                             alt="No cover"
                             class="w-full h-full object-cover select-none pointer-events-none"
                             draggable="false"
+                            onerror="this.onerror=null; this.src='{{ asset('images/book-cover.webp') }}';"
                         >
                     </div>
 
-                    <!-- Status Pill Overlay (Optional) -->
-                    <template x-if="book.status_label || (book.available_copies !== undefined)">
-                        <div class="absolute top-2 left-2 pointer-events-none">
-                            <span
-                                class="px-2 py-0.5 rounded-full text-[10px] font-bold shadow-xs backdrop-blur-xs"
-                                :class="(book.available_copies > 0 || book.status_label === 'Available') 
-                                    ? 'bg-emerald-500/90 text-white' 
-                                    : 'bg-slate-700/85 text-white'"
-                                x-text="book.status_label || (book.available_copies > 0 ? 'Available' : 'Unavailable')"
-                            ></span>
-                        </div>
-                    </template>
                 </div>
 
                 <!-- Book Title & Author Underneath -->

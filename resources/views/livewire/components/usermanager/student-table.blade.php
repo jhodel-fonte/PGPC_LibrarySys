@@ -6,9 +6,9 @@
     </div>
 
     @php
-        $routePrefix = request()->is('librarian*') ? 'librarian.' : 'admin.';
-        $canCreateStudent = auth()->check() && (auth()->user()->hasRole('Admin') || auth()->user()->hasPermission('create_students') || auth()->user()->hasPermission('manage_users'));
-        $canEditStudent = auth()->check() && (auth()->user()->hasRole('Admin') || auth()->user()->hasPermission('edit_students') || auth()->user()->hasPermission('manage_users'));
+        $routePrefix = \App\Services\EmployeeRoleService::getRoutePrefix();
+        $canCreateStudent = \App\Services\EmployeeRoleService::canCreateStudent();
+        $canEditStudent = \App\Services\EmployeeRoleService::canEditStudent();
     @endphp
 
     <!-- 1. Page Header -->

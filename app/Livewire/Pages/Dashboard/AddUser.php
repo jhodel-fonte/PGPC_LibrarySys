@@ -20,9 +20,8 @@ class AddUser extends Component
 
     public function mount(): void
     {
-        $user = auth()->user();
-        $canCreateStudent = $user && ($user->hasRole('Admin') || $user->hasPermission('create_students') || $user->hasPermission('manage_users'));
-        $canManageLibrarians = $user && ($user->hasRole('Admin') || $user->hasPermission('manage_librarians'));
+        $canCreateStudent = \App\Services\EmployeeRoleService::canCreateStudent();
+        $canManageLibrarians = \App\Services\EmployeeRoleService::canManageLibrarians();
 
         if ($this->type === 'librarian' && ! $canManageLibrarians) {
             abort(403, 'Unauthorized action. You do not have permission to add library staff.');

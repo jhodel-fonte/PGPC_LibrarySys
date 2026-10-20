@@ -10,7 +10,11 @@ use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
 
-#[Layout('livewire.layouts.admin', ['title' => 'Active Borrowers'])]
+#[Layout('livewire.layouts.admin', [
+    'title' => 'Circulation Desk',
+    'subpage' => 'Active Borrowers',
+    'activepageRoute' => 'admin.circulation-desk.index',
+])]
 class BorrowedList extends Component
 {
     use WithPagination;
@@ -19,7 +23,7 @@ class BorrowedList extends Component
     public string $search = '';
 
     #[Url(as: 'tab')]
-    public string $activeTab = 'active'; // 'active', 'overdue', 'returned', 'all'
+    public string $activeTab = 'all'; // 'active', 'overdue', 'returned', 'all'
 
     // Applied Filters
     public string $filterProgram = '';
@@ -84,6 +88,18 @@ class BorrowedList extends Component
         $this->tempFilterProgram = '';
         $this->tempFilterYearLevel = '';
         $this->resetPage();
+    }
+
+    public function resetSearch(): void
+    {
+        $this->search = '';
+        $this->resetPage();
+    }
+
+    public function resetAllFilters(): void
+    {
+        $this->search = '';
+        $this->clearFilters();
     }
 
     public function getActiveFilterCountProperty(): int

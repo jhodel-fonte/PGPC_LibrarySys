@@ -27,7 +27,6 @@
             <div class="px-6 py-4 sm:px-7 sm:py-5 hover:bg-slate-50 transition-colors flex justify-between items-start gap-4">
                 <div>
                     <h4 class="font-semibold text-sm text-slate-900 leading-tight mb-1">{{ Str::limit($title->book_title, 50) }}</h4>
-                    <p class="text-xs text-slate-500">{{ $availableCopies }} available <span class="mx-1.5 text-slate-300">|</span> {{ $totalCopies }} total</p>
                 </div>
                 <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-100 text-emerald-700 border border-emerald-200 shrink-0">{{ $title->borrowing_transactions_count }} Borrows</span>
             </div>

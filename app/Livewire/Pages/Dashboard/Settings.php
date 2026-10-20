@@ -1,152 +1,184 @@
 <?php
 
-namespace App\Livewire\Pages\dashboard;
+namespace App\Livewire\Pages\Dashboard;
 
-use Livewire\Component;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
+use Livewire\Component;
 
-use App\Models\SystemSetting;
-
-#[Layout('livewire.layouts.admin')]
+#[Layout('livewire.layouts.admin', ['title' => 'System Settings'])]
 class Settings extends Component
 {
-    public $activeTab = 'general'; // general, circulation, content, notifications, ai, backup
+    public string $activeTab = 'general'; // general, circulation, content, notifications, ai, backup, logs
 
-    // Hold settings values loaded from config/DB
-    public $settings = [];
-    public $originalSettings = [];
+    // In-memory settings state for UI design & planning (zero backend DB dependency)
+    public array $settings = [];
+    public array $originalSettings = [];
 
-    public function mount()
+    public function mount(): void
     {
-        $this->loadSettings();
+        $this->loadDefaultSettings();
     }
 
-    public function loadSettings()
+    public function loadDefaultSettings(): void
     {
-        // Fetch all key-value pairs from database
-        $dbSettings = SystemSetting::pluck('setting_value', 'setting_key')->toArray();
-
-        // Load system logs from private storage (local disk root is already storage/app/private in Laravel 11)
-        $logsPath = 'system_logs.json';
-        $systemLogs = \Illuminate\Support\Facades\Storage::disk('local')->exists($logsPath)
-            ? json_decode(\Illuminate\Support\Facades\Storage::disk('local')->get($logsPath), true) : [];
-
-        // Map DB keys back to the nested array structure expected by the Blade files
         $this->settings = [
             'general' => [
-                'library_name' => $dbSettings['library_name'] ?? 'Padre Garcia Polytechnic College Library',
-                'email' => $dbSettings['system_email'] ?? 'library@pgpc.edu.ph',
-                'phone' => $dbSettings['system_phone'] ?? '+63 912 111 6789',
-                'operating_hours' => json_decode($dbSettings['operating_hours'] ?? '[]', true) ?: config('settings.general.operating_hours'),
-                'closures' => json_decode($dbSettings['closures'] ?? '[]', true) ?: config('settings.general.closures'),
+                'library_name' => config('settings.college.name', 'Padre Garcia Polytechnic College') . ' - Library',
+                'email' => 'library@pgpc.edu.ph',
+                'phone' => '(043) 515-8123 / +63 912 345 6789',
+                'address' => config('settings.library_config.location', config('settings.college.address', 'Main Building, 2nd Floor Library')),
+                'timezone' => 'Asia/Manila (GMT+8)',
+                'operating_hours' => [
+                    'monday' => ['status' => 'Open', 'opens' => '08:00', 'closes' => '17:00'],
+                    'tuesday' => ['status' => 'Open', 'opens' => '08:00', 'closes' => '17:00'],
+                    'wednesday' => ['status' => 'Open', 'opens' => '08:00', 'closes' => '17:00'],
+                    'thursday' => ['status' => 'Open', 'opens' => '08:00', 'closes' => '17:00'],
+                    'friday' => ['status' => 'Open', 'opens' => '08:00', 'closes' => '17:00'],
+                    'saturday' => ['status' => 'Open', 'opens' => '08:00', 'closes' => '12:00'],
+                    'sunday' => ['status' => 'Closed', 'opens' => '08:00', 'closes' => '12:00'],
+                ],
+                'closures' => [
+                    ['date' => '2026-11-01', 'reason' => 'All Saints Day (Special Non-Working Holiday)', 'description' => 'All Saints Day'],
+                    ['date' => '2026-11-30', 'reason' => 'Bonifacio Day (Regular Holiday)', 'description' => 'Bonifacio Day'],
+                    ['date' => '2026-12-25', 'reason' => 'Christmas Day', 'description' => 'Christmas Day'],
+                    ['date' => '2026-12-30', 'reason' => 'Rizal Day', 'description' => 'Rizal Day'],
+                ],
             ],
 
             'circulation' => [
                 'borrowing_limits' => [
-                    'Student' => $dbSettings['borrowing_limit_student'] ?? 3,
-                    'Faculty' => $dbSettings['borrowing_limit_faculty'] ?? 5,
+                    'Student' => config('settings.library_config.max_loan_limit', 3),
+                    'Faculty' => 5,
+                    'Staff' => 4,
                 ],
                 'loan_durations' => [
-                    'Textbooks' => $dbSettings['loan_duration_textbooks'] ?? 3,
-                    'General Collection' => $dbSettings['loan_duration_general'] ?? 7,
-                    'Reference Materials' => $dbSettings['loan_duration_reference'] ?? 1,
+                    'Textbooks' => 3,
+                    'General Collection' => config('settings.library_config.loan_period', 5),
+                    'Reference Materials' => 1,
+                    'Filipiniana' => 3,
                 ],
                 'fine_rules' => [
-                    'daily_fine' => $dbSettings['fine_rate_per_day'] ?? 5.00,
+                    'daily_fine' => (float) config('settings.library_config.penalty_fee', 50.00),
+                    'grace_period_days' => 1,
+                    'max_fine_per_book' => 300.00,
                 ],
                 'renewal_limits' => [
-                    'max_consecutive' => $dbSettings['max_renewals'] ?? 2,
+                    'max_consecutive' => 2,
+                    'allow_online_renewal' => true,
+                    'block_on_overdue' => true,
                 ]
             ],
 
             'content_legal' => [
                 'terms' => [
-                    'content' => $dbSettings['terms_content'] ?? '',
-                    'version' => $dbSettings['terms_version'] ?? 1,
-                    'updated_at' => $dbSettings['terms_updated_at'] ?? now()->toDateTimeString(),
-                    'require_acknowledgement' => filter_var($dbSettings['terms_require_acknowledgement'] ?? true, FILTER_VALIDATE_BOOLEAN),
+                    'content' => "Padre Garcia Polytechnic College Library Terms & Conditions\n\n1. Library ID Policy: Every registered student and faculty member must present a valid digital or RFID library ID.\n2. Borrowing Responsibility: Borrowers are strictly responsible for loaned books and equipment.\n3. Overdue & Lost Materials: Fines accumulate per calendar day. Lost or unreturned items require replacement or reimbursement.",
+                    'version' => 2,
+                    'updated_at' => '2026-08-15 10:30:00',
+                    'require_acknowledgement' => true,
                 ],
                 'privacy' => [
-                    'content' => $dbSettings['privacy_content'] ?? '',
-                    'version' => $dbSettings['privacy_version'] ?? 1,
-                    'updated_at' => $dbSettings['privacy_updated_at'] ?? now()->toDateTimeString(),
-                    'require_acknowledgement' => filter_var($dbSettings['privacy_require_acknowledgement'] ?? false, FILTER_VALIDATE_BOOLEAN),
+                    'content' => "Padre Garcia Polytechnic College Library Privacy Notice\n\nIn compliance with the Data Privacy Act of 2012 (RA 10173), student and faculty circulation history is kept strictly confidential and used solely for library services and accreditation metrics.",
+                    'version' => 1,
+                    'updated_at' => '2026-06-01 09:00:00',
+                    'require_acknowledgement' => false,
                 ],
                 'cookie' => [
-                    'content' => $dbSettings['cookie_content'] ?? '',
-                    'version' => $dbSettings['cookie_version'] ?? 1,
-                    'updated_at' => $dbSettings['cookie_updated_at'] ?? now()->toDateTimeString(),
-                    'require_acknowledgement' => filter_var($dbSettings['cookie_require_acknowledgement'] ?? false, FILTER_VALIDATE_BOOLEAN),
+                    'content' => "This web portal uses essential session cookies to manage authenticated sessions and remember circulation preferences.",
+                    'version' => 1,
+                    'updated_at' => '2026-05-10 14:15:00',
+                    'require_acknowledgement' => false,
                 ]
             ],
 
             'notifications' => [
-                'channels' => json_decode($dbSettings['notification_channels'] ?? '[]', true) ?: config('settings.notifications.channels'),
-                'templates' => json_decode($dbSettings['notification_templates'] ?? '[]', true) ?: config('settings.notifications.templates'),
-                'daily_cron' => $dbSettings['daily_cron_time'] ?? '01:00',
+                'channels' => [
+                    'email' => true,
+                    'in_app' => true,
+                    'sms' => false,
+                ],
+                'templates' => [
+                    ['id' => 'due_reminder', 'name' => 'Due Date Reminder (24h Before)', 'channel' => 'Email & In-App', 'status' => 'Active'],
+                    ['id' => 'overdue_notice', 'name' => 'Overdue Notice & Fine Alert', 'channel' => 'Email & In-App', 'status' => 'Active'],
+                    ['id' => 'reservation_ready', 'name' => 'Reserved Copy Available for Pickup', 'channel' => 'Email', 'status' => 'Active'],
+                    ['id' => 'loan_receipt', 'name' => 'Circulation Checkout / Return Receipt', 'channel' => 'Email', 'status' => 'Active'],
+                ],
+                'daily_cron' => '08:00',
             ],
 
             'ai_integrations' => [
                 'recommendation_service' => [
-                    'url' => $dbSettings['ai_recommendation_url'] ?? 'http://127.0.0.1',
-                    'port' => $dbSettings['ai_recommendation_port'] ?? '5001',
+                    'url' => 'http://127.0.0.1',
+                    'port' => '5001',
                     'status' => 'Connected',
                 ],
-                'confidence_threshold' => $dbSettings['ai_confidence_threshold'] ?? 65,
+                'confidence_threshold' => 70,
+                'enable_smart_search' => true,
             ],
 
             'backup' => [
-                'last_backup' => '2026-08-14 23:30:00'
+                'last_backup' => '2026-10-19 23:30:00',
+                'auto_backup_enabled' => true,
+                'backup_frequency' => 'Daily',
+                'retention_days' => 30,
             ],
 
-            'system_logs' => $systemLogs
+            'system_logs' => [
+                ['timestamp' => '2026-10-20 11:45:22', 'level' => 'INFO', 'user' => 'admin@pgpc.edu.ph', 'message' => 'Accession record BK-2026-0042 added to Main Collection'],
+                ['timestamp' => '2026-10-20 10:12:05', 'level' => 'SUCCESS', 'user' => 'librarian@pgpc.edu.ph', 'message' => 'MARC 21 batch catalog record extracted (24 titles)'],
+                ['timestamp' => '2026-10-19 16:30:18', 'level' => 'WARNING', 'user' => 'system', 'message' => 'Overdue notification dispatched for 12 borrowed items'],
+                ['timestamp' => '2026-10-19 14:02:44', 'level' => 'INFO', 'user' => 'admin@pgpc.edu.ph', 'message' => 'System settings draft saved'],
+            ],
         ];
 
-        // Store snapshot for deep comparison dirty state tracking
         $this->originalSettings = $this->settings;
     }
 
-    public function setTab($tab)
+    public function setTab(string $tab): void
     {
-        // Only allow changing tab if not dirty, or just allow it anyway
-        // For this frontend mockup, we'll just change the tab
         $this->activeTab = $tab;
     }
 
-    public function discardChanges()
+    public function discardChanges(): void
     {
-        $this->settings = $this->originalSettings; // Revert immediately to snapshot
-
-        $this->dispatch('toast', message: 'Changes discarded.');
+        $this->settings = $this->originalSettings;
+        $this->dispatch('toast', message: 'Draft changes discarded.', type: 'info');
     }
 
-    #[\Livewire\Attributes\Computed]
-    public function dirtyState()
+    public function saveChanges(): void
+    {
+        $this->originalSettings = $this->settings;
+        $this->dispatch('toast', message: 'Settings saved successfully (Design Preview Mode).', type: 'success');
+        $this->dispatch('settings-saved');
+    }
+
+    public function updatePolicy(string $policyType, bool $isImmediate = true, bool $requireAcknowledgement = false, ?string $scheduledDate = null): void
+    {
+        $this->originalSettings = $this->settings;
+        $this->dispatch('toast', message: ucfirst($policyType) . ' policy updated (Design Preview Mode).', type: 'success');
+    }
+
+    #[Computed]
+    public function dirtyState(): array
     {
         $state = [
             'is_dirty' => false,
             'categories' => [],
-            'sections' => []
+            'sections' => [],
         ];
 
         foreach ($this->settings as $category => $categoryData) {
-            // Do not track dirty state for logs or backup components
-            if (in_array($category, ['system_logs', 'backup'])) {
+            if (in_array($category, ['system_logs', 'backup'], true)) {
                 $state['categories'][$category] = false;
                 continue;
             }
 
             $categoryDirty = false;
-
             if (is_array($categoryData)) {
                 foreach ($categoryData as $section => $value) {
                     $originalValue = $this->originalSettings[$category][$section] ?? null;
-
-                    // Deep comparison
                     $isSectionDirty = json_encode($value) !== json_encode($originalValue);
-
                     $state['sections']["{$category}.{$section}"] = $isSectionDirty;
-
                     if ($isSectionDirty) {
                         $categoryDirty = true;
                     }
@@ -156,92 +188,12 @@ class Settings extends Component
             }
 
             $state['categories'][$category] = $categoryDirty;
-
             if ($categoryDirty) {
                 $state['is_dirty'] = true;
             }
         }
 
         return $state;
-    }
-
-    public function saveChanges()
-    {
-        // Flatten the nested array back to the DB key-value structure
-        $updates = [
-            'library_name' => $this->settings['general']['library_name'],
-            'system_email' => $this->settings['general']['email'],
-            'system_phone' => $this->settings['general']['phone'],
-            'operating_hours' => json_encode($this->settings['general']['operating_hours']),
-            'closures' => json_encode($this->settings['general']['closures']),
-
-            'borrowing_limit_student' => $this->settings['circulation']['borrowing_limits']['Student'],
-            'borrowing_limit_faculty' => $this->settings['circulation']['borrowing_limits']['Faculty'],
-            'loan_duration_textbooks' => $this->settings['circulation']['loan_durations']['Textbooks'],
-            'loan_duration_general' => $this->settings['circulation']['loan_durations']['General Collection'],
-            'loan_duration_reference' => $this->settings['circulation']['loan_durations']['Reference Materials'],
-            'fine_rate_per_day' => $this->settings['circulation']['fine_rules']['daily_fine'],
-            'max_renewals' => $this->settings['circulation']['renewal_limits']['max_consecutive'],
-
-
-            'notification_channels' => json_encode($this->settings['notifications']['channels']),
-            'notification_templates' => json_encode($this->settings['notifications']['templates']),
-            'daily_cron_time' => $this->settings['notifications']['daily_cron'],
-
-            'ai_recommendation_url' => $this->settings['ai_integrations']['recommendation_service']['url'],
-            'ai_recommendation_port' => $this->settings['ai_integrations']['recommendation_service']['port'],
-            'ai_confidence_threshold' => $this->settings['ai_integrations']['confidence_threshold'],
-        ];
-
-        // Loop and update standard database records
-        foreach ($updates as $key => $value) {
-            SystemSetting::where('setting_key', $key)->update(['setting_value' => $value]);
-        }
-
-        // Update the snapshot so dirty state is instantly reset
-        $this->originalSettings = $this->settings;
-
-        $this->dispatch('toast', message: 'Settings saved successfully.');
-        $this->dispatch('settings-saved');
-    }
-
-    public function updatePolicy($policyType, $isImmediate, $requireAcknowledgement, $scheduledDate = null)
-    {
-        $validTypes = ['terms', 'privacy', 'cookie'];
-        if (!in_array($policyType, $validTypes)) {
-            return;
-        }
-
-        $newContent = $this->settings['content_legal'][$policyType]['content'];
-        $currentVersion = (int)SystemSetting::where('setting_key', "{$policyType}_version")->value('setting_value');
-        $newVersion = $currentVersion + 1;
-
-        if ($isImmediate) {
-            SystemSetting::updateOrCreate(['setting_key' => "{$policyType}_content"], ['setting_value' => $newContent, 'setting_type' => 'html']);
-            SystemSetting::updateOrCreate(['setting_key' => "{$policyType}_version"], ['setting_value' => $newVersion, 'setting_type' => 'integer']);
-            SystemSetting::updateOrCreate(['setting_key' => "{$policyType}_updated_at"], ['setting_value' => now()->toDateTimeString(), 'setting_type' => 'string']);
-            SystemSetting::updateOrCreate(['setting_key' => "{$policyType}_require_acknowledgement"], ['setting_value' => $requireAcknowledgement, 'setting_type' => 'boolean']);
-
-            // Clean up any pending updates
-            SystemSetting::whereIn('setting_key', [
-                "pending_{$policyType}_content",
-                "pending_{$policyType}_version",
-                "pending_{$policyType}_effective_at",
-                "pending_{$policyType}_require_acknowledgement",
-            ])->delete();
-
-            $this->dispatch('toast', message: ucfirst($policyType) . ' Policy updated successfully.');
-        } else {
-            // Schedule it
-            SystemSetting::updateOrCreate(['setting_key' => "pending_{$policyType}_content"], ['setting_value' => $newContent, 'setting_type' => 'html']);
-            SystemSetting::updateOrCreate(['setting_key' => "pending_{$policyType}_version"], ['setting_value' => $newVersion, 'setting_type' => 'integer']);
-            SystemSetting::updateOrCreate(['setting_key' => "pending_{$policyType}_effective_at"], ['setting_value' => $scheduledDate, 'setting_type' => 'string']);
-            SystemSetting::updateOrCreate(['setting_key' => "pending_{$policyType}_require_acknowledgement"], ['setting_value' => $requireAcknowledgement, 'setting_type' => 'boolean']);
-
-            $this->dispatch('toast', message: ucfirst($policyType) . ' Policy update scheduled.');
-        }
-
-        $this->loadSettings(); // Reload to refresh state and clear dirty flag
     }
 
     public function render()

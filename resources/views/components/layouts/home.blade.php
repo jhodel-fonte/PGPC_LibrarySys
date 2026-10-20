@@ -5,6 +5,7 @@
         request()->is('services*')    => 'services',
         request()->is('about*')       => 'about',
         request()->is('contact*')     => 'contact',
+        request()->routeIs('terms') || request()->routeIs('privacy') || request()->is('terms*') || request()->is('privacy*') => 'legal',
         default                       => 'home',
     };
 @endphp
@@ -56,6 +57,8 @@
         </div>
 
     </div>
+    <livewire:components.widgets.qr-modal />
+    <x-notification.toast-notification />
     @livewireScripts
 </body>
 </html>

@@ -1,11 +1,10 @@
 @php
-    $role = request()->is('librarian*') ? 'librarian' : 'admin';
-    $checkInRoute = route($role . '.circulation-desk.return');
-    $checkOutRoute = route($role . '.circulation-desk.borrow');
-    $borrowedBooksRoute = route($role . '.circulation-desk.borrowed-books');
-    $user = auth()->user();
-    $canBorrow = $user && ($user->hasRole('Admin') || $user->hasPermission('borrow_book') || $user->hasPermission('manage_circulation'));
-    $canReturn = $user && ($user->hasRole('Admin') || $user->hasPermission('return_book') || $user->hasPermission('manage_circulation'));
+    $prefix = \App\Services\EmployeeRoleService::getRoutePrefix();
+    $checkInRoute = route($prefix . 'circulation-desk.return');
+    $checkOutRoute = route($prefix . 'circulation-desk.borrow');
+    $borrowedBooksRoute = route($prefix . 'circulation-desk.borrowed-books');
+    $canBorrow = \App\Services\EmployeeRoleService::canBorrow();
+    $canReturn = \App\Services\EmployeeRoleService::canReturn();
     $activeLoansCount = \App\Models\BorrowingTransaction::whereNull('return_date')->count();
 @endphp
 

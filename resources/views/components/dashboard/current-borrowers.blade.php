@@ -30,12 +30,11 @@
                         <td class="px-6 sm:px-7 text-right whitespace-nowrap">
                             @if ($borrowing->due_date && $borrowing->due_date < now())
                                 <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-200">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-red-600"></span>
                                     Overdue
                                 </span>
                             @else
                                 <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                                    
                                     Borrowed
                                 </span>
                             @endif

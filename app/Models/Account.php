@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use App\Services\EmployeeRoleService;
+use App\Services\StudentRoleService;
 use Laravel\Scout\Searchable;
 
 class Account extends Authenticatable
@@ -171,25 +173,36 @@ class Account extends Authenticatable
      */
     public function hasPermission(string $permissionName): bool
     {
-        if ($this->hasRole('Admin')) {
+        if ($this->hasRole(EmployeeRoleService::ROLE_ADMIN)) {
             return true;
         }
 
-        // 1. Direct account permission override check
-        $accountPermission = $this->permissions()->where('permissions.name', $permissionName)->first();
-        if ($accountPermission) {
-            return (bool) $accountPermission->pivot->is_allowed;
+        // 1. Direct account permission override check (utilize eager-loaded collection if available)
+        if ($this->relationLoaded('permissions')) {
+            $accountPermission = $this->permissions->firstWhere('name', $permissionName);
+        } else {
+            $accountPermission = $this->permissions()->where('permissions.name', $permissionName)->first();
         }
 
-        // 2. Role-based check (all roles evaluate assigned role permissions)
+        if ($accountPermission) {
+            return (bool) ($accountPermission->pivot->is_allowed ?? true);
+        }
+
+        // 2. Role-based check (evaluate assigned role permissions)
         if ($this->role) {
-            $hasRolePermission = $this->role->permissions()
-                ->where('permissions.name', $permissionName)
-                ->where(function ($query) {
-                    $query->where('role_permissions.is_allowed', true)
-                        ->orWhereNull('role_permissions.is_allowed');
-                })
-                ->exists();
+            if ($this->role->relationLoaded('permissions')) {
+                $hasRolePermission = $this->role->permissions->contains(function ($perm) use ($permissionName) {
+                    return $perm->name === $permissionName && ($perm->pivot->is_allowed ?? true);
+                });
+            } else {
+                $hasRolePermission = $this->role->permissions()
+                    ->where('permissions.name', $permissionName)
+                    ->where(function ($query) {
+                        $query->where('role_permissions.is_allowed', true)
+                            ->orWhereNull('role_permissions.is_allowed');
+                    })
+                    ->exists();
+            }
 
             if ($hasRolePermission) {
                 return true;
@@ -205,6 +218,22 @@ class Account extends Authenticatable
     }
 
     /**
+     * Check if the account possesses at least one of the specified permissions.
+     */
+    public function hasAnyPermission(array $permissions): bool
+    {
+        return EmployeeRoleService::hasAnyPermission($permissions, $this);
+    }
+
+    /**
+     * Check if the account possesses all of the specified permissions.
+     */
+    public function hasAllPermissions(array $permissions): bool
+    {
+        return EmployeeRoleService::hasAllPermissions($permissions, $this);
+    }
+
+    /**
      * Check if the account possesses any of the specified roles.
      */
     public function hasRole(string|array $roles): bool
@@ -213,15 +242,140 @@ class Account extends Authenticatable
             return false;
         }
 
-        $currentRole = strtolower(str_replace(' ', '', $this->role->name));
+        $currentRole = strtolower(str_replace([' ', '_', '-'], '', $this->role->name));
         $checkRoles = is_array($roles) ? $roles : [$roles];
 
         foreach ($checkRoles as $role) {
-            if ($currentRole === strtolower(str_replace(' ', '', $role))) {
+            if ($currentRole === strtolower(str_replace([' ', '_', '-'], '', $role))) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    /**
+     * Alias for hasRole().
+     */
+    public function hasAnyRole(string|array $roles): bool
+    {
+        return $this->hasRole($roles);
+    }
+
+    /**
+     * Check if the account possesses all of the specified roles.
+     */
+    public function hasAllRoles(array $roles): bool
+    {
+        foreach ($roles as $role) {
+            if (!$this->hasRole($role)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /* =========================================================================
+     * ROLE & IDENTITY CONVENIENCE METHODS
+     * ========================================================================= */
+
+    public function isStaff(): bool
+    {
+        return EmployeeRoleService::isStaff($this);
+    }
+
+    public function isEmployee(): bool
+    {
+        return $this->isStaff();
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->hasRole(EmployeeRoleService::ROLE_ADMIN);
+    }
+
+    public function isHeadLibrarian(): bool
+    {
+        return $this->hasRole(EmployeeRoleService::ROLE_HEAD_LIBRARIAN);
+    }
+
+    public function isLibrarian(): bool
+    {
+        return $this->hasRole(EmployeeRoleService::ROLE_LIBRARIAN);
+    }
+
+    public function isStudent(): bool
+    {
+        return StudentRoleService::isStudent($this);
+    }
+
+    /* =========================================================================
+     * DOMAIN PERMISSION CONVENIENCE METHODS
+     * ========================================================================= */
+
+    public function canManageCirculation(): bool
+    {
+        return EmployeeRoleService::canManageCirculation($this);
+    }
+
+    public function canBorrow(): bool
+    {
+        return EmployeeRoleService::canBorrow($this);
+    }
+
+    public function canReturn(): bool
+    {
+        return EmployeeRoleService::canReturn($this);
+    }
+
+    public function canManageCatalog(): bool
+    {
+        return EmployeeRoleService::canManageCatalog($this);
+    }
+
+    public function canManageStudents(): bool
+    {
+        return EmployeeRoleService::canManageStudents($this);
+    }
+
+    public function canCreateStudent(): bool
+    {
+        return EmployeeRoleService::canCreateStudent($this);
+    }
+
+    public function canEditStudent(): bool
+    {
+        return EmployeeRoleService::canEditStudent($this);
+    }
+
+    public function canDeleteStudent(): bool
+    {
+        return EmployeeRoleService::canDeleteStudent($this);
+    }
+
+    public function canViewStudents(): bool
+    {
+        return EmployeeRoleService::canViewStudents($this);
+    }
+
+    public function canManageLibrarians(): bool
+    {
+        return EmployeeRoleService::canManageLibrarians($this);
+    }
+
+    public function canViewLibrarians(): bool
+    {
+        return EmployeeRoleService::canViewLibrarians($this);
+    }
+
+    public function canManageSettings(): bool
+    {
+        return EmployeeRoleService::canManageSettings($this);
+    }
+
+    public function canViewReports(): bool
+    {
+        return EmployeeRoleService::canViewReports($this);
     }
 }

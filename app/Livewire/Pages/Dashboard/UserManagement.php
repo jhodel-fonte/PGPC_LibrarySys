@@ -20,9 +20,8 @@ class UserManagement extends Component
 
     public function mount(): void
     {
-        $user = auth()->user();
-        $canManageLibrarians = $user && ($user->hasRole('Admin') || $user->hasPermission('manage_librarians') || $user->hasPermission('manage_librarian'));
-        $canManageStudents = $user && ($user->hasRole('Admin') || $user->hasPermission('manage_users') || $user->hasPermission('view_students'));
+        $canManageLibrarians = \App\Services\EmployeeRoleService::canManageLibrarians();
+        $canManageStudents = \App\Services\EmployeeRoleService::canManageStudents();
 
         if ($this->type === 'librarian' && ! $canManageLibrarians) {
             $this->type = 'student';

@@ -25,7 +25,7 @@
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-5 border-t border-slate-100">
                 <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
                     <p class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Currently Borrowed</p>
-                    <p class="text-xl font-bold text-slate-900 mt-0.5">{{ $activeCount }} <span class="text-xs text-slate-500 font-normal">/ 3 books</span></p>
+                    <p class="text-xl font-bold text-slate-900 mt-0.5">{{ $activeCount }} <span class="text-xs text-slate-500 font-normal">/ {{ config('settings.library_config.max_loan_limit', 3) }} books</span></p>
                 </div>
 
                 <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">

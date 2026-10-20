@@ -5,67 +5,74 @@
         <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,2.15fr)_minmax(330px,1fr)] gap-5 items-stretch">
             
             <!-- Student Greeting Banner -->
-            <div class="bg-[#17357A] rounded-[16px] p-5 sm:p-7 lg:p-8 relative overflow-hidden flex flex-col justify-between min-h-[260px] shadow-sm">
+            <div class="bg-[#17357A] rounded-[16px] p-5 sm:p-6 lg:p-7 relative overflow-hidden shadow-sm flex flex-col justify-center">
                 <!-- Background Decoration -->
                 <div class="absolute inset-0 pointer-events-none" style="background: linear-gradient(105deg, transparent 0%, transparent 60%, rgba(255,255,255,.03) 60%);"></div>
 
-                <div class="relative z-10 flex flex-col h-full">
-                    <div class="mb-5 flex-1">
-                        <div class="flex flex-wrap items-center gap-2 mb-3 sm:mb-4">
+                <div class="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+                    <!-- Left Column: Student Greeting & Info -->
+                    <div class="flex-1 min-w-0">
+                        <div class="flex flex-wrap items-center gap-2 mb-1.5">
                             <span class="text-blue-200 text-[10px] sm:text-xs font-semibold uppercase tracking-[0.08em]">
                                 {{ strtoupper(now()->format('l, F j, Y')) }}
                             </span>
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 animate-pulse"></span>
-                                {{ $student?->libraryStatus?->status ?? 'Active Patron' }}
-                            </span>
                         </div>
                         
-                        <h1 class="text-2xl sm:text-3xl xl:text-[34px] font-bold text-white leading-tight mb-2">
+                        <h1 class="text-2xl sm:text-[28px] lg:text-[30px] font-bold text-white leading-tight mb-2">
                             Good {{ now()->hour < 12 ? 'morning' : (now()->hour < 18 ? 'afternoon' : 'evening') }}, 
                             <span class="text-[#FFC61A]">{{ $student ? ($student->first_name . ' ' . $student->last_name) : (auth()->user()?->name ?? 'Student') }}</span>
                         </h1>
                         
-                        <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-blue-100/90 mt-2">
+                        <div class="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm sm:text-[15px] text-blue-100/90 mt-2">
                             @if($student?->school_id_number)
                                 <div class="flex items-center gap-1.5">
-                                    <span class="text-blue-300 font-medium">Student ID:</span>
-                                    <span class="font-bold text-white tracking-wider">{{ $student->school_id_number }}</span>
+                                    <span class="text-blue-200 text-xs sm:text-sm font-medium">Student ID:</span>
+                                    <span class="font-bold text-white font-mono text-sm sm:text-base tracking-wider">{{ $student->school_id_number }}</span>
                                 </div>
                             @endif
                             @if($student?->program)
                                 <span class="text-blue-300/60 hidden sm:inline">•</span>
                                 <div class="flex items-center gap-1.5">
-                                    <span class="text-blue-300 font-medium">Program:</span>
-                                    <span class="font-semibold text-white">{{ $student->program }}</span>
+                                    <span class="text-blue-200 text-xs sm:text-sm font-medium">Program:</span>
+                                    <span class="font-semibold text-white text-sm sm:text-base">{{ $student->program }}</span>
                                 </div>
                             @endif
                             @if($student?->year_level)
                                 <span class="text-blue-300/60 hidden sm:inline">•</span>
-                                <span class="font-medium text-white/90">{{ $student->year_level }}</span>
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-blue-200 text-xs sm:text-sm font-medium">Year:</span>
+                                    <span class="font-semibold text-white text-sm sm:text-base">{{ $student->year_level }}</span>
+                                </div>
                             @endif
                         </div>
 
-                        <p class="text-blue-100 text-[13px] sm:text-[14px] leading-relaxed max-w-[640px] mt-3">
+                        <p class="text-blue-100/90 text-xs sm:text-[13.5px] leading-relaxed max-w-[620px] mt-2.5">
                             Welcome to your student library portal. Track your checked-out books, view upcoming return deadlines, and discover resources for your research and courses.
                         </p>
+
+                        <!-- Quick Action Button -->
+                        <div class="mt-4 pt-1">
+                            <button
+                                type="button"
+                                @click="$dispatch('open-qr-modal', {
+                                    value: '{{ $studentIdValue ?? '' }}',
+                                    name: '{{ $student ? ($student->first_name . ' ' . $student->last_name) : (auth()->user()?->name ?? 'Student') }}',
+                                    title: 'PGPC Student',
+                                    subtitle: 'Digital Identification Pass',
+                                    secondaryInfo: '{{ $student?->program ?? 'Student' }}@if($student?->year_level) • {{ $student->year_level }}@endif',
+                                    label: 'Student ID Number:',
+                                    instruction: 'Present this QR code to the library circulation desk or scanner to borrow, return, or verify your library account.'
+                                })"
+                                class="w-full sm:w-auto h-10 px-5 bg-[#FFC61A] hover:bg-[#e6b217] text-[#102B70] text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-[0.99] whitespace-nowrap"
+                            >
+                                <svg class="w-4.5 h-4.5 shrink-0 text-[#102B70]" style="width: 18px; height: 18px; min-width: 18px; min-height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                                </svg>
+                                <span>Student QR Code</span>
+                            </button>
+                        </div>
                     </div>
-                    
-                    <!-- Quick Actions -->
-                    <div class="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-[14px] mt-auto pt-2">
-                        <a href="{{ route('student.borrow') }}" wire:navigate class="w-full sm:w-auto h-11 px-5 bg-[#FFC61A] hover:bg-[#e6b217] text-[#102B70] text-sm font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-xs">
-                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                            </svg>
-                            View My Loans
-                        </a>
-                        <a href="{{ route('opac.index') }}" class="w-full sm:w-auto h-11 px-5 bg-white/10 hover:bg-white/20 text-white text-sm font-semibold rounded-xl border border-white/20 transition-colors flex items-center justify-center gap-2">
-                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
-                            Search Catalog (OPAC)
-                        </a>
-                    </div>
+
                 </div>
             </div>
 
@@ -74,9 +81,6 @@
                 <div>
                     <div class="flex items-center justify-between mb-4">
                         <h2 class="text-base font-bold text-slate-900">Library Summary</h2>
-                        <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 bg-slate-100 px-2.5 py-1 rounded-md">
-                            Library Card
-                        </span>
                     </div>
 
                     <div class="space-y-3">
@@ -137,21 +141,21 @@
                         <div class="pt-2 border-t border-slate-100 space-y-2 text-xs">
                             <div class="flex justify-between items-center text-slate-600">
                                 <span class="text-slate-500">Max Loan Limit:</span>
-                                <span class="font-bold text-slate-900">3 Books</span>
+                                <span class="font-bold text-slate-900">{{ config('settings.library_config.max_loan_limit', 3) }} Books</span>
                             </div>
                             <div class="flex justify-between items-center text-slate-600">
                                 <span class="text-slate-500">Loan Period:</span>
-                                <span class="font-bold text-slate-900">7 Calendar Days</span>
+                                <span class="font-bold text-slate-900">{{ config('settings.library_config.loan_period', 5) }} Calendar Days</span>
                             </div>
                             <div class="flex justify-between items-center text-slate-600">
                                 <span class="text-slate-500">Library Desk Hours:</span>
-                                <span class="font-medium text-slate-700">8:00 AM – 5:00 PM</span>
+                                <span class="font-medium text-slate-700">{{ config('settings.library_config.desk_hours', '8:00 AM – 5:00 PM') }}</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="pt-4 mt-3 border-t border-slate-100">
+                <div class="pt-3 mt-3 border-t border-slate-100">
                     <a href="{{ route('student.borrow') }}" wire:navigate class="w-full py-2 px-3 text-center text-xs font-bold text-[#102B70] hover:text-[#0B225E] hover:bg-slate-50 rounded-lg transition-colors block">
                         Open Borrowing Records &rarr;
                     </a>
@@ -293,11 +297,6 @@
                                     <tr>
                                         <td colspan="5" class="px-6 py-12 text-center">
                                             <div class="max-w-xs mx-auto flex flex-col items-center">
-                                                <div class="w-12 h-12 rounded-full bg-blue-50 text-[#102B70] flex items-center justify-center mb-3">
-                                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                                                    </svg>
-                                                </div>
                                                 <p class="text-sm font-bold text-slate-800">No active book loans</p>
                                                 <p class="text-xs text-slate-500 mt-1 mb-4">You currently don't have any books checked out from the library.</p>
                                                 <a href="{{ route('opac.index') }}" class="px-4 py-2 bg-[#102B70] hover:bg-[#0B225E] text-white text-xs font-bold rounded-xl transition-colors shadow-xs">
@@ -331,11 +330,7 @@
                                 @endphp
                                 <div class="px-6 py-3 sm:px-7 flex items-center justify-between gap-4 hover:bg-slate-50/50 transition-colors">
                                     <div class="flex items-center gap-3 min-w-0">
-                                        <div class="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                            </svg>
-                                        </div>
+
                                         <div class="min-w-0">
                                             <p class="text-xs font-bold text-slate-900 truncate" title="{{ $bookData->book_title ?? 'Book' }}">
                                                 {{ $bookData->book_title ?? 'Untitled Book' }}
@@ -361,19 +356,18 @@
                 
                 <!-- Library Borrowing Guidelines Card -->
                 <div class="bg-white rounded-2xl border border-[#E2E8F0] shadow-[0_1px_2px_rgba(15,23,42,0.04),0_1px_3px_rgba(15,23,42,0.03)] p-5 sm:p-6">
-                    <div class="flex items-center gap-2 mb-3">
-                        <div class="w-7 h-7 rounded-lg bg-blue-50 text-[#102B70] flex items-center justify-center">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </div>
-                        <h3 class="text-sm font-bold text-slate-900">Borrowing Guidelines</h3>
+                    <div class="flex items-center justify-between gap-2 mb-3">
+                        <h3 class="text-base font-bold text-slate-900">Borrowing Guidelines</h3>
+                        <a href="{{ route('terms') }}" wire:navigate class="text-xs font-semibold text-[#102B70] hover:text-[#0B225E] hover:underline inline-flex items-center gap-1">
+                            <span>Full Terms</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                        </a>
                     </div>
 
-                    <ul class="space-y-3 text-xs text-slate-600 mt-4">
+                    <ul class="space-y-3 text-sm text-slate-600 mt-4">
                         <li class="flex items-start gap-2">
                             <span class="text-[#FFC61A] font-bold text-base leading-none">•</span>
-                            <span><strong>Loan Period:</strong> General circulation books may be borrowed for up to <strong>7 days</strong>.</span>
+                            <span><strong>Loan Period:</strong> General circulation books may be borrowed for up to <strong>{{ config('settings.library_config.loan_period', 5) }} days</strong>.</span>
                         </li>
                         <li class="flex items-start gap-2">
                             <span class="text-[#FFC61A] font-bold text-base leading-none">•</span>
@@ -381,7 +375,7 @@
                         </li>
                         <li class="flex items-start gap-2">
                             <span class="text-[#FFC61A] font-bold text-base leading-none">•</span>
-                            <span><strong>Overdue Fines:</strong> Standard late returns incur daily penalties calculated based on college library regulations.</span>
+                            <span><strong>Overdue Fines:</strong> Standard late returns incur a fee of <strong>₱{{ number_format(config('settings.library_config.penalty_fee', 50), 2) }} per day</strong> based on college library regulations.</span>
                         </li>
                         <li class="flex items-start gap-2">
                             <span class="text-[#FFC61A] font-bold text-base leading-none">•</span>
@@ -400,11 +394,11 @@
                     <div class="space-y-2 pt-2 border-t border-white/10 text-xs text-blue-100">
                         <div class="flex items-center gap-2">
                             <svg class="w-4 h-4 text-[#FFC61A]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                            <span>Mon - Fri: 8:00 AM – 5:00 PM</span>
+                            <span>{{ config('settings.library_config.operating_days', 'Mon - Fri') }}: {{ config('settings.library_config.desk_hours', '8:00 AM – 5:00 PM') }}</span>
                         </div>
                         <div class="flex items-center gap-2">
                             <svg class="w-4 h-4 text-[#FFC61A]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                            <span>Main Building, 2nd Floor Library</span>
+                            <span>{{ config('settings.library_config.location', config('settings.college.library_address', 'Main Building, 2nd Floor Library')) }}</span>
                         </div>
                     </div>
                 </div>
@@ -415,3 +409,4 @@
 
     </div>
 </div>
+

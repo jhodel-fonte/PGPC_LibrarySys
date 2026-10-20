@@ -34,12 +34,8 @@
         </div>
 
         @php
-            $routePrefix = request()->is('librarian*') ? 'librarian.' : 'admin.';
-            $canEditStudent = auth()->check() && (
-                auth()->user()->hasRole('Admin') ||
-                auth()->user()->hasPermission('edit_students') ||
-                auth()->user()->hasPermission('manage_users')
-            );
+            $routePrefix = \App\Services\EmployeeRoleService::getRoutePrefix();
+            $canEditStudent = \App\Services\EmployeeRoleService::canEditStudent();
         @endphp
         @if(! $this->isProfile && $canEditStudent)
             <!-- Top Right Actions: Edit Student Information & Change Status -->

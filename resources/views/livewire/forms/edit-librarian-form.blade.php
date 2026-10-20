@@ -121,9 +121,10 @@
             const targetId = fieldMap[field] || field;
             let el = document.getElementById(targetId);
             if (!el && field) {
-                el = document.querySelector(`[name="${field}"]`)
-                    || document.querySelector(`[wire\\:model*="${field}"]`)
-                    || document.querySelector(`[wire\\:model\\.blur*="${field}"]`);
+                const safeField = CSS.escape ? CSS.escape(field) : field;
+                el = document.querySelector(`[name='${safeField}']`)
+                    || document.querySelector(`[wire\\:model*='${safeField}']`)
+                    || document.querySelector(`[wire\\:model\\.blur*='${safeField}']`);
             }
             if (!el) {
                 el = document.getElementById('form-error-banner');

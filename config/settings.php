@@ -17,6 +17,7 @@ return [
         'abbreviation' => 'PGPC',
         'acronym' => 'PGPC',
         'address' => 'Brgy. San Roque, Padre Garcia, Batangas, Philippines',
+        'library_address' => 'Main Building, 2nd Floor Library',
 
         'programs' => [
             'BSCS' => 'Bachelor of Science in Computer Science',
@@ -26,10 +27,31 @@ return [
         ],
     ],
 
-    // Top-level aliases for UI branding & header components
+    /*
+    |--------------------------------------------------------------------------
+    | Library Configuration & Circulation Parameters
+    |--------------------------------------------------------------------------
+    |
+    | Central configuration for loan durations, penalty fees, borrowing limits,
+    | operating schedules, and physical library facility location.
+    |
+    */
+    'library_config' => [
+        'loan_period' => 5, // extendable (days)
+        'penalty_fee' => 50, // pesos per day
+        'max_loan_limit' => 3, // max active loans per student
+        'desk_hours' => '8:00 AM – 5:00 PM',
+        'operating_days' => 'Mon - Fri',
+        'location' => 'Main Building, 2nd Floor Library',
+    ],
+
+    // Top-level aliases for UI branding & circulation components
     'name' => 'Padre Garcia Polytechnic College',
     'tagline' => 'Library System',
     'acronym' => 'PGPC',
+    'library_location' => 'Main Building, 2nd Floor Library',
+    'loan_period' => 5,
+    'penalty_fee' => 50,
 
     /*
     |--------------------------------------------------------------------------
@@ -122,20 +144,22 @@ return [
     */
     'qrcode_customization' => [
         'theme' => [
-            'primary_color' => '#102B70',
-            'background_color' => '#FFFFFF',
-            'accent_color' => '#FCC719',
+            'primary_color' => env('QRCODE_PRIMARY_COLOR', '#102B70'),
+            'background_color' => env('QRCODE_BG_COLOR', '#FFFFFF'),
+            'accent_color' => env('QRCODE_ACCENT_COLOR', '#FCC719'),
         ],
         'display' => [
-            'size' => 300,
-            'margin' => 2,
-            'error_correction_level' => 'H',
-            'format' => 'png',
+            'size' => 400,
+            'margin' => 1,
+            'error_correction_level' => 'H', // 'L', 'M', 'Q', 'H'
+            'format' => 'png', // 'svg', 'png'
+            'style' => 'square', // 'square', 'round', 'dot'
+            'eye_style' => 'square', // 'square', 'circle', 'pointy'
         ],
         'branding' => [
             'embed_logo' => true,
-            'logo_path' => 'logo.ico',
-            'logo_size_percent' => 20,
+            'logo_path' => 'images/logo.svg',
+            'logo_size_percent' => 30, // 15 to 30% recommended
         ],
     ],
 

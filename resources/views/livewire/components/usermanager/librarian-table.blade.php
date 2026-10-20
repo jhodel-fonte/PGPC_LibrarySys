@@ -6,13 +6,8 @@
     </div>
 
     @php
-        $routePrefix = request()->is('librarian*') ? 'librarian.' : 'admin.';
-        $canManageLibrarians = auth()->check() && (
-            auth()->user()->hasRole('Admin') ||
-            auth()->user()->hasPermission('manage_librarian') ||
-            auth()->user()->hasPermission('manage_librarians') ||
-            auth()->user()->hasPermission('manage_users')
-        );
+        $routePrefix = \App\Services\EmployeeRoleService::getRoutePrefix();
+        $canManageLibrarians = \App\Services\EmployeeRoleService::canManageLibrarians();
     @endphp
 
     <!-- 1. Page Header -->

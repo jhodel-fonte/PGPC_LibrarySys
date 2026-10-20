@@ -18,6 +18,7 @@ class CheckOutBook extends Component
 {
     public $scannedMember = null;
     public $checkoutBooks = [];
+    public $lastScannedBook = null;
     public $errorMessage = '';
     public $showConfirmChangeMember = false;
     public $pendingStudentId = null;
@@ -33,10 +34,7 @@ class CheckOutBook extends Component
 
     public function mount()
     {
-        $user = auth()->user();
-        if ($user && ! $user->hasRole('Admin') && ! $user->hasPermission('borrow_book') && ! $user->hasPermission('manage_circulation')) {
-            abort(403, 'Unauthorized action. You do not have permission to process book borrowings.');
-        }
+        \App\Services\EmployeeRoleService::authorizeBorrow('Unauthorized action. You do not have permission to process book borrowings.');
 
         $this->updateStats();
     }
@@ -48,8 +46,9 @@ class CheckOutBook extends Component
 
     public function updateStats()
     {
+        $loanPeriod = (int) config('settings.library_config.loan_period', config('settings.loan_period', 5));
         $this->stats['total'] = count($this->checkoutBooks);
-        $this->stats['due_date'] = Carbon::now()->addDays(7)->format('M. d, Y');
+        $this->stats['due_date'] = Carbon::now()->addDays($loanPeriod)->format('M. d, Y');
 
         if ($this->scannedMember) {
             $studentId = $this->scannedMember['id'];
@@ -116,7 +115,7 @@ class CheckOutBook extends Component
         }
 
         // 2. Check if the code matches a book accession number or unique code
-        $book = Book::with(['bookDetail.bookData.authors', 'condition'])
+        $book = Book::with(['bookDetail.bookData.authors', 'bookDetail.bookData.categories', 'condition'])
             ->where(function ($q) use ($code) {
                 $q->where('accession_number', $code)->orWhere('code', $code);
             })
@@ -149,6 +148,7 @@ class CheckOutBook extends Component
         ];
 
         $this->checkoutBooks = []; // Reset currently scanned book queue for new member
+        $this->lastScannedBook = null;
         $this->updateStats();
 
         // Proactively set warnings for the librarian to address eligibility issues
@@ -166,6 +166,39 @@ class CheckOutBook extends Component
     public function processBookCheckout($book)
     {
         $this->errorMessage = '';
+
+        // Get book metadata relations
+        $detail = $book->bookDetail;
+        $data = $detail ? $detail->bookData : null;
+        $authorName = 'Unknown Author';
+        if ($data && $data->authors->isNotEmpty()) {
+            $authorName = $data->authors->map(function($a) {
+                return trim($a->first_name . ' ' . $a->last_name);
+            })->implode(', ');
+        }
+
+        $categoryName = 'General';
+        if ($data && $data->categories && $data->categories->isNotEmpty()) {
+            $categoryName = $data->categories->first()->name;
+        }
+
+        $bookItem = [
+            'book_id' => $book->id,
+            'book' => $data ? $data->book_title : 'Unknown Book',
+            'title' => $data ? $data->book_title : 'Unknown Book',
+            'author' => $authorName,
+            'category' => $categoryName,
+            'isbn' => $detail ? ($detail->isbn ?: 'N/A') : 'N/A',
+            'cover_url' => $detail ? $detail->cover_url : null,
+            'accession' => $book->accession_number,
+            'call_number' => $detail ? $detail->call_number : 'N/A',
+            'code' => $data ? ($data->subtitle ?: 'BOOK') : 'BOOK',
+            'added_on' => Carbon::now()->format('M. d, Y'),
+            'due_date' => Carbon::now()->addDays((int) config('settings.library_config.loan_period', config('settings.loan_period', 5)))->format('M. d, Y')
+        ];
+
+        // Always show the book in the preview card
+        $this->lastScannedBook = $bookItem;
 
         if (!$this->scannedMember) {
             $this->errorMessage = 'Please scan or load a student profile first before checking out books.';
@@ -208,31 +241,13 @@ class CheckOutBook extends Component
         $activeBorrowedCount = BorrowingTransaction::where('school_id', $this->scannedMember['id'])
             ->whereNull('return_date')
             ->count();
-        $totalQueued = count($this->checkoutBooks);
-        if (($activeBorrowedCount + $totalQueued) >= 3) {
-            $this->errorMessage = 'Cannot add book: Max borrowing capacity reached (limit is 3 active loans).';
+        $maxCapacity = (int) config('settings.library_config.max_loan_limit', 3);
+        if (($activeBorrowedCount + $totalQueued) >= $maxCapacity) {
+            $this->errorMessage = "Cannot add book: Max borrowing capacity reached (limit is {$maxCapacity} active loans).";
             return;
         }
 
-        // Get book metadata relations
-        $detail = $book->bookDetail;
-        $data = $detail ? $detail->bookData : null;
-        $authorName = 'Unknown Author';
-        if ($data && $data->authors->isNotEmpty()) {
-            $authorName = $data->authors->map(function($a) {
-                return trim($a->first_name . ' ' . $a->last_name);
-            })->implode(', ');
-        }
-
-        $this->checkoutBooks[] = [
-            'book_id' => $book->id,
-            'book' => $data ? $data->book_title : 'Unknown Book',
-            'author' => $authorName,
-            'accession' => $book->accession_number,
-            'code' => $data ? ($data->subtitle ?: 'BOOK') : 'BOOK',
-            'added_on' => Carbon::now()->format('M. d, Y'),
-            'due_date' => Carbon::now()->addDays(7)->format('M. d, Y')
-        ];
+        $this->checkoutBooks[] = $bookItem;
 
         $this->updateStats();
     }
@@ -261,6 +276,7 @@ class CheckOutBook extends Component
     {
         $this->scannedMember = null;
         $this->checkoutBooks = [];
+        $this->lastScannedBook = null;
         $this->errorMessage = '';
         $this->updateStats();
     }
@@ -272,7 +288,31 @@ class CheckOutBook extends Component
             return $item['accession'] !== $accession;
         });
         $this->checkoutBooks = array_values($this->checkoutBooks); // reset indices
+
+        if ($this->lastScannedBook && ($this->lastScannedBook['accession'] ?? null) === $accession) {
+            $this->lastScannedBook = !empty($this->checkoutBooks) ? end($this->checkoutBooks) : null;
+        }
+
         $this->updateStats();
+    }
+
+    #[On('add-checkout-book')]
+    public function addCheckoutBook($accession)
+    {
+        $this->handleSearchCode($accession);
+    }
+
+    #[On('select-table-book')]
+    public function selectTableBook($accession)
+    {
+        $this->errorMessage = '';
+        $accession = trim($accession ?? '');
+        if (empty($accession) || $accession === 'N/A') return;
+
+        $item = collect($this->checkoutBooks)->firstWhere('accession', $accession);
+        if ($item) {
+            $this->lastScannedBook = $item;
+        }
     }
 
     public function confirmCheckout()
@@ -330,8 +370,9 @@ class CheckOutBook extends Component
 
         try {
             DB::transaction(function () use ($studentId, $bookIds) {
+                $loanPeriod = (int) config('settings.library_config.loan_period', config('settings.loan_period', 5));
                 $now = Carbon::now();
-                $dueDate = (clone $now)->addDays(7);
+                $dueDate = (clone $now)->addDays($loanPeriod);
                 $librarianId = auth()->user() && auth()->user()->librarian ? auth()->user()->librarian->id : 1;
 
                 foreach ($bookIds as $bookId) {
@@ -371,6 +412,7 @@ class CheckOutBook extends Component
 
         // Clear workstation queue state
         $this->checkoutBooks = [];
+        $this->lastScannedBook = null;
         $this->scannedMember = null;
         $this->updateStats();
 
