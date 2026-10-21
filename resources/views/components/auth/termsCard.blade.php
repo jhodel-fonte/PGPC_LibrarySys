@@ -12,7 +12,7 @@
 
         <div>
             <h4 class="font-bold text-slate-900">2. Borrowing & Circulation Policies</h4>
-            <p class="mt-0.5 text-slate-600">Eligible patrons may borrow up to <strong>{{ config('settings.library_config.max_loan_limit', 3) }} books</strong> simultaneously for a standard loan period of <strong>{{ config('settings.library_config.loan_period', 5) }} days</strong>. All materials must be returned on or before their specified due date at the Circulation Desk ({{ config('settings.library_config.location', 'Main Building, 2nd Floor Library') }}).</p>
+            <p class="mt-0.5 text-slate-600">Eligible patrons may borrow up to <strong>{{ config('settings.library_config.max_loan_limit', 3) }} books</strong> simultaneously for a standard loan period of <strong>{{ config('settings.library_config.loan_period', 5) }} days</strong>. All materials must be returned on or before their specified due date at the Circulation Desk ({{ config('settings.library_config.location') ?? config('settings.library_location') }}).</p>
         </div>
 
         <div>

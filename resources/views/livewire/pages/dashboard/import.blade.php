@@ -463,6 +463,8 @@
                                     <span class="font-medium">{{ $fileValidationError }}</span>
                                 </div>
                             </div>
+                        @endif
+
                         @if($duplicateFileNotice && !empty($duplicateFileNotice['records_available']))
                             <div class="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 flex items-center justify-between gap-2">
                                 <span>⚡ Batch parsed {{ $duplicateFileNotice['time_ago'] }} is active in 30m cache.</span>

@@ -19,10 +19,6 @@
 
                 <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div class="max-w-2xl space-y-3">
-                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-[#FCC719] text-xs font-bold uppercase tracking-wider border border-white/10">
-                            <svg class="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 1.944A11.954 11.954 0 012.166 5C2.056 5.649 2 6.319 2 7c0 5.225 3.34 9.67 8 11.317C14.66 16.67 18 12.225 18 7c0-.682-.057-1.35-.166-2.001A11.954 11.954 0 0110 1.944zM11 14a1 1 0 11-2 0 1 1 0 012 0zm0-7a1 1 0 10-2 0v3a1 1 0 102 0V7z" clip-rule="evenodd"/></svg>
-                            <span>Official Academic Regulations</span>
-                        </div>
                         <h1 class="text-2xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">
                             Terms and Conditions of Library Service
                         </h1>
@@ -31,17 +27,6 @@
                         </p>
                     </div>
 
-                    <!-- Quick Actions -->
-                    <div class="flex flex-wrap sm:flex-col items-start sm:items-end gap-3 shrink-0">
-                        <button type="button" onclick="window.history.length > 1 ? window.history.back() : window.location.href='{{ url('/') }}'" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold backdrop-blur-sm border border-white/15 transition-all shadow-sm cursor-pointer">
-                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-                            <span>Back to Previous Page</span>
-                        </button>
-                        <button type="button" onclick="window.print()" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#FCC719] hover:bg-[#eab308] text-[#102B70] text-xs font-bold transition-all shadow-md cursor-pointer">
-                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                            <span>Print Policy Document</span>
-                        </button>
-                    </div>
                 </div>
 
                 <!-- Policy Metadata Footer -->
@@ -60,7 +45,7 @@
                     </div>
                     <div>
                         <span class="text-blue-300 block text-[11px] uppercase font-bold tracking-wider">Circulation Desk</span>
-                        <span class="font-semibold text-white mt-0.5 block">{{ config('settings.library_config.location', 'Main Building, 2nd Floor Library') }}</span>
+                        <span class="font-semibold text-white mt-0.5 block">{{ config('settings.library_config.location') ?? config('settings.library_location') }}</span>
                     </div>
                 </div>
             </div>
@@ -159,7 +144,7 @@
                             Our Head Librarian and Circulation Staff are available to assist with loan inquiries, lost book evaluations, and account clearances.
                         </p>
                         <div class="pt-2 border-t border-white/10 text-[11px] text-blue-200 space-y-1">
-                            <p><strong>Location:</strong> {{ config('settings.library_config.location', 'Main Building, 2nd Floor Library') }}</p>
+                            <p><strong>Location:</strong> {{ config('settings.library_config.location') ?? config('settings.library_location') }}</p>
                             <p><strong>Hours:</strong> {{ config('settings.library_config.operating_days', 'Mon - Fri') }} &bull; {{ config('settings.library_config.desk_hours', '8:00 AM – 5:00 PM') }}</p>
                         </div>
                     </div>
@@ -344,7 +329,7 @@
                             For appeals concerning fines, reported lost items, or general borrowing inquiries, please visit or reach out to the Circulation Desk:
                         </p>
                         <div class="rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] p-4 text-xs space-y-1.5 text-slate-700">
-                            <p><strong>Desk Location:</strong> {{ config('settings.library_config.location', config('settings.college.library_address', 'Main Building, 2nd Floor Library')) }}</p>
+                            <p><strong>Desk Location:</strong> {{ config('settings.library_config.location') ?? config('settings.library_location') }}</p>
                             <p><strong>Campus Address:</strong> {{ config('settings.college.address', 'Brgy. San Roque, Padre Garcia, Batangas, Philippines') }}</p>
                             <p><strong>Operating Schedule:</strong> {{ config('settings.library_config.operating_days', 'Mon - Fri') }} ({{ config('settings.library_config.desk_hours', '8:00 AM – 5:00 PM') }})</p>
                             <p><strong>Inquiries & Clearances:</strong> library@padregarcia.gov.ph</p>

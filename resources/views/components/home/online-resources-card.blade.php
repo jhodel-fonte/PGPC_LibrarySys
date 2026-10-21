@@ -4,21 +4,34 @@
     'logo' => null,
 ])
 
+@php
+    $isLoggedIn = auth()->check();
+    $targetUrl = $isLoggedIn ? $url : route('online-resources.access', ['url' => $url]);
+@endphp
+
 <a
-    href="{{ $url }}"
-    target="_blank"
-    rel="noopener noreferrer"
-    title="{{ $name }}"
-    class="group relative flex h-[185px] sm:h-[200px] lg:h-[210px] w-full flex-col items-center justify-between rounded-2xl border border-white/10 bg-white p-5 sm:p-6 shadow-md transition-all duration-200 hover:-translate-y-2 hover:border-[#FCC719]/50 hover:shadow-2xl hover:shadow-black/50 focus:outline-none focus:ring-2 focus:ring-[#FCC719]/40 select-none"
+    href="{{ $targetUrl }}"
+    @if ($isLoggedIn)
+        target="_blank"
+        rel="noopener noreferrer"
+    @endif
+    title="{{ $isLoggedIn ? $name : $name . ' (Sign in required)' }}"
+    class="group relative flex h-[185px] sm:h-[200px] lg:h-[210px] w-full flex-col items-center justify-between rounded-2xl border border-white/10 bg-white p-5 sm:p-6 shadow-md transition-all duration-200 hover:-translate-y-2 hover:border-[#FCC719]/50 hover:shadow-2xl hover:shadow-black/50 focus:outline-none focus:ring-2 focus:ring-[#FCC719]/40 select-none cursor-pointer"
 >
     <!-- Subtle Gold Top Accent Bar (Activates on hover) -->
     <div class="absolute top-0 left-6 right-6 h-[3.5px] rounded-b-full bg-[#FCC719] opacity-0 transition-opacity duration-200 group-hover:opacity-100"></div>
 
-    <!-- External Link Arrow Indicator (Appears on hover) -->
-    <div class="absolute top-3.5 right-3.5 opacity-0 transition-opacity duration-200 group-hover:opacity-100 text-slate-400 group-hover:text-[#091b45]">
-        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-        </svg>
+    <!-- Status Indicator (External Link Arrow if logged in, Lock icon if login required) -->
+    <div class="absolute top-3.5 right-3.5 opacity-0 transition-opacity duration-200 group-hover:opacity-100 {{ $isLoggedIn ? 'text-slate-400 group-hover:text-[#091b45]' : 'text-amber-600' }}">
+        @if ($isLoggedIn)
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+        @else
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+        @endif
     </div>
 
     <!-- Center: Journal / Database Logo Container -->

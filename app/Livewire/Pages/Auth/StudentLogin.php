@@ -41,7 +41,13 @@ class StudentLogin extends Component
             $this->form->authenticate(['Student']);
 
             Session::regenerate();
+            $intended = session()->get('url.intended');
             session()->forget('url.intended');
+
+            if ($intended && filter_var($intended, FILTER_VALIDATE_URL)) {
+                $this->redirect($intended, navigate: false);
+                return;
+            }
 
             $this->redirect(route('student.dashboard'), navigate: false);
         } catch (\App\Exceptions\AccountDeactivatedException $e) {
