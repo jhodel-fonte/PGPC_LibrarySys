@@ -136,6 +136,7 @@
                             :book="$lastScannedBook"
                             mode="check-out"
                             :checkout-books="$checkoutBooks"
+                            :returned-books="[]"
                         />
                     </div>
 

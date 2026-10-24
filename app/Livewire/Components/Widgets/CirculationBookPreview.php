@@ -11,10 +11,10 @@ class CirculationBookPreview extends Component
     public $book = null;
 
     #[Reactive]
-    public array $returnedBooks = [];
+    public $returnedBooks = [];
 
     #[Reactive]
-    public array $checkoutBooks = [];
+    public $checkoutBooks = [];
 
     public string $mode = 'check-in'; // 'check-in' or 'check-out'
 
@@ -45,16 +45,19 @@ class CirculationBookPreview extends Component
             $bookData = (array) $bookData;
         }
 
+        $returnedList = is_array($this->returnedBooks) ? $this->returnedBooks : [];
+        $checkoutList = is_array($this->checkoutBooks) ? $this->checkoutBooks : [];
+
         $isReturned = false;
         if ($bookData) {
-            $isReturned = !empty($bookData['is_returned']) || in_array($bookData['book_id'] ?? null, $this->returnedBooks);
+            $isReturned = !empty($bookData['is_returned']) || in_array($bookData['book_id'] ?? null, $returnedList);
         }
 
         $isInCheckout = false;
-        if ($bookData && !empty($this->checkoutBooks)) {
+        if ($bookData && !empty($checkoutList)) {
             $acc = $bookData['accession'] ?? null;
             $id = $bookData['book_id'] ?? null;
-            foreach ($this->checkoutBooks as $cb) {
+            foreach ($checkoutList as $cb) {
                 if (($acc && ($cb['accession'] ?? null) === $acc) || ($id && ($cb['book_id'] ?? null) === $id)) {
                     $isInCheckout = true;
                     break;

@@ -317,14 +317,25 @@ class MarcUpload extends Component
         $this->importedCount = $result['imported_count'];
         $this->importCompleted = true;
 
-        $msg = "Successfully cataloged {$result['imported_count']} records into {$this->defaultCollection}.";
+        $parts = [];
+        if ($result['imported_count'] > 0) {
+            $parts[] = "Successfully cataloged {$result['imported_count']} records into {$this->defaultCollection}.";
+        }
         if (!empty($result['skipped_count'])) {
-            $msg .= " ({$result['skipped_count']} duplicate records were skipped).";
+            $parts[] = "{$result['skipped_count']} duplicate records were skipped.";
+        }
+        if (!empty($result['failed_count'])) {
+            $firstErr = !empty($result['errors']) ? ' (' . $result['errors'][0] . ')' : '';
+            $parts[] = "{$result['failed_count']} records failed{$firstErr}.";
         }
 
+        $msg = !empty($parts) ? implode(' ', $parts) : 'No records were processed.';
+        $toastType = ($result['imported_count'] > 0) ? 'success' : (($result['skipped_count'] > 0) ? 'info' : 'error');
+        $toastTitle = ($result['imported_count'] > 0) ? 'Import Successful' : (($result['skipped_count'] > 0) ? 'Duplicates Skipped' : 'Import Failed');
+
         $this->dispatch('show-toast', [
-            'type' => $result['success'] ? 'success' : 'error',
-            'title' => $result['success'] ? 'Import Successful' : 'Import Incomplete',
+            'type' => $toastType,
+            'title' => $toastTitle,
             'message' => $msg,
         ]);
     }

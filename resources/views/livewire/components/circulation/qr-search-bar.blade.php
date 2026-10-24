@@ -2,18 +2,9 @@
      x-data="{ queryVal: @entangle('value'), openingAdd: false }"
      @clear-search-input.window="queryVal = ''; $nextTick(() => { $refs.checkinInput?.focus(); });"
      @set-search-value.window="
-         let codeStr = $event.detail.code;
-         queryVal = '';
-         let index = 0;
-         let interval = setInterval(() => {
-             if (index < codeStr.length) {
-                 queryVal += codeStr[index];
-                 index++;
-             } else {
-                 clearInterval(interval);
-                 $wire.submit(queryVal);
-             }
-         }, 30);
+         let codeStr = ($event.detail && typeof $event.detail === 'object') ? ($event.detail.code || '') : ($event.detail || '');
+         queryVal = codeStr;
+         $wire.submit(codeStr);
      "
      @search-modal-opened.window="openingAdd = false"
      @search-modal-closed.window="openingAdd = false"
@@ -35,8 +26,7 @@
                id="circulation-search-input"
                x-ref="checkinInput"
                x-model="queryVal"
-               wire:model="value"
-               wire:keydown.enter="submit"
+               @keydown.enter.prevent="if (queryVal && queryVal.trim().length > 0) { $wire.submit(queryVal.trim()); }"
                wire:loading.attr="disabled"
                wire:loading.class="opacity-60 cursor-not-allowed bg-slate-50"
                placeholder="{{ $placeholder }}"
@@ -58,7 +48,7 @@
                 <!-- Clear Button (Client-side reset and focus recovery) -->
                 <button type="button"
                         x-show="queryVal && queryVal.length > 0"
-                        @click="queryVal = ''; $nextTick(() => { $refs.checkinInput?.focus(); });"
+                        @click="queryVal = ''; $wire.set('value', ''); $nextTick(() => { $refs.checkinInput?.focus(); });"
                         class="h-10 w-10 flex items-center justify-center bg-[#F8FAFC] border border-[#E2E8F0] hover:border-[#102B70] text-[#64748B] hover:text-[#B91C1C] rounded-xl transition-colors shadow-2xs focus:outline-none focus:ring-2 focus:ring-[#102B70]/20"
                         aria-label="Clear input"
                         title="Clear input"
@@ -68,11 +58,11 @@
                     </svg>
                 </button>
 
-                <!-- Clickable Navy Add/Search Entity Button -->
+                <!-- Clickable Navy Add/Search Entity Button (Submits input if filled, otherwise opens browse modal) -->
                 <button type="button"
-                        @click="openingAdd = true; $dispatch('open-search-modal')"
+                        @click="if (queryVal && queryVal.trim().length > 0) { $wire.submit(queryVal.trim()); } else { openingAdd = true; $dispatch('open-search-modal'); }"
                         :disabled="openingAdd"
-                        class="h-10 px-4 bg-[#102B70] hover:bg-[#0B225E] text-white rounded-xl text-xs font-bold tracking-wider uppercase flex items-center gap-2 transition-colors shadow-2xs focus:outline-none focus:ring-2 focus:ring-[#102B70]/20 disabled:opacity-60 disabled:cursor-not-allowed">
+                        class="h-10 px-4 bg-[#102B70] hover:bg-[#0B225E] text-white rounded-xl text-xs font-bold tracking-wider uppercase flex items-center gap-2 transition-colors shadow-2xs focus:outline-none focus:ring-2 focus:ring-[#102B70]/20 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer">
                     <!-- Plus Icon (Hidden when loading) -->
                     <svg x-show="!openingAdd" class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path>
@@ -84,7 +74,7 @@
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
 
-                    <span x-text="openingAdd ? 'Loading...' : 'Add'">Add</span>
+                    <span x-text="openingAdd ? 'Loading...' : (queryVal && queryVal.trim().length > 0 ? 'Submit' : 'Add')">Add</span>
                 </button>
             </div>
         </div>

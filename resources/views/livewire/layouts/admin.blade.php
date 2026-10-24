@@ -16,6 +16,18 @@
         <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
         <!-- Scripts -->
+        <script>
+            try {
+                const savedZoom = localStorage.getItem('pgpc_text_zoom') || '100';
+                document.documentElement.style.setProperty('--text-zoom', savedZoom);
+            } catch(e) {}
+            document.addEventListener('livewire:navigated', () => {
+                try {
+                    const savedZoom = localStorage.getItem('pgpc_text_zoom') || '100';
+                    document.documentElement.style.setProperty('--text-zoom', savedZoom);
+                } catch(e) {}
+            });
+        </script>
         @vite(['resources/css/app.css', 'resources/js/app.js'])
         <tallstackui:script />
         @livewireStyles

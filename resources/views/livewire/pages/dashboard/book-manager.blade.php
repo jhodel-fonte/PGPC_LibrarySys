@@ -122,6 +122,7 @@
                     'Available' => ['label' => 'Available', 'count' => $availableCopies],
                     'Borrowed' => ['label' => 'Borrowed', 'count' => $borrowedCopies],
                     'Damaged/Lost' => ['label' => 'Damaged/Lost', 'count' => $damagedLostCopies],
+                    'Deleted' => ['label' => 'Deleted', 'count' => $deletedCopies],
                 ];
             @endphp
             <div class="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0" aria-label="Inventory view and status filters">
@@ -304,14 +305,32 @@
                 Print Labels
             </button>
 
+            @if($canUpdateBook && count($selectedCopies) > 0)
+                <button
+                    type="button"
+                    wire:click="bulkRestore"
+                    class="rounded-lg border border-emerald-300 bg-emerald-50 px-3.5 py-1.5 text-xs font-semibold text-emerald-700 shadow-sm transition-colors hover:bg-emerald-100 active:translate-y-px"
+                >
+                    Restore Selected
+                </button>
+            @endif
+
             @if($canDeleteBook)
                 <button
                     type="button"
                     wire:click="bulkDelete"
-                    onclick="confirm('Are you sure you want to delete the selected copies?') || event.stopImmediatePropagation()"
                     class="rounded-lg bg-red-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-red-700 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600"
                 >
-                    Delete
+                    Delete Selected
+                </button>
+
+                <button
+                    type="button"
+                    wire:click="bulkHardDelete"
+                    onclick="confirm('Are you sure you want to permanently delete the selected copies? This action cannot be undone.') || event.stopImmediatePropagation()"
+                    class="rounded-lg border border-red-300 bg-red-50 px-3.5 py-1.5 text-xs font-semibold text-red-700 shadow-sm transition-colors hover:bg-red-100 active:translate-y-px"
+                >
+                    Permanently Delete
                 </button>
             @endif
 
@@ -328,6 +347,7 @@
         <!-- Rows -->
         @forelse($books as $book)
             @php
+                $isTrashed = $book->trashed();
                 $detail = $book->bookDetail;
                 $data = $detail ? $detail->bookData : null;
                 $authorName = 'Unknown Author';
@@ -362,8 +382,8 @@
                 $initials = collect(explode(' ', $data ? $data->book_title : 'BOOK'))->map(fn($n) => substr($n, 0, 1))->take(2)->join('');
             @endphp
             <tr
-                :class="isSelected('{{ $book->id }}') ? 'bg-blue-50/60' : ''"
-                class="group h-auto md:h-[64px] transition-colors hover:bg-slate-50/70"
+                :class="isSelected('{{ $book->id }}') ? 'bg-blue-50/60' : '{{ $isTrashed ? 'bg-rose-50/25' : '' }}'"
+                class="group h-auto md:h-[64px] transition-colors hover:bg-slate-50/70 {{ $isTrashed ? 'opacity-85' : '' }}"
             >
                 <!-- Mobile Card Cell (Visible on mobile screens <= 768px) -->
                 <td colspan="8" class="mobile-cell">
@@ -472,20 +492,45 @@
                                         View History
                                     </button>
 
-                                    @if($canDeleteBook)
-                                        <div class="border-t border-slate-100 my-1"></div>
+                                    @if($isTrashed)
+                                        @if($canUpdateBook)
+                                            <button
+                                                type="button"
+                                                wire:click="restoreBookCopy({{ $book->id }})"
+                                                @click="open = false"
+                                                class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-50 rounded-xl transition-colors"
+                                            >
+                                                <svg class="h-3.5 w-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                                                Restore Copy
+                                            </button>
+                                        @endif
 
-                                        <button
-                                            type="button"
-                                            wire:click="deleteCopy({{ $book->id }})"
-                                            @disabled($book->status === 'borrowed')
-                                            @click="open = false"
-                                            onclick="confirm('Are you sure you want to delete copy {{ $book->accession_number }}?') || event.stopImmediatePropagation()"
-                                            class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-xl transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                                        >
-                                            <svg class="h-3.5 w-3.5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                            Delete Copy
-                                        </button>
+                                        @if($canDeleteBook)
+                                            <button
+                                                type="button"
+                                                wire:click="hardDeleteBookCopy({{ $book->id }})"
+                                                @click="open = false"
+                                                class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-red-700 hover:bg-red-50 rounded-xl transition-colors"
+                                            >
+                                                <svg class="h-3.5 w-3.5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                                Permanently Delete
+                                            </button>
+                                        @endif
+                                    @else
+                                        @if($canDeleteBook)
+                                            <div class="border-t border-slate-100 my-1"></div>
+
+                                            <button
+                                                type="button"
+                                                wire:click="deleteCopy({{ $book->id }})"
+                                                @disabled($book->status === 'borrowed')
+                                                @click="open = false"
+                                                class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-xl transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                            >
+                                                <svg class="h-3.5 w-3.5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                                Delete Copy
+                                            </button>
+                                        @endif
                                     @endif
                                 </x-widget.table-action-dot>
                             </div>
@@ -513,9 +558,13 @@
                             </div>
                             <div x-show="cols['status'] !== false">
                                 <span class="block text-[11px] font-medium text-slate-400 mb-1">Status</span>
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded text-[11px] font-semibold {{ $statBadgeClass }}">
-                                    {{ ucfirst($book->status) }}
-                                </span>
+                                @if($isTrashed)
+                                    <span class="text-xs font-bold text-red-600">Deleted</span>
+                                @else
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded text-[11px] font-semibold {{ $statBadgeClass }}">
+                                        {{ ucfirst($book->status) }}
+                                    </span>
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -590,9 +639,13 @@
 
                 <!-- Status Badge -->
                 <td x-show="cols['status'] !== false" class="desktop-cell px-4 py-3 align-middle">
-                    <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold leading-normal {{ $statBadgeClass }}">
-                        {{ ucfirst($book->status) }}
-                    </span>
+                    @if($isTrashed)
+                        <span class="text-xs font-bold text-red-600">Deleted</span>
+                    @else
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold leading-normal {{ $statBadgeClass }}">
+                            {{ ucfirst($book->status) }}
+                        </span>
+                    @endif
                 </td>
 
                 <!-- Actions -->
@@ -609,7 +662,7 @@
                             </button>
 
                             <a
-                                href="{{ route('admin.book-management.edit', $book->book_detail_id ?? $book->id) }}"
+                                href="{{ route($routePrefix . 'book-management.edit', $book->book_detail_id ?? $book->id) }}"
                                 wire:navigate
                                 @click="open = false"
                                 class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 rounded-xl transition-colors"
@@ -648,19 +701,46 @@
                                 View History
                             </button>
 
-                            <div class="border-t border-slate-100 my-1"></div>
+                            @if($isTrashed)
+                                @if($canUpdateBook)
+                                    <button
+                                        type="button"
+                                        wire:click="restoreBookCopy({{ $book->id }})"
+                                        @click="open = false"
+                                        class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-50 rounded-xl transition-colors"
+                                    >
+                                        <svg class="h-3.5 w-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                                        Restore Copy
+                                    </button>
+                                @endif
 
-                            <button
-                                type="button"
-                                wire:click="deleteCopy({{ $book->id }})"
-                                @disabled($book->status === 'borrowed')
-                                @click="open = false"
-                                onclick="confirm('Are you sure you want to delete copy {{ $book->accession_number }}?') || event.stopImmediatePropagation()"
-                                class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-xl transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                            >
-                                <svg class="h-3.5 w-3.5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                Delete Copy
-                            </button>
+                                @if($canDeleteBook)
+                                    <button
+                                        type="button"
+                                        wire:click="hardDeleteBookCopy({{ $book->id }})"
+                                        @click="open = false"
+                                        class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-red-700 hover:bg-red-50 rounded-xl transition-colors"
+                                    >
+                                        <svg class="h-3.5 w-3.5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                        Permanently Delete
+                                    </button>
+                                @endif
+                            @else
+                                @if($canDeleteBook)
+                                    <div class="border-t border-slate-100 my-1"></div>
+
+                                    <button
+                                        type="button"
+                                        wire:click="deleteCopy({{ $book->id }})"
+                                        @disabled($book->status === 'borrowed')
+                                        @click="open = false"
+                                        class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-xl transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                    >
+                                        <svg class="h-3.5 w-3.5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                        Delete Copy
+                                    </button>
+                                @endif
+                            @endif
                         </x-widget.table-action-dot>
                     </div>
                 </td>

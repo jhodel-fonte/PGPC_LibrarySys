@@ -19,7 +19,7 @@
         </div>
         <div class="flex items-center gap-3 shrink-0">
             @if($canCreateStudent)
-                <a href="{{ route($routePrefix . 'user-management.add', ['type' => 'student']) }}" wire:navigate class="inline-flex items-center justify-center gap-2 h-10 px-5 rounded-lg bg-[#102B70] hover:bg-[#0B225E] text-white text-sm font-semibold transition-colors shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70] focus-visible:ring-offset-2">
+                <a href="{{ route($routePrefix . 'user-management.add', ['type' => 'student']) }}" wire:navigate class="inline-flex items-center justify-center gap-2 h-10 px-5 rounded-lg bg-[#102B70] hover:bg-[#0B225E] text-white text-sm font-semibold transition-colors shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70] focus-visible:ring-offset-2 w-full sm:w-auto">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>
                     <span>Add Student</span>
                 </a>
@@ -138,9 +138,100 @@
                 $idNumber = $student?->school_id_number ?? '—';
                 $initials = $student ? strtoupper(substr($student->first_name, 0, 1) . substr($student->last_name, 0, 1)) : strtoupper(substr($user->username, 0, 2));
             @endphp
-            <tr class="hover:bg-slate-50/70 transition-colors h-[72px] group">
+            <tr class="hover:bg-slate-50/70 transition-colors h-auto md:h-[72px] group">
+                <!-- Mobile Card Cell (Visible on mobile screens <= 768px) -->
+                <td colspan="6" class="mobile-cell">
+                    <div class="bg-white rounded-2xl border border-[#E2E8F0] p-4 shadow-xs relative transition-all hover:shadow-sm">
+                        <!-- Top Row: Avatar, Name, Email, ID & 3-dots Menu -->
+                        <div class="flex items-start justify-between gap-2.5">
+                            <a href="{{ route($routePrefix . 'user-details', $user->encrypted_id) }}" wire:navigate class="flex items-start gap-3 min-w-0 flex-1 focus:outline-none">
+                                @if($student?->image_url)
+                                    <img src="{{ $student->image_url }}" alt="{{ $fullName }}" class="w-11 h-11 rounded-full object-cover border border-[#CBD5E1] shrink-0">
+                                @else
+                                    <div class="w-11 h-11 rounded-full bg-[#EFF6FF] border border-[#BFDBFE] text-[#102B70] font-bold text-xs flex items-center justify-center shrink-0">
+                                        {{ $initials }}
+                                    </div>
+                                @endif
+                                <div class="flex flex-col min-w-0 flex-1">
+                                    <span class="text-sm font-bold text-[#102B70] hover:text-blue-700 hover:underline transition-colors truncate">{{ $fullName }}</span>
+                                    <span class="text-xs text-slate-500 truncate mt-0.5 font-medium">{{ $user->email ?? 'No email' }}</span>
+                                    <span class="text-[11px] font-mono text-slate-600 font-semibold mt-0.5">{{ $idNumber }}</span>
+                                </div>
+                            </a>
+
+                            <!-- 3-Dots Actions Menu -->
+                            <div class="shrink-0 -mr-1">
+                                <x-widget.table-action-dot>
+                                    <a
+                                         href="{{ route($routePrefix . 'user-details', $user->encrypted_id) }}"
+                                         wire:navigate
+                                         @click="open = false"
+                                         class="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-[#102B70] rounded-lg transition-colors"
+                                    >
+                                        <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                        View Profile
+                                    </a>
+
+                                    @if($canEditStudent)
+                                        <a
+                                             href="{{ route($routePrefix . 'user-management.edit', $user->encrypted_id) }}"
+                                             wire:navigate
+                                             @click="open = false"
+                                             class="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-[#102B70] rounded-lg transition-colors"
+                                        >
+                                            <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                            Edit Profile
+                                        </a>
+                                    @endif
+                                </x-widget.table-action-dot>
+                            </div>
+                        </div>
+
+                        <!-- Card Body: Program, Status & Last Login Grid -->
+                        <div class="mt-3 pt-3 border-t border-slate-100 grid grid-cols-2 gap-y-2.5 gap-x-3 text-left">
+                            <div x-show="cols['program'] !== false">
+                                <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Program</span>
+                                <span class="text-xs font-bold text-slate-800 truncate block">{{ $student?->program ?? '—' }}</span>
+                                @if($student?->year_level)
+                                    <span class="text-[11px] text-slate-500 font-medium block">{{ $student->year_level }}</span>
+                                @endif
+                            </div>
+
+                            <div x-show="cols['status'] !== false">
+                                <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Status</span>
+                                @if($user->trashed())
+                                    <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+                                        Disabled
+                                    </span>
+                                @else
+                                    @php
+                                        $statusName = $user->status?->status_name ?? 'Unknown';
+                                        $statusClass = match(strtolower($statusName)) {
+                                            'active' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                                            'locked', 'suspended' => 'bg-red-50 text-red-700 border-red-200',
+                                            'pending' => 'bg-amber-50 text-amber-700 border-amber-200',
+                                            default => 'bg-slate-100 text-slate-600 border-slate-200'
+                                        };
+                                    @endphp
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border {{ $statusClass }}">
+                                        {{ $statusName }}
+                                    </span>
+                                @endif
+                            </div>
+
+                            <div x-show="cols['last_login'] !== false" class="col-span-2 pt-1 border-t border-slate-50 flex items-center justify-between text-xs text-slate-500">
+                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Last Login</span>
+                                <span class="font-medium text-slate-600">
+                                    {{ $user->last_login ? $user->last_login->diffForHumans() : 'Never' }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+
+                <!-- Desktop Cells (Visible on desktop screens > 768px, 100% unchanged) -->
                 <!-- STUDENT INFO & AVATAR -->
-                <td x-show="cols['student'] !== false" class="px-6 py-4 align-middle">
+                <td x-show="cols['student'] !== false" class="desktop-cell px-6 py-4 align-middle">
                     <a href="{{ route($routePrefix . 'user-details', $user->encrypted_id) }}" wire:navigate class="flex items-center gap-3.5 group/user focus:outline-none">
                         @if($student?->image_url)
                             <img src="{{ $student->image_url }}" alt="{{ $fullName }}" class="w-10 h-10 rounded-full object-cover border border-[#CBD5E1] shrink-0">
@@ -157,12 +248,12 @@
                 </td>
 
                 <!-- STUDENT ID NUMBER -->
-                <td x-show="cols['id_number'] !== false" class="px-6 py-4 align-middle">
+                <td x-show="cols['id_number'] !== false" class="desktop-cell px-6 py-4 align-middle">
                     <span class="text-sm font-semibold text-slate-700 font-mono">{{ $idNumber }}</span>
                 </td>
 
                 <!-- PROGRAM & YEAR LEVEL -->
-                <td x-show="cols['program'] !== false" class="px-6 py-4 align-middle">
+                <td x-show="cols['program'] !== false" class="desktop-cell px-6 py-4 align-middle">
                     <div class="flex flex-col">
                         <span class="text-sm font-bold text-slate-800">{{ $student?->program ?? '—' }}</span>
                         @if($student?->year_level)
@@ -172,7 +263,7 @@
                 </td>
 
                 <!-- ACCOUNT STATUS -->
-                <td x-show="cols['status'] !== false" class="px-6 py-4 align-middle">
+                <td x-show="cols['status'] !== false" class="desktop-cell px-6 py-4 align-middle">
                     @if($user->trashed())
                         <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
                             Disabled
@@ -194,7 +285,7 @@
                 </td>
 
                 <!-- LAST LOGIN -->
-                <td x-show="cols['last_login'] !== false" class="px-6 py-4 align-middle">
+                <td x-show="cols['last_login'] !== false" class="desktop-cell px-6 py-4 align-middle">
                     @if($user->last_login)
                         <span class="text-sm text-slate-600 font-medium" title="{{ $user->last_login->format('M d, Y h:i A') }}">
                             {{ $user->last_login->diffForHumans() }}
@@ -205,7 +296,7 @@
                 </td>
 
                 <!-- ACTIONS -->
-                <td class="px-6 py-4 align-middle text-right pr-6">
+                <td class="desktop-cell px-6 py-4 align-middle text-right pr-6">
                     <div class="flex items-center justify-end">
                         <x-widget.table-action-dot>
                             <a

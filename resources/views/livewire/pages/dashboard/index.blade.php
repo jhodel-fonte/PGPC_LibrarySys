@@ -22,10 +22,10 @@
         </div>
 
         <!-- Middle Row: 3 Diagram Cards (Multiple Series, Donut, Grouped Bars) -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 items-stretch">
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 items-stretch">
             
             <!-- 1. Multiple Series Line Chart: Borrowing and Returning Trends -->
-            <div class="bg-white rounded-2xl border border-slate-200 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_1px_3px_rgba(15,23,42,0.03)] p-5 flex flex-col justify-between min-h-[270px]">
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_1px_3px_rgba(15,23,42,0.03)] p-5 flex flex-col justify-between min-h-[270px] min-w-0">
                 <!-- Header -->
                 <div class="flex items-center justify-between mb-3">
                     <div class="flex items-center gap-2">
@@ -63,7 +63,7 @@
             </div>
 
             <!-- 2. Donut Chart: Most Borrowed Book Categories -->
-            <div class="bg-white rounded-2xl border border-slate-200 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_1px_3px_rgba(15,23,42,0.03)] p-5 flex flex-col justify-between min-h-[270px]">
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_1px_3px_rgba(15,23,42,0.03)] p-5 flex flex-col justify-between min-h-[270px] min-w-0">
                 <!-- Header -->
                 <div class="flex items-center justify-between mb-3">
                     <div class="flex items-center gap-2">
@@ -100,7 +100,7 @@
             </div>
 
             <!-- 3. Grouped Bar Chart: Monthly Library Activity -->
-            <div class="bg-white rounded-2xl border border-slate-200 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_1px_3px_rgba(15,23,42,0.03)] p-5 flex flex-col justify-between min-h-[270px]">
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_1px_3px_rgba(15,23,42,0.03)] p-5 flex flex-col justify-between min-h-[270px] min-w-0 md:col-span-2 xl:col-span-1">
                 <!-- Header -->
                 <div class="flex items-center justify-between mb-3">
                     <div class="flex items-center gap-2">
@@ -138,12 +138,16 @@
         </div>
 
         <!-- Bottom Row: Current Borrowers and Most Borrowed -->
-        <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,2.05fr)_minmax(320px,1fr)] gap-5 items-start">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
             <!-- Current Borrowers -->
-            <x-dashboard.current-borrowers :borrowers="$currentBorrowers" />
+            <div class="lg:col-span-8 min-w-0">
+                <x-dashboard.current-borrowers :borrowers="$currentBorrowers" />
+            </div>
 
             <!-- Most Borrowed Titles -->
-            <x-dashboard.most-borrowed-titles :titles="$mostBorrowedTitles" />
+            <div class="lg:col-span-4 min-w-0">
+                <x-dashboard.most-borrowed-titles :titles="$mostBorrowedTitles" />
+            </div>
         </div>
     </div>
 </div>

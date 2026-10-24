@@ -50,6 +50,7 @@ Route::middleware(['auth', 'verified', 'role:Admin'])->prefix('admin')->name('ad
         Route::get('/publishers/search', [\App\Http\Controllers\PublisherController::class, 'search'])->name('publishers.search');
 
         Route::get('/settings', \App\Livewire\Pages\Dashboard\Settings::class)->name('settings');
+        Route::get('/analytics', \App\Livewire\Pages\Dashboard\Analytics::class)->name('analytics');
         Route::get('/profile', \App\Livewire\Pages\Student\Profile::class)->name('profile');
 });
 
@@ -88,6 +89,7 @@ Route::middleware(['auth', 'verified', 'role:Librarian,Head Librarian,Admin'])->
         Route::get('/publishers/search', [\App\Http\Controllers\PublisherController::class, 'search'])->name('publishers.search');
 
         Route::get('/settings', \App\Livewire\Pages\Dashboard\Settings::class)->name('settings')->middleware('permission:manage_settings');
+        Route::get('/analytics', \App\Livewire\Pages\Dashboard\Analytics::class)->name('analytics');
         Route::get('/profile', \App\Livewire\Pages\Student\Profile::class)->name('profile');
 });
 

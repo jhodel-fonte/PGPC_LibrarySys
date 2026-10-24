@@ -82,6 +82,7 @@ class ConfirmReturn extends Component
                 'author' => $authorName,
                 'accession' => $book ? $book->accession_number : 'N/A',
                 'cover_image' => $detail ? $detail->cover_image : null,
+                'cover_url' => $detail ? $detail->cover_url : null,
                 'issued_date' => $t->issued_date?->format('M d, Y') ?? 'N/A',
                 'due_date' => $t->due_date?->format('M d, Y') ?? 'N/A',
                 'overdue_days' => $overdueDays,

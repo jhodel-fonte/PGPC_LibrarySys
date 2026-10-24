@@ -27,6 +27,52 @@
         </x-widget.profile-action-button>
     </div>
 
+    <!-- Accessibility / Text Size Selector -->
+    <div 
+        x-data="{
+            textZoom: localStorage.getItem('pgpc_text_zoom') || '100',
+            applyZoom(val) {
+                this.textZoom = val;
+                localStorage.setItem('pgpc_text_zoom', val);
+                document.documentElement.style.setProperty('--text-zoom', val);
+            }
+        }"
+        x-init="applyZoom(textZoom)"
+        @click.stop
+        class="px-4 py-2.5 border-t border-gray-100 bg-slate-50/60"
+    >
+        <div class="flex items-center justify-between mb-1.5">
+            <span class="flex items-center gap-1.5 text-xs font-bold text-[#102B70]">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-[#102B70]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="4 7 4 4 20 4 20 7"></polyline>
+                    <line x1="9" y1="20" x2="15" y2="20"></line>
+                    <line x1="12" y1="4" x2="12" y2="20"></line>
+                </svg>
+                Text Size
+            </span>
+        </div>
+
+        <div class="relative">
+            <select 
+                x-model="textZoom"
+                @change="applyZoom($event.target.value)"
+                @click.stop
+                class="w-full text-xs font-semibold text-[#102B70] bg-white border border-[#CBD5E1] rounded-lg px-2.5 py-1.5 pr-7 appearance-none cursor-pointer hover:border-[#102B70] focus:outline-none focus:border-[#102B70] focus:ring-1 focus:ring-[#EFF6FF] transition-colors shadow-xs"
+            >
+                <option value="90">Compact (90%)</option>
+                <option value="100">Default (100%)</option>
+                <option value="110">Medium (110%)</option>
+                <option value="120">Large (120%)</option>
+                <option value="130">Extra Large (130%)</option>
+            </select>
+            <span class="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-[#102B70]">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </span>
+        </div>
+    </div>
+
     <div class="border-t border-gray-100 py-1 bg-gray-50/50">
         <livewire:components.widgets.logout-button />
     </div>

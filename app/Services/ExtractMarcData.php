@@ -503,6 +503,9 @@ class ExtractMarcData
         $startAccessionNumber = (int)($options['start_accession_number'] ?? 1001);
         $duplicatePolicy = $options['duplicate_policy'] ?? 'skip'; // 'skip', 'update', 'always_create'
 
+        // Ensure database marc_record column is TEXT so serialized MARC JSON/raw data doesn't exceed varchar(255)
+        $this->ensureMarcRecordColumnType();
+
         $importedCount = 0;
         $skippedCount = 0;
         $failedCount = 0;
@@ -515,8 +518,10 @@ class ExtractMarcData
             try {
                 DB::beginTransaction();
 
-                $title = trim($record['title'] ?? 'Untitled');
-                $isbn = !empty($record['isbn']) ? trim($record['isbn']) : null;
+                $rawTitle = trim($record['title'] ?? 'Untitled');
+                $title = mb_substr($rawTitle, 0, 255);
+                $rawIsbn = !empty($record['isbn']) ? trim($record['isbn']) : null;
+                $isbn = $rawIsbn ? mb_substr($rawIsbn, 0, 255) : null;
 
                 // Duplicate Check
                 $existingBookDetail = null;
@@ -541,13 +546,12 @@ class ExtractMarcData
                         $this->updateExistingBookDetail($existingBookDetail, $record, $options);
 
                         // Add new physical copy/copies to existing title
-                        $condition = BookCondition::where('status', 'Good')->first()
+                        $condition = BookCondition::whereRaw('LOWER(status) = ?', ['good'])->first()
                             ?? BookCondition::first()
                             ?? BookCondition::firstOrCreate(['status' => 'Good']);
 
                         for ($c = 1; $c <= $defaultCopies; $c++) {
                             $accessionNumber = $this->generateUniqueAccessionNumber($accessionPrefix, $currentAccessionNum);
-                            $currentAccessionNum++;
                             $barcode = 'BC-' . preg_replace('/[^a-zA-Z0-9]/', '', $accessionNumber);
 
                             $book = Book::create([
@@ -555,7 +559,7 @@ class ExtractMarcData
                                 'book_condition_id' => $condition->id,
                                 'accession_number' => $accessionNumber,
                                 'code' => $barcode,
-                                'location' => $defaultCollection,
+                                'location' => mb_substr($defaultCollection, 0, 255),
                                 'status' => 'available',
                                 'date_acquired' => Carbon::now()->toDateString(),
                             ]);
@@ -574,21 +578,52 @@ class ExtractMarcData
                 }
 
                 // 1. Language
-                $langName = trim($record['language'] ?? 'English');
-                $language = Language::firstOrCreate(['lang' => $langName ?: 'English']);
+                $rawLang = trim($record['language'] ?? 'English');
+                $langName = mb_substr($rawLang ?: 'English', 0, 255);
+                $language = Language::firstOrCreate(['lang' => $langName]);
 
                 // 2. BookData
-                $pubYear = (int)preg_replace('/[^0-9]/', '', (string)($record['year'] ?? date('Y')));
-                $bookData = BookData::create([
-                    'book_title' => $title,
-                    'subtitle' => !empty($record['subtitle']) ? trim($record['subtitle']) : null,
-                    'description' => !empty($record['description']) ? trim($record['description']) : null,
-                    'series_title' => !empty($record['series_title']) ? trim($record['series_title']) : null,
-                    'note' => !empty($record['note']) ? trim($record['note']) : null,
-                    'language_id' => $language->id,
-                    'copyright_year' => $pubYear ?: (int)date('Y'),
-                    'marc_record' => !empty($record['raw_marc']) ? $record['raw_marc'] : json_encode($record['marc_fields'] ?? []),
-                ]);
+                $pubYear = $this->parseYearInteger($record['year'] ?? null);
+                $rawSubtitle = !empty($record['subtitle']) ? trim($record['subtitle']) : null;
+                $subtitle = $rawSubtitle ? mb_substr($rawSubtitle, 0, 255) : null;
+                $rawSeries = !empty($record['series_title']) ? trim($record['series_title']) : null;
+                $seriesTitle = $rawSeries ? mb_substr($rawSeries, 0, 255) : null;
+
+                // Prepare and sanitize MARC record string (valid UTF-8, no null-byte chars)
+                $marcContent = !empty($record['raw_marc']) ? (string)$record['raw_marc'] : json_encode($record['marc_fields'] ?? [], JSON_UNESCAPED_UNICODE);
+                if (!mb_check_encoding($marcContent, 'UTF-8')) {
+                    $marcContent = mb_convert_encoding($marcContent, 'UTF-8', 'ISO-8859-1');
+                }
+                $marcContent = str_replace("\0", '', $marcContent);
+
+                try {
+                    $bookData = BookData::create([
+                        'book_title' => $title,
+                        'subtitle' => $subtitle,
+                        'description' => !empty($record['description']) ? trim($record['description']) : null,
+                        'series_title' => $seriesTitle,
+                        'note' => !empty($record['note']) ? trim($record['note']) : null,
+                        'language_id' => $language->id,
+                        'copyright_year' => $pubYear,
+                        'marc_record' => $marcContent,
+                    ]);
+                } catch (\Throwable $bdEx) {
+                    // Fallback if DB table column still has a varchar(255) restriction
+                    if (str_contains($bdEx->getMessage(), '255') || str_contains(strtolower($bdEx->getMessage()), 'truncated')) {
+                        $bookData = BookData::create([
+                            'book_title' => $title,
+                            'subtitle' => $subtitle,
+                            'description' => !empty($record['description']) ? trim($record['description']) : null,
+                            'series_title' => $seriesTitle,
+                            'note' => !empty($record['note']) ? trim($record['note']) : null,
+                            'language_id' => $language->id,
+                            'copyright_year' => $pubYear,
+                            'marc_record' => mb_substr($marcContent, 0, 250),
+                        ]);
+                    } else {
+                        throw $bdEx;
+                    }
+                }
 
                 // 3. Authors
                 $authorIds = $this->resolveAuthorIds($record);
@@ -603,8 +638,9 @@ class ExtractMarcData
                 }
 
                 // 5. Publisher
-                $publisherName = trim($record['publisher'] ?? 'Independent / Unknown');
-                $publisher = Publisher::firstOrCreate(['name' => $publisherName ?: 'Independent / Unknown']);
+                $rawPublisher = trim($record['publisher'] ?? 'Independent / Unknown');
+                $publisherName = mb_substr($rawPublisher ?: 'Independent / Unknown', 0, 255);
+                $publisher = Publisher::firstOrCreate(['name' => $publisherName]);
 
                 // 6. BookType
                 $defaultBookType = BookType::first() ?? BookType::firstOrCreate(['type' => 'Book']);
@@ -621,18 +657,23 @@ class ExtractMarcData
                 }
 
                 // 7. BookDetail
+                $callNum = !empty($record['call_number']) ? trim($record['call_number']) : ('000 GEN ' . date('Y'));
+                $classification = !empty($record['dewey']) ? trim($record['dewey']) : null;
+                $edition = !empty($record['edition']) ? trim($record['edition']) : null;
+                $issn = !empty($record['issn']) ? trim($record['issn']) : null;
+
                 $bookDetail = BookDetail::create([
                     'book_data_id' => $bookData->id,
                     'isbn' => $isbn,
-                    'issn' => !empty($record['issn']) ? trim($record['issn']) : null,
-                    'publication_year' => $pubYear ?: (int)date('Y'),
-                    'copyright_year' => $pubYear ?: (int)date('Y'),
-                    'edition' => !empty($record['edition']) ? trim($record['edition']) : null,
+                    'issn' => $issn ? mb_substr($issn, 0, 255) : null,
+                    'publication_year' => $pubYear,
+                    'copyright_year' => $pubYear,
+                    'edition' => $edition ? mb_substr($edition, 0, 255) : null,
                     'pages' => $pagesInt,
                     'format' => 'Paperback',
                     'book_type_id' => $defaultBookType->id,
-                    'call_number' => trim($record['call_number'] ?? '000 GEN ' . date('Y')),
-                    'classification' => !empty($record['dewey']) ? trim($record['dewey']) : null,
+                    'call_number' => mb_substr($callNum, 0, 255),
+                    'classification' => $classification ? mb_substr($classification, 0, 255) : null,
                     'publisher_id' => $publisher->id,
                     'cover_image' => null,
                     'total_copies' => $defaultCopies,
@@ -642,16 +683,14 @@ class ExtractMarcData
                 ]);
 
                 // 8. Book Condition
-                $condition = BookCondition::where('status', 'Good')->first()
+                $condition = BookCondition::whereRaw('LOWER(status) = ?', ['good'])->first()
                     ?? BookCondition::first()
                     ?? BookCondition::firstOrCreate(['status' => 'Good']);
 
                 // 9. Physical Copies
                 for ($c = 1; $c <= $defaultCopies; $c++) {
-                    // Safe auto-increment accession number
+                    // Safe auto-increment accession number (incremented inside helper)
                     $accessionNumber = $this->generateUniqueAccessionNumber($accessionPrefix, $currentAccessionNum);
-                    $currentAccessionNum++;
-
                     $barcode = 'BC-' . preg_replace('/[^a-zA-Z0-9]/', '', $accessionNumber);
 
                     $book = Book::create([
@@ -659,7 +698,7 @@ class ExtractMarcData
                         'book_condition_id' => $condition->id,
                         'accession_number' => $accessionNumber,
                         'code' => $barcode,
-                        'location' => $defaultCollection,
+                        'location' => mb_substr($defaultCollection, 0, 255),
                         'status' => 'available',
                         'date_acquired' => Carbon::now()->toDateString(),
                     ]);
@@ -696,21 +735,21 @@ class ExtractMarcData
      */
     protected function updateExistingBookDetail(BookDetail $bookDetail, array $record, array $options): void
     {
-        $pubYear = (int)preg_replace('/[^0-9]/', '', (string)($record['year'] ?? ''));
+        $pubYear = $this->parseYearInteger($record['year'] ?? null);
         $updates = [];
 
         if (!empty($record['call_number'])) {
-            $updates['call_number'] = trim($record['call_number']);
+            $updates['call_number'] = mb_substr(trim($record['call_number']), 0, 255);
         }
         if (!empty($record['dewey'])) {
-            $updates['classification'] = trim($record['dewey']);
+            $updates['classification'] = mb_substr(trim($record['dewey']), 0, 255);
         }
         if ($pubYear > 0) {
             $updates['publication_year'] = $pubYear;
             $updates['copyright_year'] = $pubYear;
         }
         if (!empty($record['edition'])) {
-            $updates['edition'] = trim($record['edition']);
+            $updates['edition'] = mb_substr(trim($record['edition']), 0, 255);
         }
 
         if (!empty($updates)) {
@@ -720,18 +759,60 @@ class ExtractMarcData
         if ($bookDetail->bookData) {
             $dataUpdates = [];
             if (!empty($record['subtitle'])) {
-                $dataUpdates['subtitle'] = trim($record['subtitle']);
+                $dataUpdates['subtitle'] = mb_substr(trim($record['subtitle']), 0, 255);
             }
             if (!empty($record['description'])) {
                 $dataUpdates['description'] = trim($record['description']);
             }
             if (!empty($record['series_title'])) {
-                $dataUpdates['series_title'] = trim($record['series_title']);
+                $dataUpdates['series_title'] = mb_substr(trim($record['series_title']), 0, 255);
             }
             if (!empty($dataUpdates)) {
                 $bookDetail->bookData->update($dataUpdates);
             }
         }
+    }
+
+    /**
+     * Ensure the database column book_datas.marc_record is TYPE TEXT.
+     */
+    protected function ensureMarcRecordColumnType(): void
+    {
+        static $ensured = false;
+        if ($ensured) {
+            return;
+        }
+
+        try {
+            $driver = DB::connection()->getDriverName();
+            if ($driver === 'pgsql') {
+                DB::statement('ALTER TABLE book_datas ALTER COLUMN marc_record TYPE TEXT');
+            } elseif ($driver === 'mysql') {
+                DB::statement('ALTER TABLE book_datas MODIFY marc_record LONGTEXT NULL');
+            }
+            $ensured = true;
+        } catch (\Throwable $e) {
+            // Log notice and continue - fallback in create BookData will handle 255-char limit if DDL not permitted
+            Log::info('ExtractMarcData::ensureMarcRecordColumnType note: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Parse valid 4-digit publication / copyright year.
+     */
+    protected function parseYearInteger(mixed $rawYear): int
+    {
+        if (!empty($rawYear)) {
+            $str = (string)$rawYear;
+            if (preg_match('/\b(1[5-9]\d{2}|20\d{2}|2100)\b/', $str, $yMatch)) {
+                return (int)$yMatch[1];
+            }
+            $cleaned = (int)preg_replace('/[^0-9]/', '', $str);
+            if ($cleaned >= 1000 && $cleaned <= 2100) {
+                return $cleaned;
+            }
+        }
+        return (int)date('Y');
     }
 
     /**
@@ -741,8 +822,10 @@ class ExtractMarcData
     {
         do {
             $accessionNumber = $prefix . str_pad((string)$startNum, 4, '0', STR_PAD_LEFT);
+            $barcode = 'BC-' . preg_replace('/[^a-zA-Z0-9]/', '', $accessionNumber);
             $startNum++;
-            $exists = Book::where('accession_number', $accessionNumber)->exists();
+            $exists = Book::where('accession_number', $accessionNumber)->exists()
+                   || Book::where('code', $barcode)->exists();
         } while ($exists);
 
         return $accessionNumber;
@@ -795,14 +878,17 @@ class ExtractMarcData
                 }
             }
 
-            $author = Author::where('first_name', $firstName ?: $lastName)
-                ->where('last_name', $lastName ?: $firstName)
+            $safeFirst = mb_substr($firstName ?: $lastName, 0, 255);
+            $safeLast = mb_substr($lastName ?: $firstName, 0, 255);
+
+            $author = Author::where('first_name', $safeFirst)
+                ->where('last_name', $safeLast)
                 ->first();
 
             if (!$author) {
                 $author = Author::create([
-                    'first_name' => $firstName ?: $lastName,
-                    'last_name' => $lastName ?: $firstName,
+                    'first_name' => $safeFirst,
+                    'last_name' => $safeLast,
                 ]);
             }
 
@@ -826,10 +912,13 @@ class ExtractMarcData
                 continue;
             }
 
+            $safeCatName = mb_substr($catName, 0, 255);
+            $code = strtoupper(substr(preg_replace('/[^a-zA-Z]/', '', $safeCatName), 0, 4));
+
             $category = Category::firstOrCreate([
-                'name' => $catName,
+                'name' => $safeCatName,
             ], [
-                'code' => strtoupper(substr(preg_replace('/[^a-zA-Z]/', '', $catName), 0, 4)),
+                'code' => $code,
             ]);
 
             $categoryIds[] = $category->id;
@@ -841,7 +930,7 @@ class ExtractMarcData
             $generalName = $this->getDeweyDivisionName($deweyPrefix);
             if ($generalName) {
                 $cat = Category::firstOrCreate([
-                    'name' => $generalName,
+                    'name' => mb_substr($generalName, 0, 255),
                 ], [
                     'code' => $deweyPrefix,
                 ]);

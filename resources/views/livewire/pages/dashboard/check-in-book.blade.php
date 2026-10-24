@@ -148,6 +148,7 @@
                             :book="$lastReturnedBook"
                             mode="check-in"
                             :returned-books="$returnedBooks"
+                            :checkout-books="[]"
                         />
                     </div>
 

@@ -9,13 +9,23 @@
 
 <!-- ADMIN / LIBRARIAN NAVIGATION -->
 <!-- Dashboard Link -->
-<x-widget.sidebar-button href="{{ route($routePrefix . 'dashboard') }}" :active="request()->routeIs($routePrefix . 'dashboard')" class="mb-3" wire:navigate>
+<x-widget.sidebar-button href="{{ route($routePrefix . 'dashboard') }}" :active="request()->routeIs($routePrefix . 'dashboard')" class="mb-2" wire:navigate>
     <x-slot:icon>
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
         </svg>
     </x-slot:icon>
     Dashboard
+</x-widget.sidebar-button>
+
+<!-- Analytics Link -->
+<x-widget.sidebar-button href="{{ route($routePrefix . 'analytics') }}" :active="request()->routeIs($routePrefix . 'analytics')" class="mb-3" wire:navigate>
+    <x-slot:icon>
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg>
+    </x-slot:icon>
+    Analytics
 </x-widget.sidebar-button>
 
 <!-- CIRCULATION SECTION -->
@@ -99,7 +109,7 @@
 @endif
 
 <!-- SYSTEM SECTION -->
-@if($signedInUser && $signedInUser->canManageSettings())
+{{-- @if($signedInUser && $signedInUser->canManageSettings())
     <div class="px-2 mt-6 mb-2" x-show="!sidebarMinimized" x-transition.opacity.duration.300ms>
         <span class="text-xs font-bold text-white/50 uppercase tracking-wider">System</span>
     </div>
@@ -113,4 +123,4 @@
         </x-slot:icon>
         Settings
     </x-widget.sidebar-button>
-@endif
+@endif --}}

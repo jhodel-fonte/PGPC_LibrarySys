@@ -24,7 +24,7 @@
     $backTitle = $isSubpage && !empty($activepage) ? "Back to {$activepage}" : "You are on the main page";
 @endphp
 
-<div class="h-[70px] bg-navy-primary md:bg-white border-b border-white/10 md:border-[#E2E8F0] px-4 md:px-6 flex justify-between items-center w-full shrink-0 z-30 sticky top-0 transition-colors">
+<div class="min-h-[70px] h-auto py-2 bg-navy-primary md:bg-white border-b border-white/10 md:border-[#E2E8F0] px-4 md:px-6 flex justify-between items-center w-full shrink-0 z-30 sticky top-0 transition-colors">
 
     <!-- Left: Hamburger Menu, Global Back Button, Logo & Title on Mobile, Breadcrumbs on Desktop -->
     <div class="flex items-center gap-2 sm:gap-2.5 md:gap-3 text-sm font-medium text-white/70 md:text-[#475569] min-w-0">

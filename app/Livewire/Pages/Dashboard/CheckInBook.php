@@ -7,6 +7,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
 use App\Models\Student;
 use App\Models\Book;
+use App\Models\BookDetail;
 use App\Models\BorrowingTransaction;
 use Carbon\Carbon;
 
@@ -42,21 +43,193 @@ class CheckInBook extends Component
         return config('settings', []);
     }
 
+    protected function normalizeCode($code): string
+    {
+        if (!is_string($code) && !is_numeric($code)) {
+            return '';
+        }
+
+        $code = (string) $code;
+        // Strip scanner non-printable characters, carriage returns, newlines, tabs
+        $code = trim(preg_replace('/[\r\n\t\x00-\x1F\x7F]+/u', '', $code));
+
+        if ($code === '') {
+            return '';
+        }
+
+        // Handle JSON payloads (e.g. from QR codes: {"id":"...", ...} or {"school_id_number":"..."})
+        if ((str_starts_with($code, '{') && str_ends_with($code, '}')) || (str_starts_with($code, '[') && str_ends_with($code, ']'))) {
+            $decoded = json_decode($code, true);
+            if (is_array($decoded)) {
+                $candidate = $decoded['school_id_number']
+                    ?? $decoded['student_id']
+                    ?? $decoded['accession_number']
+                    ?? $decoded['code']
+                    ?? $decoded['isbn']
+                    ?? $decoded['value']
+                    ?? $decoded['id']
+                    ?? null;
+                if ($candidate && (is_string($candidate) || is_numeric($candidate))) {
+                    $code = trim((string) $candidate);
+                }
+            }
+        }
+
+        // Handle URLs (e.g. OPAC book details: http://.../opac/book/detail/9780132350884 or .../student/2023-0001)
+        if (filter_var($code, FILTER_VALIDATE_URL) || preg_match('#^https?://#i', $code)) {
+            $path = parse_url($code, PHP_URL_PATH);
+            if ($path) {
+                $segments = array_values(array_filter(explode('/', trim($path, '/'))));
+                if (!empty($segments)) {
+                    $code = end($segments);
+                }
+            }
+        }
+
+        // Strip surrounding quotes or delimiters
+        $code = trim($code, "\"'` \t\n\r");
+
+        return $code;
+    }
+
+    protected function findStudent(string $code): ?Student
+    {
+        if (empty($code)) return null;
+
+        $lowerCode = strtolower($code);
+        $cleanAlnum = preg_replace('/[^a-zA-Z0-9]/', '', $code);
+
+        // 1. Direct match or case-insensitive on school_id_number
+        $student = Student::with(['libraryStatus', 'account'])
+            ->where(function ($q) use ($code, $lowerCode, $cleanAlnum) {
+                $q->where('school_id_number', $code)
+                  ->orWhereRaw('LOWER(school_id_number) = ?', [$lowerCode]);
+
+                if (!empty($cleanAlnum)) {
+                    $q->orWhereRaw("LOWER(REPLACE(REPLACE(school_id_number, '-', ''), ' ', '')) = ?", [strtolower($cleanAlnum)]);
+                }
+            })
+            ->first();
+
+        if ($student) {
+            return $student;
+        }
+
+        // 2. Primary key ID match (if numeric)
+        if (is_numeric($code)) {
+            $student = Student::with(['libraryStatus', 'account'])->find((int) $code);
+            if ($student) {
+                return $student;
+            }
+        }
+
+        // 3. Match via linked Account (username or email)
+        $student = Student::with(['libraryStatus', 'account'])
+            ->whereHas('account', function ($q) use ($code, $lowerCode) {
+                $q->where('username', $code)
+                  ->orWhereRaw('LOWER(username) = ?', [$lowerCode])
+                  ->orWhereRaw('LOWER(email) = ?', [$lowerCode]);
+            })
+            ->first();
+
+        return $student;
+    }
+
+    protected function findBook(string $code, array $preferredBookIds = []): ?Book
+    {
+        if (empty($code)) return null;
+
+        $lowerCode = strtolower($code);
+        $cleanAlnum = preg_replace('/[^a-zA-Z0-9]/', '', $code);
+
+        $query = Book::withTrashed()->with([
+            'bookDetail.bookData.authors',
+            'bookDetail.bookData.categories',
+            'condition'
+        ]);
+
+        // 1. Match by accession_number or code column
+        $book = (clone $query)->where(function ($q) use ($code, $lowerCode, $cleanAlnum) {
+            $q->where('accession_number', $code)
+              ->orWhere('code', $code)
+              ->orWhereRaw('LOWER(accession_number) = ?', [$lowerCode])
+              ->orWhereRaw('LOWER(code) = ?', [$lowerCode]);
+
+            if (!empty($cleanAlnum)) {
+                $q->orWhereRaw("LOWER(REPLACE(REPLACE(accession_number, '-', ''), ' ', '')) = ?", [strtolower($cleanAlnum)])
+                  ->orWhereRaw("LOWER(REPLACE(REPLACE(code, '-', ''), ' ', '')) = ?", [strtolower($cleanAlnum)]);
+            }
+        })->first();
+
+        if ($book) {
+            return $book;
+        }
+
+        // 2. Match by direct physical copy primary key ID (if numeric)
+        if (is_numeric($code)) {
+            $book = (clone $query)->find((int) $code);
+            if ($book) {
+                return $book;
+            }
+        }
+
+        // 3. Match by ISBN (barcode on physical book)
+        $cleanIsbn = preg_replace('/[^0-9X]/i', '', $code);
+        if (strlen($cleanIsbn) >= 8) {
+            $bookDetail = BookDetail::whereRaw("LOWER(REPLACE(REPLACE(isbn, '-', ''), ' ', '')) = ?", [strtolower($cleanIsbn)])
+                ->orWhereRaw("LOWER(isbn) = ?", [$lowerCode])
+                ->first();
+
+            if ($bookDetail) {
+                // If preferred book IDs provided (e.g. books currently checked out by student), match one of those first
+                if (!empty($preferredBookIds)) {
+                    $preferred = (clone $query)->where('book_detail_id', $bookDetail->id)
+                        ->whereIn('id', $preferredBookIds)
+                        ->first();
+                    if ($preferred) {
+                        return $preferred;
+                    }
+                }
+
+                // Check for borrowed or existing copy
+                $copy = (clone $query)->where('book_detail_id', $bookDetail->id)->first();
+                if ($copy) {
+                    return $copy;
+                }
+            }
+        }
+
+        // 4. Match by Call Number
+        $bookDetail = BookDetail::whereRaw('LOWER(call_number) = ?', [$lowerCode])->first();
+        if ($bookDetail) {
+            if (!empty($preferredBookIds)) {
+                $preferred = (clone $query)->where('book_detail_id', $bookDetail->id)
+                    ->whereIn('id', $preferredBookIds)
+                    ->first();
+                if ($preferred) {
+                    return $preferred;
+                }
+            }
+
+            $copy = (clone $query)->where('book_detail_id', $bookDetail->id)->first();
+            if ($copy) {
+                return $copy;
+            }
+        }
+
+        return null;
+    }
+
     #[On('search-code')]
     public function handleSearchCode($code)
     {
         $this->errorMessage = ''; // Clear previous error
 
-        $code = trim($code);
+        $code = $this->normalizeCode($code);
         if (empty($code)) return;
 
-        // Protect against XSS, script tags, and long buffer injection payloads
-        $code = strip_tags($code);
-        $code = htmlspecialchars($code, ENT_QUOTES, 'UTF-8');
-        $code = substr($code, 0, 50);
-
         // 1. Check if the code matches a member ID (Student table)
-        $student = Student::with('libraryStatus')->where('school_id_number', $code)->first();
+        $student = $this->findStudent($code);
 
         if ($student) {
             if ($this->scannedMember && !empty($this->returnedBooks) && $this->scannedMember['id'] !== $student->id) {
@@ -71,12 +244,9 @@ class CheckInBook extends Component
             return;
         }
 
-        // 2. Check if the code matches a book accession number or unique code
-        $book = Book::withTrashed()
-            ->where(function ($q) use ($code) {
-                $q->where('accession_number', $code)->orWhere('code', $code);
-            })
-            ->first();
+        // 2. Check if the code matches a book accession number, code, or ISBN
+        $borrowedIds = array_filter(array_column($this->borrowedBooks, 'book_id'));
+        $book = $this->findBook($code, $borrowedIds);
 
         if ($book) {
             $this->processBookReturn($book);
@@ -89,10 +259,10 @@ class CheckInBook extends Component
         $isMemberFormat = false;
         $config = $this->getQrConfig();
         if (!empty($config['accepted_formats'])) {
-            $memberConf = $config['accepted_formats']['member'];
+            $memberConf = $config['accepted_formats']['member'] ?? [];
             if (!empty($memberConf['patterns'])) {
                 foreach ($memberConf['patterns'] as $pattern) {
-                    if (preg_match('/' . str_replace('/', '\/', $pattern) . '/i', $code)) {
+                    if (@preg_match('/' . str_replace('/', '\/', $pattern) . '/i', $code)) {
                         $isMemberFormat = true;
                         break;
                     }
@@ -126,6 +296,7 @@ class CheckInBook extends Component
 
         // Set standard error message for unrecognized inputs
         $this->errorMessage = 'No student profile or borrowed book found matching code: "' . $code . '"';
+        $this->dispatch('clear-search-input');
     }
 
     public function loadMember($student)
@@ -202,14 +373,11 @@ class CheckInBook extends Component
     public function returnBookByAccession($accession)
     {
         $this->errorMessage = '';
-        $accession = trim($accession ?? '');
+        $accession = $this->normalizeCode($accession ?? '');
         if (empty($accession) || $accession === 'N/A') return;
 
-        $book = Book::withTrashed()
-            ->where(function ($q) use ($accession) {
-                $q->where('accession_number', $accession)->orWhere('code', $accession);
-            })
-            ->first();
+        $borrowedIds = array_filter(array_column($this->borrowedBooks, 'book_id'));
+        $book = $this->findBook($accession, $borrowedIds);
 
         if ($book) {
             $this->processBookReturn($book);
@@ -330,13 +498,13 @@ class CheckInBook extends Component
     public function undoReturn($accession = null, $accessionNumber = null)
     {
         $this->errorMessage = '';
-        $targetAccession = $accession ?? $accessionNumber;
+        $targetAccession = $this->normalizeCode($accession ?? $accessionNumber ?? '');
         if (empty($targetAccession)) return;
 
-        $book = Book::withTrashed()->where('accession_number', $targetAccession)->first();
+        $book = $this->findBook($targetAccession);
         if ($book) {
             // Update lastReturnedBook state if it matches
-            if ($this->lastReturnedBook && ($this->lastReturnedBook['accession'] ?? '') === $targetAccession) {
+            if ($this->lastReturnedBook && ($this->lastReturnedBook['book_id'] === $book->id || ($this->lastReturnedBook['accession'] ?? '') === $book->accession_number)) {
                 $this->lastReturnedBook['is_returned'] = false;
             }
 
@@ -344,7 +512,7 @@ class CheckInBook extends Component
             $this->returnedBooks = array_values(array_diff($this->returnedBooks, [$book->id]));
 
             // Re-load member
-            if ($this->scannedMember) {
+            if ($this->scannedMember && !empty($this->scannedMember['id'])) {
                 $studentModel = Student::find($this->scannedMember['id']);
                 if ($studentModel) {
                     $this->loadMember($studentModel);
