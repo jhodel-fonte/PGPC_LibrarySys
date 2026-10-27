@@ -73,6 +73,12 @@ class Dashboard extends Component
                 ->get()
             : collect();
 
+        $activeReservationsCount = $studentId
+            ? \App\Models\BookReservation::where('student_id', $studentId)
+                ->whereIn('reservation_status_id', [1, 2])
+                ->count()
+            : 0;
+
         return view('livewire.pages.student.dashboard', [
             'user' => $user,
             'student' => $student,
@@ -83,6 +89,7 @@ class Dashboard extends Component
             'overdueCount' => $overdueCount,
             'totalBorrowed' => $totalBorrowed,
             'unpaidFines' => $unpaidFines,
+            'activeReservationsCount' => $activeReservationsCount,
             'recentTransactions' => $recentTransactions,
         ]);
     }

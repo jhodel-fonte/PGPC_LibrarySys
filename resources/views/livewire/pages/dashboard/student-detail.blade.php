@@ -37,9 +37,45 @@
             $routePrefix = \App\Services\EmployeeRoleService::getRoutePrefix();
             $canEditStudent = \App\Services\EmployeeRoleService::canEditStudent();
         @endphp
-        @if(! $this->isProfile && $canEditStudent)
-            <!-- Top Right Actions: Edit Student Information & Change Status -->
+        @if($this->isProfile)
+            <!-- Student's Own Profile Top Right Action: Reserve Book -->
             <div class="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
+                <button
+                    type="button"
+                    wire:click="openReserveModal"
+                    class="h-11 px-5 sm:px-6 rounded-2xl bg-[#102B70] hover:bg-[#0B225E] text-white text-xs sm:text-sm font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#EFF6FF]"
+                >
+                    <svg class="w-4 h-4 text-[#FCC719]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
+                    </svg>
+                    <span>Reserve a Book</span>
+                </button>
+
+                <a
+                    href="{{ route('student.reservations') }}"
+                    wire:navigate
+                    class="h-11 px-4 sm:px-5 rounded-2xl border border-[#CBD5E1] bg-white hover:bg-slate-50 hover:border-[#102B70] text-[#102B70] text-xs sm:text-sm font-bold transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#102B70]"
+                >
+                    <svg class="w-4 h-4 text-[#102B70]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                    </svg>
+                    <span>Browse Catalog</span>
+                </a>
+            </div>
+        @elseif($canEditStudent)
+            <!-- Staff Top Right Actions: Edit Student Information, Change Status & Reserve -->
+            <div class="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
+                <button
+                    type="button"
+                    wire:click="openReserveModal"
+                    class="h-11 px-4 sm:px-5 rounded-2xl bg-[#102B70] hover:bg-[#0B225E] text-white text-xs sm:text-sm font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#EFF6FF]"
+                >
+                    <svg class="w-4 h-4 text-[#FCC719]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
+                    </svg>
+                    <span>Reserve Book for Student</span>
+                </button>
+
                 <button
                     type="button"
                     wire:click="openStatusModal"
@@ -54,9 +90,9 @@
                 <a
                     href="{{ route($routePrefix . 'user-management.edit', $user?->encrypted_id ?? \App\Models\Account::encodeId($this->userId)) }}"
                     wire:navigate
-                    class="h-11 px-5 sm:px-6 rounded-2xl bg-[#102B70] hover:bg-[#0B225E] text-white text-xs sm:text-sm font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#EFF6FF]"
+                    class="h-11 px-5 sm:px-6 rounded-2xl border border-[#102B70] text-[#102B70] hover:bg-blue-50/50 text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer"
                 >
-                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125" />
                     </svg>
                     <span>Edit Student Information</span>
@@ -128,6 +164,24 @@
                 <span>Circulation History</span>
             </button>
 
+            <!-- Tab 5: Book Reservations -->
+            <button
+                type="button"
+                @click="activeTab = 'reservations'"
+                class="group inline-flex items-center gap-2 py-3 px-3 sm:px-4 text-xs sm:text-sm font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap"
+                :class="activeTab === 'reservations' ? 'border-[#102B70] text-[#102B70]' : 'border-transparent text-slate-500 hover:text-[#102B70] hover:border-slate-300'"
+            >
+                <svg class="w-4 h-4 transition-colors" :class="activeTab === 'reservations' ? 'text-[#102B70]' : 'text-slate-400 group-hover:text-[#102B70]'" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
+                </svg>
+                <span>Reservations</span>
+                @if($this->activeReservationsCount > 0)
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#FCC719] text-[#102B70]">
+                        {{ $this->activeReservationsCount }}
+                    </span>
+                @endif
+            </button>
+
         </nav>
     </div>
 
@@ -158,6 +212,13 @@
     <!-- ======================================================== -->
     <div x-show="activeTab === 'history'" x-cloak>
         @include('livewire.components.usermanager.student-circulation-history')
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- TAB 5: BOOK RESERVATIONS                                -->
+    <!-- ======================================================== -->
+    <div x-show="activeTab === 'reservations'" x-cloak>
+        @include('livewire.components.usermanager.student-reservations')
     </div>
 
     <!-- ======================================================== -->
@@ -266,4 +327,9 @@
         'confirmText' => 'Delete Student',
         'confirmLoadingTarget' => 'deleteStudent',
     ])
+
+    <!-- ======================================================== -->
+    <!-- MODAL 4: RESERVE BOOK MODAL                              -->
+    <!-- ======================================================== -->
+    @include('livewire.components.usermanager.student-reserve-modal')
 </div>

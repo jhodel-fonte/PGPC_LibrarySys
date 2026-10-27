@@ -15,7 +15,7 @@
 
     <!-- Top Card Content -->
     <div>
-        @if ($icon || !$slot->isEmpty())
+        @if ($icon || (isset($slot) && trim((string) $slot) !== ''))
             <!-- Icon Container (renders only if icon is provided) -->
             <div class="flex h-[52px] w-[52px] sm:h-[58px] sm:w-[58px] items-center justify-center rounded-2xl bg-white/10 border border-white/15 text-[#FCC719] shadow-xs transition-all duration-200 group-hover:bg-[#FCC719] group-hover:border-[#FCC719] group-hover:text-[#102B70] mb-4.5">
                 {!! $icon ?? $slot !!}

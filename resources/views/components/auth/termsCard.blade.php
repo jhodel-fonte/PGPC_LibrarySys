@@ -12,7 +12,7 @@
 
         <div>
             <h4 class="font-bold text-slate-900">2. Borrowing & Circulation Policies</h4>
-            <p class="mt-0.5 text-slate-600">Eligible patrons may borrow up to <strong>{{ config('settings.library_config.max_loan_limit', 3) }} books</strong> simultaneously for a standard loan period of <strong>{{ config('settings.library_config.loan_period', 5) }} days</strong>. All materials must be returned on or before their specified due date at the Circulation Desk ({{ config('settings.library_config.location', 'Main Building, 2nd Floor Library') }}).</p>
+            <p class="mt-0.5 text-slate-600">Eligible students may borrow up to <strong>{{ config('settings.library_config.max_loan_limit', 3) }} books</strong> simultaneously for a standard loan period of <strong>{{ config('settings.library_config.loan_period', 5) }} days</strong>. All materials must be returned on or before their specified due date at the Circulation Desk ({{ config('settings.library_config.location', 'Main Building, 2nd Floor Library') }}).</p>
         </div>
 
         <div>
@@ -22,7 +22,7 @@
 
         <div>
             <h4 class="font-bold text-slate-900">4. Care of Library Materials & Loss Assessment</h4>
-            <p class="mt-0.5 text-slate-600">Patrons are strictly accountable for maintaining borrowed resources in good condition. Damaged, defaced, or lost items must be reported immediately and settled through replacement with an identical copy or reimbursement of the replacement cost.</p>
+            <p class="mt-0.5 text-slate-600">Borrowers are strictly accountable for maintaining borrowed resources in good condition. Damaged, defaced, or lost items must be reported immediately and settled through replacement with an identical copy or reimbursement of the replacement cost.</p>
         </div>
 
         <div>

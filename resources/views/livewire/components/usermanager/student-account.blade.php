@@ -173,9 +173,9 @@
             <!-- Action 2: Delete Student Record -->
             <div class="rounded-2xl border border-[#FECACA] bg-[#FEF2F2]/60 p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div class="space-y-1">
-                    <h4 class="text-sm font-bold text-[#0F172A]">Delete Student Record</h4>
+                    <h4 class="text-sm font-bold text-[#0F172A]">Soft Delete Student Record</h4>
                     <p class="text-xs text-[#64748B] max-w-xl leading-relaxed">
-                        Permanently delete this student account and revoke library access and privileges. This action cannot be undone.
+                        Delete this student account and revoke library access and privileges. This action cannot be undone.
                     </p>
                 </div>
 

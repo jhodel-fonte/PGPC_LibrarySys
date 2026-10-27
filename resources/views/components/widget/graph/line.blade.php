@@ -2,18 +2,19 @@
     'series' => [],
     'labels' => [],
     'palette' => [
-        '#0284c7', '#10b981', '#f59e0b', '#f97316', '#8b5cf6', '#94a3b8'
+        '#0284c7', '#102B70', '#f59e0b', '#94a3b8'
     ],
     'grid' => false,
     'legend' => false,
     'markers' => false,
-    'height' => 190,
-    'svgWidth' => 520,
+    'height' => 150,
+    'svgWidth' => 480,
     'suffix' => '',
 ])
 
 @php
     $renderHeight = (int) $height;
+    $svgWidth = (int) ($svgWidth ?? 480);
     $rawSeries = is_array($series) ? $series : (method_exists($series, 'toArray') ? $series->toArray() : (array) $series);
     $rawLabels = is_array($labels) ? $labels : (method_exists($labels, 'toArray') ? $labels->toArray() : (array) $labels);
 
@@ -36,29 +37,33 @@
     }
 
     // Determine scale
-    $maxVal = 5;
+    $maxVal = 4;
     foreach ($lineSeries as $ls) {
         foreach ($ls['data'] as $v) {
             if ($v > $maxVal) $maxVal = $v;
         }
     }
-    if ($maxVal <= 5) $maxScale = 5;
+    if ($maxVal <= 4) $maxScale = 4;
     elseif ($maxVal <= 10) $maxScale = 10;
     elseif ($maxVal <= 25) $maxScale = 25;
     elseif ($maxVal <= 50) $maxScale = 50;
     elseif ($maxVal <= 100) $maxScale = 100;
     else $maxScale = ceil($maxVal / 50) * 50;
 
-    $ticks = [
-        $maxScale,
-        round($maxScale * 0.75),
-        round($maxScale * 0.5),
-        round($maxScale * 0.25),
-        0
-    ];
+    // 4 clean ticks (Max, 2/3, 1/3, 0) like modern Material dashboards
+    if ($maxScale <= 4) {
+        $ticks = [4, 2, 0];
+    } else {
+        $ticks = [
+            $maxScale,
+            round($maxScale * 0.66),
+            round($maxScale * 0.33),
+            0
+        ];
+    }
 
-    $padLeft = $grid ? 32 : 12;
-    $padRight = 24;
+    $padLeft = $grid ? 38 : 14;
+    $padRight = 16;
     $padTop = 14;
     $padBottom = 26;
 
@@ -66,123 +71,192 @@
     $plotH = $renderHeight - $padTop - $padBottom;
 
     $numPoints = max(1, count($rawLabels));
+
+    // Precalculate all points and series data for smooth proximity detection
+    $allSeriesPoints = [];
+    foreach ($lineSeries as $sIdx => $ls) {
+        $pts = [];
+        $dataCount = count($ls['data']);
+        foreach ($ls['data'] as $ptIdx => $val) {
+            $x = $padLeft + ($ptIdx / max(1, $dataCount - 1)) * $plotW;
+            $y = $padTop + (1 - ($val / $maxScale)) * $plotH;
+            $pts[] = [
+                'x' => round($x, 1),
+                'y' => round($y, 1),
+                'val' => $val,
+                'ptIdx' => $ptIdx,
+                'label' => $rawLabels[$ptIdx] ?? ''
+            ];
+        }
+        $allSeriesPoints[] = [
+            'name' => $ls['name'],
+            'color' => $ls['color'],
+            'suffix' => $suffix,
+            'points' => $pts,
+        ];
+    }
 @endphp
 
 <div class="relative w-full overflow-x-auto min-w-0">
-    <svg viewBox="0 0 {{ $svgWidth }} {{ $renderHeight }}" class="w-full h-auto overflow-visible">
+    <svg 
+        x-ref="lineSvg"
+        viewBox="0 0 {{ $svgWidth }} {{ $renderHeight }}" 
+        class="w-full h-auto overflow-visible cursor-crosshair select-none"
+        @mousemove="checkColumnHover($event, $refs.lineSvg, {{ json_encode($allSeriesPoints) }}, {{ $svgWidth }}, {{ $renderHeight }}, {{ $padLeft }}, {{ $padRight }})"
+        @mouseleave="hideTooltip()"
+    >
         <!-- Grid Lines & Left Y-Axis Ticks -->
         @if ($grid)
             @foreach ($ticks as $tick)
                 @php
                     $yPos = $padTop + (1 - ($tick / $maxScale)) * $plotH;
+                    $isZero = ($tick === 0);
                 @endphp
                 <line 
                     x1="{{ $padLeft }}" 
                     y1="{{ $yPos }}" 
                     x2="{{ $svgWidth - $padRight }}" 
                     y2="{{ $yPos }}" 
-                    stroke="#F1F5F9" 
-                    stroke-width="1.2" 
+                    stroke="{{ $isZero ? '#000000' : '#F1F5F9' }}" 
+                    stroke-width="{{ $isZero ? '1.5' : '1.2' }}" 
                 />
                 <text 
                     x="{{ $padLeft - 8 }}" 
-                    y="{{ $yPos + 3.5 }}" 
+                    y="{{ $yPos + 4 }}" 
                     text-anchor="end" 
-                    class="text-[10px] font-semibold fill-slate-400"
+                    style="font-size: 13px; font-weight: 600;"
+                    class="fill-black select-none"
                 >
                     {{ $tick }}
                 </text>
             @endforeach
         @endif
 
-        <!-- Series Curves & Markers -->
-        @foreach ($lineSeries as $sIdx => $ls)
-            @php
-                $points = [];
-                $dataCount = count($ls['data']);
-                foreach ($ls['data'] as $ptIdx => $val) {
-                    $x = $padLeft + ($ptIdx / max(1, $dataCount - 1)) * $plotW;
-                    $y = $padTop + (1 - ($val / $maxScale)) * $plotH;
-                    $points[] = ['x' => $x, 'y' => $y, 'val' => $val, 'ptIdx' => $ptIdx];
-                }
-
-                // Generate Sharp Point-to-Point Line (eliminates curve sagging below baseline)
-                $pathD = '';
-                if (count($points) > 0) {
-                    $pathD = "M " . round($points[0]['x'], 1) . " " . round($points[0]['y'], 1);
-                    for ($i = 1; $i < count($points); $i++) {
-                        $pathD .= " L " . round($points[$i]['x'], 1) . " " . round($points[$i]['y'], 1);
-                    }
-                }
-            @endphp
-
-            <!-- Curve Path -->
-            <path 
-                d="{{ $pathD }}" 
-                fill="none" 
-                stroke="{{ $ls['color'] }}" 
-                stroke-width="2.5" 
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                class="transition-all duration-200 hover:stroke-[3.5] cursor-pointer"
-                @mouseenter="showTooltip($event, '{{ addslashes($ls['name']) }}', 'Trend Line', 'Total: {{ array_sum($ls['data']) }} {{ $suffix }}', '{{ $ls['color'] }}')"
-                @mousemove="moveTooltip($event)"
-                @mouseleave="hideTooltip()"
+        <!-- Active Column Guide Line & Points Indicator (Shows all series points in that column) -->
+        <g x-show="activeColumn && tooltipVisible" class="pointer-events-none transition-opacity duration-75">
+            <!-- Vertical Guide Line for Column -->
+            <line 
+                :x1="activeColumn ? activeColumn.x : -100" 
+                :y1="{{ $padTop }}" 
+                :x2="activeColumn ? activeColumn.x : -100" 
+                :y2="{{ $renderHeight - $padBottom }}" 
+                stroke="#94A3B8" 
+                stroke-width="1.2" 
+                stroke-dasharray="3 3"
             />
-
-            <!-- Markers -->
-            @if ($markers)
-                @foreach ($points as $p)
-                    <!-- Visible dot (no CSS transform scale to prevent jumping/shifting) -->
+            <!-- Glowing dots on both/all series in this column without template x-for scoping issues -->
+            @foreach ($allSeriesPoints as $sIdx => $ls)
+                <g x-show="activeColumn && activeColumn.dots && activeColumn.dots[{{ $sIdx }}]">
                     <circle 
-                        cx="{{ $p['x'] }}" 
-                        cy="{{ $p['y'] }}" 
-                        r="4" 
-                        fill="{{ $ls['color'] }}" 
+                        :cx="(activeColumn && activeColumn.dots && activeColumn.dots[{{ $sIdx }}]) ? activeColumn.dots[{{ $sIdx }}].x : -100" 
+                        :cy="(activeColumn && activeColumn.dots && activeColumn.dots[{{ $sIdx }}]) ? activeColumn.dots[{{ $sIdx }}].y : -100" 
+                        r="8" 
+                        :fill="(activeColumn && activeColumn.dots && activeColumn.dots[{{ $sIdx }}]) ? activeColumn.dots[{{ $sIdx }}].color : '{{ $ls['color'] }}'" 
+                        opacity="0.25" 
+                    />
+                    <circle 
+                        :cx="(activeColumn && activeColumn.dots && activeColumn.dots[{{ $sIdx }}]) ? activeColumn.dots[{{ $sIdx }}].x : -100" 
+                        :cy="(activeColumn && activeColumn.dots && activeColumn.dots[{{ $sIdx }}]) ? activeColumn.dots[{{ $sIdx }}].y : -100" 
+                        r="4.5" 
+                        :fill="(activeColumn && activeColumn.dots && activeColumn.dots[{{ $sIdx }}]) ? activeColumn.dots[{{ $sIdx }}].color : '{{ $ls['color'] }}'" 
                         stroke="#FFFFFF" 
                         stroke-width="2" 
-                        class="pointer-events-none transition-all duration-150"
                     />
-                    <!-- Invisible expanded hover hit target for smooth cursor detection -->
+                </g>
+            @endforeach
+        </g>
+
+        <!-- Series Curves & Markers with Smooth Sweep Reveal on Scroll -->
+        <g 
+            class="transition-all duration-1000 ease-out will-change-[clip-path,opacity]"
+            :style="(typeof inView !== 'undefined' ? inView : true) ? 'clip-path: inset(0 0% 0 0); opacity: 1;' : 'clip-path: inset(0 100% 0 0); opacity: 0;'"
+        >
+            @foreach ($allSeriesPoints as $sIdx => $ls)
+                @php
+                    $points = $ls['points'];
+
+                    // Generate Sharp Point-to-Point Line (eliminates curve sagging below baseline)
+                    $pathD = '';
+                    if (count($points) > 0) {
+                        $pathD = "M " . $points[0]['x'] . " " . $points[0]['y'];
+                        for ($i = 1; $i < count($points); $i++) {
+                            $pathD .= " L " . $points[$i]['x'] . " " . $points[$i]['y'];
+                        }
+                    }
+                @endphp
+
+                <!-- Visible Line Path -->
+                <path 
+                    d="{{ $pathD }}" 
+                    fill="none" 
+                    stroke="{{ $ls['color'] }}" 
+                    stroke-width="2.5" 
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="transition-all duration-150 select-none pointer-events-none"
+                />
+
+                <!-- Visible Base Markers (like the green line chart in sample dashboard) -->
+                @php
+                    $markerR = count($points) > 15 ? 2.2 : 3.5;
+                    $strokeW = count($points) > 15 ? 1.2 : 1.8;
+                @endphp
+                @foreach ($points as $p)
                     <circle 
                         cx="{{ $p['x'] }}" 
                         cy="{{ $p['y'] }}" 
-                        r="18" 
-                        fill="transparent" 
-                        class="cursor-pointer"
-                        @mouseenter="showTooltip($event, '{{ addslashes($rawLabels[$p['ptIdx']] ?? '') }}', '{{ addslashes($ls['name']) }}', '{{ $p['val'] }} {{ $suffix }}', '{{ $ls['color'] }}')"
-                        @mousemove="moveTooltip($event)"
-                        @mouseleave="hideTooltip()"
+                        r="{{ $markerR }}" 
+                        fill="{{ $ls['color'] }}" 
+                        stroke="#FFFFFF" 
+                        stroke-width="{{ $strokeW }}" 
+                        class="pointer-events-none transition-all duration-150"
                     />
                 @endforeach
-            @endif
-        @endforeach
+            @endforeach
+        </g>
 
-        <!-- X-Axis Labels -->
+        @php
+            $totalLabels = count($rawLabels);
+            $indicesToShow = [];
+            if ($totalLabels <= 8) {
+                $indicesToShow = array_flip(range(0, $totalLabels - 1));
+            } else {
+                $targetCount = 6;
+                for ($i = 0; $i < $targetCount; $i++) {
+                    $idx = (int) round(($i / ($targetCount - 1)) * ($totalLabels - 1));
+                    $indicesToShow[$idx] = true;
+                }
+            }
+        @endphp
+
+        <!-- X-Axis Labels (Evenly sampled when there are many dates) -->
         @foreach ($rawLabels as $lblIdx => $label)
-            @php
-                $isFirst = ($lblIdx === 0);
-                $isLast = ($lblIdx === count($rawLabels) - 1);
-                $xPos = $padLeft + ($lblIdx / max(1, count($rawLabels) - 1)) * $plotW;
-                $anchor = $isFirst ? 'start' : ($isLast ? 'end' : 'middle');
-            @endphp
-            <text 
-                x="{{ $xPos }}" 
-                y="{{ $renderHeight - 8 }}" 
-                text-anchor="{{ $anchor }}" 
-                class="text-[11px] font-semibold fill-slate-500"
-            >
-                {{ $label }}
-            </text>
+            @if (isset($indicesToShow[$lblIdx]))
+                @php
+                    $isFirst = ($lblIdx === 0);
+                    $isLast = ($lblIdx === $totalLabels - 1);
+                    $xPos = $padLeft + ($lblIdx / max(1, $totalLabels - 1)) * $plotW;
+                    $anchor = $isFirst ? 'start' : ($isLast ? 'end' : 'middle');
+                @endphp
+                <text 
+                    x="{{ $xPos }}" 
+                    y="{{ $renderHeight - 5 }}" 
+                    text-anchor="{{ $anchor }}" 
+                    style="font-size: 12.5px; font-weight: 600;"
+                    class="fill-black select-none"
+                >
+                    {{ $label }}
+                </text>
+            @endif
         @endforeach
     </svg>
 
-    <!-- Bottom Legend -->
+    <!-- Bottom Legend (Clean & Compact) -->
     @if ($legend && count($lineSeries) > 0)
-        <div class="flex items-center justify-center flex-wrap gap-4 sm:gap-5 mt-3 pt-2 border-t border-slate-50">
+        <div class="flex items-center justify-center flex-wrap gap-4 mt-2 pt-2 border-t border-slate-100 text-[12px] font-semibold text-slate-800">
             @foreach ($lineSeries as $ls)
-                <div class="flex items-center gap-2 text-xs font-semibold text-slate-700 shrink-0">
-                    <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background-color: {{ $ls['color'] }}"></span>
+                <div class="flex items-center gap-1.5 shrink-0">
+                    <span class="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm" style="background-color: {{ $ls['color'] }}"></span>
                     <span class="truncate">{{ $ls['name'] }}</span>
                 </div>
             @endforeach

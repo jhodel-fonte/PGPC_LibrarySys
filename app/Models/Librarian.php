@@ -69,5 +69,13 @@ class Librarian extends Model
 
         return asset(trim($baseDir, '/') . '/' . $filename);
     }
+
+    /**
+     * Get the librarian's full name.
+     */
+    public function getFullNameAttribute(): string
+    {
+        return trim("{$this->first_name} {$this->last_name}");
+    }
 }
 

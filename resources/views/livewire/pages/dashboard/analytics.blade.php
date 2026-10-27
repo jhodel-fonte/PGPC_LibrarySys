@@ -1,40 +1,67 @@
-<div class="min-h-full bg-[#F8FAFC]">
+<div class="min-h-full bg-[#F8FAFC]"
+    x-data="{
+        scrollToTarget(sec) {
+            if (!sec) return;
+            const targetMap = {
+                'circulation': 'analytics-circulation',
+                'programs': 'analytics-programs',
+                'gender': 'analytics-demographics',
+                'demographics': 'analytics-demographics',
+                'operations': 'analytics-operations',
+                'overview': 'analytics-overview'
+            };
+            const id = targetMap[sec] || ('analytics-' + sec);
+            const el = document.getElementById(id);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        },
+        init() {
+            const check = () => {
+                const params = new URLSearchParams(window.location.search);
+                const s = params.get('section');
+                if (s) {
+                    this.scrollToTarget(s);
+                }
+            };
+            this.$nextTick(() => {
+                setTimeout(check, 200);
+            });
+            window.addEventListener('popstate', check);
+            document.addEventListener('livewire:navigated', () => {
+                setTimeout(check, 150);
+            });
+        }
+    }"
+    @scroll-to-section.window="scrollToTarget($event.detail)"
+>
 
-    <div class="relative z-10 mx-auto w-full max-w-[1600px] p-4 lg:p-6 space-y-6">
+    <div class="relative z-10 mx-auto w-full max-w-[1600px] p-6 lg:p-8 xl:p-10 space-y-10 lg:space-y-12 print:hidden">
 
-        <!-- 1. Page Header -->
+        <!-- 1. Page Header & Primary Period Switcher -->
         <div class="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between lg:shrink-0">
             <div>
-                <h1 class="text-2xl font-bold tracking-tight text-[#102B70]">Analytics</h1>
-                <p class="mt-1 text-sm text-slate-500 font-medium">Track circulation dynamics, collection utilization, and patron engagement trends.</p>
+                <h1 class="text-2xl font-bold tracking-tight text-[#102B70]">Analytics & Library Intelligence</h1>
+                <p class="mt-1 text-sm text-slate-500 font-medium">Real-time operational statistics, patron demographics, and collection circulation trends.</p>
             </div>
 
             <div class="flex flex-wrap items-center gap-2.5 shrink-0">
-                {{-- Time Range Dropdown --}}
-                <div class="relative">
-                    <select 
-                        wire:model.live="timeRange"
-                        class="inline-flex h-10 items-center pl-9 pr-9 rounded-lg border border-[#CBD5E1] bg-white text-sm font-semibold text-[#102B70] shadow-sm appearance-none cursor-pointer hover:border-[#102B70] hover:bg-slate-50 focus:outline-none focus:border-[#102B70] focus:ring-2 focus:ring-[#EFF6FF] transition-all"
+                {{-- Period Selector: Monthly Data vs Yearly Data --}}
+                <div class="inline-flex items-center p-1 bg-white border border-[#CBD5E1] rounded-xl shadow-sm text-sm font-bold text-[#102B70]">
+                    <button 
+                        type="button" 
+                        wire:click="setTimePeriod('monthly')"
+                        class="px-3 py-1.5 rounded-lg transition-all {{ $timePeriod === 'monthly' ? 'bg-[#102B70] text-white shadow-sm' : 'hover:bg-slate-50 text-slate-700' }}"
                     >
-                        <option value="7_days">Last 7 Days</option>
-                        <option value="30_days">Last 30 Days</option>
-                        <option value="90_days">Last 90 Days</option>
-                        <option value="this_semester">This Semester</option>
-                        <option value="this_year">Academic Year</option>
-                    </select>
-                    <div class="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-[#102B70]">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                            <line x1="16" y1="2" x2="16" y2="6"></line>
-                            <line x1="8" y1="2" x2="8" y2="6"></line>
-                            <line x1="3" y1="10" x2="21" y2="10"></line>
-                        </svg>
-                    </div>
-                    <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[#102B70]">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                        </svg>
-                    </div>
+                        Monthly Data
+                    </button>
+                    <button 
+                        type="button" 
+                        wire:click="setTimePeriod('yearly')"
+                        class="px-3 py-1.5 rounded-lg transition-all {{ $timePeriod === 'yearly' ? 'bg-[#102B70] text-white shadow-sm' : 'hover:bg-slate-50 text-slate-700' }}"
+                    >
+                        Yearly Data
+                    </button>
                 </div>
 
                 {{-- Export Report Action --}}
@@ -42,443 +69,532 @@
                     <button 
                         @click="open = !open" 
                         type="button" 
-                        class="inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-[#102B70] hover:bg-[#0B225E] text-white px-4 text-sm font-semibold transition-colors shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70] focus-visible:ring-offset-2"
+                        class="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-white border border-[#CBD5E1] hover:border-[#102B70] text-[#102B70] px-4 text-sm font-bold transition-all shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70]"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/>
                         </svg>
-                        <span>Export Report</span>
-                        <svg class="w-3.5 h-3.5 ml-0.5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        <span>Export Analytics</span>
+                        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                     </button>
 
                     <div 
                         x-show="open" 
                         @click.away="open = false" 
                         x-cloak 
-                        class="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-xl shadow-lg py-1.5 z-50 text-xs font-medium text-[#334155]"
+                        class="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-xl shadow-lg py-1.5 z-50 text-xs font-semibold text-[#334155]"
                     >
                         <a href="javascript:void(0)" @click="open = false; window.print()" class="flex items-center gap-2 px-3.5 py-2 hover:bg-[#F8FAFC] text-[#0F172A]">
                             <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                            Print Official Report
+                            Print Summary Report
                         </a>
                         <a href="javascript:void(0)" @click="open = false" class="flex items-center gap-2 px-3.5 py-2 hover:bg-[#F8FAFC] text-[#0F172A]">
                             <svg class="w-4 h-4 text-[#10B981]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                             Export to CSV / Excel
                         </a>
-                        <a href="javascript:void(0)" @click="open = false" class="flex items-center gap-2 px-3.5 py-2 hover:bg-[#F8FAFC] text-[#0F172A]">
-                            <svg class="w-4 h-4 text-[#EF4444]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-                            CHED / ALCUCOA Summary
-                        </a>
                     </div>
                 </div>
             </div>
         </div>
 
-        {{-- 2. EXECUTIVE SUMMARY KPI CARDS (5 METRICS) --}}
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        {{-- 2. PRIMARY EXECUTIVE KPI METRICS --}}
+        <div id="analytics-overview" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 scroll-mt-24">
             
-            {{-- KPI 1: Circulation Volume --}}
+            {{-- KPI 1: Total Number of Students --}}
             <x-widget.data-card 
-                title="Total Circulation" 
-                :value="$kpiMetrics['totalCirculation']['value']" 
-                change="↑ {{ $kpiMetrics['totalCirculation']['change'] }}" 
-                :subtext="$kpiMetrics['totalCirculation']['subtext']" 
+                title="Total Students" 
+                :value="$kpiMetrics['totalStudents']['value']" 
+                :change="$kpiMetrics['totalStudents']['change']" 
+                :subtext="$kpiMetrics['totalStudents']['subtext']" 
                 changeColor="emerald" 
             />
 
-            {{-- KPI 2: Active On-Loan --}}
+            {{-- KPI 2: Total Number of Books --}}
             <x-widget.data-card 
-                title="Active On-Loan" 
-                :value="$kpiMetrics['activeLoans']['value']" 
-                :change="$kpiMetrics['activeLoans']['change']" 
-                :subtext="$kpiMetrics['activeLoans']['subtext']" 
+                title="Total Books" 
+                :value="$kpiMetrics['totalBooks']['value']" 
+                :change="$kpiMetrics['totalBooks']['change']" 
+                :subtext="$kpiMetrics['totalBooks']['subtext']" 
                 changeColor="blue" 
             />
 
-            {{-- KPI 3: Patron Engagement --}}
+            {{-- KPI 3: Due Books Today --}}
             <x-widget.data-card 
-                title="Active Patrons" 
-                :value="$kpiMetrics['activePatrons']['value']" 
-                change="↑ {{ $kpiMetrics['activePatrons']['change'] }}" 
-                :subtext="$kpiMetrics['activePatrons']['subtext']" 
+                title="Due Books Today" 
+                :value="$kpiMetrics['dueBooksToday']['value']" 
+                :change="$kpiMetrics['dueBooksToday']['change']" 
+                :subtext="$kpiMetrics['dueBooksToday']['subtext']" 
                 changeColor="amber" 
             />
 
-            {{-- KPI 4: Collection Turnover --}}
+            {{-- KPI 4: Peak Hour --}}
             <x-widget.data-card 
-                title="Turnover Rate" 
-                :value="$kpiMetrics['turnoverVelocity']['value']" 
-                :change="$kpiMetrics['turnoverVelocity']['change']" 
-                :subtext="$kpiMetrics['turnoverVelocity']['subtext']" 
-                changeColor="emerald" 
+                title="Peak Hour" 
+                :value="$kpiMetrics['peakHour']['value']" 
+                :subtext="$kpiMetrics['peakHour']['subtext']" 
+                changeColor="amber" 
+                valueSize="text-xl"
             />
 
-            {{-- KPI 5: Delinquent / Overdue --}}
+            {{-- KPI 5: Gender Breakdown Dominance --}}
             <x-widget.data-card 
-                title="Overdue Items" 
-                :value="$kpiMetrics['overdueResolution']['value']" 
-                :change="$kpiMetrics['overdueResolution']['change']" 
-                :subtext="$kpiMetrics['overdueResolution']['subtext']" 
+                title="Most Active Gender" 
+                :value="$kpiMetrics['genderDominance']['value']" 
+                :change="$kpiMetrics['genderDominance']['change']" 
+                :subtext="$kpiMetrics['genderDominance']['subtext']" 
                 changeColor="emerald" 
+                valueSize="text-xl"
             />
 
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-            
-            {{-- MULTI-SERIES LINE GRAPH: CIRCULATION DYNAMICS (8 COLS) --}}
-            <div class="lg:col-span-8 bg-white rounded-2xl border border-slate-200/90 shadow-[0_1px_3px_rgba(15,23,42,0.04)] p-5 lg:p-6 flex flex-col justify-between min-w-0">
-                
-                {{-- Chart Card Header --}}
-                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-slate-100">
+        {{-- 3. CIRCULATION SECTION --}}
+        <div id="analytics-circulation" class="space-y-4 scroll-mt-24">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 pb-3.5 border-b border-slate-200">
+                <div class="flex items-center gap-3">
+                    <span class="w-2 h-5 rounded-full bg-[#102B70]"></span>
                     <div>
-                        <div class="flex items-center gap-2">
-                            <span class="w-2.5 h-2.5 rounded-full bg-[#102B70]"></span>
-                            <h2 class="text-base font-bold text-[#0F172A] tracking-tight">Circulation Dynamics & Activity Trends</h2>
-                        </div>
-                        <p class="text-xs text-[#64748B] mt-0.5">
-                            Comparative trajectory of loans, returns, and digital reservation requests over time
-                        </p>
-                    </div>
-
-                    {{-- Metric Segment Filters --}}
-                    <div class="inline-flex items-center p-0.5 bg-slate-100 rounded-lg text-xs font-semibold text-slate-600">
-                        <button 
-                            type="button" 
-                            wire:click="setCirculationMetric('all')"
-                            class="px-2.5 py-1 rounded-md transition-all {{ $circulationMetric === 'all' ? 'bg-white text-[#102B70] shadow-sm font-bold' : 'hover:text-[#0F172A]' }}"
-                        >
-                            All Streams
-                        </button>
-                        <button 
-                            type="button" 
-                            wire:click="setCirculationMetric('borrowed')"
-                            class="px-2.5 py-1 rounded-md transition-all {{ $circulationMetric === 'borrowed' ? 'bg-white text-[#102B70] shadow-sm font-bold' : 'hover:text-[#0F172A]' }}"
-                        >
-                            Loans Only
-                        </button>
-                        <button 
-                            type="button" 
-                            wire:click="setCirculationMetric('returned')"
-                            class="px-2.5 py-1 rounded-md transition-all {{ $circulationMetric === 'returned' ? 'bg-white text-[#3B82F6] shadow-sm font-bold' : 'hover:text-[#0F172A]' }}"
-                        >
-                            Returns Only
-                        </button>
+                        <h2 class="text-xl font-bold text-[#0F172A] tracking-tight">Circulation</h2>
                     </div>
                 </div>
-
-                {{-- TallStackUI Multi-Series Line Graph --}}
-                <div class="py-4 my-auto" wire:loading.class="opacity-50 transition-opacity">
-                    <x-widget.chart 
-                        :series="$circulationTrend['series']" 
-                        :labels="$circulationTrend['labels']" 
-                        :colors="['#102B70', '#3B82F6', '#FCC719']"
-                        line 
-                        grid 
-                        legend 
-                        markers 
-                        height="260" 
-                    />
-                </div>
-
-                {{-- Insight Sub-Metrics Footer --}}
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 border-t border-slate-100 text-xs">
-                    <div class="flex items-center gap-2.5 bg-slate-50/75 p-2.5 rounded-xl border border-slate-100">
-                        <div class="w-8 h-8 rounded-lg bg-[#EFF6FF] text-[#102B70] flex items-center justify-center font-bold">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
-                        </div>
-                        <div>
-                            <span class="text-[11px] text-slate-500 font-semibold block">Peak Checkout Day</span>
-                            <span class="font-bold text-slate-800">Wednesday (68 loans/day)</span>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-2.5 bg-slate-50/75 p-2.5 rounded-xl border border-slate-100">
-                        <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                        </div>
-                        <div>
-                            <span class="text-[11px] text-slate-500 font-semibold block">Return Compliance</span>
-                            <span class="font-bold text-slate-800">94.6% On-Time Check-In</span>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-2.5 bg-slate-50/75 p-2.5 rounded-xl border border-slate-100">
-                        <div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                        </div>
-                        <div>
-                            <span class="text-[11px] text-slate-500 font-semibold block">Average Loan Period</span>
-                            <span class="font-bold text-slate-800">4.2 Days (Limit: 7 Days)</span>
-                        </div>
-                    </div>
-                </div>
-
             </div>
 
-            {{-- DONUT CHART: COLLECTION CIRCULATION BY CATEGORY (4 COLS) --}}
-            <div class="lg:col-span-4 bg-white rounded-2xl border border-slate-200/90 shadow-[0_1px_3px_rgba(15,23,42,0.04)] p-5 lg:p-6 flex flex-col justify-between min-w-0">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
                 
-                <div>
-                    {{-- Chart Card Header --}}
+                {{-- MAIN CHART (REDUCED TEXT & STREAMLINED LAYOUT) --}}
+                <div class="lg:col-span-8 bg-white rounded-2xl border border-slate-200/90 shadow-[0_1px_3px_rgba(15,23,42,0.04)] p-6 lg:p-7 flex flex-col justify-between min-w-0">
+                    
+                    <div>
+                        {{-- Minimalist Chart Header --}}
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-100">
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h2 class="text-base font-bold text-[#0F172A] tracking-tight">
+                                        {{ $timePeriod === 'monthly' ? ($viewMode === 'users_per_month' ? 'Users Per Month' : 'Circulation Trends') : 'Yearly Progression' }}
+                                    </h2>
+                                </div>
+                                <p class="text-sm text-[#64748B] mt-0.5">
+                                    {{ $timePeriod === 'monthly' ? 'Monthly overview (Jan – Dec)' : 'Annual comparison (2022 – 2026)' }}
+                                </p>
+                            </div>
+
+                            {{-- Mode Selector Dropdowns --}}
+                            @if ($timePeriod === 'monthly')
+                                <div class="flex flex-wrap items-center gap-2">
+                                    {{-- Mode Dropdown --}}
+                                    <div class="relative">
+                                        <select 
+                                            wire:model.live="viewMode" 
+                                            class="text-sm font-semibold text-[#102B70] bg-slate-50 border border-slate-200 rounded-lg pl-3 pr-8 py-1.5 appearance-none cursor-pointer focus:outline-none focus:border-[#102B70] hover:border-slate-300 transition-colors shadow-sm"
+                                        >
+                                            <option value="circulation">Circulation Trends</option>
+                                            <option value="users_per_month">Users Per Month</option>
+                                        </select>
+                                    </div>
+
+                                    {{-- Metric Filter Dropdown (when in circulation mode) --}}
+                                    @if ($viewMode === 'circulation')
+                                        <div class="relative">
+                                            <select 
+                                                wire:model.live="circulationMetric" 
+                                                class="text-sm font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-lg pl-3 pr-8 py-1.5 appearance-none cursor-pointer focus:outline-none focus:border-[#102B70] hover:border-slate-300 transition-colors shadow-sm"
+                                            >
+                                                <option value="all">All (Loans & Returns)</option>
+                                                <option value="borrowed">Loans Only</option>
+                                                <option value="returned">Returns Only</option>
+                                            </select>
+                                        </div>
+                                    @endif
+                                </div>
+                            @else
+                                <div class="relative">
+                                    <span class="inline-flex items-center text-sm font-bold px-3 py-1.5 rounded-lg bg-[#EFF6FF] text-[#102B70] border border-[#DBEAFE]">
+                                        5-Year Historical View
+                                    </span>
+                                </div>
+                            @endif
+                        </div>
+
+                        {{-- Chart Canvas (Expanded with clean, uncluttered visual space) --}}
+                        <div class="my-auto py-2" wire:loading.class="opacity-50 transition-opacity">
+                            @if ($timePeriod === 'monthly')
+                                <x-widget.graph.main 
+                                    :series="$monthlyTrend['series']" 
+                                    :labels="$monthlyTrend['labels']" 
+                                    line 
+                                    grid 
+                                    legend 
+                                    markers 
+                                    height="300" 
+                                />
+                            @else
+                                <x-widget.graph.main 
+                                    :series="$yearlyTrend['series']" 
+                                    :labels="$yearlyTrend['labels']" 
+                                    bar 
+                                    grid 
+                                    legend 
+                                    height="300" 
+                                />
+                            @endif
+                        </div>
+                    </div>
+
+                </div>
+
+                {{-- CHART SUMMARY CARDS (4 COLS - REPLACES GENDER BREAKDOWN POSITION) --}}
+                <div class="lg:col-span-4 bg-white rounded-2xl border border-slate-200/90 shadow-[0_1px_3px_rgba(15,23,42,0.04)] p-6 lg:p-7 flex flex-col justify-between min-w-0">
+                    
+                    {{-- Header --}}
                     <div class="flex items-center justify-between pb-3 border-b border-slate-100">
                         <div>
-                            <h2 class="text-base font-bold text-[#0F172A] tracking-tight">Category Distribution</h2>
-                            <p class="text-xs text-[#64748B] mt-0.5">Circulation share by Dewey classification</p>
+                            <h2 class="text-base font-bold text-[#0F172A] tracking-tight">Chart Summary</h2>
+                            <p class="text-sm text-[#64748B] mt-0.5">Key circulation & patron metrics</p>
                         </div>
-                        <span class="px-2 py-1 rounded-md text-[11px] font-semibold bg-[#EFF6FF] text-[#102B70]">
-                            Catalog
+                        <span class="px-2.5 py-1 rounded-md text-xs font-bold bg-[#EFF6FF] text-[#102B70]">
+                            Metrics
                         </span>
                     </div>
 
-                    {{-- TallStackUI Donut Chart Component --}}
-                    <div class="py-4" wire:loading.class="opacity-50 transition-opacity">
-                        <x-widget.chart 
-                            :series="$categoryDonut['series']" 
-                            :labels="$categoryDonut['labels']" 
-                            :colors="['#102B70', '#3B82F6', '#FCC719', '#10B981', '#8B5CF6', '#94A3B8']"
-                            donut 
-                            legend 
-                            height="210" 
-                            :centerLabel="['value' => $categoryDonut['total'], 'label' => 'Total Circulated']" 
-                        />
-                    </div>
-                </div>
-
-                {{-- Highlights Box --}}
-                <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-100 text-xs text-slate-600 space-y-1">
-                    <div class="flex items-center justify-between font-semibold text-slate-700">
-                        <span>Dominant Subject Area</span>
-                        <span class="text-[#102B70] font-bold">Computer Studies & Tech</span>
-                    </div>
-                    <p class="text-[11px] text-slate-500 leading-relaxed">
-                        Represents over 28% of overall borrowing activity, driven by Capstone thesis research.
-                    </p>
-                </div>
-
-            </div>
-
-        </div>
-
-        {{-- 4. SECONDARY ANALYTICAL ROW: GROUPED BAR CHART & HOURLY VELOCITY --}}
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-            
-            {{-- GROUPED BAR CHART: DEPARTMENT UTILIZATION (7 COLS) --}}
-            <div class="lg:col-span-7 bg-white rounded-2xl border border-slate-200/90 shadow-[0_1px_3px_rgba(15,23,42,0.04)] p-5 lg:p-6 flex flex-col justify-between min-w-0">
-                
-                <div>
-                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-100">
-                        <div>
-                            <div class="flex items-center gap-2">
-                                <span class="w-2.5 h-2.5 rounded-full bg-[#3B82F6]"></span>
-                                <h2 class="text-base font-bold text-[#0F172A] tracking-tight">Academic Department Resource Utilization</h2>
+                    {{-- The Summary Cards Only --}}
+                    <div class="py-3.5 space-y-3.5 my-auto">
+                        
+                        {{-- Card 1: Peak Circulation Month --}}
+                        <div class="flex items-center gap-3.5 p-3.5 rounded-xl bg-[#F8FAFC] border border-slate-200/80 hover:border-slate-300 transition-colors">
+                            <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#102B70] flex items-center justify-center shrink-0">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
                             </div>
-                            <p class="text-xs text-[#64748B] mt-0.5">
-                                Comparison of home borrowing vs in-library room study usage across colleges
-                            </p>
-                        </div>
-                        <span class="text-xs font-semibold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg">
-                            Grouped Comparison
-                        </span>
-                    </div>
-
-                    {{-- TallStackUI Grouped Bar Chart --}}
-                    <div class="py-4" wire:loading.class="opacity-50 transition-opacity">
-                        <x-widget.chart 
-                            :series="$departmentBars['series']" 
-                            :labels="$departmentBars['labels']" 
-                            :colors="['#102B70', '#3B82F6']"
-                            bar 
-                            grid 
-                            legend 
-                            height="240" 
-                        />
-                    </div>
-                </div>
-
-                {{-- Department Footnote --}}
-                <div class="flex items-center justify-between text-xs pt-3 border-t border-slate-100 text-slate-500">
-                    <span>Highest Participation: <strong class="text-slate-800">BS Computer Science</strong></span>
-                    <span class="text-slate-400">Audited across 1,290 verified student accounts</span>
-                </div>
-
-            </div>
-
-            {{-- HOURLY CIRCULATION VELOCITY & DESK RUSH HOURS (5 COLS) --}}
-            <div class="lg:col-span-5 bg-white rounded-2xl border border-slate-200/90 shadow-[0_1px_3px_rgba(15,23,42,0.04)] p-5 lg:p-6 flex flex-col justify-between min-w-0">
-                
-                <div>
-                    <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-                        <div>
-                            <h2 class="text-base font-bold text-[#0F172A] tracking-tight">Circulation Desk Rush Hours</h2>
-                            <p class="text-xs text-[#64748B] mt-0.5">Operating schedule traffic profile (8:00 AM – 5:00 PM)</p>
-                        </div>
-                        <span class="p-1.5 rounded-lg bg-[#EFF6FF] text-[#102B70]">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                        </span>
-                    </div>
-
-                    {{-- Hourly Bar Distribution --}}
-                    <div class="py-4 space-y-2.5">
-                        @foreach ($hourlyTraffic as $slot)
-                            <div class="space-y-1">
-                                <div class="flex items-center justify-between text-xs font-semibold">
-                                    <div class="flex items-center gap-2">
-                                        <span class="w-16 text-slate-600 font-medium">{{ $slot['hour'] }}</span>
-                                        @if(isset($slot['tag']))
-                                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full {{ $slot['isPeak'] ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-slate-100 text-slate-600' }}">
-                                                {{ $slot['tag'] }}
-                                            </span>
-                                        @endif
-                                    </div>
-                                    <span class="text-slate-700 tabular-nums">{{ $slot['count'] }} actions</span>
-                                </div>
-                                <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                                    <div 
-                                        class="h-full rounded-full transition-all duration-500 {{ $slot['isPeak'] ? 'bg-[#FCC719]' : ($slot['pct'] > 60 ? 'bg-[#102B70]' : 'bg-[#3B82F6]') }}" 
-                                        style="width: {{ $slot['pct'] }}%"
-                                    ></div>
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
-                </div>
-
-                {{-- Desk Staffing Recommendation --}}
-                <div class="bg-[#EFF6FF] border border-[#DBEAFE] p-3 rounded-xl flex items-center gap-2.5 text-xs text-[#102B70]">
-                    <svg class="w-4 h-4 text-[#102B70] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    <span><strong>Staffing Alert:</strong> Highest circulation rush occurs at <strong>2:00 PM</strong>. Keep both checkout scanners active.</span>
-                </div>
-
-            </div>
-
-        </div>
-
-        {{-- 5. DEEP ANALYTICAL INSIGHTS: TOP CIRCULATED TITLES & PATRON DEMOGRAPHICS --}}
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            
-            {{-- TOP 5 MOST CIRCULATED & HIGH DEMAND BOOKS (8 COLS) --}}
-            <div class="lg:col-span-8 bg-white rounded-2xl border border-slate-200/90 shadow-[0_1px_3px_rgba(15,23,42,0.04)] p-5 lg:p-6">
-                
-                <div class="flex items-center justify-between pb-4 border-b border-slate-100">
-                    <div>
-                        <h2 class="text-base font-bold text-[#0F172A] tracking-tight">Top Circulated & High-Demand Titles</h2>
-                        <p class="text-xs text-[#64748B] mt-0.5">Most borrowed catalog items during the selected period</p>
-                    </div>
-                    <a href="{{ route(request()->is('librarian*') ? 'librarian.book-management.index' : 'admin.book-management.index') }}" class="text-xs font-bold text-[#102B70] hover:underline inline-flex items-center gap-1" wire:navigate>
-                        View Full Catalog
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                    </a>
-                </div>
-
-                <div class="divide-y divide-slate-100 mt-2">
-                    @foreach ($topBooks as $book)
-                        <div class="py-3.5 flex items-center justify-between gap-4 hover:bg-slate-50/60 rounded-xl px-2 transition-colors">
-                            
-                            {{-- Rank Badge & Title Info --}}
-                            <div class="flex items-center gap-3.5 min-w-0">
-                                <span class="w-7 h-7 rounded-lg flex items-center justify-center font-extrabold text-xs shrink-0 {{ $book['rank'] === 1 ? 'bg-[#FCC719] text-[#071943] shadow-sm' : ($book['rank'] === 2 ? 'bg-slate-200 text-slate-700' : 'bg-slate-100 text-slate-600') }}">
-                                    #{{ $book['rank'] }}
+                            <div class="min-w-0 flex-1">
+                                <span class="text-[11px] text-slate-500 font-semibold block uppercase tracking-wider">Peak Period</span>
+                                <span class="font-bold text-[#0F172A] text-sm mt-0.5 block truncate">
+                                    {{ $timePeriod === 'monthly' ? $monthlyTrend['peakMonth'] : '2026 (29,400 loans)' }}
                                 </span>
-
-                                <div class="min-w-0">
-                                    <h3 class="text-xs sm:text-sm font-bold text-slate-900 truncate" title="{{ $book['title'] }}">
-                                        {{ $book['title'] }}
-                                    </h3>
-                                    <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500 mt-0.5">
-                                        <span>{{ $book['author'] }}</span>
-                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-mono text-[10px]">
-                                            {{ $book['call_number'] }}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {{-- Borrows & Status --}}
-                            <div class="flex items-center gap-4 shrink-0 text-right">
-                                <div>
-                                    <span class="text-sm font-extrabold text-slate-900 block tabular-nums">{{ $book['borrows'] }} loans</span>
-                                    <span class="text-[10px] font-semibold text-emerald-600">{{ $book['trend'] }} velocity</span>
-                                </div>
-
-                                <span class="hidden sm:inline-flex px-2.5 py-1 rounded-full text-[11px] font-bold {{ $book['status'] === 'High Demand' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-[#EFF6FF] text-[#102B70] border border-[#DBEAFE]' }}">
-                                    {{ $book['status'] }}
+                                <span class="text-[11px] text-slate-400 font-medium block truncate">
+                                    {{ $timePeriod === 'monthly' ? 'Midterm examination rush' : 'Highest volume recorded' }}
                                 </span>
                             </div>
-
                         </div>
-                    @endforeach
+
+                        {{-- Card 2: Average Monthly Users --}}
+                        <div class="flex items-center gap-3.5 p-3.5 rounded-xl bg-[#F8FAFC] border border-slate-200/80 hover:border-slate-300 transition-colors">
+                            <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] text-[#3B82F6] flex items-center justify-center shrink-0">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <span class="text-[11px] text-slate-500 font-semibold block uppercase tracking-wider">Average Monthly Users</span>
+                                <span class="font-bold text-[#0F172A] text-sm mt-0.5 block truncate">{{ number_format($monthlyTrend['avgMonthlyUsers'] ?? 988) }} Patrons / Month</span>
+                                <span class="text-[11px] text-slate-400 font-medium block truncate">Consistent campus engagement</span>
+                            </div>
+                        </div>
+
+                        {{-- Card 3: Year-over-Year Growth --}}
+                        <div class="flex items-center gap-3.5 p-3.5 rounded-xl bg-[#F8FAFC] border border-slate-200/80 hover:border-slate-300 transition-colors">
+                            <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <span class="text-[11px] text-slate-500 font-semibold block uppercase tracking-wider">Year-over-Year Growth</span>
+                                <span class="font-bold text-[#0F172A] text-sm mt-0.5 block truncate">{{ $yearlyTrend['growthRate'] }}</span>
+                                <span class="text-[11px] text-emerald-600 font-medium block truncate">Expanding student utilization</span>
+                            </div>
+                        </div>
+
+                        {{-- Card 4: Return Turnaround Compliance --}}
+                        <div class="flex items-center gap-3.5 p-3.5 rounded-xl bg-[#F8FAFC] border border-slate-200/80 hover:border-slate-300 transition-colors">
+                            <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <span class="text-[11px] text-slate-500 font-semibold block uppercase tracking-wider">Return Compliance</span>
+                                <span class="font-bold text-[#0F172A] text-sm mt-0.5 block truncate">91.4% On-Time</span>
+                                <span class="text-[11px] text-slate-400 font-medium block truncate">4.2 days avg turnaround</span>
+                            </div>
+                        </div>
+
+                    </div>
+
                 </div>
 
             </div>
-
-            {{-- PATRON DEMOGRAPHICS & CATALOG HEALTH (4 COLS) --}}
-            <div class="lg:col-span-4 bg-white rounded-2xl border border-slate-200/90 shadow-[0_1px_3px_rgba(15,23,42,0.04)] p-5 lg:p-6 space-y-5">
-                
-                <div class="pb-3 border-b border-slate-100">
-                    <h2 class="text-base font-bold text-[#0F172A] tracking-tight">Patron Segmentation</h2>
-                    <p class="text-xs text-[#64748B] mt-0.5">Circulation consumption by user category</p>
-                </div>
-
-                {{-- Demographic Percentage Bars --}}
-                <div class="space-y-3 text-xs">
-                    <div>
-                        <div class="flex justify-between font-semibold text-slate-700 mb-1">
-                            <span>College Undergraduates</span>
-                            <span class="font-bold text-[#102B70]">72%</span>
-                        </div>
-                        <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                            <div class="h-full bg-[#102B70] rounded-full" style="width: 72%"></div>
-                        </div>
-                    </div>
-
-                    <div>
-                        <div class="flex justify-between font-semibold text-slate-700 mb-1">
-                            <span>Senior High School</span>
-                            <span class="font-bold text-[#3B82F6]">18%</span>
-                        </div>
-                        <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                            <div class="h-full bg-[#3B82F6] rounded-full" style="width: 18%"></div>
-                        </div>
-                    </div>
-
-                    <div>
-                        <div class="flex justify-between font-semibold text-slate-700 mb-1">
-                            <span>Faculty & Instructors</span>
-                            <span class="font-bold text-amber-600">7%</span>
-                        </div>
-                        <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                            <div class="h-full bg-[#FCC719] rounded-full" style="width: 7%"></div>
-                        </div>
-                    </div>
-
-                    <div>
-                        <div class="flex justify-between font-semibold text-slate-700 mb-1">
-                            <span>Administrative Staff</span>
-                            <span class="font-bold text-slate-600">3%</span>
-                        </div>
-                        <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                            <div class="h-full bg-slate-400 rounded-full" style="width: 3%"></div>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- Operational Health Highlights --}}
-                <div class="pt-4 border-t border-slate-100 space-y-3">
-                    <span class="text-xs font-bold text-slate-800 uppercase tracking-wider block">Acquisition Intelligence</span>
-
-                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200/80 space-y-1.5 text-xs">
-                        <div class="flex items-center gap-1.5 text-slate-700 font-bold">
-                            <svg class="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
-                            Unmet OPAC Search Queries
-                        </div>
-                        <p class="text-[11px] text-slate-500">
-                            High query counts recorded for <em>"Artificial Intelligence Ethics"</em> and <em>"Forensic Ballistics Manual"</em> with zero current physical copies.
-                        </p>
-                    </div>
-                </div>
-
-            </div>
-
         </div>
 
+        {{-- 4. PROGRAMS SECTION --}}
+        <div id="analytics-programs" class="space-y-5 scroll-mt-24">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 pb-3.5 border-b border-slate-200">
+                <div class="flex items-center gap-3">
+                    <span class="w-2 h-6 rounded-full bg-[#102B70]"></span>
+                    <div>
+                        <h2 class="text-xl font-bold text-[#0F172A] tracking-tight">Programs</h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+                
+                {{-- PROGRAM / COURSE BREAKDOWN (6 COLS) --}}
+                <div class="lg:col-span-8 bg-white rounded-2xl border border-slate-200/90 shadow-[0_1px_3px_rgba(15,23,42,0.04)] p-6 lg:p-7 flex flex-col justify-between min-w-0">
+                    
+                    <div>
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-100">
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h2 class="text-base font-bold text-[#0F172A] tracking-tight">Program / Course Breakdown</h2>
+                                </div>
+                                <p class="text-sm text-[#64748B] mt-0.5">
+                                    Utilization and borrowing by academic degree
+                                </p>
+                            </div>
+                        </div>
+
+                        {{-- Grouped Bar Chart of Program Usage --}}
+                        <div class="py-5" wire:loading.class="opacity-50 transition-opacity">
+                            <x-widget.graph.main 
+                                :series="$programBreakdown['series']" 
+                                :labels="$programBreakdown['labels']" 
+                                :colors="['#102B70', '#3B82F6']"
+                                bar 
+                                grid 
+                                legend 
+                                height="210" 
+                            />
+                        </div>
+                    </div>
+
+                    {{-- Program Details Ranking Table (Shows max 5 items, scrollable if over 5) --}}
+                    <div class="pt-4 border-t border-slate-100">
+                        <div 
+                            class="overflow-y-auto divide-y divide-slate-100 text-sm pr-1.5"
+                            style="max-height: 200px;"
+                        >
+                            @foreach ($programBreakdown['programs'] as $prog)
+                                <div class="h-10 flex items-center justify-between">
+                                    <div class="flex items-center gap-4 min-w-0">
+                                        <span class="w-12 font-bold text-slate-800">{{ $prog['code'] }}</span>
+                                        <span class="text-slate-800 truncate" title="{{ $prog['name'] }}">{{ $prog['name'] }}</span>
+                                    </div>
+                                    <div class="flex items-center gap-4 shrink-0 text-right">
+                                        <span class="text-slate-600 font-medium">{{ $prog['users'] }} students</span>
+                                        <span class="font-bold text-[#102B70] tabular-nums">{{ $prog['loans'] }} borrows</span>
+                                        <span class="w-10 text-right text-xs font-bold text-slate-500">{{ $prog['pct'] }}%</span>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+
+
+                </div>
+                
+
+                {{-- GENDER BREAKDOWN (6 COLS): BABAE O LALAKI MAS MALIMIT GUMAMIT --}}
+                <div id="analytics-demographics" class="lg:col-span-4 bg-white rounded-2xl border border-slate-200/90 shadow-[0_1px_3px_rgba(15,23,42,0.04)] p-6 lg:p-7 flex flex-col justify-between min-w-0 scroll-mt-24">
+                    
+                    <div>
+                        {{-- Card Header --}}
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-100">
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h2 class="text-base font-bold text-[#0F172A] tracking-tight">Gender Breakdown</h2>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Gender Breakdown Chart --}}
+                        <div class="py-4 flex items-center justify-center min-h-[250px]" wire:loading.class="opacity-50 transition-opacity">
+                            <x-charts.pie 
+                                :series="$genderBreakdown['donutSeries']" 
+                                :labels="['Female', 'Male']" 
+                                :colors="['#102B70', '#3B82F6']" 
+                                :height="250"
+                                pie 
+                                legend 
+                                legend-position="bottom"
+                                legend-text-size="text-xs sm:text-sm font-semibold"
+                                legend-value-size="text-xs sm:text-sm font-bold"
+                                suffix="Students"
+                            />
+                        </div>
+                    </div>
+
+                    {{-- Gender Comparison Breakdown & Details --}}
+                    <div class="pt-4 border-t border-slate-100 divide-y divide-slate-100 text-sm">
+                        <!-- Female -->
+                        <div class="py-3.5 space-y-1.5">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2 min-w-0">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-[#102B70] shrink-0"></span>
+                                    <span class="font-bold text-slate-800">Female</span>
+                                </div>
+                                <div class="flex items-center gap-3 shrink-0 text-right">
+                                    <span class="text-slate-600 font-medium text-xs sm:text-sm">{{ number_format($genderBreakdown['female']['count']) }} Students</span>
+                                    <span class="font-bold text-[#102B70] tabular-nums text-xs sm:text-sm">{{ $genderBreakdown['female']['avgLoans'] }}</span>
+                                    <span class="w-10 text-right text-xs font-bold text-slate-500">{{ $genderBreakdown['female']['pct'] }}%</span>
+                                </div>
+                            </div>
+                            <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                                <div class="h-full bg-[#102B70] rounded-full transition-all duration-500" style="width: {{ $genderBreakdown['female']['pct'] }}%"></div>
+                            </div>
+                            <div class="flex items-center justify-between text-xs text-slate-500">
+                                <span class="truncate">Top Categories: <strong class="text-slate-700 font-medium">{{ $genderBreakdown['female']['preferredGenre'] }}</strong></span>
+                            </div>
+                        </div>
+
+                        <!-- Male -->
+                        <div class="py-3.5 space-y-1.5">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2 min-w-0">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-[#3B82F6] shrink-0"></span>
+                                    <span class="font-bold text-slate-800">Male</span>
+                                    @if($genderBreakdown['dominantGender'] === 'Lalaki (Male)' || str_contains($genderBreakdown['dominantGender'], 'Male'))
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-[#3B82F6] text-white">Top User</span>
+                                    @endif
+                                </div>
+                                <div class="flex items-center gap-3 shrink-0 text-right">
+                                    <span class="text-slate-600 font-medium text-xs sm:text-sm">{{ number_format($genderBreakdown['male']['count']) }} patrons</span>
+                                    <span class="font-bold text-[#3B82F6] tabular-nums text-xs sm:text-sm">{{ $genderBreakdown['male']['avgLoans'] }}</span>
+                                    <span class="w-10 text-right text-xs font-bold text-slate-500">{{ $genderBreakdown['male']['pct'] }}%</span>
+                                </div>
+                            </div>
+                            <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                                <div class="h-full bg-[#3B82F6] rounded-full transition-all duration-500" style="width: {{ $genderBreakdown['male']['pct'] }}%"></div>
+                            </div>
+                            <div class="flex items-center justify-between text-xs text-slate-500">
+                                <span class="truncate">Top Categories: <strong class="text-slate-700 font-medium">{{ $genderBreakdown['male']['preferredGenre'] }}</strong></span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+
+        {{-- 5. OPERATIONS SECTION --}}
+        <div id="analytics-operations" class="space-y-5 scroll-mt-24">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 pb-3.5 border-b border-slate-200">
+                <div class="flex items-center gap-3">
+                    <span class="w-2 h-6 rounded-full bg-amber-500"></span>
+                    <div>
+                        <h2 class="text-xl font-bold text-[#0F172A] tracking-tight">Operations</h2>
+                        <p class="text-sm text-slate-500 font-medium">Daily book returns timeline and peak circulation desk activity</p>
+                    </div>
+                </div>
+                <span class="text-sm font-semibold px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-amber-700 shadow-sm hidden sm:inline-block">
+                    Daily Schedule
+                </span>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+                
+                {{-- DUE BOOKS TODAY (6 COLS) --}}
+                <div class="lg:col-span-6 bg-white rounded-2xl border border-slate-200/90 shadow-[0_1px_3px_rgba(15,23,42,0.04)] p-6 lg:p-7 flex flex-col justify-between min-w-0">
+                    
+                    <div>
+                        {{-- Header with Due Books Today Highlight --}}
+                        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                                    <h2 class="text-base font-bold text-[#0F172A] tracking-tight">Due Books Today ({{ count($dueBooksToday) }} Total)</h2>
+                                </div>
+                                <p class="text-sm text-[#64748B] mt-0.5">{{ $kpiMetrics['dueBooksToday']['change'] }} • {{ $kpiMetrics['dueBooksToday']['subtext'] }}</p>
+                            </div>
+                            <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                Schedule
+                            </span>
+                        </div>
+
+                        {{-- Due Books Today Mini List --}}
+                        <div class="py-3 divide-y divide-slate-100 text-sm">
+                            @foreach ($dueBooksToday as $book)
+                                <div class="py-2.5 flex items-center justify-between gap-3">
+                                    <div class="min-w-0">
+                                        <h4 class="font-bold text-slate-800 truncate" title="{{ $book['title'] }}">
+                                            {{ $book['title'] }}
+                                        </h4>
+                                        <p class="text-xs text-slate-500 mt-0.5">
+                                            {{ $book['borrower'] }} ({{ $book['program'] }}) • Due {{ $book['due_time'] }}
+                                        </p>
+                                    </div>
+                                    <span class="shrink-0 px-2.5 py-0.5 rounded-full text-xs font-bold {{ $book['status'] === 'Returned' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : ($book['status'] === 'Overdue' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-amber-50 text-amber-700 border border-amber-200') }}">
+                                        {{ $book['status'] }}
+                                    </span>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    <div class="pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                        <span>Automated return reminders dispatched at 8:00 AM</span>
+                        <a href="javascript:void(0)" class="text-[#102B70] font-bold hover:underline">View All Due Items</a>
+                    </div>
+
+                </div>
+
+                {{-- PEAK CIRCULATION HOURS & HOURLY VELOCITY (6 COLS) --}}
+                <div class="lg:col-span-6 bg-white rounded-2xl border border-slate-200/90 shadow-[0_1px_3px_rgba(15,23,42,0.04)] p-6 lg:p-7 flex flex-col justify-between min-w-0">
+                    
+                    <div>
+                        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                            <div>
+                                <h2 class="text-base font-bold text-[#0F172A] tracking-tight">Circulation Desk Rush Hours</h2>
+                                <p class="text-sm text-[#64748B] mt-0.5">Operating schedule traffic profile (8:00 AM – 5:00 PM)</p>
+                            </div>
+                            <span class="p-1.5 rounded-lg bg-[#EFF6FF] text-[#102B70]">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            </span>
+                        </div>
+
+                        {{-- Hourly Bar Distribution --}}
+                        <div class="py-4 space-y-3">
+                            @foreach ($hourlyTraffic as $slot)
+                                <div class="space-y-1">
+                                    <div class="flex items-center justify-between text-xs font-semibold">
+                                        <div class="flex items-center gap-2">
+                                            <span class="w-16 text-slate-600 font-medium text-[11px]">{{ $slot['hour'] }}</span>
+                                            @if(isset($slot['tag']))
+                                                <span class="text-[9px] font-bold px-1.5 py-0.2 rounded-full {{ $slot['isPeak'] ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-slate-100 text-slate-600' }}">
+                                                    {{ $slot['tag'] }}
+                                                </span>
+                                            @endif
+                                        </div>
+                                        <span class="text-slate-700 tabular-nums text-[11px]">{{ $slot['count'] }} actions</span>
+                                    </div>
+                                    <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                                        <div 
+                                            class="h-full rounded-full transition-all duration-500 {{ $slot['isPeak'] ? 'bg-[#FCC719]' : ($slot['pct'] > 60 ? 'bg-[#102B70]' : 'bg-[#3B82F6]') }}" 
+                                            style="width: {{ $slot['pct'] }}%"
+                                        ></div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    {{-- Desk Recommendation Alert --}}
+                    <div class="bg-[#EFF6FF] border border-[#DBEAFE] p-3 rounded-xl flex items-center gap-2.5 text-xs text-[#102B70] mt-2">
+                        <svg class="w-4 h-4 text-[#102B70] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <span class="text-[11px] leading-relaxed"><strong>Peak Activity:</strong> Busiest rush hour is <strong>2:00 PM (72 actions)</strong>. Keep both checkout stations operational.</span>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+    
+    {{-- Print & PDF Official Institutional Template --}}
+    <div class="hidden print:block w-full">
+        <x-template.analytics 
+            :kpiMetrics="$kpiMetrics"
+            :monthlyTrend="$monthlyTrend"
+            :yearlyTrend="$yearlyTrend"
+            :genderBreakdown="$genderBreakdown"
+            :programBreakdown="$programBreakdown"
+            :dueBooksToday="$dueBooksToday"
+            :hourlyTraffic="$hourlyTraffic"
+            :timePeriod="$timePeriod"
+        />
     </div>
 </div>

@@ -70,6 +70,11 @@ class Student extends Model
         return $this->hasMany(Fine::class);
     }
 
+    public function reservations(): HasMany
+    {
+        return $this->hasMany(BookReservation::class, 'student_id');
+    }
+
     /**
      * Get the resolved public URL for the student's profile image.
      */

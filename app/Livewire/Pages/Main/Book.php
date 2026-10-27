@@ -97,10 +97,13 @@ class Book extends Component
                 $statusId = $pendingStatus ? $pendingStatus->id : 1;
 
                 $user = Auth::user();
+                $student = $user?->student;
                 $userIdentifier = $user->username ?? $user->name ?? $user->email ?? 'User';
 
                 BookReservation::create([
                     'book_id' => $copy->id,
+                    'student_id' => $student?->id,
+                    'account_id' => $user?->id,
                     'reservation_status_id' => $statusId,
                     'reservation_date' => now(),
                     'due_date' => now()->addDays(3),
@@ -298,6 +301,7 @@ class Book extends Component
                 'accession_no' => $primaryAccession,
                 'isbn' => $record->isbn ?: ($record->issn ?: 'N/A'),
                 'subjects' => $subjects,
+                'category' => $subjects[0] ?? null,
                 'description' => $bdata->description ?: ($bdata->note ?: 'No detailed description cataloged for this resource.'),
                 'keywords' => $keywords,
                 'cover_url' => $record->cover_url ?: null,
@@ -333,18 +337,46 @@ class Book extends Component
 
         try {
             $current = BookDetailModel::with('bookData.categories')->find($this->bookDetailId);
-            $catIds = $current?->bookData?->categories?->pluck('id')->toArray() ?? [];
+            $catIds = $current?->bookData?->categories?->pluck('id')->filter()->toArray() ?? [];
 
-            $query = BookDetailModel::with(['bookData.authors', 'bookType', 'books'])
-                ->where('id', '!=', $this->bookDetailId);
-
+            // 1. Primary Query: Books sharing the same category/categories
+            $similar = collect();
             if (!empty($catIds)) {
-                $query->whereHas('bookData.categories', function ($q) use ($catIds) {
-                    $q->whereIn('categories.id', $catIds);
-                });
+                $similar = BookDetailModel::with(['bookData.authors', 'bookData.categories', 'bookType', 'books'])
+                    ->where('id', '!=', $this->bookDetailId)
+                    ->whereHas('bookData.categories', function ($q) use ($catIds) {
+                        $q->whereIn('categories.id', $catIds);
+                    })
+                    ->limit(10)
+                    ->get();
             }
 
-            $similar = $query->limit(8)->get();
+            // 2. Secondary fallback: If fewer than 6 books found by exact category, complement with same classification or book type
+            if ($similar->count() < 6) {
+                $excludedIds = $similar->pluck('id')->push($this->bookDetailId)->toArray();
+                $additionalQuery = BookDetailModel::with(['bookData.authors', 'bookData.categories', 'bookType', 'books'])
+                    ->whereNotIn('id', $excludedIds);
+
+                if (!empty($current?->classification)) {
+                    $additionalQuery->where('classification', $current->classification);
+                } elseif (!empty($current?->book_type_id)) {
+                    $additionalQuery->where('book_type_id', $current->book_type_id);
+                }
+
+                $additional = $additionalQuery->limit(10 - $similar->count())->get();
+                $similar = $similar->concat($additional);
+
+                // 3. Fallback: Fill remaining slots if still fewer than 4 books
+                if ($similar->count() < 4) {
+                    $excludedIds = $similar->pluck('id')->push($this->bookDetailId)->toArray();
+                    $fillers = BookDetailModel::with(['bookData.authors', 'bookData.categories', 'bookType', 'books'])
+                        ->whereNotIn('id', $excludedIds)
+                        ->latest('id')
+                        ->limit(10 - $similar->count())
+                        ->get();
+                    $similar = $similar->concat($fillers);
+                }
+            }
 
             if ($similar->isNotEmpty()) {
                 $defaultCover = asset('images/' . config('settings.book_covers.default', config('settings.coverFile_default', 'book-cover.webp')));
@@ -355,6 +387,8 @@ class Book extends Component
                     $availableCopies = $copies->filter(fn($c) => strtolower($c->status ?? '') === 'available')->count();
                     $firstCopy = $copies->first();
                     $accNo = $firstCopy?->accession_number;
+                    $primaryCat = $data?->categories?->first()?->name 
+                        ?: ($item->classification ?: ($item->bookType ? $item->bookType->name : 'General'));
 
                     return [
                         'id' => $item->id,
@@ -363,6 +397,8 @@ class Book extends Component
                         'author' => $data && $data->authors->isNotEmpty()
                             ? $data->authors->map(fn($a) => trim($a->first_name . ' ' . $a->last_name))->filter()->implode(', ')
                             : 'Unknown Author',
+                        'category' => $primaryCat,
+                        'categories' => $data?->categories?->pluck('name')->toArray() ?? [],
                         'cover_url' => $item->cover_url ?: null,
                         'has_custom_cover' => !empty($item->cover_image),
                         'default_cover' => $defaultCover,

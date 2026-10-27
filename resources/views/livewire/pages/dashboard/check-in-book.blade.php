@@ -57,7 +57,7 @@
             <div class="flex flex-col md:flex-row pt-2 justify-between items-start md:items-center">
                 <div>
                     <h1 class="text-[1.5rem] font-bold text-[#102B70] tracking-tight leading-tight">
-                        Check-In / Return Books
+                        Return Books
                     </h1>
                     <p class="mt-0.5 text-sm text-[#64748B] font-medium">
                         Scan or enter a member ID or book barcode to process returns.

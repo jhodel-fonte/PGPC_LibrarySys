@@ -59,10 +59,10 @@
             <div class="flex flex-col md:flex-row pt-2 justify-between items-start md:items-center">
                 <div>
                     <h1 class="text-[1.5rem] font-bold text-[#102B70] tracking-tight leading-tight">
-                        Check-Out / Issue Books
+                        Borrow / Issue Books
                     </h1>
                     <p class="mt-0.5 text-xs text-[#64748B] font-medium">
-                        Scan or enter member ID first, then scan book barcodes to perform checkout.
+                        Scan or enter member ID first, then scan book barcodes to process book loans.
                     </p>
                 </div>
             </div>
@@ -78,8 +78,8 @@
                 @if($showConfirmChangeMember)
                     <livewire:components.circulation.top-notification-banner
                         type="warning"
-                        title="Unsaved Checkout Session"
-                        :message="'You have already queued ' . count($checkoutBooks) . ' book(s) in this session. Switching student to <b>' . $pendingStudentName . '</b> will clear this checkout list. Proceed?'"
+                        title="Unsaved Borrow Session"
+                        :message="'You have already queued ' . count($checkoutBooks) . ' book(s) in this session. Switching student to <b>' . $pendingStudentName . '</b> will clear this borrow list. Proceed?'"
                         confirm-action="confirmChangeMember"
                         confirm-label="Yes, Switch Student"
                         cancel-action="cancelChangeMember"
@@ -329,7 +329,7 @@
 
               <!-- Content -->
               <div class="flex flex-col gap-1.5">
-                  <h3 class="text-xl font-bold text-[#B91C1C]">Checkout Failed</h3>
+                  <h3 class="text-xl font-bold text-[#B91C1C]">Borrow Failed</h3>
                   <p class="text-xs text-[#64748B] font-semibold leading-relaxed px-4" x-text="errorMessage">
                       An error occurred during submission. Please check conditions and try again.
                   </p>

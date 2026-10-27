@@ -1,6 +1,7 @@
 @props([
-    'title' => 'Similar Books',
-    'subtitle' => 'Explore related resources from the library collection',
+    'title' => null,
+    'subtitle' => null,
+    'category' => null,
     'books' => [],
     'endpoint' => null,
     'limit' => 10,
@@ -12,6 +13,30 @@
     $initialBooks = is_array($books) ? $books : (is_object($books) && method_exists($books, 'toArray') ? $books->toArray() : []);
     $hasEndpoint = !empty($endpoint);
     $initialLoading = $hasEndpoint && empty($initialBooks);
+
+    // Determine primary category for badge & heading
+    $activeCategory = $category;
+    if (empty($activeCategory) && !empty($initialBooks)) {
+        $firstBook = reset($initialBooks);
+        $activeCategory = $firstBook['category'] ?? ($firstBook['categories'][0] ?? null);
+    }
+    if ($activeCategory === 'General Collection' || $activeCategory === 'General') {
+        foreach ($initialBooks as $b) {
+            $cat = $b['category'] ?? null;
+            if ($cat && !in_array(strtolower($cat), ['general', 'general collection', 'n/a'])) {
+                $activeCategory = $cat;
+                break;
+            }
+        }
+    }
+
+    $hasSpecificCat = !empty($activeCategory) && !in_array(strtolower($activeCategory), ['general', 'general collection', 'n/a']);
+    $finalTitle = $title ?? ($hasSpecificCat ? "Recommended Books" : "Related Books");
+    $finalSubtitle = $subtitle ?? ($hasSpecificCat ? "Explore other recommended cataloged resources under {$activeCategory}" : "Explore related resources from the library collection");
+
+    if (empty($viewAllUrl) && $hasSpecificCat && Route::has('opac.search')) {
+        $viewAllUrl = route('opac.search', ['category' => $activeCategory]);
+    }
 @endphp
 
 <section
@@ -86,17 +111,26 @@
     x-show="isLoading || items.length > 0"
     class="w-full rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 lg:p-7 shadow-[0_2px_12px_rgba(7,26,61,0.04)] select-none {{ $class }}"
 >
-    <!-- Header: Title, Subtitle, and Navigation Arrows -->
+    <!-- Header: Title, Subtitle, Category Badge, and Navigation Arrows -->
     <div class="flex items-center justify-between gap-4 mb-5 pb-4 border-b border-slate-100">
         <div class="min-w-0">
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2.5 flex-wrap">
+                <span class="w-1.5 h-5 rounded-full bg-[#FCC719] shrink-0" aria-hidden="true"></span>
                 <h3 class="text-lg sm:text-xl font-extrabold text-[#0B2454] tracking-tight truncate">
-                    {{ $title }}
+                    {{ $finalTitle }}
                 </h3>
+                @if($hasSpecificCat)
+                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#EFF6FF] text-[#102B70] border border-[#DBEAFE]">
+                        <svg class="w-3 h-3 text-[#3B82F6]" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A.997.997 0 012 10V5a3 3 0 013-3h5c.256 0 .512.098.707.293l7 7zM5 6a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+                        </svg>
+                        <span class="truncate max-w-[150px] sm:max-w-[200px]">{{ $activeCategory }}</span>
+                    </span>
+                @endif
             </div>
-            @if(!empty($subtitle))
-                <p class="text-xs sm:text-[13px] text-[#64748B] mt-1 truncate">
-                    {{ $subtitle }}
+            @if(!empty($finalSubtitle))
+                <p class="text-xs sm:text-[13px] text-[#64748B] mt-1 pl-4 truncate">
+                    {{ $finalSubtitle }}
                 </p>
             @endif
         </div>
@@ -209,6 +243,7 @@
                     "
                     class="relative w-full aspect-[2/3] rounded-xl overflow-hidden bg-slate-100 border border-slate-200/90 shadow-xs transition-all duration-200 group-hover:shadow-md group-hover:-translate-y-0.5 group-hover:border-[#102B70]/40"
                 >
+
                     <!-- Image loading state -->
                     <template x-if="coverUrl">
                         <div class="w-full h-full relative">
@@ -246,7 +281,7 @@
 
                 </div>
 
-                <!-- Book Title & Author Underneath -->
+                <!-- Book Title, Category & Author Underneath -->
                 <div class="mt-2.5 flex flex-col flex-1 min-w-0">
                     <!-- Title -->
                     <h4
@@ -263,14 +298,25 @@
                         :title="book.author"
                     ></p>
 
-                    <!-- Additional Subtle Metadata (Year / Category / Call No) -->
+                    <!-- Category indicator -->
                     <div
-                        x-show="book.year || book.type || book.category"
-                        class="mt-1.5 flex items-center gap-1.5 text-[11px] text-slate-400 font-medium line-clamp-1"
+                        x-show="book.category"
+                        class="mt-1 flex items-center gap-1 text-[11px] font-semibold text-[#102B70] line-clamp-1"
+                    >
+                        <svg class="w-3 h-3 text-[#FCC719] shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A.997.997 0 012 10V5a3 3 0 013-3h5c.256 0 .512.098.707.293l7 7zM5 6a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+                        </svg>
+                        <span class="truncate" x-text="book.category" :title="book.category"></span>
+                    </div>
+
+                    <!-- Additional Metadata (Year / Type) -->
+                    <div
+                        x-show="book.year || book.type"
+                        class="mt-0.5 flex items-center gap-1.5 text-[11px] text-slate-400 font-medium line-clamp-1"
                     >
                         <span x-show="book.year" x-text="book.year"></span>
-                        <span x-show="book.year && (book.type || book.category)">•</span>
-                        <span x-show="book.type || book.category" x-text="book.type || book.category"></span>
+                        <span x-show="book.year && book.type">•</span>
+                        <span x-show="book.type" x-text="book.type"></span>
                     </div>
                 </div>
             </div>
@@ -282,6 +328,6 @@
         x-show="!isLoading && (!items || items.length === 0)"
         class="py-8 text-center text-slate-400 text-xs sm:text-sm font-medium"
     >
-        No related books available at this moment.
+        No related books cataloged under this category at this moment.
     </div>
 </section>

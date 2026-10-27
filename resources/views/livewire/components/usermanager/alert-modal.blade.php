@@ -183,7 +183,7 @@
 
             <!-- MODAL BODY -->
             <div class="space-y-4">
-                @if(isset($slot) && !$slot->isEmpty())
+                @if(isset($slot) && trim((string) $slot) !== '')
                     {{ $slot }}
                 @elseif($isDisableType)
                     {{-- DISABLE / SOFT DELETE PRESET --}}

@@ -93,14 +93,6 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
             </button>
-
-            <!-- Search Submit Button -->
-            <button
-                type="submit"
-                class="h-7 px-2.5 bg-[#102B70] hover:bg-[#0B225E] text-white text-xs font-bold rounded-lg transition-colors shadow-xs focus:outline-none focus:ring-2 focus:ring-[#102B70]/30 flex items-center gap-1 cursor-pointer"
-            >
-                <span>Search</span>
-            </button>
         </div>
     </form>
 
@@ -198,7 +190,7 @@
             <!-- 2. Patrons / Students Section (Shown only if staff has permission to view students/users) -->
             @if($isStaff && $canViewStudents && $students->isNotEmpty())
                 <div class="px-4 py-2.5 bg-slate-50/80 flex items-center justify-between text-xs font-bold text-[#64748B] uppercase tracking-wider">
-                    <span>Patrons / Students</span>
+                    <span>Students</span>
                     <span class="text-xs text-slate-500 font-semibold">{{ $students->count() }} found</span>
                 </div>
 

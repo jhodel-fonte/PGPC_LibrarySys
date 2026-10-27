@@ -7,12 +7,13 @@
     'grid' => false,
     'legend' => false,
     'height' => 190,
-    'svgWidth' => 520,
+    'svgWidth' => 780,
     'suffix' => '',
 ])
 
 @php
     $renderHeight = (int) $height;
+    $svgWidth = (int) ($svgWidth ?? 780);
     $rawSeries = is_array($series) ? $series : (method_exists($series, 'toArray') ? $series->toArray() : (array) $series);
     $rawLabels = is_array($labels) ? $labels : (method_exists($labels, 'toArray') ? $labels->toArray() : (array) $labels);
 
@@ -56,10 +57,10 @@
         0
     ];
 
-    $padLeft = $grid ? 32 : 12;
+    $padLeft = $grid ? 36 : 14;
     $padRight = 16;
     $padTop = 14;
-    $padBottom = 26;
+    $padBottom = 22;
 
     $plotW = $svgWidth - $padLeft - $padRight;
     $plotH = $renderHeight - $padTop - $padBottom;
@@ -67,7 +68,7 @@
     $numCats = max(1, count($rawLabels));
     $slotW = $plotW / $numCats;
     $numSeries = max(1, count($barSeries));
-    $barW = min(12, max(3, ($slotW * 0.72) / $numSeries));
+    $barW = min(16, max(4, ($slotW * 0.72) / $numSeries));
     $barGap = 2;
 @endphp
 
@@ -89,51 +90,70 @@
                 />
                 <text 
                     x="{{ $padLeft - 8 }}" 
-                    y="{{ $yPos + 3.5 }}" 
+                    y="{{ $yPos + 3 }}" 
                     text-anchor="end" 
-                    class="text-[10px] font-semibold fill-slate-400"
+                    style="font-size: 14px;"
+                    class="fill-slate-800 font-medium select-none"
                 >
                     {{ $tick }}
                 </text>
             @endforeach
         @endif
 
-        <!-- Bars per category -->
-        @foreach ($rawLabels as $catIdx => $label)
-            @php
-                $groupTotalW = ($numSeries * $barW) + (($numSeries - 1) * $barGap);
-                $groupStartX = $padLeft + ($catIdx * $slotW) + (($slotW - $groupTotalW) / 2);
-            @endphp
-
-            @foreach ($barSeries as $sIdx => $bs)
+        <!-- Bars per category with Smooth Upward Growth on Scroll -->
+        <g 
+            class="transition-all duration-700 ease-out will-change-[clip-path,opacity]"
+            :style="(typeof inView !== 'undefined' ? inView : true) ? 'clip-path: inset(0 0 0 0); opacity: 1;' : 'clip-path: inset(100% 0 0 0); opacity: 0;'"
+        >
+            @foreach ($rawLabels as $catIdx => $label)
                 @php
-                    $val = $bs['data'][$catIdx] ?? 0;
-                    $barH = max(2, ($val / $maxScale) * $plotH);
-                    $bX = $groupStartX + ($sIdx * ($barW + $barGap));
-                    $bY = ($padTop + $plotH) - $barH;
-                @endphp
-                <rect 
-                    x="{{ $bX }}" 
-                    y="{{ $bY }}" 
-                    width="{{ $barW }}" 
-                    height="{{ $barH }}" 
-                    rx="2.5" 
-                    fill="{{ $bs['color'] }}" 
-                    class="transition-all duration-200 hover:opacity-75 cursor-pointer"
-                    @mouseenter="showTooltip($event, '{{ addslashes($label) }}', '{{ addslashes($bs['name']) }}', '{{ $val }} {{ $suffix }}', '{{ $bs['color'] }}')"
-                    @mousemove="moveTooltip($event)"
-                    @mouseleave="hideTooltip()"
-                >
-                    <title>{{ $bs['name'] }}: {{ $val }}</title>
-                </rect>
-            @endforeach
+                    $groupTotalW = ($numSeries * $barW) + (($numSeries - 1) * $barGap);
+                    $groupStartX = $padLeft + ($catIdx * $slotW) + (($slotW - $groupTotalW) / 2);
 
-            <!-- X-Axis Label -->
+                    $catItems = [];
+                    foreach ($barSeries as $otherBs) {
+                        $otherVal = $otherBs['data'][$catIdx] ?? 0;
+                        $catItems[] = [
+                            'name' => $otherBs['name'],
+                            'value' => $otherVal . ($suffix ? ' ' . $suffix : ''),
+                            'color' => $otherBs['color'],
+                        ];
+                    }
+                @endphp
+
+                @foreach ($barSeries as $sIdx => $bs)
+                    @php
+                        $val = $bs['data'][$catIdx] ?? 0;
+                        $barH = max(2, ($val / $maxScale) * $plotH);
+                        $bX = $groupStartX + ($sIdx * ($barW + $barGap));
+                        $bY = ($padTop + $plotH) - $barH;
+                    @endphp
+                    <rect 
+                        x="{{ $bX }}" 
+                        y="{{ $bY }}" 
+                        width="{{ $barW }}" 
+                        height="{{ $barH }}" 
+                        rx="2" 
+                        fill="{{ $bs['color'] }}" 
+                        class="transition-all duration-200 hover:opacity-75 cursor-pointer"
+                        @mouseenter="showTooltip($event, '{{ addslashes($label) }}', '{{ addslashes($bs['name']) }}', '{{ $val }} {{ $suffix }}', '{{ $bs['color'] }}', {{ json_encode($catItems) }})"
+                        @mousemove="moveTooltip($event)"
+                        @mouseleave="hideTooltip()"
+                    >
+                        <title>{{ $bs['name'] }}: {{ $val }}</title>
+                    </rect>
+                @endforeach
+            @endforeach
+        </g>
+
+        <!-- X-Axis Labels -->
+        @foreach ($rawLabels as $catIdx => $label)
             <text 
                 x="{{ $padLeft + ($catIdx * $slotW) + ($slotW / 2) }}" 
-                y="{{ $renderHeight - 8 }}" 
+                y="{{ $renderHeight - 6 }}" 
                 text-anchor="middle" 
-                class="{{ $numCats > 8 ? 'text-[10px]' : 'text-[11px]' }} font-semibold fill-slate-500"
+                style="font-size: 16px;"
+                class="fill-slate-800 font-medium select-none"
             >
                 {{ $label }}
             </text>
@@ -142,10 +162,10 @@
 
     <!-- Bottom Legend -->
     @if ($legend && count($barSeries) > 0)
-        <div class="flex items-center justify-center flex-wrap gap-4 sm:gap-5 mt-3 pt-2 border-t border-slate-50">
+        <div class="flex items-center justify-center flex-wrap gap-4 sm:gap-5 mt-2.5 pt-2 border-t border-slate-50">
             @foreach ($barSeries as $bs)
-                <div class="flex items-center gap-2 text-xs font-semibold text-slate-700 shrink-0">
-                    <span class="w-2.5 h-2.5 rounded-sm shrink-0" style="background-color: {{ $bs['color'] }}"></span>
+                <div class="flex items-center gap-1.5 text-[14px] font-medium text-slate-600 shrink-0">
+                    <span class="w-2 h-2 rounded-sm shrink-0" style="background-color: {{ $bs['color'] }}"></span>
                     <span class="truncate">{{ $bs['name'] }}</span>
                 </div>
             @endforeach

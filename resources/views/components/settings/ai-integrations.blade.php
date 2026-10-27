@@ -108,7 +108,7 @@
             <div class="flex items-center gap-3 mb-5">
                 <div>
                     <h3 class="text-xs font-bold text-[#102B70] tracking-wider uppercase">Recommendation Quality & Confidence</h3>
-                    <p class="mt-0.5 text-xs text-[#64748B]">Minimum similarity score required before displaying automated book suggestions to patrons.</p>
+                    <p class="mt-0.5 text-xs text-[#64748B]">Minimum similarity score required before displaying automated book suggestions</p>
                 </div>
                 @if($this->dirtyState['sections']['ai_integrations.confidence_threshold'] ?? false)
                     <div class="flex items-center gap-1.5 text-xs font-bold text-amber-800 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">

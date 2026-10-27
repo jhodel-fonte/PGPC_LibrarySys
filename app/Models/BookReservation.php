@@ -14,6 +14,8 @@ class BookReservation extends Model
 
     protected $fillable = [
         'book_id',
+        'student_id',
+        'account_id',
         'reservation_status_id',
         'reservation_date',
         'due_date',
@@ -34,6 +36,16 @@ class BookReservation extends Model
     public function book(): BelongsTo
     {
         return $this->belongsTo(Book::class);
+    }
+
+    public function student(): BelongsTo
+    {
+        return $this->belongsTo(Student::class, 'student_id');
+    }
+
+    public function account(): BelongsTo
+    {
+        return $this->belongsTo(Account::class, 'account_id');
     }
 
     public function reservationStatus(): BelongsTo

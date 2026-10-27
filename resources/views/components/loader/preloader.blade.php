@@ -22,6 +22,11 @@
                     // 3. Trigger the 3D zoom and fade exit
                     this.isLoading = false;
                     document.getElementById('portal-content')?.classList.replace('opacity-0', 'opacity-100');
+
+                    setTimeout(() => {
+                        window.__pgpcPreloaderDone = true;
+                        window.dispatchEvent(new CustomEvent('preloader-hidden'));
+                    }, 650);
                 }, remainingTime);
             };
 

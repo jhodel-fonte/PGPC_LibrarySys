@@ -142,14 +142,17 @@ class OpacController extends Controller
                     throw new \RuntimeException('not_available');
                 }
 
-                $pendingStatus = ReservationStatus::where('name', 'like', '%pending%')->first();
+                $user = Auth::user();
+                $student = $user?->student;
 
                 $reservation = BookReservation::create([
                     'book_id'                => $book->id,
+                    'student_id'             => $student?->id,
+                    'account_id'             => $user?->id,
                     'reservation_status_id'  => $pendingStatus ? $pendingStatus->id : 1,
                     'reservation_date'       => now(),
                     'due_date'               => now()->addDays(3),
-                    'comment'                => 'Online OPAC reservation by ' . (Auth::user()->username ?? 'student'),
+                    'comment'                => 'Online OPAC reservation by ' . ($user?->username ?? 'student'),
                 ]);
 
                 $book->update(['status' => 'reserved']);

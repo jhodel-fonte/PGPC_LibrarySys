@@ -51,7 +51,7 @@
                         </p>
 
                         <!-- Quick Action Button -->
-                        <div class="mt-4 pt-1">
+                        <div class="mt-4 pt-1 flex items-center gap-3 flex-wrap">
                             <button
                                 type="button"
                                 @click="$dispatch('open-qr-modal', {
@@ -70,6 +70,22 @@
                                 </svg>
                                 <span>Student QR Code</span>
                             </button>
+
+                            <a
+                                href="{{ route('student.reservations') }}"
+                                wire:navigate
+                                class="w-full sm:w-auto h-10 px-4 bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs sm:text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer backdrop-blur-xs whitespace-nowrap"
+                            >
+                                <svg class="w-4 h-4 text-[#FFC61A]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
+                                </svg>
+                                <span>Reserve a Book</span>
+                                @if($activeReservationsCount > 0)
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#FFC61A] text-[#102B70]">
+                                        {{ $activeReservationsCount }}
+                                    </span>
+                                @endif
+                            </a>
                         </div>
                     </div>
 
