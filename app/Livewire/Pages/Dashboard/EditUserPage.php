@@ -33,7 +33,7 @@ class EditUserPage extends Component
     }
 
     /**
-     * Check authorization of the current logged-in user to edit the target patron.
+     * Check authorization of the current logged-in user to edit the target
      */
     protected function checkAuthorization(Account $targetUser): void
     {

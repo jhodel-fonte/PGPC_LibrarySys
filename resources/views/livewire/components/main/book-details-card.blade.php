@@ -173,9 +173,6 @@
                             <p class="text-[13px] font-bold text-emerald-950 leading-tight">
                                 This item is available for borrowing.
                             </p>
-                            <p class="text-[12.5px] text-emerald-700 leading-tight mt-0.5">
-                                You may reserve this item.
-                            </p>
                         </div>
                     </div>
                 @elseif(($book['status'] ?? '') === 'checked_out')
@@ -474,8 +471,7 @@
     <!-- 3. Recommendations / Similar Books Row -->
     <div class="mt-8">
         <x-recommendation.book-view-recommendation
-            title="Similar Books"
-            subtitle="Explore related resources from the library collection"
+            :category="$book['category'] ?? ($book['subjects'][0] ?? null)"
             :books="$similarBooks ?? []"
             :limit="10"
         />

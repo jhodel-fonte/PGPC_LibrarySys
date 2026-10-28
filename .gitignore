@@ -28,3 +28,5 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 bootstrap/providers.php
+public/vendor/telescope
+app/Providers/TelescopeServiceProvider.php

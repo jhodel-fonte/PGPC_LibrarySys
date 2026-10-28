@@ -23,7 +23,7 @@ return new class extends Migration
             $table->foreignId('language_id')->constrained('languages')->restrictOnDelete();
 
             $table->integer('copyright_year')->nullable();
-            $table->string('marc_record')->nullable();
+            $table->text('marc_record')->nullable();
             $table->softDeletes();
 
             $table->timestamps();

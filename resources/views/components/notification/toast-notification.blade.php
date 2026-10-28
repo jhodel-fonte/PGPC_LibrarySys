@@ -1,51 +1,84 @@
 <div x-data="{
     toasts: [],
-    addToast(message, type = 'success', undoEvent = null, undoPayload = null, duration = null) {
+    addToast(message, type = 'success', undoEvent = null, undoPayload = null, duration = null, expireEvent = null, expirePayload = null) {
         if (!message) return;
         const id = Date.now() + Math.random();
         const toastDuration = duration ? Number(duration) : (undoEvent ? 10000 : 4000);
-        const timer = setTimeout(() => { this.removeToast(id); }, toastDuration);
-        this.toasts.push({
+        const item = {
             id,
             message,
             type,
             undoEvent,
             undoPayload,
+            expireEvent,
+            expirePayload,
             duration: toastDuration,
-            timer,
-            isPaused: false
-        });
+            remaining: toastDuration,
+            timer: null,
+            startTime: Date.now(),
+            isPaused: false,
+            undone: false,
+            expired: false
+        };
+        item.timer = setTimeout(() => {
+            this.expireToast(id);
+        }, toastDuration);
+        this.toasts.push(item);
     },
-    removeToast(id) {
+    expireToast(id) {
         const item = this.toasts.find(t => t.id === id);
-        if (item && item.timer) {
+        if (!item) return;
+        if (item.timer) {
             clearTimeout(item.timer);
+            item.timer = null;
+        }
+        if (!item.undone && !item.expired) {
+            item.expired = true;
+            if (item.expireEvent) {
+                if (typeof window.Livewire !== 'undefined') {
+                    window.Livewire.dispatch(item.expireEvent, item.expirePayload || {});
+                }
+                this.$dispatch(item.expireEvent, item.expirePayload || {});
+            }
         }
         this.toasts = this.toasts.filter(t => t.id !== id);
+    },
+    removeToast(id) {
+        this.expireToast(id);
     },
     pauseToast(id) {
         const item = this.toasts.find(t => t.id === id);
         if (item && item.timer) {
             clearTimeout(item.timer);
             item.timer = null;
+            item.remaining = Math.max(0, item.remaining - (Date.now() - item.startTime));
             item.isPaused = true;
         }
     },
     resumeToast(id) {
         const item = this.toasts.find(t => t.id === id);
-        if (item && !item.timer) {
+        if (item && !item.timer && !item.undone && !item.expired) {
             item.isPaused = false;
-            item.timer = setTimeout(() => { this.removeToast(id); }, 5000);
+            item.startTime = Date.now();
+            const rem = item.remaining > 0 ? item.remaining : 1000;
+            item.timer = setTimeout(() => {
+                this.expireToast(id);
+            }, rem);
         }
     },
     handleUndo(t) {
+        t.undone = true;
+        if (t.timer) {
+            clearTimeout(t.timer);
+            t.timer = null;
+        }
         if (t.undoEvent) {
             if (typeof window.Livewire !== 'undefined') {
                 window.Livewire.dispatch(t.undoEvent, t.undoPayload || {});
             }
             this.$dispatch(t.undoEvent, t.undoPayload || {});
         }
-        this.removeToast(t.id);
+        this.toasts = this.toasts.filter(item => item.id !== t.id);
     }
 }"
 @toast.window="
@@ -56,6 +89,8 @@
         let undoEvent = null;
         let undoPayload = null;
         let duration = null;
+        let expireEvent = null;
+        let expirePayload = null;
 
         if (typeof raw === 'string') {
             message = raw;
@@ -66,10 +101,12 @@
             undoEvent = raw.undoEvent || null;
             undoPayload = raw.undoPayload || null;
             duration = raw.duration || null;
+            expireEvent = raw.expireEvent || null;
+            expirePayload = raw.expirePayload || null;
         }
 
         if (message) {
-            addToast(message, type, undoEvent, undoPayload, duration);
+            addToast(message, type, undoEvent, undoPayload, duration, expireEvent, expirePayload);
         }
     })()
 "

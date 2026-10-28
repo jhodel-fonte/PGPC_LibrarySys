@@ -10,6 +10,9 @@ Route::get('opac/advanced-search', [\App\Http\Controllers\OpacController::class,
 Route::get('opac/book/{identifier?}', \App\Livewire\Pages\Main\Book::class)->name('opac.book.detail');
 Route::post('opac/reserve/{bookId}', [\App\Http\Controllers\OpacController::class, 'reserve'])->name('opac.reserve');
 
+// Temporary test route for admin dashboard redesign
+Route::get('/test', \App\Livewire\Pages\Dashboard\TestDashboard::class)->name('test.dashboard');
+
 // Public Legal & Policy Pages
 Route::view('/terms', 'main.terms')->name('terms');
 Route::view('/privacy', 'main.privacy')->name('privacy');
@@ -55,7 +58,10 @@ Route::middleware(['auth', 'verified', 'role:Admin'])->prefix('admin')->name('ad
             Route::get('/return/confirm', \App\Livewire\Pages\Dashboard\ConfirmReturn::class)->name('return.confirm');
             Route::get('/borrow', \App\Livewire\Pages\Dashboard\CheckOutBook::class)->name('borrow');
             Route::get('/borrowed-books', \App\Livewire\Pages\Dashboard\BorrowedList::class)->name('borrowed-books');
+            Route::get('/reservations', \App\Livewire\Pages\Reservation\AdminDashboard::class)->name('reservations');
         });
+
+        Route::get('/reservations', \App\Livewire\Pages\Reservation\AdminDashboard::class)->name('reservations');
 
         Route::prefix('book-management')->name('book-management.')->group(function () {
             Route::get('/', \App\Livewire\Pages\Dashboard\BookManager::class)->name('index');
@@ -68,6 +74,8 @@ Route::middleware(['auth', 'verified', 'role:Admin'])->prefix('admin')->name('ad
         Route::get('/publishers/search', [\App\Http\Controllers\PublisherController::class, 'search'])->name('publishers.search');
 
         Route::get('/settings', \App\Livewire\Pages\Dashboard\Settings::class)->name('settings');
+        Route::get('/analytics', \App\Livewire\Pages\Dashboard\Analytics::class)->name('analytics');
+        Route::get('/analytics/circulation', \App\Livewire\Pages\Dashboard\AnalyticsCirculation::class)->name('analytics.circulation');
         Route::get('/profile', \App\Livewire\Pages\Student\Profile::class)->name('profile');
 });
 
@@ -93,7 +101,10 @@ Route::middleware(['auth', 'verified', 'role:Librarian,Head Librarian,Admin'])->
             Route::get('/return/confirm', \App\Livewire\Pages\Dashboard\ConfirmReturn::class)->name('return.confirm')->middleware('permission:manage_circulation,return_book');
             Route::get('/borrow', \App\Livewire\Pages\Dashboard\CheckOutBook::class)->name('borrow')->middleware('permission:manage_circulation,borrow_book');
             Route::get('/borrowed-books', \App\Livewire\Pages\Dashboard\BorrowedList::class)->name('borrowed-books');
+            Route::get('/reservations', \App\Livewire\Pages\Reservation\AdminDashboard::class)->name('reservations');
         });
+
+        Route::get('/reservations', \App\Livewire\Pages\Reservation\AdminDashboard::class)->name('reservations');
 
         Route::middleware('permission:manage_catalog,view_catalog')->prefix('book-management')->name('book-management.')->group(function () {
             Route::get('/', \App\Livewire\Pages\Dashboard\BookManager::class)->name('index');
@@ -106,6 +117,8 @@ Route::middleware(['auth', 'verified', 'role:Librarian,Head Librarian,Admin'])->
         Route::get('/publishers/search', [\App\Http\Controllers\PublisherController::class, 'search'])->name('publishers.search');
 
         Route::get('/settings', \App\Livewire\Pages\Dashboard\Settings::class)->name('settings')->middleware('permission:manage_settings');
+        Route::get('/analytics', \App\Livewire\Pages\Dashboard\Analytics::class)->name('analytics');
+        Route::get('/analytics/circulation', \App\Livewire\Pages\Dashboard\AnalyticsCirculation::class)->name('analytics.circulation');
         Route::get('/profile', \App\Livewire\Pages\Student\Profile::class)->name('profile');
 });
 
@@ -124,24 +137,12 @@ Route::get('/preview-reset-email', function () {
     return new \App\Mail\ResetEmail(url('/reset-password/sample-token?email=student@pgpc.edu.ph'));
 });
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 Route::middleware(['auth', 'verified', 'role:Student'])->prefix('student')->name('student.')->group(function () {
     Route::get('/dashboard', \App\Livewire\Pages\Student\Dashboard::class)->name('dashboard');
     Route::get('/borrow', \App\Livewire\Pages\Student\Borrow::class)->name('borrow');
     Route::get('/profile', \App\Livewire\Pages\Student\Profile::class)->name('profile');
+    Route::get('/reservations', \App\Livewire\Pages\Reservation\Index::class)->name('reservations');
+    Route::get('/reservations/confirmation/{id}', \App\Livewire\Pages\Reservation\Confirmation::class)->name('reservations.confirmation');
 });
 
 require __DIR__.'/auth.php';

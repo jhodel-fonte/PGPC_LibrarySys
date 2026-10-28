@@ -230,6 +230,63 @@ class Dashboard extends Component
         ];
     }
 
+    /**
+     * Top-level KPI metrics for data cards.
+     */
+    public function getKpiMetrics(): array
+    {
+        $now = Carbon::now();
+        $startOfMonth = (clone $now)->startOfMonth();
+
+        // 1. Total Students and new students registered this month
+        $studentsCount = Student::count();
+        $studentsThisMonth = Student::where('created_at', '>=', $startOfMonth)->count();
+
+        // 2. Total Books and new books added to catalog this month
+        $booksCount = Book::count();
+        $booksThisMonth = Book::where('created_at', '>=', $startOfMonth)->count();
+
+        // 3. Due Books Today and books returned today
+        $dueTodayCount = BorrowingTransaction::whereNull('return_date')
+            ->whereDate('due_date', Carbon::today())
+            ->count();
+        $returnedTodayCount = BorrowingTransaction::whereNotNull('return_date')
+            ->whereDate('return_date', Carbon::today())
+            ->count();
+
+        // 4. Book reservations created today and active pending reservations
+        $reservationsToday = BookReservation::whereDate('created_at', Carbon::today())->count();
+        $pendingReservations = BookReservation::where('reservation_status_id', 1)->count();
+
+        return [
+            'totalStudents' => [
+                'value' => number_format($studentsCount),
+                'change' => '+' . number_format($studentsThisMonth),
+                'isPositive' => true,
+                'subtext' => 'added students this month',
+            ],
+            'totalBooks' => [
+                'value' => number_format($booksCount),
+                'change' => '+' . number_format($booksThisMonth),
+                'isPositive' => true,
+                'subtext' => 'added books this month',
+            ],
+            'dueBooksToday' => [
+                'value' => (string) $dueTodayCount,
+                'change' => (string) $returnedTodayCount,
+                'isPositive' => true,
+                'subtext' => 'returned today',
+                'alert' => $dueTodayCount > 0,
+            ],
+            'bookReservedToday' => [
+                'value' => (string) $reservationsToday,
+                'change' => (string) $pendingReservations,
+                'isPositive' => true,
+                'subtext' => 'pending reservations',
+            ],
+        ];
+    }
+
     public function render()
     {
         $trendsData = $this->getBorrowingTrendsData();
@@ -243,7 +300,7 @@ class Dashboard extends Component
             ->select('book_details.book_data_id', DB::raw('COUNT(*) as borrows'))
             ->groupBy('book_details.book_data_id')
             ->orderByDesc('borrows')
-            ->limit(4)
+            ->limit(5)
             ->get();
 
         $mostBorrowedTitles = collect();
@@ -256,6 +313,7 @@ class Dashboard extends Component
         }
 
         return view('livewire.pages.dashboard.index', [
+            'kpiMetrics' => $this->getKpiMetrics(),
             'overdueItems' => BorrowingTransaction::whereNull('return_date')
                 ->where('due_date', '<', now())
                 ->count(),
@@ -263,7 +321,7 @@ class Dashboard extends Component
             'currentBorrowers' => BorrowingTransaction::with(['student.account', 'book.bookDetail.bookData'])
                 ->whereNull('return_date')
                 ->orderBy('issued_date', 'desc')
-                ->take(5)
+                ->take(7)
                 ->get(),
             'mostBorrowedTitles' => $mostBorrowedTitles,
             'borrowingTrendsSeries' => $trendsData['series'],

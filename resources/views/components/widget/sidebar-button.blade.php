@@ -1,6 +1,7 @@
 @props([
     'active' => false,
-    'href' => '#'
+    'href' => '#',
+    'textSize' => 'text-[16px]',
 ])
 
 @if (isset($subitems))
@@ -8,7 +9,7 @@
         <!-- Accordion Toggle Button -->
         <button 
             @click="open = !open; if(sidebarMinimized) sidebarMinimized = false" 
-            class="w-full group flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-300 {{ $active ? 'bg-white/10 text-white font-semibold' : 'text-white hover:bg-white/10 hover:text-white font-medium' }}"
+            {{ $attributes->merge(['class' => 'w-full group flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-300 ' . $textSize . ' ' . ($active ? 'bg-white/10 text-white font-semibold' : 'text-white hover:bg-white/10 hover:text-white font-medium')]) }}
         >
             <div class="flex items-center w-full overflow-hidden" :class="sidebarMinimized ? 'justify-center' : 'gap-3'">
                 @if (isset($icon))
@@ -16,7 +17,7 @@
                         {{ $icon }}
                     </span>
                 @endif
-                <span class="whitespace-nowrap" x-show="!sidebarMinimized" x-transition.opacity.duration.300ms>{{ $slot }}</span>
+                <span class="whitespace-nowrap {{ $textSize }}" x-show="!sidebarMinimized" x-transition.opacity.duration.300ms>{{ $slot }}</span>
             </div>
             
             <span class="flex shrink-0 transition-transform duration-300 {{ $active ? 'text-white' : 'text-white/80 group-hover:text-white' }}" :class="open ? 'rotate-90' : ''" x-show="!sidebarMinimized" x-transition.opacity.duration.300ms>
@@ -40,14 +41,14 @@
     </div>
 @else
     <!-- Standard Link Button -->
-    <a href="{{ $href }}" {{ $attributes->merge(['class' => 'group flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-300 ' . ($active ? 'bg-white text-[#102B70] font-bold shadow-sm' : 'text-white hover:bg-white/10 hover:text-white font-medium')]) }}>
+    <a href="{{ $href }}" {{ $attributes->merge(['class' => 'group flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-300 ' . $textSize . ' ' . ($active ? 'bg-white text-[#102B70] font-bold shadow-sm' : 'text-white hover:bg-white/10 hover:text-white font-medium')]) }}>
         <div class="flex items-center w-full overflow-hidden" :class="sidebarMinimized ? 'justify-center' : 'gap-3'">
             @if (isset($icon))
                 <span class="{{ $active ? 'text-[#102B70]' : 'text-white' }} flex shrink-0 transition-colors">
                     {{ $icon }}
                 </span>
             @endif
-            <span class="whitespace-nowrap" x-show="!sidebarMinimized" x-transition.opacity.duration.300ms>{{ $slot }}</span>
+            <span class="whitespace-nowrap {{ $textSize }}" x-show="!sidebarMinimized" x-transition.opacity.duration.300ms>{{ $slot }}</span>
         </div>
         @if (isset($trailing))
             <span class="flex shrink-0 {{ $active ? 'text-[#102B70]' : 'text-white/80' }}" x-show="!sidebarMinimized" x-transition.opacity.duration.300ms>

@@ -109,10 +109,12 @@ class BookDetail extends Component
             $deletedId = $book->id;
             $book->delete();
             $this->dispatch('toast', [
-                'message' => "Physical copy '{$accNum}' has been deleted successfully.",
-                'type' => 'success',
+                'message' => "Physical copy '{$accNum}' soft-deleted.",
+                'type' => 'warning',
                 'undoEvent' => 'restore-book-copy',
                 'undoPayload' => ['copyId' => $deletedId],
+                'expireEvent' => 'hard-delete-book-copy',
+                'expirePayload' => ['copyId' => $deletedId],
                 'duration' => 10000,
             ]);
             $this->dispatch('book-details-updated');
@@ -137,6 +139,30 @@ class BookDetail extends Component
         }
     }
 
+    #[On('hard-delete-book-copy')]
+    public function hardDeleteBookCopy($copyId = null): void
+    {
+        $id = is_array($copyId) ? ($copyId['copyId'] ?? $copyId['id'] ?? null) : $copyId;
+        if (!$id) {
+            return;
+        }
+
+        if (auth()->check() && !auth()->user()->can('delete', Book::class)) {
+            return;
+        }
+
+        $book = Book::withTrashed()->find($id);
+        if ($book && $book->trashed()) {
+            \Illuminate\Support\Facades\DB::transaction(function () use ($book) {
+                $book->reservations()->delete();
+                $book->borrowingTransactions()->delete();
+                $book->languages()->detach();
+                $book->forceDelete();
+            });
+            $this->dispatch('book-details-updated');
+        }
+    }
+
     public function close(): void
     {
         $this->isOpen = false;
@@ -155,7 +181,7 @@ class BookDetail extends Component
                 'bookData.language',
                 'publisher',
                 'bookType',
-                'books.condition',
+                'books' => fn ($q) => $q->withTrashed()->with('condition'),
             ])->find($this->bookDetailId)
             : null;
 

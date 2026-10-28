@@ -22,7 +22,7 @@
 
         <div>
             <h4 class="font-bold text-slate-900">4. Care of Library Materials & Loss Assessment</h4>
-            <p class="mt-0.5 text-slate-600">Patrons are strictly accountable for maintaining borrowed resources in good condition. Damaged, defaced, or lost items must be reported immediately and settled through replacement with an identical copy or reimbursement of the replacement cost.</p>
+            <p class="mt-0.5 text-slate-600">Borrowers are strictly accountable for maintaining borrowed resources in good condition. Damaged, defaced, or lost items must be reported immediately and settled through replacement with an identical copy or reimbursement of the replacement cost.</p>
         </div>
 
         <div>

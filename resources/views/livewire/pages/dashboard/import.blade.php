@@ -241,12 +241,6 @@
                                 </div>
                                 <div class="min-w-0">
                                     <div class="mb-1">
-                                        <span x-show="!fileError" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                            </svg>
-                                            File Selected & Ready
-                                        </span>
                                         <span x-show="fileError" style="display: none;" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800">
                                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -321,18 +315,12 @@
                                 </div>
                                 <div class="min-w-0 flex-1">
                                     <div class="flex flex-wrap items-center gap-2">
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-200 text-amber-900">
-                                            Similar File Recently Uploaded
-                                        </span>
                                         <span class="text-xs text-amber-800 font-medium">
                                             Uploaded {{ $duplicateFileNotice['time_ago'] }} by {{ $duplicateFileNotice['uploaded_by'] }}
                                         </span>
                                     </div>
                                     <p class="text-xs sm:text-sm font-semibold text-amber-950 mt-1.5 leading-snug">
                                         A file named <strong class="font-bold underline decoration-amber-400">{{ $duplicateFileNotice['filename'] }}</strong> was already uploaded and parsed in the last 30 minutes ({{ $duplicateFileNotice['total_records'] }} records).
-                                    </p>
-                                    <p class="text-xs text-amber-800 font-medium mt-1">
-                                        This 30-minute memory cache automatically expires in <strong class="font-bold text-amber-950">{{ $duplicateFileNotice['minutes_left'] }} minute(s)</strong>.
                                     </p>
                                 </div>
                             </div>
@@ -344,9 +332,6 @@
                                         wire:click="useCachedImport('{{ $duplicateFileNotice['import_key'] }}')"
                                         class="h-9 px-4 rounded-xl bg-[#102B70] hover:bg-[#0B225E] text-white text-xs font-bold transition flex items-center gap-2 shadow-2xs active:scale-[0.98] cursor-pointer"
                                     >
-                                        <svg class="w-3.5 h-3.5 text-[#FCC719]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                        </svg>
                                         <span>Use Cached Records ({{ $duplicateFileNotice['total_records'] }})</span>
                                     </button>
                                     <span class="text-xs text-amber-800 font-medium italic">or click &quot;Upload and Read MARC File&quot; to re-extract</span>
@@ -467,7 +452,7 @@
 
                         @if($duplicateFileNotice && !empty($duplicateFileNotice['records_available']))
                             <div class="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 flex items-center justify-between gap-2">
-                                <span>⚡ Batch parsed {{ $duplicateFileNotice['time_ago'] }} is active in 30m cache.</span>
+                                <span>Batch parsed {{ $duplicateFileNotice['time_ago'] }} is active in the memory cache.</span>
                                 <button
                                     type="button"
                                     wire:click="useCachedImport('{{ $duplicateFileNotice['import_key'] }}')"

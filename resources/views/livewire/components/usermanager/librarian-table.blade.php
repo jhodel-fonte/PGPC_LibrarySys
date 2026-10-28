@@ -18,7 +18,7 @@
         </div>
         <div class="flex items-center gap-3 shrink-0">
             @if($canManageLibrarians)
-                <a href="{{ route($routePrefix . 'user-management.add', ['type' => 'librarian']) }}" wire:navigate class="inline-flex items-center justify-center gap-2 h-10 px-5 rounded-lg bg-[#102B70] hover:bg-[#0B225E] text-white text-sm font-semibold transition-colors shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70] focus-visible:ring-offset-2">
+                <a href="{{ route($routePrefix . 'user-management.add', ['type' => 'librarian']) }}" wire:navigate class="inline-flex items-center justify-center gap-2 h-10 px-5 rounded-lg bg-[#102B70] hover:bg-[#0B225E] text-white text-sm font-semibold transition-colors shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70] focus-visible:ring-offset-2 w-full sm:w-auto">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
                     <span>Add Librarian</span>
                 </a>
@@ -121,9 +121,151 @@
                 $idNumber = $librarian?->school_id_number ?? '—';
                 $initials = $librarian ? strtoupper(substr($librarian->first_name, 0, 1) . substr($librarian->last_name, 0, 1)) : strtoupper(substr($user->username, 0, 2));
             @endphp
-            <tr class="hover:bg-slate-50/70 transition-colors h-[72px] group">
-                <!-- STAFF INFO & AVATAR -->
-                <td x-show="cols['staff'] !== false" class="px-6 py-4 align-middle">
+            <tr class="hover:bg-slate-50/70 transition-colors h-auto md:h-[72px] group">
+                <!-- Mobile Card Cell (Visible on mobile screens <= 768px) -->
+                <td colspan="7" class="mobile-cell">
+                    <div class="bg-white rounded-2xl border border-[#E2E8F0] p-4 shadow-xs relative transition-all hover:shadow-sm">
+                        <!-- Top Row: Avatar, Name, Email, ID & 3-dots Menu -->
+                        <div class="flex items-start justify-between gap-2.5">
+                            <a href="{{ route($routePrefix . 'user-details', $user->encrypted_id) }}" wire:navigate class="flex items-start gap-3 min-w-0 flex-1 focus:outline-none">
+                                @if($librarian?->image_url)
+                                    <img src="{{ $librarian->image_url }}" alt="{{ $fullName }}" class="w-11 h-11 rounded-full object-cover border border-[#CBD5E1] shrink-0">
+                                @else
+                                    <div class="w-11 h-11 rounded-full bg-[#EFF6FF] border border-[#BFDBFE] text-[#102B70] font-bold text-xs flex items-center justify-center shrink-0">
+                                        {{ $initials }}
+                                    </div>
+                                @endif
+                                <div class="flex flex-col min-w-0 flex-1">
+                                    <span class="text-sm font-bold text-[#102B70] hover:text-blue-700 hover:underline transition-colors truncate">{{ $fullName }}</span>
+                                    <span class="text-xs text-slate-500 truncate mt-0.5 font-medium">{{ $user->email ?? 'No email' }}</span>
+                                    <span class="text-[11px] font-mono text-slate-600 font-semibold mt-0.5">{{ $idNumber }}</span>
+                                </div>
+                            </a>
+
+                            <!-- 3-Dots Actions Menu -->
+                            <div class="shrink-0 -mr-1">
+                                <x-widget.table-action-dot>
+                                    <a
+                                        href="{{ route($routePrefix . 'user-details', $user->encrypted_id) }}"
+                                        wire:navigate
+                                        @click="open = false"
+                                        class="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-[#102B70] rounded-lg transition-colors"
+                                    >
+                                        <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                        View Profile
+                                    </a>
+
+                                    @if($canManageLibrarians)
+                                        <a
+                                            href="{{ route($routePrefix . 'user-management.edit', $user->encrypted_id) }}"
+                                            wire:navigate
+                                            @click="open = false"
+                                            class="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-[#102B70] rounded-lg transition-colors"
+                                        >
+                                            <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                            Edit Profile
+                                        </a>
+
+                                        @if(auth()->id() !== $user->id)
+                                            @if($user->trashed())
+                                                <button
+                                                    type="button"
+                                                    wire:click="enableLibrarian({{ $user->id }})"
+                                                    @click="open = false"
+                                                    class="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-bold text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
+                                                >
+                                                    <svg class="h-3.5 w-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+                                                    </svg>
+                                                    Enable Account
+                                                </button>
+                                            @else
+                                                <button
+                                                    type="button"
+                                                    wire:click="confirmDisable({{ $user->id }})"
+                                                    @click="open = false"
+                                                    class="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-bold text-amber-700 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer"
+                                                >
+                                                    <svg class="h-3.5 w-3.5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />
+                                                    </svg>
+                                                    Disable Account
+                                                </button>
+                                            @endif
+
+                                            <button
+                                                type="button"
+                                                wire:click="confirmDelete({{ $user->id }})"
+                                                @click="open = false"
+                                                class="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-bold text-[#B91C1C] hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                                            >
+                                                <svg class="h-3.5 w-3.5 text-[#EF4444]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                                </svg>
+                                                Delete Permanently
+                                            </button>
+                                        @endif
+                                    @endif
+                                </x-widget.table-action-dot>
+                            </div>
+                        </div>
+
+                        <!-- Card Body: Role, Status, Contact & Last Login Grid -->
+                        <div class="mt-3 pt-3 border-t border-slate-100 grid grid-cols-2 gap-y-2.5 gap-x-3 text-left">
+                            <div x-show="cols['role'] !== false">
+                                <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Role</span>
+                                <div class="mt-0.5">
+                                    @if($user->role?->name === 'Head Librarian')
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-[#EFF6FF] text-[#102B70] border border-[#BFDBFE]">
+                                            Head Librarian
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]">
+                                            Librarian
+                                        </span>
+                                    @endif
+                                </div>
+                            </div>
+
+                            <div x-show="cols['status'] !== false">
+                                <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Status</span>
+                                @if($user->trashed())
+                                    <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+                                        Disabled
+                                    </span>
+                                @else
+                                    @php
+                                        $statusName = $user->status?->status_name ?? 'Unknown';
+                                        $statusClass = match(strtolower($statusName)) {
+                                            'active' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                                            'locked', 'suspended' => 'bg-red-50 text-red-700 border-red-200',
+                                            'pending' => 'bg-amber-50 text-amber-700 border-amber-200',
+                                            default => 'bg-slate-100 text-slate-600 border-slate-200'
+                                        };
+                                    @endphp
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border {{ $statusClass }}">
+                                        {{ $statusName }}
+                                    </span>
+                                @endif
+                            </div>
+
+                            <div x-show="cols['contact'] !== false">
+                                <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Contact</span>
+                                <span class="text-xs font-semibold text-slate-700 block mt-0.5">{{ $librarian?->contact_num ?: '—' }}</span>
+                            </div>
+
+                            <div x-show="cols['last_login'] !== false">
+                                <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Last Login</span>
+                                <span class="text-xs font-semibold text-slate-600 block mt-0.5">
+                                    {{ $user->last_login ? $user->last_login->diffForHumans() : 'Never' }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+
+                <!-- STAFF INFO & AVATAR (Desktop) -->
+                <td x-show="cols['staff'] !== false" class="desktop-cell px-6 py-4 align-middle">
                     <a href="{{ route($routePrefix . 'user-details', $user->encrypted_id) }}" wire:navigate class="flex items-center gap-3.5 group/user focus:outline-none">
                         @if($librarian?->image_url)
                             <img src="{{ $librarian->image_url }}" alt="{{ $fullName }}" class="w-10 h-10 rounded-full object-cover border border-[#CBD5E1] shrink-0">
@@ -139,13 +281,13 @@
                     </a>
                 </td>
 
-                <!-- EMPLOYEE ID -->
-                <td x-show="cols['id_number'] !== false" class="px-6 py-4 align-middle">
+                <!-- EMPLOYEE ID (Desktop) -->
+                <td x-show="cols['id_number'] !== false" class="desktop-cell px-6 py-4 align-middle">
                     <span class="text-sm font-semibold text-slate-700 font-mono">{{ $idNumber }}</span>
                 </td>
 
-                <!-- ROLE / DESIGNATION -->
-                <td x-show="cols['role'] !== false" class="px-6 py-4 align-middle">
+                <!-- ROLE / DESIGNATION (Desktop) -->
+                <td x-show="cols['role'] !== false" class="desktop-cell px-6 py-4 align-middle">
                     @if($user->role?->name === 'Head Librarian')
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#EFF6FF] text-[#102B70] border border-[#BFDBFE]">
                             Head Librarian
@@ -157,13 +299,13 @@
                     @endif
                 </td>
 
-                <!-- CONTACT NUMBER -->
-                <td x-show="cols['contact'] !== false" class="px-6 py-4 align-middle">
+                <!-- CONTACT NUMBER (Desktop) -->
+                <td x-show="cols['contact'] !== false" class="desktop-cell px-6 py-4 align-middle">
                     <span class="text-sm text-slate-700 font-medium">{{ $librarian?->contact_num ?: '—' }}</span>
                 </td>
 
-                <!-- ACCOUNT STATUS -->
-                <td x-show="cols['status'] !== false" class="px-6 py-4 align-middle">
+                <!-- ACCOUNT STATUS (Desktop) -->
+                <td x-show="cols['status'] !== false" class="desktop-cell px-6 py-4 align-middle">
                     @if($user->trashed())
                         <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
                             <span class="h-1.5 w-1.5 rounded-full bg-rose-500"></span>
@@ -185,8 +327,8 @@
                     @endif
                 </td>
 
-                <!-- LAST LOGIN -->
-                <td x-show="cols['last_login'] !== false" class="px-6 py-4 align-middle">
+                <!-- LAST LOGIN (Desktop) -->
+                <td x-show="cols['last_login'] !== false" class="desktop-cell px-6 py-4 align-middle">
                     @if($user->last_login)
                         <span class="text-sm text-slate-600 font-medium" title="{{ $user->last_login->format('M d, Y h:i A') }}">
                             {{ $user->last_login->diffForHumans() }}
@@ -196,8 +338,8 @@
                     @endif
                 </td>
 
-                <!-- ACTIONS -->
-                <td class="px-6 py-4 align-middle text-right pr-6">
+                <!-- ACTIONS (Desktop) -->
+                <td class="desktop-cell px-6 py-4 align-middle text-right pr-6">
                     <div class="flex items-center justify-end">
                         <x-widget.table-action-dot>
                             <a

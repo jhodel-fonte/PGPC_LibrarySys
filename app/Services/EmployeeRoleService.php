@@ -310,7 +310,7 @@ class EmployeeRoleService
         return self::can(['manage_catalog', 'delete_book'], $user);
     }
 
-    // --- USER & PATRON MANAGEMENT ---
+    // --- USER MANAGEMENT ---
 
     /**
      * Check if employee can view student patron profiles.

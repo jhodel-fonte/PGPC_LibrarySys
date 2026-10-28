@@ -1,6 +1,6 @@
 <div class="bg-white rounded-3xl border border-[#E2E8F0] p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex-1 flex flex-col h-auto lg:h-full lg:overflow-hidden">
     <div class="flex flex-col gap-3 shrink-0">
-        <h3 class="text-xs font-bold text-[#102B70] uppercase tracking-wider">Checkout Summary</h3>
+        <h3 class="text-xs font-bold text-[#102B70] uppercase tracking-wider">Borrow Summary</h3>
 
         <div class="flex flex-col gap-0.5 text-sm font-semibold">
             <!-- Books Count Row -->
@@ -63,7 +63,7 @@
                 wire:target="$parent.confirmCheckout"
                 @if($cannotCheckout) disabled @endif
                 class="w-full h-12 bg-[#102B70] hover:bg-[#0B225E] text-white rounded-xl font-bold flex items-center justify-between px-5 transition-all shadow-sm group disabled:opacity-65 disabled:cursor-not-allowed">
-            <span wire:loading.remove wire:target="$parent.confirmCheckout" class="text-xs uppercase tracking-wider">Confirm Check-Out</span>
+            <span wire:loading.remove wire:target="$parent.confirmCheckout" class="text-xs uppercase tracking-wider">Confirm Borrow</span>
             <span wire:loading.flex wire:target="$parent.confirmCheckout" class="text-xs uppercase tracking-wider items-center gap-2">
                 <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle>

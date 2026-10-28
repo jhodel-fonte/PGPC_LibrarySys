@@ -131,7 +131,7 @@ class LibrarianDetail extends Component
             ],
             'delete_students' => [
                 'title' => 'Delete Students',
-                'description' => 'Soft-delete student patron accounts and revoke access.',
+                'description' => 'Soft-delete student accounts and revoke access.',
                 'group' => 'Administration',
             ],
             'manage_librarian' => [

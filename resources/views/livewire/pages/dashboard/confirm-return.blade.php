@@ -88,13 +88,14 @@
 
             <!-- Left Column: Return Items -->
             <div class="lg:col-span-7 flex flex-col gap-4 overflow-hidden h-full">
-                <div class="flex-1 flex flex-col overflow-hidden bg-white border border-[#E2E8F0] rounded-2xl p-6 shadow-sm">
+                <div class="flex-1 flex flex-col overflow-hidden bg-white border border-[#E2E8F0] rounded-2xl p-4 sm:p-6 shadow-sm">
                     <span class="block text-base font-bold text-[#102B70] uppercase tracking-wider mb-4 shrink-0">Items to be Returned ({{ count($transactionsData) }})</span>
 
                     <!-- Table Container -->
                     <div class="overflow-x-auto flex-1 overflow-y-auto border border-[#E2E8F0] rounded-2xl bg-white shadow-inner mb-4 custom-scrollbar">
-                        <table class="w-full text-left border-collapse min-w-[600px]">
-                            <thead class="sticky top-0 bg-white z-10 border-b border-[#E2E8F0]">
+                        <table class="w-full text-left border-collapse md:min-w-[600px]">
+                            <!-- Table Header: visible on md and up, hidden on mobile -->
+                            <thead class="hidden md:table-header-group sticky top-0 bg-white z-10 border-b border-[#E2E8F0]">
                                 <tr class="text-xs md:text-sm font-bold text-[#64748B] uppercase tracking-wider">
                                     <th class="py-3 px-5 w-[40%] bg-white">Book Details</th>
                                     <th class="py-3 px-5 w-[20%] bg-white">Borrowed Date</th>
@@ -105,13 +106,122 @@
                             <tbody class="divide-y divide-[#F1F5F9] text-sm text-[#0F172A]">
                                 @foreach($transactionsData as $item)
                                     <tr class="align-middle hover:bg-slate-50 transition-colors">
-                                        <td class="py-4 px-5">
+                                        <!-- Mobile Card Cell (visible on mobile < 768px, hidden on md+) -->
+                                        <td colspan="4" class="block md:hidden p-3.5 border-b border-[#F1F5F9] last:border-b-0">
+                                            <div class="flex flex-col gap-3">
+                                                <!-- Top Row: Cover, Info & Fine Status -->
+                                                <div class="flex items-start justify-between gap-3">
+                                                    <div class="flex items-start gap-3 min-w-0 flex-1">
+                                                        @php
+                                                            $coverUrl = $item['cover_url'] ?? null;
+                                                            if (!$coverUrl && !empty($item['cover_image'])) {
+                                                                $coverUrl = asset('storage/book_cover/' . basename($item['cover_image']));
+                                                            }
+                                                        @endphp
+                                                        <div class="relative w-10 h-14 rounded-md shadow-xs overflow-hidden bg-slate-100 border border-slate-200/80 flex items-center justify-center shrink-0"
+                                                             x-data="{ imgError: false, imgLoaded: false }">
+                                                            @if(!empty($coverUrl))
+                                                                <img
+                                                                    src="{{ $coverUrl }}"
+                                                                    alt="{{ $item['title'] }}"
+                                                                    loading="lazy"
+                                                                    decoding="async"
+                                                                    x-on:load="imgLoaded = true"
+                                                                    x-on:error="imgError = true; imgLoaded = true"
+                                                                    x-show="!imgError"
+                                                                    :class="imgLoaded ? 'opacity-100' : 'opacity-0'"
+                                                                    class="w-full h-full object-cover transition-opacity duration-200"
+                                                                >
+                                                            @endif
+
+                                                            <div
+                                                                x-show="imgError || !'{{ $coverUrl ?? '' }}'"
+                                                                style="{{ !empty($coverUrl) ? 'display: none;' : '' }}"
+                                                                class="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#102B70] to-[#3B82F6]"
+                                                            >
+                                                                <svg class="w-5 h-5 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                                                                </svg>
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="flex flex-col min-w-0 flex-1">
+                                                            <span class="font-bold text-sm leading-snug text-[#0F172A] line-clamp-2">{{ $item['title'] }}</span>
+                                                            <span class="text-xs text-[#64748B] mt-0.5 truncate">{{ $item['author'] }}</span>
+                                                            <span class="text-[11px] text-[#94A3B8] mt-0.5">Acc. {{ $item['accession'] }}</span>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Fine Status Badge -->
+                                                    <div class="shrink-0 pt-0.5">
+                                                        @if($item['fine_amount'] > 0)
+                                                            <div class="flex flex-col items-end gap-0.5">
+                                                                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#FEF2F2] text-[#B91C1C] border border-[#FECACA]">
+                                                                    {{ round($item['overdue_days']) }}d overdue
+                                                                </span>
+                                                                <span class="font-bold text-sm text-[#EF4444]">₱{{ number_format($item['fine_amount'], 2) }}</span>
+                                                            </div>
+                                                        @else
+                                                            <span class="inline-flex items-center gap-1 text-xs font-bold text-[#10B981]">
+                                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
+                                                                </svg>
+                                                                On Time
+                                                            </span>
+                                                        @endif
+                                                    </div>
+                                                </div>
+
+                                                <!-- Dates bar -->
+                                                <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-[11px] text-[#64748B]">
+                                                    <div class="flex items-center gap-1">
+                                                        <span class="font-medium text-slate-500">Borrowed:</span>
+                                                        <span class="font-semibold text-slate-700">{{ $item['issued_date'] }}</span>
+                                                    </div>
+                                                    <div class="flex items-center gap-1">
+                                                        <span class="font-medium text-slate-500">Due:</span>
+                                                        <span class="font-semibold text-slate-700">{{ $item['due_date'] }}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+
+                                        <!-- Desktop Cells (visible on md+, hidden on mobile < 768px) -->
+                                        <td class="hidden md:table-cell py-4 px-5">
                                             <div class="flex items-center gap-3.5">
-                                                <!-- Miniature Cover or Icon tile -->
-                                                <div class="w-10 h-14 bg-gradient-to-br from-[#102B70] to-[#3B82F6] rounded-md shadow-sm overflow-hidden flex items-center justify-center shrink-0">
-                                                    <svg class="w-5 h-5 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
-                                                    </svg>
+                                                <!-- Miniature Cover with Image & Fallback -->
+                                                @php
+                                                    $coverUrl = $item['cover_url'] ?? null;
+                                                    if (!$coverUrl && !empty($item['cover_image'])) {
+                                                        $coverUrl = asset('storage/book_cover/' . basename($item['cover_image']));
+                                                    }
+                                                @endphp
+                                                <div class="relative w-10 h-14 rounded-md shadow-xs overflow-hidden bg-slate-100 border border-slate-200/80 flex items-center justify-center shrink-0"
+                                                     x-data="{ imgError: false, imgLoaded: false }">
+                                                    @if(!empty($coverUrl))
+                                                        <img
+                                                            src="{{ $coverUrl }}"
+                                                            alt="{{ $item['title'] }}"
+                                                            loading="lazy"
+                                                            decoding="async"
+                                                            x-on:load="imgLoaded = true"
+                                                            x-on:error="imgError = true; imgLoaded = true"
+                                                            x-show="!imgError"
+                                                            :class="imgLoaded ? 'opacity-100' : 'opacity-0'"
+                                                            class="w-full h-full object-cover transition-opacity duration-200"
+                                                        >
+                                                    @endif
+
+                                                    <!-- Fallback when image fails to load or no cover is available -->
+                                                    <div
+                                                        x-show="imgError || !'{{ $coverUrl ?? '' }}'"
+                                                        style="{{ !empty($coverUrl) ? 'display: none;' : '' }}"
+                                                        class="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#102B70] to-[#3B82F6]"
+                                                    >
+                                                        <svg class="w-5 h-5 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                                                        </svg>
+                                                    </div>
                                                 </div>
                                                 <div class="flex flex-col min-w-0">
                                                     <span class="font-bold text-base leading-tight text-[#0F172A] truncate">{{ $item['title'] }}</span>
@@ -120,13 +230,13 @@
                                                 </div>
                                             </div>
                                         </td>
-                                        <td class="py-4 px-5 font-semibold text-sm text-[#64748B]">
+                                        <td class="hidden md:table-cell py-4 px-5 font-semibold text-sm text-[#64748B]">
                                             {{ $item['issued_date'] }}
                                         </td>
-                                        <td class="py-4 px-5 font-semibold text-sm text-[#64748B]">
+                                        <td class="hidden md:table-cell py-4 px-5 font-semibold text-sm text-[#64748B]">
                                             {{ $item['due_date'] }}
                                         </td>
-                                        <td class="py-4 px-5 text-right">
+                                        <td class="hidden md:table-cell py-4 px-5 text-right">
                                             @if($item['fine_amount'] > 0)
                                                 <div class="flex flex-col items-end gap-1">
                                                     <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-[#FEF2F2] text-[#B91C1C] border border-[#FECACA]">

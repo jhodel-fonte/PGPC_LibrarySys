@@ -43,7 +43,7 @@
     <div class="max-w-[960px] w-full">
         @foreach([
             'terms' => ['title' => 'Terms and Conditions', 'desc' => 'Legal terms governing library membership, borrowing privileges, and facility usage.'],
-            'privacy' => ['title' => 'Data Privacy Policy', 'desc' => 'Information describing how patron and circulation data is collected, stored, and protected under RA 10173.'],
+            'privacy' => ['title' => 'Data Privacy Policy', 'desc' => 'Information describing how borrowing and circulation data is collected, stored, and protected under RA 10173.'],
             'cookie' => ['title' => 'Cookie & Session Policy', 'desc' => 'Guidelines on session tokens, preferences, and cookie persistence in the PGPC Library System.']
         ] as $type => $info)
         
