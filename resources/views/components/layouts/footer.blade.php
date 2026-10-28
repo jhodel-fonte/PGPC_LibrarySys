@@ -111,12 +111,17 @@
                         @php
                             $url = is_array($item) ? ($item['external_url'] ?? $item['url'] ?? '#') : $item;
                             $name = is_array($item) ? ($item['name'] ?? $item['label'] ?? $key) : $key;
+                            $isExternal = str_starts_with($url, 'http://') || str_starts_with($url, 'https://');
+                            $isLoggedIn = auth()->check();
+                            $targetUrl = ($isExternal && !$isLoggedIn) ? route('online-resources.access', ['url' => $url]) : $url;
                         @endphp
                         <li>
                             <a
-                                href="{{ $url }}"
-                                target="_blank"
-                                rel="noopener noreferrer"
+                                href="{{ $targetUrl }}"
+                                @if ($isExternal && $isLoggedIn)
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                @endif
                                 class="hover:text-[#FCC719] transition-colors inline-flex items-center gap-1.5 group/res"
                             >
                                 <span>{{ $name }}</span>

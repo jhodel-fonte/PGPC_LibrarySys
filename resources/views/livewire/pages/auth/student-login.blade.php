@@ -29,6 +29,15 @@
     <!-- Auth Response / Error Card (Alpine.js controlled) -->
     <x-auth.responseCard id="ajax-general-error" />
 
+    @if (session('warning'))
+        <div class="mb-5 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3.5 text-xs text-amber-900 shadow-2xs">
+            <svg class="h-4 w-4 text-amber-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <span class="font-medium leading-relaxed">{{ session('warning') }}</span>
+        </div>
+    @endif
+
     <form wire:submit="login" x-on:submit="isLoggingIn = true" novalidate>
         <div class="space-y-5">
             <!-- Username or Student ID (Label 14px/Semibold, 8px gap, Input 52px height, 12px radius, Text 15px, Icon 20px) -->

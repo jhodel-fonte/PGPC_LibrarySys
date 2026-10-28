@@ -43,7 +43,13 @@ class EmployeeLogin extends Component
             $this->form->authenticate(['Admin', 'Head Librarian', 'Librarian']);
 
             Session::regenerate();
+            $intended = session()->get('url.intended');
             session()->forget('url.intended');
+
+            if ($intended && filter_var($intended, FILTER_VALIDATE_URL)) {
+                $this->redirect($intended, navigate: false);
+                return;
+            }
 
             $user = auth()->user();
             $roleName = strtolower(str_replace(' ', '', $user->role?->name ?? ''));

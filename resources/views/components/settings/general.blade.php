@@ -18,7 +18,7 @@
                     <h3 class="text-xs font-bold text-[#102B70] tracking-wider uppercase">Institution Information</h3>
                     <p class="mt-0.5 text-xs text-[#64748B]">Basic public information displayed throughout the library system.</p>
                 </div>
-                @if($this->dirtyState['sections']['general.library_name'] ?? false || $this->dirtyState['sections']['general.email'] ?? false || $this->dirtyState['sections']['general.phone'] ?? false)
+                @if($this->dirtyState['sections']['general.library_name'] ?? false || $this->dirtyState['sections']['general.email'] ?? false || $this->dirtyState['sections']['general.phone'] ?? false || $this->dirtyState['sections']['general.address'] ?? false)
                     <div class="flex items-center gap-1.5 text-xs font-bold text-amber-800 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
                         <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
                         Modified
@@ -58,7 +58,18 @@
                         <input type="text" wire:model.live="settings.general.phone" class="h-11 w-full rounded-xl border border-[#E2E8F0] bg-white pl-10 pr-3.5 text-sm text-[#0F172A] font-medium focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all outline-none" placeholder="+63 (2) 8123-4567">
                     </div>
                 </div>
+
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-bold text-[#334155] mb-1.5 uppercase tracking-wide">Library Facility Location</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                        </span>
+                        <input type="text" wire:model.live="settings.general.address" class="h-11 w-full rounded-xl border border-[#E2E8F0] bg-white pl-10 pr-3.5 text-sm text-[#0F172A] font-medium focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all outline-none" placeholder="e.g. Main Building, 2nd Floor Library">
+                    </div>
+                </div>
             </div>
+
         </div>
         
         <hr class="my-8 border-[#E2E8F0]">
