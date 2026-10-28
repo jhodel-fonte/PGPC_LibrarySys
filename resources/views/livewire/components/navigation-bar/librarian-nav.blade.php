@@ -125,6 +125,13 @@
         >
             Overview
         </x-widget.sidebar-subitem>
+        <x-widget.sidebar-subitem 
+            href="{{ route($routePrefix . 'analytics.ai') }}" 
+            :active="request()->routeIs($routePrefix . 'analytics.ai')" 
+            wire:navigate
+        >
+            AI Analytics
+        </x-widget.sidebar-subitem>
         {{-- Circulation analytics subitem is hidden while its route is preserved --}}
     </x-slot:subitems>
 </x-widget.sidebar-button>

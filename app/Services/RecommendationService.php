@@ -6,6 +6,7 @@ use App\Models\Account;
 use App\Models\MlEvaluationRun;
 use App\Models\UserRecommendation;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 use RuntimeException;
@@ -20,22 +21,41 @@ class RecommendationService
             ->map(fn ($isbn) => trim((string) $isbn))->filter()->unique()->values()->all();
 
         try {
-            $response = Http::acceptJson()->withHeaders(['X-API-Key' => (string) config('services.recommender.key')])
-                ->timeout((int) config('services.recommender.timeout', 30))
+            $response = $this->client()
+                ->connectTimeout(1)
+                ->timeout(min((int) config('services.recommender.timeout', 30), 5))
                 ->post(rtrim((string) config('services.recommender.url'), '/').'/api/recommend', [
                     'encrypter_id' => Account::encodeId($account->id),
                     'borrowed_books' => $borrowedIsbns,
                 ]);
-        } catch (ConnectionException $exception) {
-            throw new RuntimeException('Recommendation service is unavailable.', previous: $exception);
+        } catch (ConnectionException|RequestException $exception) {
+            report($exception);
+            throw new RuntimeException('Recommendation service is temporarily unavailable.', previous: $exception);
         }
 
         if (! $response->successful()) {
-            throw new RuntimeException('Recommendation service returned an unexpected response.');
+            report(new RuntimeException('Recommendation request failed with HTTP '.$response->status().'.'));
+            throw new RuntimeException($this->safeRecommendationError($response->status()));
         }
 
-        $isbns = collect($response->json('recommendations', []))->pluck('isbn')
-            ->filter(fn ($isbn) => is_string($isbn) && trim($isbn) !== '')->all();
+        $recommendations = $response->json('recommendations');
+        if (! is_array($recommendations)) {
+            report(new RuntimeException('Recommendation response did not contain a recommendations array.'));
+            throw new RuntimeException('Recommendation service returned an invalid response.');
+        }
+
+        $isbns = collect($recommendations)->map(function ($recommendation): string {
+            if (! is_array($recommendation) || ! isset($recommendation['isbn']) || ! is_string($recommendation['isbn'])) {
+                throw new RuntimeException('Recommendation service returned a malformed recommendation.');
+            }
+
+            $isbn = trim($recommendation['isbn']);
+            if ($isbn === '' || strlen($isbn) > 32) {
+                throw new RuntimeException('Recommendation service returned a malformed recommendation.');
+            }
+
+            return $isbn;
+        })->unique()->take(10)->values()->all();
 
         return UserRecommendation::storeRecommendations($account->id, $isbns);
     }
@@ -67,8 +87,7 @@ class RecommendationService
         $checkedAt = now()->toIso8601String();
 
         try {
-            $response = Http::acceptJson()
-                ->withHeaders(['X-API-Key' => (string) config('services.recommender.key')])
+            $response = $this->client()
                 ->connectTimeout(1)
                 ->timeout(2)
                 ->get(rtrim((string) config('services.recommender.url'), '/').(string) config('services.recommender.evaluation_path', '/api/metrics'));
@@ -79,9 +98,9 @@ class RecommendationService
         }
 
         if (! $response->successful()) {
-            report(new RuntimeException('Recommendation evaluation returned an unexpected response.'));
+            report(new RuntimeException('Recommendation evaluation failed with HTTP '.$response->status().'.'));
 
-            return $this->unavailableEvaluation('The recommendation service returned an error (HTTP '.$response->status().').', $checkedAt);
+            return $this->unavailableEvaluation('The recommendation service is temporarily unavailable.', $checkedAt);
         }
 
         $payload = $response->json();
@@ -150,5 +169,22 @@ class RecommendationService
             'checked_at' => $checkedAt,
             'error' => $error,
         ];
+    }
+
+    protected function client()
+    {
+        return Http::acceptJson()->withHeaders([
+            'X-API-Key' => (string) config('services.recommender.key'),
+        ]);
+    }
+
+    protected function safeRecommendationError(int $status): string
+    {
+        return match ($status) {
+            401 => 'Your session is not authorized to use recommendations. Please sign in again.',
+            429 => 'Recommendations were requested too frequently. Please try again shortly.',
+            503, 504 => 'The recommendation service is temporarily unavailable. Please try again later.',
+            default => 'We could not generate recommendations right now. Please try again later.',
+        };
     }
 }
