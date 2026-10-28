@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   web:
     build: .
@@ -13,6 +15,8 @@ services:
       - .env
     depends_on:
       - db
+    networks:
+      - pgpc-internal
 
   db:
     image: postgres:15
@@ -26,6 +30,8 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - pgdata:/var/lib/postgresql/data
+    networks:
+      - pgpc-internal
 
   queue:
     build: .
@@ -42,3 +48,7 @@ services:
 
 volumes:
   pgdata:
+
+networks:
+  pgpc-internal:
+    external: true
