@@ -9,13 +9,13 @@
     $gender = $gender ?? ($student?->gender ? ucfirst(strtolower($student->gender)) : 'Not specified');
 @endphp
 
-<div class="relative rounded-2xl md:rounded-3xl border border-[#E2E8F0] bg-white p-5 sm:p-6 lg:p-8 shadow-[0_4px_20px_rgba(16,43,112,0.03)] space-y-9">
+<div class="relative rounded-2xl md:rounded-3xl border border-[#E2E8F0] bg-white p-5 sm:p-6 lg:p-8 shadow-[0_4px_20px_rgba(16,43,112,0.03)] space-y-9 text-base text-slate-800">
     
     <!-- SECTION 1: PERSONAL IDENTITY INFORMATION -->
     <div class="space-y-4">
         <div class="flex items-center gap-2.5 pb-2 border-b border-slate-100">
             <div class="h-6 w-1 bg-[#102B70] rounded-full"></div>
-            <h3 class="text-base font-bold text-[#102B70]">Personal Identity Information</h3>
+            <h3 class="text-lg font-bold text-[#102B70]">Personal Identity Information</h3>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 pt-1">
@@ -121,7 +121,7 @@
     <div class="space-y-4 pt-2">
         <div class="flex items-center gap-2.5 pb-2 border-b border-slate-100">
             <div class="h-6 w-1 bg-[#102B70] rounded-full"></div>
-            <h3 class="text-base font-bold text-[#102B70]">Academic & Enrollment Details</h3>
+            <h3 class="text-lg font-bold text-[#102B70]">Academic & Enrollment Details</h3>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 pt-1">
