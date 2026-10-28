@@ -233,7 +233,7 @@
                                 $bookData = $bookDetail?->bookData;
                                 $authors = $bookData?->authors?->map(fn($a) => $a->first_name . ' ' . $a->last_name)->join(', ') ?? 'Unknown Author';
 
-                                $dueDate = $reservation->due_date ? Carbon::parse($reservation->due_date) : null;
+                                $dueDate = $reservation->due_date ? \Carbon\Carbon::parse($reservation->due_date) : null;
                                 $isOverdue = $dueDate && $dueDate->isPast() && in_array($statusId, [1, 2]);
 
                                 $coverUrl = $bookDetail?->cover_url ?: asset('images/' . config('settings.book_covers.default', 'book-cover.webp'));
@@ -291,10 +291,10 @@
                                 <!-- Reservation Date -->
                                 <td class="py-4 px-4 sm:px-6 whitespace-nowrap">
                                     <div class="text-xs font-semibold text-slate-800">
-                                        {{ $reservation->reservation_date ? Carbon::parse($reservation->reservation_date)->format('M d, Y') : '—' }}
+                                        {{ $reservation->reservation_date ? \Carbon\Carbon::parse($reservation->reservation_date)->format('M d, Y') : '—' }}
                                     </div>
                                     <div class="text-[11px] text-slate-400">
-                                        {{ $reservation->reservation_date ? Carbon::parse($reservation->reservation_date)->format('h:i A') : '' }}
+                                        {{ $reservation->reservation_date ? \Carbon\Carbon::parse($reservation->reservation_date)->format('h:i A') : '' }}
                                     </div>
                                 </td>
 
@@ -513,10 +513,10 @@
                         <div class="p-4 rounded-xl border border-slate-200 bg-white space-y-2">
                             <h5 class="text-xs font-bold uppercase tracking-wider text-slate-500">Timeline & Dates</h5>
                             <div class="text-xs text-slate-600 space-y-1">
-                                <div><span class="font-semibold">Reserved On:</span> {{ $res->reservation_date ? Carbon::parse($res->reservation_date)->format('M d, Y h:i A') : 'N/A' }}</div>
-                                <div><span class="font-semibold">Pickup Deadline:</span> <span class="font-bold text-[#102B70]">{{ $res->due_date ? Carbon::parse($res->due_date)->format('M d, Y') : 'N/A' }}</span></div>
-                                <div><span class="font-semibold">Approved Date:</span> {{ $res->approved_date ? Carbon::parse($res->approved_date)->format('M d, Y h:i A') : 'Pending' }}</div>
-                                <div><span class="font-semibold">Fulfilled Date:</span> {{ $res->fulfilled_date ? Carbon::parse($res->fulfilled_date)->format('M d, Y h:i A') : 'Not yet' }}</div>
+                                <div><span class="font-semibold">Reserved On:</span> {{ $res->reservation_date ? \Carbon\Carbon::parse($res->reservation_date)->format('M d, Y h:i A') : 'N/A' }}</div>
+                                <div><span class="font-semibold">Pickup Deadline:</span> <span class="font-bold text-[#102B70]">{{ $res->due_date ? \Carbon\Carbon::parse($res->due_date)->format('M d, Y') : 'N/A' }}</span></div>
+                                <div><span class="font-semibold">Approved Date:</span> {{ $res->approved_date ? \Carbon\Carbon::parse($res->approved_date)->format('M d, Y h:i A') : 'Pending' }}</div>
+                                <div><span class="font-semibold">Fulfilled Date:</span> {{ $res->fulfilled_date ? \Carbon\Carbon::parse($res->fulfilled_date)->format('M d, Y h:i A') : 'Not yet' }}</div>
                                 <div><span class="font-semibold">Current Status:</span> <span class="font-bold text-[#102B70]">{{ $res->reservationStatus?->status ?? 'Pending' }}</span></div>
                             </div>
                         </div>

@@ -3,6 +3,7 @@
 namespace App\Livewire\Components\BookManager;
 
 use App\Models\Publisher;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 class AddPublisherSelect extends Component
@@ -16,6 +17,14 @@ class AddPublisherSelect extends Component
         $this->publisherId = $publisherId;
         $this->publisherName = $publisherName;
         $this->selectedPublisherName = $selectedPublisherName;
+    }
+
+    #[On('publisher-auto-filled')]
+    public function onPublisherAutoFilled(?int $id = null, string $name = ''): void
+    {
+        $this->publisherId = $id;
+        $this->selectedPublisherName = $name;
+        $this->publisherName = $name;
     }
 
     public function selectPublisher(int $id, string $name): void

@@ -89,6 +89,14 @@
             }
         }
      }"
+     @publisher-auto-filled.window="
+        selectedPublisherId = $event.detail.id;
+        selectedPublisherName = $event.detail.name;
+        query = $event.detail.name;
+        if ($event.detail.name && !(preloads || []).some(p => p.name.toLowerCase() === $event.detail.name.toLowerCase())) {
+            preloads.push({ id: $event.detail.id, name: $event.detail.name });
+        }
+     "
      @click.outside="isOpen = false"
 >
     <label class="text-sm font-semibold text-[#334155]">Publisher</label>

@@ -41,7 +41,7 @@
         <!-- Two-Column Layout (Snug Facebook Column on Left, Expanded Campus News on Right) -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
 
-            <!-- Left Column: Compact Facebook Feed Card (Col 4) -->
+            <!-- Left Column: Official Facebook Hub & Embed (Col 4) -->
             <div class="lg:col-span-4 xl:col-span-4 flex flex-col">
                 <div class="flex items-center justify-between mb-3 px-1">
                     <div class="flex items-center gap-2">
@@ -55,17 +55,96 @@
                     </a>
                 </div>
 
-                <!-- Contained Box with Snug Width & Embedded Facebook Plugin -->
-                <div class="w-full max-w-[420px] mx-auto lg:mx-0 h-[600px] flex justify-center bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                    <iframe
-                        src="https://www.facebook.com/plugins/page.php?href=https%3A%2F%2Fwww.facebook.com%2FPadreGarciaPolytechnicCollege%2F&tabs=timeline&width=420&height=600&small_header=true&adapt_container_width=true&hide_cover=true&show_facepile=true"
-                        class="w-full h-full border-none"
-                        scrolling="no"
-                        frameborder="0"
-                        allowfullscreen="true"
-                        loading="lazy"
-                        allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share">
-                    </iframe>
+                <!-- Contained Box with Snug Width & Facebook Page Embed + Action Hub -->
+                <div class="w-full max-w-[420px] mx-auto lg:mx-0 h-[600px] flex flex-col bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <!-- 1. Official Facebook Page Plugin Header (Cover, Profile, Follow Button, Followers) -->
+                    <div class="w-full shrink-0 border-b border-slate-100 bg-[#F0F2F5] min-h-[130px] flex justify-center overflow-hidden">
+                        <iframe
+                            src="https://www.facebook.com/plugins/page.php?href=https%3A%2F%2Fwww.facebook.com%2FPadreGarciaPolytechnicCollege%2F&width=420&height=130&small_header=false&adapt_container_width=true&hide_cover=false&show_facepile=true"
+                            class="w-full border-none"
+                            style="height: 130px; border: none; overflow: hidden;"
+                            scrolling="no"
+                            frameborder="0"
+                            allowfullscreen="true"
+                            loading="lazy"
+                            allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share">
+                        </iframe>
+                    </div>
+
+                    <!-- 2. Interactive Social Hub & Updates Feed Links -->
+                    <div class="flex-1 p-5 flex flex-col justify-between bg-gradient-to-b from-white to-slate-50/60">
+                        <div class="space-y-4">
+                            <!-- Page Overview / Verification Info -->
+                            <div class="flex items-start gap-3 p-3.5 rounded-xl bg-[#EFF6FF] border border-[#DBEAFE]">
+                                <div class="w-8 h-8 rounded-lg bg-[#1877F2] flex items-center justify-center text-white shrink-0 shadow-xs">
+                                    <svg class="h-4.5 w-4.5" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                                    </svg>
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex items-center gap-1.5">
+                                        <h4 class="text-xs font-bold text-[#102B70]">PGPC Official Facebook</h4>
+                                        <svg class="w-3.5 h-3.5 text-[#1877F2]" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                        </svg>
+                                    </div>
+                                    <p class="text-[11.5px] text-slate-600 mt-0.5 leading-relaxed">
+                                        Primary source for campus notices, student affairs, academic suspensions, and library circulation advisories.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Direct Quick Links -->
+                            <div class="space-y-2">
+                                <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Quick Navigation</span>
+                                
+                                <a
+                                    href="{{ $facebookPageUrl }}"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="group flex items-center justify-between p-3 rounded-lg border border-slate-200 bg-white hover:border-[#1877F2] hover:bg-blue-50/40 transition-all shadow-2xs"
+                                >
+                                    <div class="flex items-center gap-2.5 min-w-0">
+                                        <div class="w-2 h-2 rounded-full bg-[#FCC719] group-hover:scale-125 transition-transform"></div>
+                                        <span class="text-xs font-semibold text-slate-800 group-hover:text-[#1877F2] truncate">Latest Announcements & Posts</span>
+                                    </div>
+                                    <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-[#1877F2] group-hover:translate-x-0.5 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                                    </svg>
+                                </a>
+
+                                <a
+                                    href="https://m.me/PadreGarciaPolytechnicCollege"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="group flex items-center justify-between p-3 rounded-lg border border-slate-200 bg-white hover:border-[#1877F2] hover:bg-blue-50/40 transition-all shadow-2xs"
+                                >
+                                    <div class="flex items-center gap-2.5 min-w-0">
+                                        <div class="w-2 h-2 rounded-full bg-[#1877F2] group-hover:scale-125 transition-transform"></div>
+                                        <span class="text-xs font-semibold text-slate-800 group-hover:text-[#1877F2] truncate">Message Support / Helpdesk</span>
+                                    </div>
+                                    <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-[#1877F2] group-hover:translate-x-0.5 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                                    </svg>
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Main Call to Action Button -->
+                        <div class="pt-4 border-t border-slate-100">
+                            <a
+                                href="{{ $facebookPageUrl }}"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#1877F2] hover:bg-[#166fe5] text-white text-xs font-bold transition-all shadow-xs hover:shadow-md active:scale-[0.98]"
+                            >
+                                <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                                </svg>
+                                <span>View Full Page on Facebook</span>
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
 
