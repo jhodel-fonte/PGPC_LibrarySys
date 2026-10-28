@@ -17,15 +17,23 @@ class RecommendationService
     /** Request recommendations using only the account's encrypted identifier. */
     public function refreshFor(Account $account): UserRecommendation
     {
-        $borrowedIsbns = $account->userHistories()->where('rating', 2)->pluck('isbn')
+        $histories = $account->userHistories()
+            ->select(['encrypter_id', 'isbn', 'rating'])
+            ->get();
+        $encrypterId = $histories->pluck('encrypter_id')->filter()->first();
+        $borrowedIsbns = $histories->where('rating', 2)->pluck('isbn')
             ->map(fn ($isbn) => trim((string) $isbn))->filter()->unique()->values()->all();
+
+        if (! $encrypterId) {
+            throw new RuntimeException('Encrypted user identifier is unavailable.');
+        }
 
         try {
             $response = $this->client()
                 ->connectTimeout(1)
                 ->timeout(min((int) config('services.recommender.timeout', 30), 5))
-                ->post(rtrim((string) config('services.recommender.url'), '/').'/api/recommend', [
-                    'encrypter_id' => Account::encodeId($account->id),
+                ->post($this->endpoint('/api/recommend'), [
+                    'encrypter_id' => (string) $encrypterId,
                     'borrowed_books' => $borrowedIsbns,
                 ]);
         } catch (ConnectionException|RequestException $exception) {
@@ -90,7 +98,7 @@ class RecommendationService
             $response = $this->client()
                 ->connectTimeout(1)
                 ->timeout(2)
-                ->get(rtrim((string) config('services.recommender.url'), '/').(string) config('services.recommender.evaluation_path', '/api/metrics'));
+                ->get($this->endpoint((string) config('services.recommender.evaluation_path', '/api/metrics')));
         } catch (ConnectionException $exception) {
             report($exception);
 
@@ -176,6 +184,26 @@ class RecommendationService
         return Http::acceptJson()->withHeaders([
             'X-API-Key' => (string) config('services.recommender.key'),
         ]);
+    }
+
+    protected function endpoint(string $path): string
+    {
+        $url = rtrim((string) config('services.recommender.url'), '/');
+
+        if (
+            is_file('/.dockerenv')
+            && in_array(parse_url($url, PHP_URL_HOST), ['127.0.0.1', 'localhost'], true)
+        ) {
+            $url = rtrim(
+                (string) config(
+                    'services.recommender.container_url',
+                    'http://recommender-api:5000'
+                ),
+                '/'
+            );
+        }
+
+        return $url . '/' . ltrim($path, '/');
     }
 
     protected function safeRecommendationError(int $status): string
