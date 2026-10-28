@@ -217,7 +217,7 @@ class Index extends Component
                     'account_id' => $student->account_id ?? Auth::id(),
                     'reservation_status_id' => $pendingStatusId,
                     'reservation_date' => now(),
-                    'due_date' => now()->addDays($this->pickupDays),
+                    'due_date' => now()->addDays($this->pickupDays)->setTime(17, 0, 0),
                     'comment' => trim($this->studentComment) ?: 'Student reservation through student portal',
                 ]);
 

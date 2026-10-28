@@ -51,4 +51,9 @@ class BookData extends Model
     {
         return $this->belongsToMany(Category::class, 'book_data_category');
     }
+
+    public function subjects(): BelongsToMany
+    {
+        return $this->belongsToMany(Subject::class, 'book_data_subject');
+    }
 }

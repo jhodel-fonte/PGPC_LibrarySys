@@ -160,6 +160,21 @@ class Account extends Authenticatable
         return $this->hasMany(BookReservation::class, 'account_id');
     }
 
+    public function histories(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(UserHistory::class, 'user_id');
+    }
+
+    public function userHistories(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(UserHistory::class, 'user_id');
+    }
+
+    public function recommendation(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(UserRecommendation::class, 'user_id');
+    }
+
     public function permissions(): BelongsToMany
     {
         return $this->belongsToMany(Permission::class, 'account_permissions')

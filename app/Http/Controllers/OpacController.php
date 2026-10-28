@@ -151,7 +151,7 @@ class OpacController extends Controller
                     'account_id'             => $user?->id,
                     'reservation_status_id'  => $pendingStatus ? $pendingStatus->id : 1,
                     'reservation_date'       => now(),
-                    'due_date'               => now()->addDays(3),
+                    'due_date'               => now()->addDays(3)->setTime(17, 0, 0),
                     'comment'                => 'Online OPAC reservation by ' . ($user?->username ?? 'student'),
                 ]);
 

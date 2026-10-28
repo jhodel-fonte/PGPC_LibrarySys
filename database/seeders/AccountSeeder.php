@@ -17,8 +17,8 @@ class AccountSeeder extends Seeder
         $now = Carbon::now();
         $accounts = [];
 
-        // Seed 10 Student accounts
-        for ($i = 1; $i <= 10; $i++) {
+        // Seed 20 Student accounts so recommendation seed data has enough unique user-book interactions.
+        for ($i = 1; $i <= 20; $i++) {
             $accounts[] = [
                 'role_id' => 4, // Patron / Student
                 'status_id' => 1, // Active

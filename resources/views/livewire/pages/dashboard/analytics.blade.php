@@ -36,16 +36,23 @@
     @scroll-to-section.window="scrollToTarget($event.detail)"
 >
 
-    <div class="relative z-10 mx-auto w-full max-w-[1600px] p-6 lg:p-8 xl:p-10 space-y-10 lg:space-y-12 print:hidden">
+    <div class="relative z-10 mx-auto w-full max-w-[1600px] p-5 sm:p-6 lg:p-8 xl:p-10 space-y-8 lg:space-y-10 print:hidden">
 
         <!-- 1. Page Header & Primary Period Switcher -->
         <div class="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between lg:shrink-0">
-            <div>
-                <h1 class="text-2xl font-bold tracking-tight text-[#102B70]">Analytics & Library Intelligence</h1>
-                <p class="mt-1 text-sm text-slate-500 font-medium">Real-time operational statistics, patron demographics, and collection circulation trends.</p>
+            <div class="max-w-2xl">
+                <h1 class="text-2xl font-bold tracking-tight text-[#102B70]">Analytics</h1>
+                <p class="mt-1 text-sm leading-6 text-slate-500">Circulation, patron activity, and collection performance.</p>
             </div>
 
             <div class="flex flex-wrap items-center gap-2.5 shrink-0">
+                @php($analyticsPrefix = \App\Services\EmployeeRoleService::getRoutePrefix())
+                <a
+                    href="{{ route($analyticsPrefix . 'analytics.ai') }}"
+                    class="text-xs font-semibold text-[#102B70] underline decoration-[#FCC719] underline-offset-4 hover:text-[#0B225E]"
+                >
+                    AI evaluation
+                </a>
                 {{-- Period Selector: Monthly Data vs Yearly Data --}}
                 <div class="inline-flex items-center p-1 bg-white border border-[#CBD5E1] rounded-xl shadow-sm text-sm font-bold text-[#102B70]">
                     <button 
@@ -553,7 +560,7 @@
                                         <div class="flex items-center gap-2">
                                             <span class="w-16 text-slate-600 font-medium text-[11px]">{{ $slot['hour'] }}</span>
                                             @if(isset($slot['tag']))
-                                                <span class="text-[9px] font-bold px-1.5 py-0.2 rounded-full {{ $slot['isPeak'] ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-slate-100 text-slate-600' }}">
+                                                <span class="text-[9px] font-bold px-1.5 py-0.2 rounded-full {{ $slot['isPeak'] ? 'bg-amber-100 text-amber-900 border border-amber-200' : 'bg-slate-100 text-[#334155]' }}">
                                                     {{ $slot['tag'] }}
                                                 </span>
                                             @endif

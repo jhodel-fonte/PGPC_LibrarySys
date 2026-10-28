@@ -99,6 +99,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | iProgSMS Gateway Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Credentials and endpoint for sending transactional SMS notifications.
+    |
+    */
+    'sms' => [
+        'provider'   => 'iprogsms',
+        'api_token'  => env('IPROG_SMS_API_TOKEN', env('IPROGSMS_API_TOKEN', env('SMS_API_TOKEN', ''))),
+        'api_url'    => env('IPROG_SMS_URL', 'https://www.iprogsms.com/api/v1/sms_messages'),
+        'enabled'    => env('SMS_ENABLED', true),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Online Resources File Path
     |--------------------------------------------------------------------------
     |

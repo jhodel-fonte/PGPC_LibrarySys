@@ -6,6 +6,8 @@ use App\Models\Book as BookModel;
 use App\Models\BookDetail as BookDetailModel;
 use App\Models\BookReservation;
 use App\Models\ReservationStatus;
+use App\Models\UserHistory;
+use App\Services\RecommendationService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
@@ -21,6 +23,8 @@ class Book extends Component
     public ?string $reserveStatus = null;
     public ?string $reserveMessage = null;
     public bool $readyToLoad = false;
+    public array $personalRecommendations = [];
+    public ?string $recommendationError = null;
 
     public function mount($identifier = null)
     {
@@ -106,7 +110,7 @@ class Book extends Component
                     'account_id' => $user?->id,
                     'reservation_status_id' => $statusId,
                     'reservation_date' => now(),
-                    'due_date' => now()->addDays(3),
+                    'due_date' => now()->addDays(3)->setTime(17, 0, 0),
                     'comment' => 'Online reservation by ' . $userIdentifier,
                 ]);
 
@@ -351,6 +355,74 @@ class Book extends Component
         $list = session()->get('my_book_list', []);
         $bookId = $this->book['accession_no'] ?? $this->book['id'] ?? null;
         $this->isBookmarked = $bookId && in_array($bookId, $list);
+
+        $this->loadPersonalRecommendations($record->isbn ?: $record->issn);
+    }
+
+    /**
+     * Persist only authenticated views and ask the ML service for that patron's
+     * recommendations. Guests continue to receive the public related-books row.
+     */
+    protected function loadPersonalRecommendations(?string $isbn): void
+    {
+        if (! Auth::check() || ! is_string($isbn) || trim($isbn) === '') {
+            return;
+        }
+
+        $account = Auth::user();
+        if (! $account || ! $account->getKey()) {
+            return;
+        }
+
+        try {
+            UserHistory::upsertHighestRating(
+                (int) $account->getKey(),
+                $isbn,
+                UserHistory::RATING_VIEW
+            );
+
+            $stored = $account->recommendation;
+            if (! $stored || ! $stored->generated_at || $stored->generated_at->lt(now()->subHours(6))) {
+                $stored = app(RecommendationService::class)->refreshFor($account);
+            }
+
+            $this->personalRecommendations = $stored->getActiveBooks()
+                ->where('id', '!=', $this->bookDetailId)
+                ->take(10)
+                ->map(fn ($item) => $this->formatBookCard($item))
+                ->values()
+                ->all();
+        } catch (\RuntimeException $exception) {
+            report($exception);
+            $this->recommendationError = 'Personalized recommendations are temporarily unavailable.';
+        }
+    }
+
+    protected function formatBookCard($item): array
+    {
+        $data = $item->bookData;
+        $copies = $item->books ?: collect();
+        $availableCopies = $copies->filter(fn ($copy) => strtolower($copy->status ?? '') === 'available')->count();
+        $firstCopy = $copies->first();
+
+        return [
+            'id' => $item->id,
+            'accession_no' => $firstCopy?->accession_number,
+            'title' => $data?->book_title ?: 'Untitled',
+            'author' => $data && $data->authors->isNotEmpty()
+                ? $data->authors->map(fn ($author) => trim($author->first_name.' '.$author->last_name))->filter()->implode(', ')
+                : 'Unknown Author',
+            'category' => $data?->categories?->first()?->name ?: ($item->classification ?: ($item->bookType?->name ?: 'General')),
+            'categories' => $data?->categories?->pluck('name')->toArray() ?? [],
+            'cover_url' => $item->cover_url ?: null,
+            'has_custom_cover' => ! empty($item->cover_image),
+            'default_cover' => asset('images/'.config('settings.book_covers.default', config('settings.coverFile_default', 'book-cover.webp'))),
+            'call_no' => $item->call_number ?: 'N/A',
+            'year' => $item->publication_year ?: ($data?->copyright_year ?: 'N/A'),
+            'type' => $item->bookType?->name ?: 'Book',
+            'status' => $availableCopies > 0 ? 'available' : 'unavailable',
+            'status_label' => $availableCopies > 0 ? 'Available' : 'Unavailable',
+        ];
     }
 
     public function getSimilarBooks(): array
@@ -466,6 +538,8 @@ class Book extends Component
 
         return view('livewire.pages.main.book', [
             'similarBooks' => $this->getSimilarBooks(),
+            'personalRecommendations' => $this->personalRecommendations,
+            'recommendationError' => $this->recommendationError,
         ])->layout('components.layouts.home', [
             'title' => $title,
         ]);

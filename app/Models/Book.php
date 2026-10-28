@@ -71,4 +71,9 @@ class Book extends Model
     {
         return $this->hasMany(Language_Book::class, 'book_id');
     }
+
+    public function materialMetadata(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(MaterialItemMetadata::class);
+    }
 }

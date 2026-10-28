@@ -63,6 +63,8 @@ class DatabaseSeeder extends Seeder
             NotifTemplateSeeder::class,
             UserPreferenceSeeder::class,
             UserNotificationSeeder::class,
+            // 12. Recommender training interactions (depends on accounts and catalog ISBNs)
+            UserHistorySeeder::class,
         ]);
 
         // Fix auto-increment sequences after seeding records

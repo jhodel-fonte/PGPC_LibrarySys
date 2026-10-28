@@ -109,26 +109,11 @@
                         label="Member ID / Code"
                         placeholder="Enter or scan member ID or book code"
                     />
-
-                    <!-- Warnings / Errors alert box -->
                     @if($errorMessage)
-                        @php
-                            $isWarning = str_contains(strtolower($errorMessage), 'warning');
-                        @endphp
-                        <div x-data="{ showErr: true }" x-show="showErr"
-                             class="mt-3 p-3 border rounded-xl flex items-center justify-between text-xs font-bold transition-all animate-fade-in
-                                    {{ $isWarning ? 'bg-[#FFF9E6] border-[#FFEAA7] text-[#D97706]' : 'bg-[#FEF2F2] border-[#FCA5A5] text-[#B91C1C]' }}">
-                            <div class="flex items-center gap-2">
-                                <svg class="w-4 h-4 shrink-0 {{ $isWarning ? 'text-[#FCC719]' : 'text-[#EF4444]' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                                </svg>
-                                <span>{{ $errorMessage }}</span>
-                            </div>
-                            <button type="button" @click="showErr = false" class="transition-colors focus:outline-none {{ $isWarning ? 'text-[#D97706] hover:text-[#B45309]' : 'text-[#EF4444] hover:text-[#B91C1C]' }}">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                </svg>
-                            </button>
+                        @php($isWarning = str_contains(strtolower($errorMessage), 'warning'))
+                        <div wire:key="checkin-alert-{{ md5($errorMessage) }}" x-data="{ open: true }" x-init="setTimeout(() => open = false, 6000)" x-show="open" x-transition class="mt-3 flex items-start justify-between gap-3 rounded-lg border p-3 text-sm font-medium {{ $isWarning ? 'border-amber-200 bg-amber-50 text-amber-800' : 'border-rose-200 bg-rose-50 text-rose-800' }}">
+                            <span>{{ $errorMessage }}</span>
+                            <button type="button" @click="open = false" class="shrink-0 font-semibold underline underline-offset-2">Dismiss</button>
                         </div>
                     @endif
                 </div>
