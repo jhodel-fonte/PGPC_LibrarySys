@@ -147,9 +147,31 @@
             this.highlightedIndex = (this.highlightedIndex - 1 + total) % total;
         },
 
-        autoSelectByCode(code) {
-            const cleanCode = (code || '').trim().toUpperCase();
-            const matched = cleanCode ? (this.preloads || []).find(c => (c.code || '').toUpperCase() === cleanCode) : null;
+        autoSelectByCode(code, raw = '', specificId = null) {
+            let matched = null;
+            if (specificId) {
+                matched = (this.preloads || []).find(c => String(c.id) === String(specificId));
+            }
+
+            if (!matched && code) {
+                const cleanCode = (code || '').trim().toUpperCase();
+                matched = (this.preloads || []).find(c => (c.code || '').toUpperCase() === cleanCode);
+                if (!matched && cleanCode.length > 1) {
+                    matched = (this.preloads || []).find(c => (c.code || '').toUpperCase() === cleanCode.substring(0, 1));
+                }
+            }
+
+            if (!matched && raw) {
+                const cleanRaw = (raw || '').trim().toUpperCase();
+                const lc = cleanRaw.match(/^([A-Z]{1,3})/);
+                if (lc) {
+                    matched = (this.preloads || []).find(c => (c.code || '').toUpperCase() === lc[1]);
+                    if (!matched && lc[1].length > 1) {
+                        matched = (this.preloads || []).find(c => (c.code || '').toUpperCase() === lc[1].substring(0, 1));
+                    }
+                }
+            }
+
             const newId = matched ? matched.id : null;
 
             // If previously auto-detected category is different from new match, auto-remove it
@@ -182,7 +204,8 @@
             }
         }
      }"
-     @call-number-code-detected.window="autoSelectByCode($event.detail.code)"
+     @call-number-code-detected.window="autoSelectByCode($event.detail.code, $event.detail.raw, $event.detail.id)"
+     @category-auto-selected.window="autoSelectByCode($event.detail.code, $event.detail.raw, $event.detail.id)"
      @click.outside="isOpen = false"
 >
     <div class="flex items-center justify-between">

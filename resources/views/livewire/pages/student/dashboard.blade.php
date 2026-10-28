@@ -255,20 +255,18 @@
                             <tbody class="divide-y divide-[#E2E8F0] bg-white">
                                 @forelse ($activeLoans as $loan)
                                     @php
-                                        $bookData = $loan->book?->bookDetail?->bookData;
+                                        $bookDetail = $loan->book?->bookDetail;
+                                        $bookData = $bookDetail?->bookData;
                                         $authors = $bookData?->authors ? $bookData->authors->map(fn($a) => $a->first_name . ' ' . $a->last_name)->join(', ') : 'Unknown Author';
                                         $isOverdue = $loan->due_date && $loan->due_date->isPast();
                                         $daysRemaining = $loan->due_date ? (int) ceil(now()->diffInDays($loan->due_date, false)) : null;
+                                        $coverUrl = $bookDetail?->cover_url ?: asset('images/' . config('settings.book_covers.default', 'book-cover.webp'));
                                     @endphp
                                     <tr class="hover:bg-slate-50/80 transition-colors">
                                         <td class="px-6 sm:px-7 py-4">
                                             <div class="flex items-center gap-3">
                                                 <div class="w-11 h-15 rounded-md bg-slate-100 border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center text-slate-400">
-                                                    @if(!empty($loan->book?->bookDetail?->cover_image))
-                                                        <img src="{{ $loan->book->bookDetail->cover_url }}" alt="Cover" class="w-full h-full object-cover">
-                                                    @else
-                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
-                                                    @endif
+                                                    <img src="{{ $coverUrl }}" alt="Cover" class="w-full h-full object-cover" onerror="this.src='{{ asset('images/book-cover.webp') }}'">
                                                 </div>
                                                 <div class="min-w-0">
                                                     <p class="text-base font-bold text-slate-900 line-clamp-1" title="{{ $bookData->book_title ?? 'Untitled Book' }}">
@@ -408,8 +406,7 @@
                     </p>
                     
                     <div class="space-y-2.5 pt-3 border-t border-white/10 text-sm text-blue-100">
-                        <div class="flex items-center gap-2.5">
-                            <svg class="w-4.5 h-4.5 text-[#FFC61A] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <div class="flex items-center gap-2.5">        
                             <span>{{ config('settings.library_config.operating_days', 'Mon - Fri') }}: {{ config('settings.library_config.desk_hours', '8:00 AM – 5:00 PM') }}</span>
                         </div>
                         <div class="flex items-center gap-2">
