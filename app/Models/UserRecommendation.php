@@ -72,7 +72,15 @@ class UserRecommendation extends Model
             return new Collection();
         }
 
-        return BookDetail::with(['bookData', 'publisher', 'bookType'])
+        return BookDetail::with([
+            'bookData.authors',
+            'bookData.categories',
+            'publisher',
+            'bookType',
+            'books' => fn ($query) => $query
+                ->whereNull('deleted_at')
+                ->whereNotIn(\Illuminate\Support\Facades\DB::raw('LOWER(status)'), ['disabled', 'archived']),
+        ])
             ->whereIn('isbn', $isbns)
             ->whereNull('deleted_at')
             ->get();

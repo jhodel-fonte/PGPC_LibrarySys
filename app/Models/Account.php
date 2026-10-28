@@ -165,6 +165,11 @@ class Account extends Authenticatable
         return $this->hasMany(UserHistory::class, 'user_id');
     }
 
+    public function userHistories(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(UserHistory::class, 'user_id');
+    }
+
     public function recommendation(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
         return $this->hasOne(UserRecommendation::class, 'user_id');

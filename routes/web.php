@@ -75,6 +75,7 @@ Route::middleware(['auth', 'verified', 'role:Admin'])->prefix('admin')->name('ad
 
         Route::get('/settings', \App\Livewire\Pages\Dashboard\Settings::class)->name('settings');
         Route::get('/analytics', \App\Livewire\Pages\Dashboard\Analytics::class)->name('analytics');
+        Route::get('/analytics/ai', \App\Livewire\Pages\Dashboard\AiAnalytics::class)->name('analytics.ai');
         Route::get('/analytics/circulation', \App\Livewire\Pages\Dashboard\AnalyticsCirculation::class)->name('analytics.circulation');
         Route::get('/profile', \App\Livewire\Pages\Student\Profile::class)->name('profile');
 });
@@ -118,6 +119,7 @@ Route::middleware(['auth', 'verified', 'role:Librarian,Head Librarian,Admin'])->
 
         Route::get('/settings', \App\Livewire\Pages\Dashboard\Settings::class)->name('settings')->middleware('permission:manage_settings');
         Route::get('/analytics', \App\Livewire\Pages\Dashboard\Analytics::class)->name('analytics');
+        Route::get('/analytics/ai', \App\Livewire\Pages\Dashboard\AiAnalytics::class)->name('analytics.ai');
         Route::get('/analytics/circulation', \App\Livewire\Pages\Dashboard\AnalyticsCirculation::class)->name('analytics.circulation');
         Route::get('/profile', \App\Livewire\Pages\Student\Profile::class)->name('profile');
 });
