@@ -1,24 +1,29 @@
-
-# Laravel 13 with PHP 8.4
+# Laravel with PHP 8.4
 FROM php:8.4-fpm-alpine
 
-# Install system dependencies
+# Install system dependencies and image processing libraries for GD
 RUN apk add --no-cache \
     nginx \
     supervisor \
     postgresql-dev \
     libxml2-dev \
     libzip-dev \
+    freetype-dev \
+    libjpeg-turbo-dev \
+    libpng-dev \
+    libwebp-dev \
     curl \
     nodejs \
     npm
 
-# Install required PHP extensions
-RUN docker-php-ext-install \
+# Configure and install required PHP extensions including gd
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
+    && docker-php-ext-install -j$(nproc) \
     pdo \
     pdo_pgsql \
     bcmath \
-    zip
+    zip \
+    gd
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
