@@ -118,16 +118,16 @@
     </x-slot:icon>
     Analytics
     <x-slot:subitems>
-        <x-widget.sidebar-subitem 
-            href="{{ route($routePrefix . 'analytics') }}" 
-            :active="request()->routeIs($routePrefix . 'analytics') && !request()->routeIs($routePrefix . 'analytics.circulation')" 
+        <x-widget.sidebar-subitem
+            href="{{ route($routePrefix . 'analytics') }}"
+            :active="request()->routeIs($routePrefix . 'analytics') && !request()->routeIs($routePrefix . 'analytics.circulation')"
             wire:navigate
         >
             Overview
         </x-widget.sidebar-subitem>
-        <x-widget.sidebar-subitem 
-            href="{{ route($routePrefix . 'analytics.ai') }}" 
-            :active="request()->routeIs($routePrefix . 'analytics.ai')" 
+        <x-widget.sidebar-subitem
+            href="{{ route($routePrefix . 'analytics.ai') }}"
+            :active="request()->routeIs($routePrefix . 'analytics.ai')"
             wire:navigate
         >
             AI Analytics
