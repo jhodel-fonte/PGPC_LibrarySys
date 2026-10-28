@@ -121,14 +121,31 @@ class AdminDashboard extends Component
         }
     }
 
+    protected function activeReservationsBaseQuery()
+    {
+        return BookReservation::query()
+            ->whereHas('book', function ($q) {
+                $q->whereNull('deleted_at')
+                    ->whereHas('bookDetail', function ($bd) {
+                        $bd->whereNull('deleted_at')
+                            ->whereHas('bookData', fn ($b) => $b->whereNull('deleted_at'));
+                    });
+            })
+            ->whereHas('student', function ($q) {
+                $q->whereNull('deleted_at')
+                    ->whereHas('account', fn ($aq) => $aq->whereNull('deleted_at'));
+            });
+    }
+
     #[Computed]
     public function stats(): array
     {
-        $total = BookReservation::count();
-        $pending = BookReservation::where('reservation_status_id', 1)->count();
-        $approved = BookReservation::where('reservation_status_id', 2)->count();
-        $fulfilled = BookReservation::where('reservation_status_id', 3)->count();
-        $cancelled = BookReservation::whereIn('reservation_status_id', [4, 5])->count();
+        $base = $this->activeReservationsBaseQuery();
+        $total = (clone $base)->count();
+        $pending = (clone $base)->where('reservation_status_id', 1)->count();
+        $approved = (clone $base)->where('reservation_status_id', 2)->count();
+        $fulfilled = (clone $base)->where('reservation_status_id', 3)->count();
+        $cancelled = (clone $base)->whereIn('reservation_status_id', [4, 5])->count();
 
         return [
             'total' => $total,
@@ -142,7 +159,7 @@ class AdminDashboard extends Component
     #[Computed]
     public function reservations()
     {
-        $query = BookReservation::query()
+        $query = $this->activeReservationsBaseQuery()
             ->with([
                 'book.bookDetail.bookData.authors',
                 'book.condition',
@@ -428,9 +445,13 @@ class AdminDashboard extends Component
             return collect();
         }
 
-        return Student::where('first_name', 'like', "%{$term}%")
-            ->orWhere('last_name', 'like', "%{$term}%")
-            ->orWhere('school_id_number', 'like', "%{$term}%")
+        return Student::whereNull('deleted_at')
+            ->whereHas('account', fn ($aq) => $aq->whereNull('deleted_at'))
+            ->where(function ($q) use ($term) {
+                $q->where('first_name', 'like', "%{$term}%")
+                    ->orWhere('last_name', 'like', "%{$term}%")
+                    ->orWhere('school_id_number', 'like', "%{$term}%");
+            })
             ->limit(5)
             ->get();
     }

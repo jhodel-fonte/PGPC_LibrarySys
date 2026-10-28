@@ -41,6 +41,9 @@ class LibrarianDetail extends Component
         $user = $this->user;
 
         if ($user) {
+            if (($user->trashed() || $user->librarian?->trashed()) && !\App\Services\EmployeeRoleService::isAdmin()) {
+                abort(404);
+            }
             $this->selectedStatusId = $user->status_id;
             $librarian = $user->librarian;
             $this->editFirstName = $librarian->first_name ?? '';
@@ -440,43 +443,28 @@ class LibrarianDetail extends Component
         }
 
         $librarian = $user->librarian;
-
-        // Check if librarian has associated borrowing transactions or fine payments (foreign key constraint)
-        $hasTransactions = $librarian && (
-            $librarian->issuedTransactions()->exists() ||
-            $librarian->receivedTransactions()->exists() ||
-            $librarian->receivedPayments()->exists()
-        );
-
-        if ($hasTransactions) {
-            $this->showDeleteModal = false;
-            $this->dispatch('toast', message: 'Cannot permanently delete this librarian account because they are linked to existing circulation transactions and audit records. Use "Disable Account" instead to deactivate access while preserving library history.', type: 'error');
-            return;
-        }
-
         $librarianName = $this->fullName;
 
-        // 1. Detach permissions
-        $user->permissions()->detach();
-
-        // 2. Remove profile photo if uploaded locally
-        if ($librarian && !empty($librarian->getRawOriginal('image_url'))) {
-            $rawImg = $librarian->getRawOriginal('image_url');
-            if (\Illuminate\Support\Facades\Storage::disk('public')->exists($rawImg)) {
-                \Illuminate\Support\Facades\Storage::disk('public')->delete($rawImg);
-            }
+        // 1. Soft-delete the associated librarian profile record if present
+        if ($librarian && !$librarian->trashed()) {
+            $librarian->delete();
         }
 
-        // 3. HARD DELETE: Permanently delete the librarian record from DB
-        if ($librarian) {
-            $librarian->forceDelete();
+        // 2. Set status to Inactive if available
+        $inactiveStatus = AccountStatus::where('status_name', 'Inactive')->first();
+        if ($inactiveStatus) {
+            $user->update(['status_id' => $inactiveStatus->id]);
         }
 
-        // 4. HARD DELETE: Permanently delete the account record from DB
-        $user->forceDelete();
+        // 3. Soft-delete the account record
+        if (!$user->trashed()) {
+            $user->delete();
+        }
+
+        $this->showDeleteModal = false;
 
         session()->flash('toast', [
-            'message' => "Librarian account for {$librarianName} has been permanently deleted from the database.",
+            'message' => "Librarian account for {$librarianName} has been soft-deleted.",
             'type' => 'success',
         ]);
 

@@ -83,6 +83,10 @@ class UserRecommendation extends Model
         ])
             ->whereIn('isbn', $isbns)
             ->whereNull('deleted_at')
+            ->whereHas('bookData', fn ($query) => $query->whereNull('deleted_at'))
+            ->whereHas('books', fn ($query) => $query
+                ->whereNull('deleted_at')
+                ->whereNotIn(\Illuminate\Support\Facades\DB::raw('LOWER(status)'), ['disabled', 'archived']))
             ->get();
     }
 }

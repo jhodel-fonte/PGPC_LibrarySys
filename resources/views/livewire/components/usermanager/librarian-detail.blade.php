@@ -400,26 +400,28 @@
                             @endif
                         </div>
 
-                        <!-- Action 2: Permanently Delete Account (Hard Delete) -->
-                        <div class="rounded-2xl border border-[#FECACA] bg-[#FEF2F2]/60 p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                            <div class="space-y-1">
-                                <h4 class="text-sm font-bold text-[#0F172A]">Permanently Delete Librarian (Hard Delete)</h4>
-                                <p class="text-xs text-[#64748B] max-w-xl leading-relaxed">
-                                    Permanently purge this librarian account and associated records from the database. This action uses a complete hard delete and cannot be undone.
-                                </p>
-                            </div>
+                        @if(!$isTrashed)
+                            <!-- Action 2: Soft Delete Account -->
+                            <div class="rounded-2xl border border-[#FECACA] bg-[#FEF2F2]/60 p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                <div class="space-y-1">
+                                    <h4 class="text-sm font-bold text-[#0F172A]">Soft Delete Librarian Record</h4>
+                                    <p class="text-xs text-[#64748B] max-w-xl leading-relaxed">
+                                        Soft-delete this librarian account and archive their profile. All historical circulation transactions remain preserved and only a Superadmin can restore the account from the Deleted filter.
+                                    </p>
+                                </div>
 
-                            <button
-                                type="button"
-                                wire:click="openDeleteModal"
-                                class="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-[#EF4444] hover:bg-[#DC2626] text-white text-xs sm:text-sm font-bold shadow-xs transition-all active:scale-[0.98] cursor-pointer shrink-0 focus:outline-none focus:ring-2 focus:ring-[#EF4444]/40"
-                            >
-                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                                </svg>
-                                <span>Delete Permanently</span>
-                            </button>
-                        </div>
+                                <button
+                                    type="button"
+                                    wire:click="openDeleteModal"
+                                    class="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-[#EF4444] hover:bg-[#DC2626] text-white text-xs sm:text-sm font-bold shadow-xs transition-all active:scale-[0.98] cursor-pointer shrink-0 focus:outline-none focus:ring-2 focus:ring-[#EF4444]/40"
+                                >
+                                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                    </svg>
+                                    <span>Delete Librarian</span>
+                                </button>
+                            </div>
+                        @endif
                     </div>
                 </div>
             @endif
@@ -515,26 +517,26 @@
     ])
 
     <!-- ======================================================== -->
-    <!-- MODAL: PERMANENT DELETE (HARD DELETE)                    -->
+    <!-- MODAL: SOFT DELETE LIBRARIAN                             -->
     <!-- ======================================================== -->
-    @php
-        $totalLibrarianTransactions = (int)($issuedCount + $receivedCount + $paymentsCount);
-    @endphp
     @include('livewire.components.usermanager.alert-modal', [
         'show' => $showDeleteModal,
-        'type' => 'danger',
-        'isHardDelete' => true,
-        'title' => 'Permanently Delete Librarian',
-        'subtitle' => 'Irreversible Hard Delete',
+        'type' => 'delete',
+        'isHardDelete' => false,
+        'title' => 'Soft Delete Librarian Record',
+        'subtitle' => 'Soft Delete / Archive Librarian',
         'targetRole' => 'librarian',
         'targetName' => $fullName,
         'targetId' => $schoolId,
-        'hasHistory' => ($totalLibrarianTransactions > 0),
-        'historyCount' => $totalLibrarianTransactions,
-        'historyMessage' => 'This librarian has recorded <strong>' . $totalLibrarianTransactions . '</strong> library transaction(s) (' . $issuedCount . ' loans, ' . $receivedCount . ' returns, ' . $paymentsCount . ' fine payments).',
+        'bulletPoints' => [
+            'The librarian account and profile will be <strong>soft-deleted</strong> and marked as <strong>Inactive</strong>.',
+            'They will no longer appear in active staff lists or be able to log in.',
+            'All historical library transactions and audit records remain intact.',
+            'Only a Superadmin can view and restore deleted accounts from the Deleted filter.',
+        ],
         'closeAction' => 'closeDeleteModal',
         'confirmAction' => 'deleteLibrarian',
-        'confirmText' => 'Permanently Delete',
+        'confirmText' => 'Delete Librarian',
         'confirmLoadingTarget' => 'deleteLibrarian',
     ])
 

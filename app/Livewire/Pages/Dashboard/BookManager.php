@@ -104,6 +104,9 @@ class BookManager extends Component
 
     public function setTab($tab)
     {
+        if ($tab === 'Deleted' && !\App\Services\EmployeeRoleService::isAdmin()) {
+            $tab = 'All Copies';
+        }
         $this->activeTab = $tab;
         $this->resetPage();
         $this->clearSelection();
@@ -284,13 +287,8 @@ class BookManager extends Component
             abort(403, 'Unauthorized action. You do not have permission to delete book copies.');
         }
 
-        $book = Book::withTrashed()->find($bookId);
+        $book = Book::find($bookId);
         if (!$book) {
-            return;
-        }
-
-        if ($book->trashed()) {
-            $this->hardDeleteBookCopy($bookId);
             return;
         }
 
@@ -304,12 +302,10 @@ class BookManager extends Component
         $book->delete();
 
         $this->dispatch('toast', [
-            'message' => 'Book copy "' . $accNum . '" soft-deleted.',
+            'message' => 'Book copy "' . $accNum . '" deleted.',
             'type' => 'warning',
             'undoEvent' => 'restore-book-copy',
             'undoPayload' => ['copyId' => $deletedId],
-            'expireEvent' => 'hard-delete-book-copy',
-            'expirePayload' => ['copyId' => $deletedId],
             'duration' => 10000,
         ]);
         $this->dispatch('book-details-updated');
@@ -332,31 +328,6 @@ class BookManager extends Component
             $book->restore();
             $this->dispatch('toast', message: 'Book copy "' . $book->accession_number . '" was restored successfully.', type: 'success');
             $this->dispatch('copy-updated', bookDetailId: $book->book_detail_id, copyId: $book->id);
-            $this->dispatch('book-details-updated');
-        }
-    }
-
-    #[On('hard-delete-book-copy')]
-    public function hardDeleteBookCopy($copyId = null): void
-    {
-        $id = is_array($copyId) ? ($copyId['copyId'] ?? $copyId['id'] ?? null) : $copyId;
-        if (!$id) return;
-
-        if (auth()->check() && !auth()->user()->can('delete', Book::class)) {
-            return;
-        }
-
-        $book = Book::withTrashed()->find($id);
-        if ($book && $book->trashed()) {
-            $accNum = $book->accession_number;
-            \Illuminate\Support\Facades\DB::transaction(function () use ($book) {
-                $book->reservations()->delete();
-                $book->borrowingTransactions()->delete();
-                $book->languages()->detach();
-                $book->forceDelete();
-            });
-
-            $this->dispatch('toast', message: 'Book copy "' . $accNum . '" permanently deleted.', type: 'info');
             $this->dispatch('book-details-updated');
         }
     }
@@ -476,7 +447,7 @@ class BookManager extends Component
 
         $skipped = count($this->selectedCopies) - $deletedCount;
         if ($deletedCount > 0) {
-            $msg = "Soft-deleted {$deletedCount} copies.";
+            $msg = "Deleted {$deletedCount} copies.";
             if ($skipped > 0) {
                 $msg .= " ({$skipped} borrowed copies were skipped)";
             }
@@ -485,8 +456,6 @@ class BookManager extends Component
                 'type' => 'warning',
                 'undoEvent' => 'restore-book-copies',
                 'undoPayload' => ['copyIds' => $deletedIds],
-                'expireEvent' => 'hard-delete-book-copies',
-                'expirePayload' => ['copyIds' => $deletedIds],
                 'duration' => 10000,
             ]);
             $this->dispatch('book-details-updated');
@@ -515,33 +484,6 @@ class BookManager extends Component
         $this->clearSelection();
     }
 
-    public function bulkHardDelete(): void
-    {
-        if (empty($this->selectedCopies)) return;
-
-        if (auth()->check() && !auth()->user()->can('delete', Book::class)) {
-            abort(403, 'Unauthorized action. You do not have permission to delete book copies.');
-        }
-
-        $books = Book::withTrashed()->whereIn('id', $this->selectedCopies)->get();
-        if ($books->isNotEmpty()) {
-            $count = $books->count();
-            \Illuminate\Support\Facades\DB::transaction(function () use ($books) {
-                foreach ($books as $b) {
-                    $b->reservations()->delete();
-                    $b->borrowingTransactions()->delete();
-                    $b->languages()->detach();
-                    $b->forceDelete();
-                }
-            });
-
-            $this->dispatch('toast', message: "{$count} copies permanently deleted.", type: 'info');
-            $this->dispatch('book-details-updated');
-        }
-
-        $this->clearSelection();
-    }
-
     #[On('restore-book-copies')]
     public function restoreBookCopies($copyIds = null): void
     {
@@ -560,33 +502,6 @@ class BookManager extends Component
         }
     }
 
-    #[On('hard-delete-book-copies')]
-    public function hardDeleteBookCopies($copyIds = null): void
-    {
-        $ids = is_array($copyIds) && isset($copyIds['copyIds']) ? $copyIds['copyIds'] : (array) $copyIds;
-        if (empty($ids)) return;
-
-        if (auth()->check() && !auth()->user()->can('delete', Book::class)) {
-            return;
-        }
-
-        $books = Book::onlyTrashed()->whereIn('id', $ids)->get();
-        if ($books->isNotEmpty()) {
-            $count = $books->count();
-            \Illuminate\Support\Facades\DB::transaction(function () use ($books) {
-                foreach ($books as $b) {
-                    $b->reservations()->delete();
-                    $b->borrowingTransactions()->delete();
-                    $b->languages()->detach();
-                    $b->forceDelete();
-                }
-            });
-
-            $this->dispatch('toast', message: "{$count} copies permanently deleted.", type: 'info');
-            $this->dispatch('book-details-updated');
-        }
-    }
-
     protected function getCurrentPageBookIds(): array
     {
         return $this->buildQuery()->paginate($this->perPage)->pluck('id')->toArray();
@@ -594,23 +509,32 @@ class BookManager extends Component
 
     protected function buildQuery()
     {
+        $isSuperAdmin = \App\Services\EmployeeRoleService::isAdmin();
+        $isDeletedTab = $isSuperAdmin && $this->activeTab === 'Deleted';
+
+        if (!$isSuperAdmin && $this->activeTab === 'Deleted') {
+            $this->activeTab = 'All Copies';
+        }
+
         $relations = [
             'condition',
-            'bookDetail' => fn ($q) => $q->withTrashed(),
+            'bookDetail' => fn ($q) => $isDeletedTab ? $q->withTrashed() : $q->whereNull('deleted_at'),
             'bookDetail.bookData.authors',
             'bookDetail.bookData.categories',
             'bookDetail.publisher',
         ];
 
         if ($this->inventoryView === 'Titles') {
-            $relations['bookDetail.books'] = fn ($q) => $q->withTrashed();
+            $relations['bookDetail.books'] = fn ($q) => $isDeletedTab ? $q->onlyTrashed() : $q->whereNull('deleted_at');
         }
 
-        $query = Book::withTrashed()->with($relations)->select('books.*');
+        $query = ($isDeletedTab ? Book::onlyTrashed() : Book::whereNull('books.deleted_at'))
+            ->with($relations)
+            ->select('books.*');
 
         if ($this->inventoryView === 'Titles') {
-            $representativeCopies = Book::withTrashed()
-                ->selectRaw('COALESCE(MIN(CASE WHEN deleted_at IS NULL THEN id END), MIN(id)) as id')
+            $representativeCopies = ($isDeletedTab ? Book::onlyTrashed() : Book::whereNull('deleted_at'))
+                ->selectRaw('MIN(id) as id')
                 ->groupBy('book_detail_id');
 
             $query->joinSub($representativeCopies, 'primary_books', function ($join) {
@@ -623,7 +547,9 @@ class BookManager extends Component
             $searchTerm = trim($this->search);
 
             // 1. Search copy-level attributes via Scout on Book (accession_number, code, location, status)
-            $copyIds = Book::search($searchTerm)->query(fn ($q) => $q->withTrashed())->keys();
+            $copyIds = Book::search($searchTerm)
+                ->query(fn ($q) => $isDeletedTab ? $q->onlyTrashed() : $q->whereNull('deleted_at'))
+                ->keys();
 
             // 2. Search bibliographic & catalog attributes via Scout on OpacCatalogView (title, authors, categories, isbn, call_number, publisher)
             $detailIds = OpacCatalogView::search($searchTerm)->keys();
@@ -666,12 +592,15 @@ class BookManager extends Component
                              ->orWhereIn('books.status', ['damaged', 'lost']);
                       });
             }
-        } elseif ($this->activeTab === 'Deleted') {
+        } elseif ($isDeletedTab) {
             if ($this->inventoryView === 'Titles') {
                 $query->whereHas('bookDetail.books', fn ($q) => $q->onlyTrashed());
             } else {
                 $query->onlyTrashed();
             }
+        } else {
+            // 'All Copies' or any other tab: strictly exclude soft-deleted copies
+            $query->whereNull('books.deleted_at');
         }
 
         // Dropdown Filters
@@ -727,16 +656,16 @@ class BookManager extends Component
     {
         $books = $this->buildQuery()->paginate($this->perPage);
 
-        // Fetch counts for current filter state
-        $totalTitles = BookDetail::whereHas('books', fn ($q) => $q->withTrashed())->count();
-        $totalCopies = Book::withTrashed()->count();
+        // Fetch counts for current filter state (excluding soft-deleted records from normal counts)
+        $totalTitles = BookDetail::whereNull('deleted_at')->whereHas('books', fn ($q) => $q->whereNull('deleted_at'))->count();
+        $totalCopies = Book::whereNull('deleted_at')->count();
         $availableCopies = Book::whereNull('deleted_at')->where('status', 'available')->count();
         $borrowedCopies = Book::whereNull('deleted_at')->where('status', 'borrowed')->count();
         $damagedLostCopies = Book::whereNull('deleted_at')->where(function ($dq) {
             $dq->whereIn('book_condition_id', [4, 5])
                ->orWhereIn('status', ['damaged', 'lost']);
         })->count();
-        $deletedCopies = Book::onlyTrashed()->count();
+        $deletedCopies = \App\Services\EmployeeRoleService::isAdmin() ? Book::onlyTrashed()->count() : 0;
 
         // Conditions & Distinct Locations for Filter Dropdown
         $conditions = BookCondition::all();

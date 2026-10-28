@@ -81,6 +81,10 @@ class EditLibrarianForm extends Component
             abort(404, 'Librarian record not found for this user account.');
         }
 
+        if (($account->trashed() || $librarian->trashed()) && !\App\Services\EmployeeRoleService::isAdmin()) {
+            abort(404, 'Librarian record not found for this user account.');
+        }
+
         $this->authorize('update', $librarian);
 
         $this->librarianId = $librarian->id;

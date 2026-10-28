@@ -146,6 +146,8 @@ class CheckOutBook extends Component
 
         // 1. Direct match or case-insensitive on school_id_number
         $student = Student::with(['libraryStatus', 'account'])
+            ->whereNull('deleted_at')
+            ->whereHas('account', fn ($q) => $q->whereNull('deleted_at'))
             ->where(function ($q) use ($code, $lowerCode, $cleanAlnum) {
                 $q->where('school_id_number', $code)
                   ->orWhereRaw('LOWER(school_id_number) = ?', [$lowerCode]);
@@ -162,7 +164,10 @@ class CheckOutBook extends Component
 
         // 2. Primary key ID match (if numeric)
         if (is_numeric($code)) {
-            $student = Student::with(['libraryStatus', 'account'])->find((int) $code);
+            $student = Student::with(['libraryStatus', 'account'])
+                ->whereNull('deleted_at')
+                ->whereHas('account', fn ($q) => $q->whereNull('deleted_at'))
+                ->find((int) $code);
             if ($student) {
                 return $student;
             }
@@ -170,10 +175,14 @@ class CheckOutBook extends Component
 
         // 3. Match via linked Account (username or email)
         $student = Student::with(['libraryStatus', 'account'])
+            ->whereNull('deleted_at')
             ->whereHas('account', function ($q) use ($code, $lowerCode) {
-                $q->where('username', $code)
-                  ->orWhereRaw('LOWER(username) = ?', [$lowerCode])
-                  ->orWhereRaw('LOWER(email) = ?', [$lowerCode]);
+                $q->whereNull('deleted_at')
+                  ->where(function ($sub) use ($code, $lowerCode) {
+                      $sub->where('username', $code)
+                          ->orWhereRaw('LOWER(username) = ?', [$lowerCode])
+                          ->orWhereRaw('LOWER(email) = ?', [$lowerCode]);
+                  });
             })
             ->first();
 
@@ -187,11 +196,12 @@ class CheckOutBook extends Component
         $lowerCode = strtolower($code);
         $cleanAlnum = preg_replace('/[^a-zA-Z0-9]/', '', $code);
 
-        $query = Book::withTrashed()->with([
+        $query = Book::with([
             'bookDetail.bookData.authors',
             'bookDetail.bookData.categories',
             'condition'
-        ]);
+        ])->whereNull('deleted_at')
+          ->whereHas('bookDetail', fn ($bd) => $bd->whereNull('deleted_at')->whereHas('bookData', fn ($b) => $b->whereNull('deleted_at')));
 
         // 1. Match by accession_number or code column
         $book = (clone $query)->where(function ($q) use ($code, $lowerCode, $cleanAlnum) {

@@ -58,6 +58,10 @@ class UserDetails extends Component
             abort(404, 'User account not found.');
         }
 
+        if (($user->trashed() || $user->student?->trashed() || $user->librarian?->trashed()) && !\App\Services\EmployeeRoleService::isAdmin()) {
+            abort(404, 'User account not found.');
+        }
+
         // Authorization check
         $currentUser = auth()->user();
         if ($currentUser && $currentUser->role?->name !== 'Admin' && $currentUser->id !== $user->id) {
@@ -80,7 +84,7 @@ class UserDetails extends Component
         return Account::withTrashed()->with([
             'role',
             'status',
-            'student.libraryStatus',
+            'student' => fn($q) => $q->withTrashed()->with('libraryStatus'),
             'librarian' => fn($q) => $q->withTrashed(),
         ])->find($this->id);
     }

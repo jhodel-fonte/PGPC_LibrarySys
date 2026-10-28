@@ -101,6 +101,8 @@ class CheckInBook extends Component
 
         // 1. Direct match or case-insensitive on school_id_number
         $student = Student::with(['libraryStatus', 'account'])
+            ->whereNull('deleted_at')
+            ->whereHas('account', fn ($q) => $q->whereNull('deleted_at'))
             ->where(function ($q) use ($code, $lowerCode, $cleanAlnum) {
                 $q->where('school_id_number', $code)
                   ->orWhereRaw('LOWER(school_id_number) = ?', [$lowerCode]);
@@ -117,7 +119,10 @@ class CheckInBook extends Component
 
         // 2. Primary key ID match (if numeric)
         if (is_numeric($code)) {
-            $student = Student::with(['libraryStatus', 'account'])->find((int) $code);
+            $student = Student::with(['libraryStatus', 'account'])
+                ->whereNull('deleted_at')
+                ->whereHas('account', fn ($q) => $q->whereNull('deleted_at'))
+                ->find((int) $code);
             if ($student) {
                 return $student;
             }
@@ -125,10 +130,14 @@ class CheckInBook extends Component
 
         // 3. Match via linked Account (username or email)
         $student = Student::with(['libraryStatus', 'account'])
+            ->whereNull('deleted_at')
             ->whereHas('account', function ($q) use ($code, $lowerCode) {
-                $q->where('username', $code)
-                  ->orWhereRaw('LOWER(username) = ?', [$lowerCode])
-                  ->orWhereRaw('LOWER(email) = ?', [$lowerCode]);
+                $q->whereNull('deleted_at')
+                  ->where(function ($sub) use ($code, $lowerCode) {
+                      $sub->where('username', $code)
+                          ->orWhereRaw('LOWER(username) = ?', [$lowerCode])
+                          ->orWhereRaw('LOWER(email) = ?', [$lowerCode]);
+                  });
             })
             ->first();
 

@@ -117,13 +117,16 @@
         </x-slot:headerCheckbox>
         <x-slot:toolbarLeft>
             @php
+                $isSuperAdmin = \App\Services\EmployeeRoleService::isAdmin();
                 $statusTabs = [
                     'All Copies' => ['label' => 'All', 'count' => $totalCopies],
                     'Available' => ['label' => 'Available', 'count' => $availableCopies],
                     'Borrowed' => ['label' => 'Borrowed', 'count' => $borrowedCopies],
                     'Damaged/Lost' => ['label' => 'Damaged/Lost', 'count' => $damagedLostCopies],
-                    'Deleted' => ['label' => 'Deleted', 'count' => $deletedCopies],
                 ];
+                if ($isSuperAdmin) {
+                    $statusTabs['Deleted'] = ['label' => 'Deleted', 'count' => $deletedCopies];
+                }
             @endphp
             <div class="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0" aria-label="Inventory view and status filters">
                 @foreach(['Titles' => $totalTitles, 'Copies' => $totalCopies] as $viewName => $viewCount)
@@ -305,7 +308,7 @@
                 Print Labels
             </button>
 
-            @if($canUpdateBook && count($selectedCopies) > 0)
+            @if($activeTab === 'Deleted' && \App\Services\EmployeeRoleService::isAdmin() && $canUpdateBook && count($selectedCopies) > 0)
                 <button
                     type="button"
                     wire:click="bulkRestore"
@@ -315,22 +318,13 @@
                 </button>
             @endif
 
-            @if($canDeleteBook)
+            @if($canDeleteBook && $activeTab !== 'Deleted')
                 <button
                     type="button"
                     wire:click="bulkDelete"
                     class="rounded-lg bg-red-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-red-700 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600"
                 >
                     Delete Selected
-                </button>
-
-                <button
-                    type="button"
-                    wire:click="bulkHardDelete"
-                    onclick="confirm('Are you sure you want to permanently delete the selected copies? This action cannot be undone.') || event.stopImmediatePropagation()"
-                    class="rounded-lg border border-red-300 bg-red-50 px-3.5 py-1.5 text-xs font-semibold text-red-700 shadow-sm transition-colors hover:bg-red-100 active:translate-y-px"
-                >
-                    Permanently Delete
                 </button>
             @endif
 
@@ -502,18 +496,6 @@
                                             >
                                                 <svg class="h-3.5 w-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                                                 Restore Copy
-                                            </button>
-                                        @endif
-
-                                        @if($canDeleteBook)
-                                            <button
-                                                type="button"
-                                                wire:click="hardDeleteBookCopy({{ $book->id }})"
-                                                @click="open = false"
-                                                class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-red-700 hover:bg-red-50 rounded-xl transition-colors"
-                                            >
-                                                <svg class="h-3.5 w-3.5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                                Permanently Delete
                                             </button>
                                         @endif
                                     @else
@@ -711,18 +693,6 @@
                                     >
                                         <svg class="h-3.5 w-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                                         Restore Copy
-                                    </button>
-                                @endif
-
-                                @if($canDeleteBook)
-                                    <button
-                                        type="button"
-                                        wire:click="hardDeleteBookCopy({{ $book->id }})"
-                                        @click="open = false"
-                                        class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-red-700 hover:bg-red-50 rounded-xl transition-colors"
-                                    >
-                                        <svg class="h-3.5 w-3.5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                        Permanently Delete
                                     </button>
                                 @endif
                             @else
