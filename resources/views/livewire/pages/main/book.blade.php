@@ -795,4 +795,10 @@
         @endif
 
     </div>
+
+    @if($mlApiDebug)
+        <script>
+            console.log('[ML API Recommendations]', @js($mlApiDebug));
+        </script>
+    @endif
 </div>

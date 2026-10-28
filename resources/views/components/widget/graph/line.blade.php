@@ -10,6 +10,7 @@
     'height' => 150,
     'svgWidth' => 480,
     'suffix' => '',
+    'compact' => false,
 ])
 
 @php
@@ -124,7 +125,7 @@
                     x="{{ $padLeft - 8 }}" 
                     y="{{ $yPos + 4 }}" 
                     text-anchor="end" 
-                    style="font-size: 13px; font-weight: 600;"
+                    style="font-size: {{ $compact ? '10px' : '13px' }}; font-weight: 600;"
                     class="fill-black select-none"
                 >
                     {{ $tick }}
@@ -242,7 +243,7 @@
                     x="{{ $xPos }}" 
                     y="{{ $renderHeight - 5 }}" 
                     text-anchor="{{ $anchor }}" 
-                    style="font-size: 12.5px; font-weight: 600;"
+                    style="font-size: {{ $compact ? '10px' : '12.5px' }}; font-weight: 600;"
                     class="fill-black select-none"
                 >
                     {{ $label }}
@@ -253,7 +254,7 @@
 
     <!-- Bottom Legend (Clean & Compact) -->
     @if ($legend && count($lineSeries) > 0)
-        <div class="flex items-center justify-center flex-wrap gap-4 mt-2 pt-2 border-t border-slate-100 text-[12px] font-semibold text-slate-800">
+        <div class="flex items-center justify-center flex-wrap gap-4 mt-2 pt-2 border-t border-slate-100 {{ $compact ? 'text-[10px]' : 'text-[12px]' }} font-semibold text-slate-800">
             @foreach ($lineSeries as $ls)
                 <div class="flex items-center gap-1.5 shrink-0">
                     <span class="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm" style="background-color: {{ $ls['color'] }}"></span>

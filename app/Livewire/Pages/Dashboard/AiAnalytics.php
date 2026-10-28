@@ -32,7 +32,10 @@ class AiAnalytics extends Component
 
     public function refreshEvaluation(): void
     {
-        app(RecommendationService::class)->clearEvaluationCache();
+        $service = app(RecommendationService::class);
+        $service->clearEvaluationCache();
+        $evaluation = $service->evaluation();
+        $this->dispatch('ml-api-evaluation', result: $evaluation);
         $this->resetPage();
     }
 
@@ -57,6 +60,19 @@ class AiAnalytics extends Component
             : $previousRun;
 
         $chronological = $recentRuns->reverse()->values();
+        $evaluationTrend = [
+            'labels' => $chronological->map(fn (MlEvaluationRun $run) => $run->evaluated_at->format('M j'))->all(),
+            'series' => collect(MlEvaluationRun::METRICS)
+                ->map(function (string $column, string $label) use ($chronological) {
+                    return [
+                        'name' => $label,
+                        'data' => $chronological->map(fn (MlEvaluationRun $run) => $run->{$column})->all(),
+                    ];
+                })
+                ->filter(fn (array $series) => collect($series['data'])->contains(fn ($value) => $value !== null))
+                ->values()
+                ->all(),
+        ];
 
         $metrics = collect($currentMetrics)->map(function (float $value, string $label) use ($comparisonRun, $chronological) {
             $info = self::METRIC_INFO[$label] ?? ['better' => null, 'description' => ''];
@@ -89,6 +105,7 @@ class AiAnalytics extends Component
             'comparisonRun' => $comparisonRun,
             'metrics' => $metrics,
             'metricColumns' => MlEvaluationRun::METRICS,
+            'evaluationTrend' => $evaluationTrend,
             'history' => MlEvaluationRun::query()->latest('evaluated_at')->latest('id')->paginate(10),
         ]);
     }
