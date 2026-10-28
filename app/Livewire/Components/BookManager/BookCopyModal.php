@@ -264,12 +264,10 @@ class BookCopyModal extends Component
             $book->delete();
 
             $this->dispatch('toast', [
-                'message' => "Physical copy '{$accNum}' soft-deleted.",
+                'message' => "Physical copy '{$accNum}' deleted.",
                 'type' => 'warning',
                 'undoEvent' => 'restore-book-copy',
                 'undoPayload' => ['copyId' => $deletedId],
-                'expireEvent' => 'hard-delete-book-copy',
-                'expirePayload' => ['copyId' => $deletedId],
                 'duration' => 10000,
             ]);
             $this->dispatch('copy-deleted', bookDetailId: $this->bookDetailId);
@@ -293,30 +291,6 @@ class BookCopyModal extends Component
             $book->restore();
             $this->dispatch('toast', message: "Physical copy '{$book->accession_number}' was restored successfully.", type: 'success');
             $this->dispatch('copy-updated', bookDetailId: $book->book_detail_id, copyId: $book->id);
-            $this->dispatch('book-details-updated');
-        }
-    }
-
-    #[On('hard-delete-book-copy')]
-    public function hardDeleteBookCopy($copyId = null): void
-    {
-        $id = is_array($copyId) ? ($copyId['copyId'] ?? $copyId['id'] ?? null) : $copyId;
-        if (!$id) {
-            return;
-        }
-
-        if (auth()->check() && !auth()->user()->can('delete', Book::class)) {
-            return;
-        }
-
-        $book = Book::withTrashed()->find($id);
-        if ($book && $book->trashed()) {
-            \Illuminate\Support\Facades\DB::transaction(function () use ($book) {
-                $book->reservations()->delete();
-                $book->borrowingTransactions()->delete();
-                $book->languages()->detach();
-                $book->forceDelete();
-            });
             $this->dispatch('book-details-updated');
         }
     }

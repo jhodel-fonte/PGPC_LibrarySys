@@ -53,6 +53,10 @@ class StudentDetail extends Component
         $user = $this->user;
 
         if ($user) {
+            if (($user->trashed() || $user->student?->trashed()) && !\App\Services\EmployeeRoleService::isAdmin()) {
+                abort(404, 'Student account not found.');
+            }
+
             $authUser = auth()->user();
             if ($authUser && $authUser->id !== $user->id && !\App\Services\EmployeeRoleService::canViewStudents($authUser)) {
                 abort(403, 'Unauthorized action. You do not have permission to view student information.');
@@ -586,10 +590,18 @@ class StudentDetail extends Component
             return;
         }
 
-        if ($student) {
+        if ($student && !$student->trashed()) {
             $student->delete();
         }
-        $user->delete();
+
+        $inactiveStatus = \App\Models\AccountStatus::where('status_name', 'Inactive')->first();
+        if ($inactiveStatus) {
+            $user->update(['status_id' => $inactiveStatus->id]);
+        }
+
+        if (!$user->trashed()) {
+            $user->delete();
+        }
 
         session()->flash('toast', [
             'message' => 'Student account has been successfully deleted.',

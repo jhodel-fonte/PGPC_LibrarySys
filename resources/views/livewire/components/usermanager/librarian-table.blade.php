@@ -1,4 +1,50 @@
-<div class="relative flex flex-col gap-4 sm:gap-6 min-h-0 flex-1">
+<div
+    class="relative flex flex-col gap-4 sm:gap-6 min-h-0 flex-1"
+    x-data="{
+        selected: @entangle('selectedLibrarians').live,
+        get currentPageIds() {
+            return @js($librarians->filter(fn($u) => $u->id !== auth()->id())->pluck('id')->map(fn($id) => (int) $id)->values()->toArray());
+        },
+        isSelected(id) {
+            return this.selected.map(Number).includes(Number(id));
+        },
+        toggle(id) {
+            id = Number(id);
+            const idx = this.selected.map(Number).indexOf(id);
+            if (idx === -1) {
+                this.selected.push(id);
+            } else {
+                this.selected.splice(idx, 1);
+            }
+        },
+        toggleCurrentPage() {
+            const pageIds = this.currentPageIds.map(Number);
+            const allSelected = pageIds.length > 0 && pageIds.every(id => this.selected.map(Number).includes(id));
+            if (allSelected) {
+                this.selected = this.selected.filter(id => !pageIds.includes(Number(id)));
+            } else {
+                const current = this.selected.map(Number);
+                pageIds.forEach(id => {
+                    if (!current.includes(id)) {
+                        this.selected.push(id);
+                    }
+                });
+            }
+        },
+        isAllCurrentPageSelected() {
+            const pageIds = this.currentPageIds.map(Number);
+            return pageIds.length > 0 && pageIds.every(id => this.selected.map(Number).includes(id));
+        },
+        isSomeCurrentPageSelected() {
+            const pageIds = this.currentPageIds.map(Number);
+            const some = pageIds.some(id => this.selected.map(Number).includes(id));
+            return some && !this.isAllCurrentPageSelected();
+        },
+        clearAll() {
+            this.selected = [];
+        }
+    }"
+>
     
     <!-- Background Watermark -->
     <div class="absolute inset-0 pointer-events-none overflow-hidden flex items-center justify-center opacity-[0.018] z-0">
@@ -8,6 +54,15 @@
     @php
         $routePrefix = \App\Services\EmployeeRoleService::getRoutePrefix();
         $canManageLibrarians = \App\Services\EmployeeRoleService::canManageLibrarians();
+        $isSuperAdmin = \App\Services\EmployeeRoleService::isAdmin();
+        $librarianTabs = [
+            'ALL' => 'All Staff (' . $totalLibrarians . ')',
+            'Head Librarian' => 'Head Librarian (' . $headLibrarians . ')',
+            'Librarian' => 'Librarian (' . $regularLibrarians . ')',
+        ];
+        if ($isSuperAdmin) {
+            $librarianTabs['Deleted'] = 'Deleted (' . ($deletedLibrarians ?? 0) . ')';
+        }
     @endphp
 
     <!-- 1. Page Header -->
@@ -30,18 +85,61 @@
     <x-widget.data-table
         :headers="$this->headers"
         :sort="$sort"
-        :tabs="[
-            'ALL' => 'All Staff (' . $totalLibrarians . ')',
-            'Head Librarian' => 'Head Librarian (' . $headLibrarians . ')',
-            'Librarian' => 'Librarian (' . $regularLibrarians . ')'
-        ]"
+        :tabs="$librarianTabs"
         :activeTab="$activeTab"
         :showFilter="true"
         :activeFilterCount="$this->activeFilterCount"
         searchPlaceholder="Search librarians by name, ID number, or email..."
         :paginator="$librarians"
+        :selectable="true"
+        selectAllModel="selectAll"
+        :selectedCount="count($selectedLibrarians)"
+        perPageModel="perPage"
         minWidth="950px"
     >
+        <!-- Custom Select-All Header Checkbox -->
+        <x-slot:headerCheckbox>
+            <input
+                type="checkbox"
+                @change="toggleCurrentPage()"
+                :checked="isAllCurrentPageSelected()"
+                :indeterminate.prop="isSomeCurrentPageSelected()"
+                class="w-4 h-4 rounded border-[#CBD5E1] text-[#102B70] focus:ring-[#102B70]/20 cursor-pointer transition-colors"
+                title="Select all librarians on this page"
+            >
+        </x-slot:headerCheckbox>
+
+        <!-- Bulk Action Buttons -->
+        <x-slot:bulkActions>
+            @if($canManageLibrarians)
+                @if($activeTab === 'Deleted' && $isSuperAdmin)
+                    <button
+                        type="button"
+                        wire:click="bulkRestore"
+                        class="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-bold transition-colors cursor-pointer"
+                    >
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
+                        <span>Restore Selected</span>
+                    </button>
+                @elseif($activeTab !== 'Deleted')
+                    <button
+                        type="button"
+                        wire:click="bulkDelete"
+                        class="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-colors cursor-pointer"
+                    >
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        <span>Delete Selected</span>
+                    </button>
+                @endif
+            @endif
+            <button
+                type="button"
+                @click="clearAll()"
+                class="inline-flex items-center h-8 px-2.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 transition-colors cursor-pointer"
+            >
+                Clear
+            </button>
+        </x-slot:bulkActions>
         <!-- Filter Dropdown -->
         <x-slot:filterDropdown>
             <div class="font-sans select-none">
@@ -120,27 +218,45 @@
                 $fullName = $librarian ? "{$librarian->first_name} {$librarian->last_name}" : $user->username;
                 $idNumber = $librarian?->school_id_number ?? '—';
                 $initials = $librarian ? strtoupper(substr($librarian->first_name, 0, 1) . substr($librarian->last_name, 0, 1)) : strtoupper(substr($user->username, 0, 2));
+                $isTrashed = $user->trashed() || ($librarian && $librarian->trashed());
+                $isSelf = auth()->id() === $user->id;
             @endphp
-            <tr class="hover:bg-slate-50/70 transition-colors h-auto md:h-[72px] group">
+            <tr
+                class="hover:bg-slate-50/70 transition-colors h-auto md:h-[72px] group"
+                :class="isSelected({{ $user->id }}) ? 'bg-[#EFF6FF]/60 hover:bg-[#EFF6FF]/80' : ''"
+            >
                 <!-- Mobile Card Cell (Visible on mobile screens <= 768px) -->
-                <td colspan="7" class="mobile-cell">
-                    <div class="bg-white rounded-2xl border border-[#E2E8F0] p-4 shadow-xs relative transition-all hover:shadow-sm">
-                        <!-- Top Row: Avatar, Name, Email, ID & 3-dots Menu -->
+                <td colspan="8" class="mobile-cell">
+                    <div
+                        class="bg-white rounded-2xl border border-[#E2E8F0] p-4 shadow-xs relative transition-all hover:shadow-sm"
+                        :class="isSelected({{ $user->id }}) ? 'border-[#102B70]/40 bg-[#EFF6FF]/30' : ''"
+                    >
+                        <!-- Top Row: Checkbox, Avatar, Name, Email, ID & 3-dots Menu -->
                         <div class="flex items-start justify-between gap-2.5">
-                            <a href="{{ route($routePrefix . 'user-details', $user->encrypted_id) }}" wire:navigate class="flex items-start gap-3 min-w-0 flex-1 focus:outline-none">
-                                @if($librarian?->image_url)
-                                    <img src="{{ $librarian->image_url }}" alt="{{ $fullName }}" class="w-11 h-11 rounded-full object-cover border border-[#CBD5E1] shrink-0">
-                                @else
-                                    <div class="w-11 h-11 rounded-full bg-[#EFF6FF] border border-[#BFDBFE] text-[#102B70] font-bold text-xs flex items-center justify-center shrink-0">
-                                        {{ $initials }}
+                            <div class="flex items-start gap-2.5 min-w-0 flex-1">
+                                <input
+                                    type="checkbox"
+                                    value="{{ $user->id }}"
+                                    :checked="isSelected({{ $user->id }})"
+                                    @change="toggle({{ $user->id }})"
+                                    @if($isSelf) disabled @endif
+                                    class="mt-1 w-4 h-4 rounded border-[#CBD5E1] text-[#102B70] focus:ring-[#102B70]/20 cursor-pointer shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+                                >
+                                <a href="{{ route($routePrefix . 'user-details', $user->encrypted_id) }}" wire:navigate class="flex items-start gap-3 min-w-0 flex-1 focus:outline-none">
+                                    @if($librarian?->image_url)
+                                        <img src="{{ $librarian->image_url }}" alt="{{ $fullName }}" class="w-11 h-11 rounded-full object-cover border border-[#CBD5E1] shrink-0">
+                                    @else
+                                        <div class="w-11 h-11 rounded-full bg-[#EFF6FF] border border-[#BFDBFE] text-[#102B70] font-bold text-xs flex items-center justify-center shrink-0">
+                                            {{ $initials }}
+                                        </div>
+                                    @endif
+                                    <div class="flex flex-col min-w-0 flex-1">
+                                        <span class="text-sm font-bold text-[#102B70] hover:text-blue-700 hover:underline transition-colors truncate">{{ $fullName }}</span>
+                                        <span class="text-xs text-slate-500 truncate mt-0.5 font-medium">{{ $user->email ?? 'No email' }}</span>
+                                        <span class="text-[11px] font-mono text-slate-600 font-semibold mt-0.5">{{ $idNumber }}</span>
                                     </div>
-                                @endif
-                                <div class="flex flex-col min-w-0 flex-1">
-                                    <span class="text-sm font-bold text-[#102B70] hover:text-blue-700 hover:underline transition-colors truncate">{{ $fullName }}</span>
-                                    <span class="text-xs text-slate-500 truncate mt-0.5 font-medium">{{ $user->email ?? 'No email' }}</span>
-                                    <span class="text-[11px] font-mono text-slate-600 font-semibold mt-0.5">{{ $idNumber }}</span>
-                                </div>
-                            </a>
+                                </a>
+                            </div>
 
                             <!-- 3-Dots Actions Menu -->
                             <div class="shrink-0 -mr-1">
@@ -156,18 +272,20 @@
                                     </a>
 
                                     @if($canManageLibrarians)
-                                        <a
-                                            href="{{ route($routePrefix . 'user-management.edit', $user->encrypted_id) }}"
-                                            wire:navigate
-                                            @click="open = false"
-                                            class="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-[#102B70] rounded-lg transition-colors"
-                                        >
-                                            <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                                            Edit Profile
-                                        </a>
+                                        @if(!$isTrashed)
+                                            <a
+                                                href="{{ route($routePrefix . 'user-management.edit', $user->encrypted_id) }}"
+                                                wire:navigate
+                                                @click="open = false"
+                                                class="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-[#102B70] rounded-lg transition-colors"
+                                            >
+                                                <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                                Edit Profile
+                                            </a>
+                                        @endif
 
-                                        @if(auth()->id() !== $user->id)
-                                            @if($user->trashed())
+                                        @if(!$isSelf)
+                                            @if($isTrashed)
                                                 <button
                                                     type="button"
                                                     wire:click="enableLibrarian({{ $user->id }})"
@@ -175,35 +293,23 @@
                                                     class="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-bold text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
                                                 >
                                                     <svg class="h-3.5 w-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
                                                     </svg>
-                                                    Enable Account
+                                                    Restore Account
                                                 </button>
                                             @else
                                                 <button
                                                     type="button"
-                                                    wire:click="confirmDisable({{ $user->id }})"
+                                                    wire:click="confirmDelete({{ $user->id }})"
                                                     @click="open = false"
-                                                    class="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-bold text-amber-700 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer"
+                                                    class="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-bold text-[#B91C1C] hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
                                                 >
-                                                    <svg class="h-3.5 w-3.5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />
+                                                    <svg class="h-3.5 w-3.5 text-[#EF4444]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
                                                     </svg>
-                                                    Disable Account
+                                                    Delete Librarian
                                                 </button>
                                             @endif
-
-                                            <button
-                                                type="button"
-                                                wire:click="confirmDelete({{ $user->id }})"
-                                                @click="open = false"
-                                                class="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-bold text-[#B91C1C] hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                                            >
-                                                <svg class="h-3.5 w-3.5 text-[#EF4444]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                                                </svg>
-                                                Delete Permanently
-                                            </button>
                                         @endif
                                     @endif
                                 </x-widget.table-action-dot>
@@ -229,9 +335,9 @@
 
                             <div x-show="cols['status'] !== false">
                                 <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Status</span>
-                                @if($user->trashed())
+                                @if($isTrashed)
                                     <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
-                                        Disabled
+                                        Deleted
                                     </span>
                                 @else
                                     @php
@@ -262,6 +368,18 @@
                             </div>
                         </div>
                     </div>
+                </td>
+
+                <!-- ROW SELECTION CHECKBOX (Desktop) -->
+                <td class="desktop-cell w-12 pl-6 pr-2 py-4 align-middle">
+                    <input
+                        type="checkbox"
+                        value="{{ $user->id }}"
+                        :checked="isSelected({{ $user->id }})"
+                        @change="toggle({{ $user->id }})"
+                        @if($isSelf) disabled @endif
+                        class="w-4 h-4 rounded border-[#CBD5E1] text-[#102B70] focus:ring-[#102B70]/20 cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
                 </td>
 
                 <!-- STAFF INFO & AVATAR (Desktop) -->
@@ -306,10 +424,10 @@
 
                 <!-- ACCOUNT STATUS (Desktop) -->
                 <td x-show="cols['status'] !== false" class="desktop-cell px-6 py-4 align-middle">
-                    @if($user->trashed())
+                    @if($isTrashed)
                         <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
                             <span class="h-1.5 w-1.5 rounded-full bg-rose-500"></span>
-                            Disabled
+                            Deleted
                         </span>
                     @else
                         @php
@@ -353,18 +471,20 @@
                             </a>
 
                             @if($canManageLibrarians)
-                                <a
-                                    href="{{ route($routePrefix . 'user-management.edit', $user->encrypted_id) }}"
-                                    wire:navigate
-                                    @click="open = false"
-                                    class="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-[#102B70] rounded-lg transition-colors"
-                                >
-                                    <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                                    Edit Profile
-                                </a>
+                                @if(!$isTrashed)
+                                    <a
+                                        href="{{ route($routePrefix . 'user-management.edit', $user->encrypted_id) }}"
+                                        wire:navigate
+                                        @click="open = false"
+                                        class="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-[#102B70] rounded-lg transition-colors"
+                                    >
+                                        <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                        Edit Profile
+                                    </a>
+                                @endif
 
-                                @if(auth()->id() !== $user->id)
-                                    @if($user->trashed())
+                                @if(!$isSelf)
+                                    @if($isTrashed)
                                         <button
                                             type="button"
                                             wire:click="enableLibrarian({{ $user->id }})"
@@ -372,35 +492,23 @@
                                             class="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-bold text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
                                         >
                                             <svg class="h-3.5 w-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
                                             </svg>
-                                            Enable Account
+                                            Restore Account
                                         </button>
                                     @else
                                         <button
                                             type="button"
-                                            wire:click="confirmDisable({{ $user->id }})"
+                                            wire:click="confirmDelete({{ $user->id }})"
                                             @click="open = false"
-                                            class="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-bold text-amber-700 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer"
+                                            class="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-bold text-[#B91C1C] hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
                                         >
-                                            <svg class="h-3.5 w-3.5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />
+                                            <svg class="h-3.5 w-3.5 text-[#EF4444]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
                                             </svg>
-                                            Disable Account
+                                            Delete Librarian
                                         </button>
                                     @endif
-
-                                    <button
-                                        type="button"
-                                        wire:click="confirmDelete({{ $user->id }})"
-                                        @click="open = false"
-                                        class="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-bold text-[#B91C1C] hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                                    >
-                                        <svg class="h-3.5 w-3.5 text-[#EF4444]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                                        </svg>
-                                        Delete Permanently
-                                    </button>
                                 @endif
                             @endif
                         </x-widget.table-action-dot>
@@ -409,7 +517,7 @@
             </tr>
         @empty
             <tr>
-                <td colspan="7" class="px-6 py-12 text-center text-slate-500 text-sm md:text-base font-semibold">
+                <td colspan="8" class="px-6 py-12 text-center text-slate-500 text-sm md:text-base font-semibold">
                     <div class="flex flex-col items-center justify-center text-slate-400">
                         <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mb-3 opacity-50"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>
                         <p class="text-base font-bold text-slate-700 mb-0.5">No librarians found</p>
@@ -442,21 +550,25 @@
     ])
 
     <!-- ======================================================== -->
-    <!-- MODAL: HARD DELETE LIBRARIAN                             -->
+    <!-- MODAL: SOFT DELETE LIBRARIAN                             -->
     <!-- ======================================================== -->
     @include('livewire.components.usermanager.alert-modal', [
         'show' => $showDeleteModal,
-        'type' => 'danger',
-        'isHardDelete' => true,
-        'title' => 'Permanently Delete Librarian',
-        'subtitle' => 'Irreversible Hard Delete',
+        'type' => 'delete',
+        'isHardDelete' => false,
+        'title' => 'Soft Delete Librarian Record',
+        'subtitle' => 'Soft Delete / Archive Librarian',
         'targetRole' => 'librarian',
         'targetName' => $selectedLibrarianName,
-        'hasHistory' => $selectedLibrarianHasTransactions,
-        'historyMessage' => '<strong class="text-slate-900">' . e($selectedLibrarianName) . '</strong> has recorded library transactions (loans, returns, or payments).',
+        'bulletPoints' => [
+            'The librarian account and profile will be <strong>soft-deleted</strong> and marked as <strong>Inactive</strong>.',
+            'They will no longer appear in active staff lists or be able to log in.',
+            'All historical library transactions and audit records remain intact.',
+            'Only a Superadmin can view and restore deleted accounts from the Deleted filter.',
+        ],
         'closeAction' => 'closeDeleteModal',
-        'confirmAction' => 'hardDeleteLibrarian',
-        'confirmText' => 'Permanently Delete',
-        'confirmLoadingTarget' => 'hardDeleteLibrarian',
+        'confirmAction' => 'deleteLibrarian',
+        'confirmText' => 'Delete Librarian',
+        'confirmLoadingTarget' => 'deleteLibrarian',
     ])
 </div>
