@@ -8,6 +8,7 @@ use Livewire\Attributes\On;
 use App\Models\Student;
 use App\Models\Book;
 use App\Models\BookDetail;
+use App\Models\BookReservation;
 use App\Models\BorrowingTransaction;
 use App\Models\Fine;
 use Carbon\Carbon;
@@ -21,6 +22,7 @@ class CheckOutBook extends Component
     public $checkoutBooks = [];
     public $lastScannedBook = null;
     public $errorMessage = '';
+    public $noticeMessage = '';
     public $showConfirmChangeMember = false;
     public $pendingStudentId = null;
     public $pendingStudentName = '';
@@ -257,14 +259,70 @@ class CheckOutBook extends Component
         return null;
     }
 
+    protected function findReservation(string $code): ?BookReservation
+    {
+        $reference = strtoupper(preg_replace('/\s+/', '', $code));
+        if (!preg_match('/^(?:#?RES-|PGPC-RES-?)(\d+)(?:-[A-Z0-9-]+)?$/', $reference, $matches)) {
+            return null;
+        }
+
+        return BookReservation::with([
+            'student.libraryStatus',
+            'student.account',
+            'book.bookDetail.bookData.authors',
+            'book.bookDetail.bookData.categories',
+            'book.condition',
+        ])->find((int) $matches[1]);
+    }
+
+    protected function processReservationCheckout(BookReservation $reservation): void
+    {
+        if ((int) $reservation->reservation_status_id !== 2) {
+            $this->errorMessage = 'Reservation #' . str_pad($reservation->id, 5, '0', STR_PAD_LEFT) . ' is not approved for pickup.';
+            return;
+        }
+
+        if (!$reservation->student || !$reservation->book) {
+            $this->errorMessage = 'This reservation is missing its student or physical book copy.';
+            return;
+        }
+
+        if ($reservation->due_date && $reservation->due_date->isPast()) {
+            $this->errorMessage = 'This reservation has passed its pickup deadline and cannot be issued.';
+            return;
+        }
+
+        if ($this->scannedMember && !empty($this->checkoutBooks) && $this->scannedMember['id'] !== $reservation->student_id) {
+            $this->errorMessage = 'Clear the current checkout queue before loading a reservation for another student.';
+            return;
+        }
+
+        if (!$this->scannedMember || $this->scannedMember['id'] !== $reservation->student_id) {
+            $this->loadMember($reservation->student);
+        }
+
+        $this->processBookCheckout($reservation->book, $reservation);
+
+        if ($this->errorMessage === '') {
+            $this->noticeMessage = 'Reservation #' . str_pad($reservation->id, 5, '0', STR_PAD_LEFT) . ' loaded for ' . $this->scannedMember['name'] . '.';
+        }
+    }
     #[On('search-code')]
     public function handleSearchCode($code)
     {
-        $this->errorMessage = ''; // Clear previous error
+        $this->errorMessage = '';
+        $this->noticeMessage = '';
 
         $code = $this->normalizeCode($code);
         if (empty($code)) return;
 
+        // 1. Check if the code is an approved reservation reference.
+        $reservation = $this->findReservation($code);
+        if ($reservation) {
+            $this->processReservationCheckout($reservation);
+            $this->dispatch('clear-search-input');
+            return;
+        }
         // 1. Check if the code matches a member ID (Student table)
         $student = $this->findStudent($code);
 
@@ -326,7 +384,7 @@ class CheckOutBook extends Component
         }
     }
 
-    public function processBookCheckout($book)
+    public function processBookCheckout($book, ?BookReservation $reservation = null)
     {
         $this->errorMessage = '';
 
@@ -357,7 +415,8 @@ class CheckOutBook extends Component
             'call_number' => $detail ? $detail->call_number : 'N/A',
             'code' => $data ? ($data->subtitle ?: 'BOOK') : 'BOOK',
             'added_on' => Carbon::now()->format('M. d, Y'),
-            'due_date' => Carbon::now()->addDays((int) config('settings.library_config.loan_period', config('settings.loan_period', 5)))->format('M. d, Y')
+            'due_date' => Carbon::now()->addDays((int) config('settings.library_config.loan_period', config('settings.loan_period', 5)))->format('M. d, Y'),
+            'reservation_id' => $reservation?->id
         ];
 
         // Always show the book in the preview card
@@ -387,7 +446,8 @@ class CheckOutBook extends Component
         }
 
         // Validation 3: Book copy status check
-        if (strtolower($book->status) !== 'available') {
+        $isReservedForThisCheckout = $reservation && $reservation->book_id === $book->id && $reservation->student_id === $this->scannedMember['id'];
+        if (strtolower($book->status) !== 'available' && !($isReservedForThisCheckout && strtolower($book->status) === 'reserved')) {
             $this->errorMessage = 'Cannot add book: This copy is currently not available (Status: ' . ucfirst($book->status) . ').';
             return;
         }
@@ -526,18 +586,16 @@ class CheckOutBook extends Component
             return;
         }
 
-        // Verify book availability again (Concurrent checkout check)
+        // Verify each queued copy, allowing a reserved copy only for its linked reservation.
         $bookIds = collect($this->checkoutBooks)->pluck('book_id')->toArray();
-        $unavailableBooks = Book::whereIn('id', $bookIds)
-            ->where('status', '!=', 'available')
-            ->pluck('accession_number')
-            ->toArray();
-
-        if (!empty($unavailableBooks)) {
-            $this->dispatch('checkout-failed', message: 'Checkout failed: Book copy ' . implode(', ', $unavailableBooks) . ' is no longer available (concurrently checked out).');
-            return;
+        foreach ($this->checkoutBooks as $item) {
+            $book = Book::find($item['book_id']);
+            $isReservationCopy = !empty($item['reservation_id']) && $book?->status === 'reserved';
+            if (!$book || ($book->status !== 'available' && !$isReservationCopy)) {
+                $this->dispatch('checkout-failed', message: 'Checkout failed: A queued book copy is no longer available.');
+                return;
+            }
         }
-
         try {
             DB::transaction(function () use ($studentId, $bookIds) {
                 $loanPeriod = (int) config('settings.library_config.loan_period', config('settings.loan_period', 5));
@@ -545,33 +603,54 @@ class CheckOutBook extends Component
                 $dueDate = (clone $now)->addDays($loanPeriod);
                 $librarianId = auth()->user() && auth()->user()->librarian ? auth()->user()->librarian->id : 1;
 
-                foreach ($bookIds as $bookId) {
-                    // Backend duplicate prevention: Check if transaction is already recorded
+                foreach ($this->checkoutBooks as $item) {
+                    $bookId = $item['book_id'];
+                    $book = Book::lockForUpdate()->findOrFail($bookId);
+                    $reservationId = $item['reservation_id'] ?? null;
+
+                    if ($reservationId) {
+                        $reservation = BookReservation::lockForUpdate()->findOrFail($reservationId);
+                        $isValidReservation = $reservation->student_id === $studentId
+                            && $reservation->book_id === $bookId
+                            && (int) $reservation->reservation_status_id === 2
+                            && (!$reservation->due_date || !$reservation->due_date->isPast());
+
+                        if (!$isValidReservation || $book->status !== 'reserved') {
+                            throw new \RuntimeException('The linked reservation is no longer available for checkout.');
+                        }
+                    } elseif ($book->status !== 'available') {
+                        throw new \RuntimeException('A queued book copy is no longer available.');
+                    }
+
                     $exists = BorrowingTransaction::where('book_id', $bookId)
                         ->where('school_id', $studentId)
                         ->whereNull('return_date')
                         ->exists();
 
                     if ($exists) {
-                        continue; // Skip inserting duplicate borrow transaction row
+                        continue;
                     }
 
-                    // 1. Insert Borrowing Transaction
                     BorrowingTransaction::create([
                         'book_id' => $bookId,
                         'school_id' => $studentId,
                         'issued_by_id' => $librarianId,
-                        'borrow_type_id' => 1, // Regular Check-out
-                        'issued_condition_id' => 2, // Good condition
+                        'book_reservation_id' => $reservationId,
+                        'borrow_type_id' => 1,
+                        'issued_condition_id' => 2,
                         'issued_date' => $now,
                         'due_date' => $dueDate,
                         'return_date' => null,
                     ]);
 
-                    // 2. Update physical book copy status to borrowed
-                    Book::where('id', $bookId)->update([
-                        'status' => 'borrowed'
-                    ]);
+                    if ($reservationId) {
+                        BookReservation::whereKey($reservationId)->update([
+                            'reservation_status_id' => 3,
+                            'fulfilled_date' => $now,
+                        ]);
+                    }
+
+                    $book->update(['status' => 'borrowed']);
                 }
             });
         } catch (\Throwable $e) {

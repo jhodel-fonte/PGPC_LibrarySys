@@ -46,5 +46,16 @@ return [
         'secret' => env('TURNSTILE_SECRET_KEY'),
     ],
 
+    'iprogsms' => [
+        'api_token' => env('IPROG_SMS_API_TOKEN', env('IPROGSMS_API_TOKEN', env('SMS_API_TOKEN', ''))),
+        'url' => env('IPROG_SMS_URL', 'https://www.iprogsms.com/api/v1/sms_messages'),
+        'enabled' => env('SMS_ENABLED', true),
+    ],
+
+    'recommender' => [
+        'url' => env('ML_RECOMMENDER_URL', 'http://127.0.0.1:5000'),
+        'key' => env('ML_API_KEY'),
+        'timeout' => env('ML_REQUEST_TIMEOUT_SECONDS', 30),
+    ],
 
 ];

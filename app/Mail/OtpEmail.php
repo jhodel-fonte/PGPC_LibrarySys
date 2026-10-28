@@ -10,16 +10,23 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class OtpEmail extends Mailable
+class OtpEmail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
     /**
+     * Number of attempts before the queued email is marked as failed.
+     */
+    public int $tries = 3;
+
+    public string|int|null $otp;
+
+    /**
      * Create a new message instance.
      */
-    public function __construct()
+    public function __construct(string|int|null $otp = null)
     {
-        //
+        $this->otp = $otp;
     }
 
     /**
@@ -28,7 +35,7 @@ class OtpEmail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Otp Email',
+            subject: 'PGPC Library - Verification Code (OTP)',
         );
     }
 
@@ -38,7 +45,12 @@ class OtpEmail extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'view.name',
+            view: 'emails.template',
+            with: [
+                'title' => 'Account Verification Code',
+                'otp' => $this->otp,
+                'message' => 'Your one-time verification code (OTP) for your PGPC Library account is: ' . $this->otp,
+            ],
         );
     }
 

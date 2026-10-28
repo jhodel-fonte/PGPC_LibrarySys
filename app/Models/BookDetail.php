@@ -22,6 +22,8 @@ class BookDetail extends Model
         'pages',
         'format',
         'book_type_id',
+        'material_type_id',
+        'lccn',
         'call_number',
         'classification',
         'publisher_id',
@@ -48,6 +50,11 @@ class BookDetail extends Model
     public function bookType(): BelongsTo
     {
         return $this->belongsTo(BookType::class);
+    }
+
+    public function materialType(): BelongsTo
+    {
+        return $this->belongsTo(MaterialType::class);
     }
 
     public function publisher(): BelongsTo

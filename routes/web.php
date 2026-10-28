@@ -126,11 +126,71 @@ Route::get('/send-test-email', function () {
     $recipient = 'jhcyrene@gmail.com';
 
     try {
-        Mail::to($recipient)->send(new WelcomeEmail());
-        return "Email sent successfully to {$recipient}!";
+        Mail::to($recipient)->queue(new WelcomeEmail());
+        return "Test email queued for {$recipient}. Make sure a worker is running: php artisan queue:work";
     } catch (\Throwable $e) {
         return "Failed to send email. Error: " . $e->getMessage();
     }
+});
+
+Route::get('/send-test-sms', function (\Illuminate\Http\Request $request, \App\Services\SmsService $smsService) {
+    $phone = (string) ($request->query('phone') ?? '09171071234');
+    $message = (string) ($request->query('message') ?? 'Hi from PGPC Library System! Your iProgSMS gateway is connected.');
+    $isQueued = $request->boolean('queue', false);
+
+    if ($isQueued) {
+        \App\Services\SmsService::queue($phone, $message);
+        return response()->json([
+            'status' => 'queued',
+            'phone' => $phone,
+            'formatted_phone' => $smsService->formatPhoneNumber($phone),
+            'message' => $message,
+            'note' => 'SMS queued into jobs table.',
+        ]);
+    }
+
+    $result = $smsService->send($phone, $message);
+    return response()->json($result);
+});
+
+Route::get('/send-test-alert', function (\Illuminate\Http\Request $request) {
+    $user = auth()->user() ?? \App\Models\Account::first();
+    if (!$user) {
+        return response()->json(['error' => 'No accounts found in the database.'], 404);
+    }
+
+    $title = (string) ($request->query('title') ?? 'Book Hold Ready for Pickup');
+    $message = (string) ($request->query('message') ?? 'Your reserved copy is ready for collection at the circulation desk.');
+    $bookTitle = (string) ($request->query('book') ?? 'The birds that wouldn\'t sing');
+    $dueDate = (string) ($request->query('due') ?? 'Oct 31, 2026');
+    $type = (string) ($request->query('type') ?? 'success');
+    $alsoSms = $request->boolean('sms', false);
+
+    $alert = new \App\Notifications\Alerts(
+        title: $title,
+        message: $message,
+        type: $type,
+        actionUrl: route('student.dashboard'),
+        actionText: 'View Slip',
+        bookTitle: $bookTitle,
+        dueDate: $dueDate,
+        channels: ['database'],
+        sendSms: $alsoSms
+    );
+
+    $user->notifyNow($alert);
+
+    return response()->json([
+        'status' => 'success',
+        'account' => $user->username,
+        'title' => $title,
+        'message' => $message,
+        'book_title' => $bookTitle,
+        'due_date' => $dueDate,
+        'database_notifications_count' => $user->notifications()->count(),
+        'unread_count' => $user->unreadNotifications()->count(),
+        'latest_notification' => $user->notifications()->latest()->first(),
+    ]);
 });
 
 Route::get('/preview-reset-email', function () {

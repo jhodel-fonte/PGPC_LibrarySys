@@ -106,7 +106,7 @@ class Book extends Component
                     'account_id' => $user?->id,
                     'reservation_status_id' => $statusId,
                     'reservation_date' => now(),
-                    'due_date' => now()->addDays(3),
+                    'due_date' => now()->addDays(3)->setTime(17, 0, 0),
                     'comment' => 'Online reservation by ' . $userIdentifier,
                 ]);
 

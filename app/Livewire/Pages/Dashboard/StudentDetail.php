@@ -330,7 +330,7 @@ class StudentDetail extends Component
                     'account_id' => $student->account_id ?? auth()->id(),
                     'reservation_status_id' => $pendingStatusId,
                     'reservation_date' => now(),
-                    'due_date' => now()->addDays($this->reservePickupDays),
+                    'due_date' => now()->addDays($this->reservePickupDays)->setTime(17, 0, 0),
                     'comment' => trim($this->reserveComment) ?: 'Reserved from student profile',
                 ]);
 

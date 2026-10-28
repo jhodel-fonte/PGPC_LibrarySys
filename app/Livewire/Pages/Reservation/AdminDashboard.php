@@ -253,7 +253,7 @@ class AdminDashboard extends Component
                 $reservation->update([
                     'reservation_status_id' => 2, // Approved
                     'approved_date' => now(),
-                    'due_date' => now()->addDays(3), // 3 days window to pick up
+                    'due_date' => now()->addDays(3)->setTime(17, 0, 0), // 3 days window to pick up by 5:00 PM closing
                 ]);
 
                 // Ensure copy is marked as reserved
@@ -495,7 +495,7 @@ class AdminDashboard extends Component
                     'reservation_status_id' => 2, // Pre-approved when created by staff
                     'reservation_date' => now(),
                     'approved_date' => now(),
-                    'due_date' => now()->addDays($this->createPickupDays),
+                    'due_date' => now()->addDays($this->createPickupDays)->setTime(17, 0, 0),
                     'comment' => 'Staff reservation. Note: ' . (trim($this->createNotes) ?: 'None'),
                 ]);
 

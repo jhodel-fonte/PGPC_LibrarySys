@@ -7,6 +7,7 @@ use App\Models\Student;
 use App\Models\Account;
 use App\Models\Book;
 use App\Models\OpacCatalogView;
+use App\Models\BookReservation;
 use Livewire\Attributes\On;
 
 class SearchEntityModal extends Component
@@ -17,6 +18,7 @@ class SearchEntityModal extends Component
     public $results = [];
     public $memberCount = 0;
     public $bookCount = 0;
+    public $reservationCount = 0;
     public $perPage = 5;
     public $service = 'check-in'; // check-in or check-out
 
@@ -48,6 +50,7 @@ class SearchEntityModal extends Component
         $this->results = [];
         $this->memberCount = 0;
         $this->bookCount = 0;
+        $this->reservationCount = 0;
         $this->perPage = 5;
         $this->dispatch('search-completed');
     }
@@ -99,6 +102,9 @@ class SearchEntityModal extends Component
             $this->bookCount = Book::count();
         }
 
+        if ($this->service === 'check-out') {
+            $this->reservationCount = BookReservation::where('reservation_status_id', 1)->count();
+        }
         $results = [];
 
         // 1. Fetch Members ordered alphabetically by last_name, first_name
@@ -133,6 +139,22 @@ class SearchEntityModal extends Component
             }
         }
 
+        // 2. Fetch pending reservations for checkout.
+        if ($this->service === 'check-out' && ($this->activeTab === 'all' || $this->activeTab === 'reservations')) {
+            $reservations = BookReservation::with([
+                'student',
+                'book.bookDetail.bookData.authors',
+                'reservationStatus',
+            ])
+                ->where('reservation_status_id', 1)
+                ->orderByDesc('reservation_date')
+                ->limit($this->perPage)
+                ->get();
+
+            foreach ($reservations as $reservation) {
+                $results[] = $this->formatReservationResult($reservation);
+            }
+        }
         // 2. Fetch Books ordered alphabetically by title
         if ($this->activeTab === 'all' || $this->activeTab === 'books') {
             if ($isCheckIn) {
@@ -240,9 +262,34 @@ class SearchEntityModal extends Component
             }
         });
 
+        $reservationsQuery = null;
+        if ($this->service === 'check-out') {
+            $reservationTerm = preg_replace('/[^0-9]/', '', $searchTerm);
+            $likeTerm = '%' . $searchTerm . '%';
+
+            $reservationsQuery = BookReservation::query()
+                ->where('reservation_status_id', 1)
+                ->where(function ($q) use ($likeTerm, $reservationTerm) {
+                    if ($reservationTerm !== '') {
+                        $q->orWhere('id', 'like', '%' . $reservationTerm . '%');
+                    }
+
+                    $q->orWhereHas('student', function ($student) use ($likeTerm) {
+                        $student->where('first_name', 'like', $likeTerm)
+                            ->orWhere('last_name', 'like', $likeTerm)
+                            ->orWhere('school_id_number', 'like', $likeTerm);
+                    })->orWhereHas('book', function ($book) use ($likeTerm) {
+                        $book->where('accession_number', 'like', $likeTerm)
+                            ->orWhereHas('bookDetail.bookData', function ($bookData) use ($likeTerm) {
+                                $bookData->where('book_title', 'like', $likeTerm);
+                            });
+                    });
+                });
+        }
         // Compute counts
         $this->memberCount = $membersQuery->count();
         $this->bookCount = $booksQuery->count();
+        $this->reservationCount = $reservationsQuery ? $reservationsQuery->count() : 0;
 
         $results = [];
 
@@ -259,6 +306,18 @@ class SearchEntityModal extends Component
             }
         }
 
+        // 2. Fetch pending reservations if tab matches.
+        if ($reservationsQuery && ($this->activeTab === 'all' || $this->activeTab === 'reservations')) {
+            $reservations = $reservationsQuery->with([
+                'student',
+                'book.bookDetail.bookData.authors',
+                'reservationStatus',
+            ])->orderByDesc('reservation_date')->limit($this->perPage)->get();
+
+            foreach ($reservations as $reservation) {
+                $results[] = $this->formatReservationResult($reservation);
+            }
+        }
         // 2. Fetch Books if tab matches
         if ($this->activeTab === 'all' || $this->activeTab === 'books') {
             $books = $booksQuery->with(['bookDetail.bookData.authors'])
@@ -288,6 +347,22 @@ class SearchEntityModal extends Component
         ];
     }
 
+    protected function formatReservationResult(BookReservation $reservation): array
+    {
+        $bookData = $reservation->book?->bookDetail?->bookData;
+        $studentName = trim(($reservation->student?->first_name ?? '') . ' ' . ($reservation->student?->last_name ?? '')) ?: 'Unknown student';
+
+        return [
+            'type' => 'reservation',
+            'id' => $reservation->id,
+            'code' => '#RES-' . str_pad($reservation->id, 5, '0', STR_PAD_LEFT),
+            'title' => $studentName,
+            'subtitle' => $bookData?->book_title ?? 'Unknown book',
+            'student_id' => $reservation->student?->school_id_number ?? 'No student ID',
+            'accession' => $reservation->book?->accession_number ?? 'No accession number',
+            'status' => $reservation->reservationStatus?->status ?? 'Pending',
+        ];
+    }
     protected function formatBookResult($book): array
     {
         $detail = $book->bookDetail;

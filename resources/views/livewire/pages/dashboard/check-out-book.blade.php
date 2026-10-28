@@ -58,10 +58,10 @@
             <!-- Title Row -->
             <div class="flex flex-col md:flex-row pt-2 justify-between items-start md:items-center">
                 <div>
-                    <h1 class="text-[1.5rem] font-bold text-[#102B70] tracking-tight leading-tight">
+                    <h1 class="text-xl font-bold text-[#102B70] tracking-tight leading-tight">
                         Borrow / Issue Books
                     </h1>
-                    <p class="mt-0.5 text-xs text-[#64748B] font-medium">
+                    <p class="mt-0.5 text-base text-[#64748B] font-medium">
                         Scan or enter member ID first, then scan book barcodes to process book loans.
                     </p>
                 </div>
@@ -87,36 +87,30 @@
                     />
                 @endif
 
-                <div class="relative overflow-hidden shrink-0 bg-white rounded-3xl border border-[#E2E8F0] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
+                <div class="relative overflow-hidden shrink-0 bg-white rounded-xl border border-[#E2E8F0] p-4 ">
                     <!-- Indeterminate Top Progress Bar -->
                     <div wire:loading class="absolute top-0 left-0 right-0 h-1 bg-[#EFF6FF] overflow-hidden">
                         <div class="h-full w-1/3 bg-[#FCC719] animate-loading-pulse rounded-full"></div>
                     </div>
 
                     <livewire:components.circulation.qr-search-bar
-                        label="Member ID / Code"
-                        placeholder="Enter or scan member ID or book code"
+                        label="Member ID, book code, or reservation reference"
+                        placeholder="Scan member ID, book code, or #RES-00001"
                     />
-
-                    <!-- Warnings / Errors alert box -->
                     @if($errorMessage)
                         @php
                             $isWarning = str_contains(strtolower($errorMessage), 'warning');
                         @endphp
-                        <div x-data="{ showErr: true }" x-show="showErr"
-                             class="mt-3 p-3 border rounded-xl flex items-center justify-between text-[11px] font-bold transition-all animate-fade-in
-                                    {{ $isWarning ? 'bg-[#FFF9E6] border-[#FFEAA7] text-[#D97706]' : 'bg-[#FEF2F2] border-[#FCA5A5] text-[#B91C1C]' }}">
-                            <div class="flex items-center gap-2">
-                                <svg class="w-4 h-4 shrink-0 {{ $isWarning ? 'text-[#FCC719]' : 'text-[#EF4444]' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                                </svg>
-                                <span>{{ $errorMessage }}</span>
-                            </div>
-                            <button type="button" @click="showErr = false" class="transition-colors focus:outline-none {{ $isWarning ? 'text-[#D97706] hover:text-[#B45309]' : 'text-[#EF4444] hover:text-[#B91C1C]' }}">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                </svg>
-                            </button>
+                        <div wire:key="checkout-alert-{{ md5($errorMessage) }}" x-data="{ open: true }" x-init="setTimeout(() => open = false, 6000)" x-show="open" x-transition class="mt-3 flex items-start justify-between gap-3 rounded-lg border p-3 text-sm font-medium {{ $isWarning ? 'border-amber-200 bg-amber-50 text-amber-800' : 'border-rose-200 bg-rose-50 text-rose-800' }}">
+                            <span>{{ $errorMessage }}</span>
+                            <button type="button" @click="open = false" class="shrink-0 font-semibold underline underline-offset-2">Dismiss</button>
+                        </div>
+                    @endif
+
+                    @if($noticeMessage)
+                        <div wire:key="checkout-notice-{{ md5($noticeMessage) }}" x-data="{ open: true }" x-init="setTimeout(() => open = false, 5000)" x-show="open" x-transition class="mt-3 flex items-start justify-between gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+                            <span>{{ $noticeMessage }}</span>
+                            <button type="button" @click="open = false" class="shrink-0 font-semibold underline underline-offset-2">Dismiss</button>
                         </div>
                     @endif
                 </div>
@@ -127,7 +121,7 @@
                     <!-- COLUMN 1: Scanner + Scanned Book Details (md:col-span-4) -->
                     <div class="md:col-span-4 flex flex-col gap-4 h-auto lg:h-full lg:overflow-hidden">
                         <!-- Scanner Card -->
-                        <div class="bg-white rounded-3xl border border-[#E2E8F0] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.02)] shrink-0">
+                        <div class="bg-white rounded-xl border border-[#E2E8F0] p-5  shrink-0">
                             <livewire:components.circulation.live-camera />
                         </div>
 
@@ -156,9 +150,9 @@
             <!-- Right Section: Column 3 (col-span-3 Student Card + Checkout Summary Panel) -->
             <div class="lg:col-span-3 h-auto lg:h-full flex flex-col gap-4 lg:overflow-hidden">
                 <!-- Student Card -->
-                <div wire:loading.class="opacity-65 transition-opacity duration-300" class="bg-white rounded-3xl border border-[#E2E8F0] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.02)] shrink-0 min-h-[220px] flex flex-col">
+                <div wire:loading.class="opacity-65 transition-opacity duration-300" class="bg-white rounded-xl border border-[#E2E8F0] p-5  shrink-0 min-h-[220px] flex flex-col">
                     <div class="flex flex-col gap-3 flex-1">
-                        <span class="block text-[11px] font-bold text-[#64748B] uppercase tracking-widest">Student</span>
+                        <span class="block text-base font-semibold text-[#64748B]">Student</span>
 
                         @if($scannedMember)
                             @php
@@ -169,24 +163,24 @@
                                 }
                                 $isStatusActive = strtolower($scannedMember['status'] ?? 'active') === 'active';
                             @endphp
-                            <div class="bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl p-4 flex flex-col gap-4 shadow-inner flex-1 justify-between">
+                            <div class="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4 flex flex-col gap-4  flex-1 justify-between">
                                 <div class="flex items-center gap-3.5">
                                     <!-- Avatar -->
-                                    <div class="w-12 h-12 rounded-full bg-[#102B70] text-[#FFFFFF] border-2 flex items-center justify-center shrink-0 shadow-sm text-sm font-bold tracking-wider select-none">
+                                    <div class="w-12 h-12 rounded-full bg-[#102B70] text-[#FFFFFF] border-2 flex items-center justify-center shrink-0  text-sm font-bold tracking-wider select-none">
                                         {{ $initials ?: 'S' }}
                                     </div>
 
                                     <div class="min-w-0 flex-1">
                                         <div class="flex items-center gap-2 flex-wrap">
-                                            <h3 class="text-[#0F172A] font-bold text-[15px] leading-tight truncate max-w-[130px] xl:max-w-none" title="{{ $scannedMember['name'] }}">{{ $scannedMember['name'] }}</h3>
-                                            <span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[8.5px] font-bold border {{ $isStatusActive ? 'bg-[#DCFCE7] text-[#15803D] border-[#BBF7D0]' : 'bg-[#FEF2F2] text-[#B91C1C] border-[#FECACA]' }}">
+                                            <h3 class="text-[#0F172A] font-bold text-base leading-tight truncate max-w-[130px] xl:max-w-none" title="{{ $scannedMember['name'] }}">{{ $scannedMember['name'] }}</h3>
+                                            <span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-base font-semibold border bg-slate-100 text-slate-700 border-slate-200">
                                                 {{ $scannedMember['status'] }}
                                             </span>
                                         </div>
-                                        <div class="text-[12px] text-[#64748B] font-semibold mt-0.5">
+                                        <div class="text-sm text-[#64748B] font-semibold mt-0.5">
                                             <span>{{ $scannedMember['school_id'] }}</span>
                                             <span class="mx-1 text-slate-300">&bull;</span>
-                                            <span class="text-[11.5px] font-medium">{{ $scannedMember['course'] }}</span>
+                                            <span class="text-sm font-medium">{{ $scannedMember['course'] }}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -196,38 +190,32 @@
                                     <button x-show="!confirmChange"
                                             type="button"
                                             @click="confirmChange = true"
-                                            class="h-8 px-3.5 border border-[#102B70] bg-white text-[#102B70] hover:bg-[#EFF6FF] rounded-xl text-[11px] font-bold transition-all flex items-center gap-1.5 shadow-sm">
-                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                                        </svg>
+                                            class="h-8 px-3.5 border border-[#102B70] bg-white text-[#102B70] hover:bg-[#EFF6FF] rounded-xl text-base font-semibold transition-colors flex items-center gap-1.5 ">
                                         Change Student
                                     </button>
 
                                     <div x-show="confirmChange" class="flex items-center gap-1.5" style="display: none;">
-                                        <span class="text-[10px] font-bold text-[#EF4444] mr-1 select-none">Sure?</span>
+                                        <span class="text-sm font-bold text-[#EF4444] mr-1 select-none">Sure?</span>
                                         <button type="button"
                                                 @click="confirmChange = false"
-                                                class="h-8 px-2.5 border border-[#CBD5E1] bg-white text-[#64748B] hover:bg-slate-50 hover:text-[#0F172A] rounded-xl text-[10px] font-bold transition-all shadow-sm">
+                                                class="h-8 px-2.5 border border-[#CBD5E1] bg-white text-[#64748B] hover:bg-slate-50 hover:text-[#0F172A] rounded-xl text-base font-semibold transition-colors ">
                                             Cancel
                                         </button>
                                         <button type="button"
                                                 wire:click="clearMember"
                                                 @click="confirmChange = false"
-                                                class="h-8 px-3 bg-[#EF4444] hover:bg-[#B91C1C] text-white rounded-xl text-[10px] font-bold transition-all shadow-sm">
+                                                class="h-8 px-3 bg-[#EF4444] hover:bg-[#B91C1C] text-white rounded-xl text-base font-semibold transition-colors ">
                                             Confirm
                                         </button>
                                     </div>
                                 </div>
                             </div>
                         @else
-                            <div class="bg-[#F8FAFC] border border-dashed border-[#CBD5E1] rounded-2xl p-6 flex flex-col items-center justify-center text-center gap-2.5 flex-1 mt-1 hover:border-[#102B70] transition-colors duration-200">
-                                <div class="w-12 h-12 rounded-full bg-[#EFF6FF] border border-[#DBEAFE] flex items-center justify-center text-[#102B70] shrink-0 shadow-sm">
-                                    <svg class="w-5.5 h-5.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.333 0 4 .667 4 2V17H5v-1c0-1.333 2.667-2 4-2z"></path>
-                                    </svg>
+                            <div class="bg-[#F8FAFC] border border-dashed border-[#CBD5E1] rounded-xl p-6 flex flex-col items-center justify-center text-center gap-2.5 flex-1 mt-1 hover:border-[#102B70] transition-colors duration-200">
+                                <div class="w-12 h-12 rounded-full bg-[#EFF6FF] border border-[#DBEAFE] flex items-center justify-center text-[#102B70] shrink-0 ">
                                 </div>
-                                <span class="text-[13px] font-bold text-[#334155]">No Student Profile</span>
-                                <p class="text-[10.5px] text-[#64748B] max-w-[190px] leading-relaxed">Scan or enter member ID number to check out.</p>
+                                <span class="text-base font-bold text-[#334155]">No Student Profile</span>
+                                <p class="text-sm text-[#64748B] max-w-[190px] leading-relaxed">Scan or enter member ID number to check out.</p>
                             </div>
                         @endif
                     </div>
@@ -255,7 +243,7 @@
          x-transition:leave-start="opacity-100"
          x-transition:leave-end="opacity-0">
 
-         <div class="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl flex flex-col items-center text-center gap-5 border border-slate-100 relative"
+         <div class="bg-white rounded-xl p-8 max-w-sm w-full  flex flex-col items-center text-center gap-5 border border-slate-100 relative"
               x-show="isOpen"
               x-transition:enter="transition ease-out duration-300 transform"
               x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
@@ -265,37 +253,21 @@
               x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95">
 
               <!-- Success Icon -->
-              <div class="w-16 h-16 rounded-full bg-emerald-50 border-2 border-emerald-500 text-emerald-500 flex items-center justify-center shrink-0 shadow-md">
-                  <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
-                  </svg>
-              </div>
 
               <!-- Content -->
               <div class="flex flex-col gap-1.5">
                   <h3 class="text-xl font-bold text-[#102B70]">Books Issued Successfully</h3>
-                  <p class="text-xs text-[#64748B] font-semibold leading-relaxed px-4">
+                  <p class="text-base text-[#64748B] font-semibold leading-relaxed px-4">
                       All books have been successfully checked out and due date records logged.
                   </p>
               </div>
 
               <!-- Circular Progress and Timer -->
               <div class="flex flex-col items-center justify-center relative mt-2 gap-2">
-                  <div class="relative w-20 h-20 flex items-center justify-center">
-                      <svg class="w-20 h-20 transform -rotate-90">
-                          <circle cx="40" cy="40" r="34" class="stroke-slate-100" stroke-width="4.5" fill="transparent" />
-                          <circle cx="40" cy="40" r="34"
-                                  class="stroke-[#102B70]"
-                                  stroke-width="4.5"
-                                  fill="transparent"
-                                  stroke-dasharray="214"
-                                  :stroke-dashoffset="dashOffset"
-                                  stroke-linecap="round"
-                                  style="transition: stroke-dashoffset 0.1s linear;" />
-                      </svg>
-                      <span class="absolute text-lg font-extrabold text-[#102B70]" x-text="countdown">3</span>
+                  <div class="text-center">
+                      <span class="text-lg font-semibold text-[#102B70]" x-text="countdown">3</span>
                   </div>
-                  <span class="text-[11px] text-[#94A3B8] font-bold uppercase tracking-widest mt-1">Redirecting to start...</span>
+                  <span class="text-base text-slate-500 mt-1">Redirecting to start...</span>
               </div>
          </div>
     </div>
@@ -311,7 +283,7 @@
          x-transition:leave-start="opacity-100"
          x-transition:leave-end="opacity-0">
 
-         <div class="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl flex flex-col items-center text-center gap-5 border border-slate-100 relative"
+         <div class="bg-white rounded-xl p-8 max-w-sm w-full  flex flex-col items-center text-center gap-5 border border-slate-100 relative"
               x-show="isErrorOpen"
               x-transition:enter="transition ease-out duration-300 transform"
               x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
@@ -321,23 +293,18 @@
               x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95">
 
               <!-- Error Icon -->
-              <div class="w-16 h-16 rounded-full bg-red-50 border-2 border-red-500 text-red-500 flex items-center justify-center shrink-0 shadow-md">
-                  <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                  </svg>
-              </div>
 
               <!-- Content -->
               <div class="flex flex-col gap-1.5">
-                  <h3 class="text-xl font-bold text-[#B91C1C]">Borrow Failed</h3>
-                  <p class="text-xs text-[#64748B] font-semibold leading-relaxed px-4" x-text="errorMessage">
+                  <h3 class="text-xl font-semibold text-[#102B70]">Borrow Failed</h3>
+                  <p class="text-base text-[#64748B] font-semibold leading-relaxed px-4" x-text="errorMessage">
                       An error occurred during submission. Please check conditions and try again.
                   </p>
               </div>
 
               <button type="button"
                       @click="isErrorOpen = false"
-                      class="w-full h-11 bg-slate-100 hover:bg-slate-200 text-[#64748B] font-bold rounded-2xl text-xs uppercase tracking-wider transition-colors focus:outline-none">
+                      class="h-11 w-full rounded-xl border border-[#CBD5E1] bg-white text-base font-medium text-slate-700 hover:bg-[#F8FAFC]">
                   Dismiss
               </button>
          </div>

@@ -69,8 +69,8 @@
         <!-- Modal Header -->
         <div class="flex items-start justify-between px-6 py-4 border-b border-[#E2E8F0] bg-slate-50 shrink-0">
             <div class="flex flex-col">
-                <h3 class="text-base font-bold text-[#102B70] tracking-tight">Search Member or Book</h3>
-                <p class="text-[11px] text-[#64748B] font-medium mt-0.5">Search by name, ID, email, code, title, author, or accession number</p>
+                <h3 class="text-base font-bold text-[#102B70] tracking-tight">Search Student, Book, or Reservation</h3>
+                <p class="text-[11px] text-[#64748B] font-medium mt-0.5">Search by name, ID, reference, title, author, or accession number</p>
             </div>
             <button type="button"
                     @click="open = false"
@@ -141,6 +141,14 @@
                         class="px-4 py-2 rounded-full text-xs font-bold transition-all {{ $activeTab === 'books' ? 'bg-[#102B70] text-white shadow-sm' : 'bg-slate-50 border border-[#E2E8F0] text-[#64748B] hover:bg-slate-100 hover:text-[#0F172A]' }}">
                     Books ({{ $bookCount }})
                 </button>
+                @if($service === 'check-out')
+                    <button type="button"
+                            wire:click="setTab('reservations')"
+                            @click="isLoading = true; selectedIndex = -1;"
+                            class="px-4 py-2 rounded-full text-xs font-bold transition-all {{ $activeTab === 'reservations' ? 'bg-[#102B70] text-white shadow-sm' : 'bg-slate-50 border border-[#E2E8F0] text-[#64748B] hover:bg-slate-100 hover:text-[#0F172A]' }}">
+                        Pending Reservations ({{ $reservationCount }})
+                    </button>
+                @endif
             </div>
         </div>
 
@@ -194,6 +202,7 @@
                 @php
                     $membersList = collect($results)->where('type', 'member');
                     $booksList = collect($results)->where('type', 'book');
+                    $reservationsList = collect($results)->where('type', 'reservation');
                     $currentIndex = 0;
                 @endphp
 
@@ -255,6 +264,33 @@
                     </div>
                 @endif
 
+                <!-- Pending Reservations Group -->
+                @if($reservationsList->isNotEmpty())
+                    <div class="flex flex-col gap-2 {{ $membersList->isNotEmpty() ? 'mt-1' : '' }}">
+                        <span class="text-[11px] font-bold text-[#94A3B8] uppercase tracking-wider pl-1">Pending Reservations</span>
+                        <div class="overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white divide-y divide-[#F1F5F9]">
+                            @foreach($reservationsList as $item)
+                                @php $itemIndex = $currentIndex++; @endphp
+                                <div :class="selectedIndex === {{ $itemIndex }} ? 'bg-[#EFF6FF]/65' : 'hover:bg-[#F8FAFC]'"
+                                     class="relative flex items-center justify-between gap-3 p-3.5 pl-[18px] transition-colors"
+                                     @click="selectedIndex = {{ $itemIndex }}"
+                                     id="search-row-{{ $itemIndex }}">
+                                    <div x-show="selectedIndex === {{ $itemIndex }}" class="absolute inset-y-0 left-0 z-10 w-1 bg-[#102B70]"></div>
+                                    <div class="min-w-0">
+                                        <h4 class="truncate text-[14px] font-bold text-[#0F172A]">{{ $item['title'] }}</h4>
+                                        <p class="mt-1 truncate text-xs font-medium text-[#64748B]">{{ $item['subtitle'] }}</p>
+                                        <p class="mt-0.5 text-[11px] text-[#94A3B8]">{{ $item['code'] }} · {{ $item['student_id'] }} · {{ $item['accession'] }}</p>
+                                    </div>
+                                    <button type="button"
+                                            @click="open = false; $dispatch('set-search-value', { code: '{{ $item['code'] }}' })"
+                                            class="h-8 shrink-0 rounded-xl border border-[#102B70] px-4 text-xs font-bold text-[#102B70] transition-colors hover:bg-[#102B70] hover:text-white">
+                                        Select Reservation
+                                    </button>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
                 <!-- Books Group -->
                 @if($booksList->isNotEmpty())
                     <div class="flex flex-col gap-2 {{ $membersList->isNotEmpty() ? 'mt-1' : '' }}">
@@ -309,9 +345,10 @@
                 @endif
 
                 <!-- Lazy Loading / Load More Results Action -->
-                @if(($activeTab === 'all' && ($memberCount > $perPage || $bookCount > $perPage)) ||
+                @if(($activeTab === 'all' && ($memberCount > $perPage || $bookCount > $perPage || $reservationCount > $perPage)) ||
                     ($activeTab === 'members' && $memberCount > $perPage) ||
-                    ($activeTab === 'books' && $bookCount > $perPage))
+                    ($activeTab === 'books' && $bookCount > $perPage) ||
+                    ($activeTab === 'reservations' && $reservationCount > $perPage))
                     <div class="flex justify-center mt-2 shrink-0">
                         <button type="button"
                                 wire:click="loadMore"
@@ -329,7 +366,7 @@
                 <!-- Empty States -->
                 @if(strlen(trim($searchQuery)) >= 2 && count($results) === 0)
                     <div class="py-12 text-center text-xs text-[#64748B] font-semibold bg-[#F8FAFC]/50 border border-dashed border-[#E2E8F0] rounded-2xl">
-                        No members or books found matching "{{ $searchQuery }}".
+                        No students, books, or pending reservations found matching "{{ $searchQuery }}".
                     </div>
                 @elseif(strlen(trim($searchQuery)) < 2)
                     <div class="py-12 text-center text-xs text-[#94A3B8] font-semibold bg-[#F8FAFC]/50 border border-dashed border-[#E2E8F0] rounded-2xl">
