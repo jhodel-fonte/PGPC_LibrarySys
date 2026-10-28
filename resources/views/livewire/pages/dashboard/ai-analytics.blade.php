@@ -32,7 +32,7 @@
                         'bg-[#3B82F6]' => $evaluation['available'],
                         'bg-[#EF4444]' => ! $evaluation['available'],
                     ])></span>
-                    {{ $evaluation['available'] ? 'Live' : 'Offline' }} · checked {{ $checkedAt->format('M j, g:i A') }}
+                    {{ $evaluation['available'] ? 'Live' : 'Unavailable' }} · checked {{ $checkedAt->format('M j, g:i A') }}
                 </span>
                 <button
                     type="button"
@@ -67,6 +67,26 @@
                 </div>
             </div>
         @endunless
+
+        {{-- Evaluation trend --}}
+        @if($evaluationTrend['labels'] && $evaluationTrend['series'])
+            <section class="rounded-2xl border border-[#E2E8F0] bg-white p-5 sm:p-6">
+                <div class="mb-4">
+                    <h2 class="text-sm font-bold text-[#0F172A]">Evaluation trend</h2>
+                    <p class="mt-1 text-xs text-[#64748B]">How the saved model metrics changed over time.</p>
+                </div>
+                <x-widget.graph.main
+                    :series="$evaluationTrend['series']"
+                    :labels="$evaluationTrend['labels']"
+                    :colors="['#102B70', '#3B82F6', '#D39B00', '#64748B', '#0F766E', '#B45309']"
+                    line
+                    compact
+                    grid
+                    legend
+                    height="280"
+                />
+            </section>
+        @endif
 
         {{-- Current metrics --}}
         <section wire:loading.class="opacity-60" wire:target="refreshEvaluation" class="transition-opacity">
@@ -188,4 +208,11 @@
             @endif
         </section>
     </div>
+
+    <script>
+        console.log('[ML API Evaluation]', @js($evaluation));
+        window.addEventListener('ml-api-evaluation', (event) => {
+            console.log('[ML API Evaluation (Refreshed)]', event.detail?.result ?? event.detail);
+        });
+    </script>
 </div>

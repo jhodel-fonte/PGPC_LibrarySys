@@ -363,6 +363,8 @@ class Book extends Component
      * Persist only authenticated views and ask the ML service for that patron's
      * recommendations. Guests continue to receive the public related-books row.
      */
+    public ?array $mlApiDebug = null;
+
     protected function loadPersonalRecommendations(?string $isbn): void
     {
         if (! Auth::check() || ! is_string($isbn) || trim($isbn) === '') {
@@ -374,6 +376,8 @@ class Book extends Component
             return;
         }
 
+        $service = app(RecommendationService::class);
+
         try {
             UserHistory::upsertHighestRating(
                 (int) $account->getKey(),
@@ -383,7 +387,14 @@ class Book extends Component
 
             $stored = $account->recommendation;
             if (! $stored || ! $stored->generated_at || $stored->generated_at->lt(now()->subHours(6))) {
-                $stored = app(RecommendationService::class)->refreshFor($account);
+                $stored = $service->refreshFor($account);
+                $this->mlApiDebug = $service->getLastRecommendDebug();
+            } else {
+                $this->mlApiDebug = [
+                    'source' => 'cached_user_recommendations',
+                    'generated_at' => $stored->generated_at?->toIso8601String(),
+                    'isbns' => $stored->isbns ?? [],
+                ];
             }
 
             $this->personalRecommendations = $stored->getActiveBooks()
@@ -394,6 +405,10 @@ class Book extends Component
                 ->all();
         } catch (\RuntimeException $exception) {
             report($exception);
+            $this->mlApiDebug = $service->getLastRecommendDebug() ?? [
+                'available' => false,
+                'error' => $exception->getMessage(),
+            ];
             $this->recommendationError = 'Personalized recommendations are temporarily unavailable.';
         }
     }

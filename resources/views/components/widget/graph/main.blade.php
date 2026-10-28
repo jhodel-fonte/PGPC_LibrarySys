@@ -19,6 +19,7 @@
     'prefix' => '',
     'suffix' => '',
     'svgWidth' => 780,
+    'compact' => false,
 ])
 
 @php
@@ -303,6 +304,7 @@
             :height="$renderHeight" 
             :svgWidth="$svgWidth" 
             :suffix="$suffix" 
+            :compact="$compact"
         />
     @else
         <x-widget.graph.line 
