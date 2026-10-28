@@ -103,12 +103,13 @@
                         $itemDesc = $item['desc'] ?? null;
                         $itemBadge = $item['badge'] ?? null;
                         $isExternal = str_starts_with($itemUrl, 'http://') || str_starts_with($itemUrl, 'https://');
-                        $isItemActive = ($item['active'] ?? false) || (!empty($item['url']) && $item['url'] !== '#' && (request()->url() === $itemUrl || request()->fullUrl() === $itemUrl));
+                        $isLoggedIn = auth()->check();
+                        $targetUrl = ($isExternal && !$isLoggedIn) ? route('online-resources.access', ['url' => $itemUrl]) : $itemUrl;
                     @endphp
                     <a
-                        href="{{ $itemUrl }}"
-                        @if ($isExternal) target="_blank" rel="noopener noreferrer" @endif
-                        class="group/item relative flex items-start justify-between gap-3 rounded-xl p-2.5 transition-all duration-150 {{ $isItemActive ? 'bg-white text-[#102B70] font-semibold shadow-sm' : 'hover:bg-white/10 text-white' }}"
+                        href="{{ $targetUrl }}"
+                        @if ($isExternal && $isLoggedIn) target="_blank" rel="noopener noreferrer" @endif
+                        class="group/item flex items-start justify-between gap-3 rounded-xl p-2.5 transition-all duration-150 hover:bg-white/10"
                     >
                         <div class="flex-1">
                             <div class="flex items-center gap-2 text-[13.5px] font-semibold transition-colors {{ $isItemActive ? 'text-[#102B70]' : 'text-white group-hover/item:text-[#FCC719]' }}">

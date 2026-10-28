@@ -20,6 +20,24 @@ Route::redirect('/terms-and-conditions', '/terms');
 Route::redirect('/terms-of-service', '/terms');
 Route::redirect('/privacy-policy', '/privacy');
 
+// Online Resources Access Gateway (Validates Patron Authentication)
+Route::get('/online-resources/access', function (\Illuminate\Http\Request $request) {
+    $targetUrl = $request->query('url');
+
+    if (!auth()->check()) {
+        if ($targetUrl && filter_var($targetUrl, FILTER_VALIDATE_URL)) {
+            session()->put('url.intended', $targetUrl);
+        }
+        return redirect()->route('login')->with('warning', 'Please sign in to access university online research resources.');
+    }
+
+    if (!$targetUrl || !filter_var($targetUrl, FILTER_VALIDATE_URL)) {
+        return redirect()->to(url('/#online-resources'));
+    }
+
+    return redirect()->away($targetUrl);
+})->name('online-resources.access');
+
 
 Route::middleware(['auth', 'verified', 'role:Admin'])->prefix('admin')->name('admin.')->group(function () {
 

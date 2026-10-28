@@ -27,7 +27,7 @@ class Settings extends Component
                 'library_name' => config('settings.college.name', 'Padre Garcia Polytechnic College') . ' - Library',
                 'email' => 'library@pgpc.edu.ph',
                 'phone' => '(043) 515-8123 / +63 912 345 6789',
-                'address' => config('settings.library_config.location', config('settings.college.address', 'Main Building, 2nd Floor Library')),
+                'address' => config('settings.library_config.location') ?? config('settings.library_location') ?? config('settings.college.library_address'),
                 'timezone' => 'Asia/Manila (GMT+8)',
                 'operating_hours' => [
                     'monday' => ['status' => 'Open', 'opens' => '08:00', 'closes' => '17:00'],
