@@ -88,7 +88,7 @@
                         <!-- Pickup Window Banner -->
                         <div class="p-3 rounded-xl border {{ $rIsDueSoon ? 'border-amber-200 bg-amber-50/70' : 'border-slate-200 bg-white' }} flex items-center justify-between text-sm">
                             <div class="flex items-center gap-2">
-                                <svg class="w-4.5 h-4.5 {{ $rIsDueSoon ? 'text-amber-600' : 'text-slate-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                <svg class="w-4 h-4 {{ $rIsDueSoon ? 'text-amber-600' : 'text-slate-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                 <span class="font-medium text-slate-700">Claim Deadline:</span>
                             </div>
                             <span class="font-bold {{ $rIsDueSoon ? 'text-amber-700 font-extrabold' : 'text-[#102B70]' }}">

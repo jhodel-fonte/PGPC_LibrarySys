@@ -23,7 +23,7 @@
                         wire:navigate
                         class="h-11 px-5 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white text-base font-bold backdrop-blur-xs transition-all flex items-center gap-2 cursor-pointer"
                     >
-                        <svg class="w-4.5 h-4.5 text-[#FCC719]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                        <svg class="w-4 h-4 text-[#FCC719]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
                         <span>My Profile</span>
                         @if($activeCount > 0)
                             <span class="ml-1 px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-[#FCC719] text-[#102B70]">
@@ -152,11 +152,8 @@
                         <button
                             type="button"
                             wire:click="openReservationModal({{ $item->id }})"
-                            class="w-full h-11 rounded-xl bg-[#102B70] hover:bg-[#0B225E] text-white text-base font-bold shadow-xs hover:shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
+                            class="w-full h-11 rounded-xl bg-[#102B70] hover:bg-[#0B225E] text-white text-base font-bold shadow-xs hover:shadow-md transition-all flex items-center justify-center cursor-pointer active:scale-[0.98]"
                         >
-                            <svg class="w-4.5 h-4.5 text-[#FCC719]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
-                            </svg>
                             <span>Reserve This Book</span>
                         </button>
                     </div>

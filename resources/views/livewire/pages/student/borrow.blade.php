@@ -13,7 +13,7 @@
                 
                 <div class="flex items-center gap-2">
                     <a href="{{ route('opac.index') }}" class="h-11 px-5 bg-[#102B70] hover:bg-[#0B225E] text-white text-sm font-bold rounded-xl transition-colors flex items-center gap-2 shadow-xs shrink-0">
-                        <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
                         Browse Catalog (OPAC)
@@ -83,7 +83,7 @@
                         class="w-full h-11 pl-10 pr-4 text-sm font-medium text-slate-800 bg-white border border-[#E2E8F0] rounded-xl focus:outline-none focus:border-[#102B70] focus:ring-2 focus:ring-[#EFF6FF] placeholder:text-slate-400"
                     />
                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                        <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
                     </div>

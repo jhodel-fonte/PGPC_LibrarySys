@@ -251,7 +251,10 @@ class StudentDetail extends Component
         }
 
         return \App\Models\Book::with(['bookDetail.bookData.authors'])
+            ->whereNull('deleted_at')
             ->where('status', 'available')
+            ->whereNotIn(\Illuminate\Support\Facades\DB::raw('LOWER(status)'), ['disabled', 'archived'])
+            ->whereHas('bookDetail', fn($bd) => $bd->whereNull('deleted_at')->whereHas('bookData', fn($b) => $b->whereNull('deleted_at')))
             ->where(function ($q) use ($term) {
                 $q->where('accession_number', 'like', "%{$term}%")
                   ->orWhereHas('bookDetail.bookData', function ($b) use ($term) {

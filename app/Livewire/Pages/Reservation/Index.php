@@ -82,16 +82,22 @@ class Index extends Component
     public function catalogBooks()
     {
         $query = BookDetail::query()
+            ->whereNull('deleted_at')
+            ->whereHas('bookData', fn($q) => $q->whereNull('deleted_at'))
             ->with([
                 'bookData.authors',
                 'bookData.categories',
                 'publisher',
                 'books' => function ($q) {
-                    $q->where('status', 'available');
+                    $q->whereNull('deleted_at')
+                      ->where('status', 'available')
+                      ->whereNotIn(DB::raw('LOWER(status)'), ['disabled', 'archived']);
                 },
             ])
             ->whereHas('books', function ($q) {
-                $q->where('status', 'available');
+                $q->whereNull('deleted_at')
+                  ->where('status', 'available')
+                  ->whereNotIn(DB::raw('LOWER(status)'), ['disabled', 'archived']);
             });
 
         // 1. Search Query
@@ -133,14 +139,24 @@ class Index extends Component
             'bookData.authors',
             'bookData.categories',
             'publisher',
-            'books' => fn($q) => $q->where('status', 'available'),
-        ])->find($this->selectedBookDetailId);
+            'books' => fn($q) => $q->whereNull('deleted_at')
+                ->where('status', 'available')
+                ->whereNotIn(DB::raw('LOWER(status)'), ['disabled', 'archived']),
+        ])
+        ->whereNull('deleted_at')
+        ->whereHas('bookData', fn($q) => $q->whereNull('deleted_at'))
+        ->find($this->selectedBookDetailId);
     }
 
     public function openReservationModal(int $bookDetailId): void
     {
         $this->selectedBookDetailId = $bookDetailId;
-        $detail = BookDetail::with(['books' => fn($q) => $q->where('status', 'available')])->find($bookDetailId);
+        $detail = BookDetail::with(['books' => fn($q) => $q->whereNull('deleted_at')
+            ->where('status', 'available')
+            ->whereNotIn(DB::raw('LOWER(status)'), ['disabled', 'archived'])])
+            ->whereNull('deleted_at')
+            ->whereHas('bookData', fn($q) => $q->whereNull('deleted_at'))
+            ->find($bookDetailId);
         $firstAvailableCopy = $detail?->books->first();
 
         $this->selectedBookCopyId = $firstAvailableCopy?->id;

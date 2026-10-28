@@ -45,7 +45,7 @@
                     wire:click="openReserveModal"
                     class="h-11 px-5 sm:px-6 rounded-2xl bg-[#102B70] hover:bg-[#0B225E] text-white text-base font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#EFF6FF]"
                 >
-                    <svg class="w-4.5 h-4.5 text-[#FCC719]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                    <svg class="w-4 h-4 text-[#FCC719]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
                     </svg>
                     <span>Reserve a Book</span>
@@ -56,7 +56,7 @@
                     wire:navigate
                     class="h-11 px-5 sm:px-6 rounded-2xl border border-[#CBD5E1] bg-white hover:bg-slate-50 hover:border-[#102B70] text-[#102B70] text-base font-bold transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#102B70]"
                 >
-                    <svg class="w-4.5 h-4.5 text-[#102B70]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <svg class="w-4 h-4 text-[#102B70]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
                     </svg>
                     <span>Browse Catalog</span>
@@ -70,7 +70,7 @@
                     wire:click="openReserveModal"
                     class="h-11 px-4 sm:px-5 rounded-2xl bg-[#102B70] hover:bg-[#0B225E] text-white text-sm font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#EFF6FF]"
                 >
-                    <svg class="w-4.5 h-4.5 text-[#FCC719]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                    <svg class="w-4 h-4 text-[#FCC719]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
                     </svg>
                     <span>Reserve Book for Student</span>
@@ -119,7 +119,7 @@
                 class="group inline-flex items-center gap-2 py-3.5 px-3 sm:px-4 text-sm sm:text-base font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap"
                 :class="activeTab === 'overview' ? 'border-[#102B70] text-[#102B70]' : 'border-transparent text-slate-500 hover:text-[#102B70] hover:border-slate-300'"
             >
-                <svg class="w-4.5 h-4.5 transition-colors" :class="activeTab === 'overview' ? 'text-[#102B70]' : 'text-slate-400 group-hover:text-[#102B70]'" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <svg class="w-5 h-5 transition-colors" :class="activeTab === 'overview' ? 'text-[#102B70]' : 'text-slate-400 group-hover:text-[#102B70]'" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
                 </svg>
                 <span>Overview</span>
@@ -132,7 +132,7 @@
                 class="group inline-flex items-center gap-2 py-3.5 px-3 sm:px-4 text-sm sm:text-base font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap"
                 :class="activeTab === 'personal' ? 'border-[#102B70] text-[#102B70]' : 'border-transparent text-slate-500 hover:text-[#102B70] hover:border-slate-300'"
             >
-                <svg class="w-4.5 h-4.5 transition-colors" :class="activeTab === 'personal' ? 'text-[#102B70]' : 'text-slate-400 group-hover:text-[#102B70]'" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <svg class="w-5 h-5 transition-colors" :class="activeTab === 'personal' ? 'text-[#102B70]' : 'text-slate-400 group-hover:text-[#102B70]'" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
                 </svg>
                 <span>Personal Information</span>
@@ -145,7 +145,7 @@
                 class="group inline-flex items-center gap-2 py-3.5 px-3 sm:px-4 text-sm sm:text-base font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap"
                 :class="activeTab === 'account' ? 'border-[#102B70] text-[#102B70]' : 'border-transparent text-slate-500 hover:text-[#102B70] hover:border-slate-300'"
             >
-                <svg class="w-4.5 h-4.5 transition-colors" :class="activeTab === 'account' ? 'text-[#102B70]' : 'text-slate-400 group-hover:text-[#102B70]'" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <svg class="w-5 h-5 transition-colors" :class="activeTab === 'account' ? 'text-[#102B70]' : 'text-slate-400 group-hover:text-[#102B70]'" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
                 </svg>
                 <span>Account</span>
@@ -158,7 +158,7 @@
                 class="group inline-flex items-center gap-2 py-3.5 px-3 sm:px-4 text-sm sm:text-base font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap"
                 :class="activeTab === 'history' ? 'border-[#102B70] text-[#102B70]' : 'border-transparent text-slate-500 hover:text-[#102B70] hover:border-slate-300'"
             >
-                <svg class="w-4.5 h-4.5 transition-colors" :class="activeTab === 'history' ? 'text-[#102B70]' : 'text-slate-400 group-hover:text-[#102B70]'" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <svg class="w-5 h-5 transition-colors" :class="activeTab === 'history' ? 'text-[#102B70]' : 'text-slate-400 group-hover:text-[#102B70]'" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                 </svg>
                 <span>Circulation History</span>
@@ -171,7 +171,7 @@
                 class="group inline-flex items-center gap-2 py-3.5 px-3 sm:px-4 text-sm sm:text-base font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap"
                 :class="activeTab === 'reservations' ? 'border-[#102B70] text-[#102B70]' : 'border-transparent text-slate-500 hover:text-[#102B70] hover:border-slate-300'"
             >
-                <svg class="w-4.5 h-4.5 transition-colors" :class="activeTab === 'reservations' ? 'text-[#102B70]' : 'text-slate-400 group-hover:text-[#102B70]'" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <svg class="w-5 h-5 transition-colors" :class="activeTab === 'reservations' ? 'text-[#102B70]' : 'text-slate-400 group-hover:text-[#102B70]'" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
                 </svg>
                 <span>Reservations</span>

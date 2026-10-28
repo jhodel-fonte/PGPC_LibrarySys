@@ -140,6 +140,10 @@ class Book extends Component
             'bookData.language',
             'bookType',
             'publisher',
+            'books' => function ($q) {
+                $q->whereNull('deleted_at')
+                  ->whereNotIn(\Illuminate\Support\Facades\DB::raw('LOWER(status)'), ['disabled', 'archived']);
+            },
             'books.condition',
             'books.borrowingTransactions' => function ($q) {
                 $q->whereNull('return_date')->orderBy('due_date', 'asc');
@@ -152,19 +156,34 @@ class Book extends Component
         if (!empty($this->identifier)) {
             try {
                 // 1. Lookup by physical copy accession number
-                $copyByAccession = BookModel::where('accession_number', $this->identifier)->first();
+                $copyByAccession = BookModel::where('accession_number', $this->identifier)
+                    ->whereNull('deleted_at')
+                    ->whereNotIn(\Illuminate\Support\Facades\DB::raw('LOWER(status)'), ['disabled', 'archived'])
+                    ->first();
                 if ($copyByAccession && $copyByAccession->book_detail_id) {
-                    $record = BookDetailModel::with($eagerRelations)->find($copyByAccession->book_detail_id);
+                    $record = BookDetailModel::with($eagerRelations)
+                        ->whereNull('deleted_at')
+                        ->whereHas('bookData', fn($q) => $q->whereNull('deleted_at'))
+                        ->find($copyByAccession->book_detail_id);
                 }
 
                 // 2. Lookup by numeric ID
                 if (!$record && is_numeric($this->identifier)) {
-                    $record = BookDetailModel::with($eagerRelations)->find((int) $this->identifier);
+                    $record = BookDetailModel::with($eagerRelations)
+                        ->whereNull('deleted_at')
+                        ->whereHas('bookData', fn($q) => $q->whereNull('deleted_at'))
+                        ->find((int) $this->identifier);
 
                     if (!$record) {
-                        $copyById = BookModel::find((int) $this->identifier);
+                        $copyById = BookModel::where('id', (int) $this->identifier)
+                            ->whereNull('deleted_at')
+                            ->whereNotIn(\Illuminate\Support\Facades\DB::raw('LOWER(status)'), ['disabled', 'archived'])
+                            ->first();
                         if ($copyById && $copyById->book_detail_id) {
-                            $record = BookDetailModel::with($eagerRelations)->find($copyById->book_detail_id);
+                            $record = BookDetailModel::with($eagerRelations)
+                                ->whereNull('deleted_at')
+                                ->whereHas('bookData', fn($q) => $q->whereNull('deleted_at'))
+                                ->find($copyById->book_detail_id);
                             $copyByAccession = $copyById;
                         }
                     }
@@ -173,6 +192,8 @@ class Book extends Component
                 // 3. Lookup by ISBN or Call Number
                 if (!$record) {
                     $record = BookDetailModel::with($eagerRelations)
+                        ->whereNull('deleted_at')
+                        ->whereHas('bookData', fn($q) => $q->whereNull('deleted_at'))
                         ->where(function ($q) {
                             $q->where('isbn', $this->identifier)
                               ->orWhere('call_number', $this->identifier);
@@ -184,19 +205,22 @@ class Book extends Component
             }
         }
 
-        // 4. Fallback if not found
-        if (!$record) {
-            try {
-                $record = BookDetailModel::with($eagerRelations)->first();
-            } catch (\Throwable $e) {
-                // Ignore
-            }
+        // Abort 404: do not show soft-deleted or non-existent books
+        if (!$record || $record->trashed()) {
+            abort(404, 'The requested book is unavailable or has been removed from the catalog.');
         }
 
         if ($record && $record->bookData) {
             $this->bookDetailId = $record->id;
             $bdata = $record->bookData;
-            $copies = $record->books ?: collect();
+            $copies = $record->books ? $record->books->filter(function ($c) {
+                return !$c->trashed() && !in_array(strtolower($c->status ?? ''), ['disabled', 'archived']);
+            }) : collect();
+
+            if ($copies->isEmpty()) {
+                abort(404, 'No active copies are currently available for this book.');
+            }
+
             $totalCopies = $copies->count();
             $availableCopies = $copies->filter(fn($c) => strtolower($c->status ?? '') === 'available')->count();
             $firstAvail = $copies->first(fn($c) => strtolower($c->status ?? '') === 'available');
@@ -336,13 +360,30 @@ class Book extends Component
         }
 
         try {
-            $current = BookDetailModel::with('bookData.categories')->find($this->bookDetailId);
+            $current = BookDetailModel::with('bookData.categories')
+                ->whereNull('deleted_at')
+                ->find($this->bookDetailId);
             $catIds = $current?->bookData?->categories?->pluck('id')->filter()->toArray() ?? [];
+
+            $activeBooksScope = function ($query) {
+                $query->whereNull('deleted_at')
+                    ->whereHas('bookData', fn($q) => $q->whereNull('deleted_at'))
+                    ->whereHas('books', function ($q) {
+                        $q->whereNull('deleted_at')
+                          ->whereNotIn(\Illuminate\Support\Facades\DB::raw('LOWER(status)'), ['disabled', 'archived']);
+                    });
+            };
+
+            $copiesScope = function ($q) {
+                $q->whereNull('deleted_at')
+                  ->whereNotIn(\Illuminate\Support\Facades\DB::raw('LOWER(status)'), ['disabled', 'archived']);
+            };
 
             // 1. Primary Query: Books sharing the same category/categories
             $similar = collect();
             if (!empty($catIds)) {
-                $similar = BookDetailModel::with(['bookData.authors', 'bookData.categories', 'bookType', 'books'])
+                $similar = BookDetailModel::with(['bookData.authors', 'bookData.categories', 'bookType', 'books' => $copiesScope])
+                    ->tap($activeBooksScope)
                     ->where('id', '!=', $this->bookDetailId)
                     ->whereHas('bookData.categories', function ($q) use ($catIds) {
                         $q->whereIn('categories.id', $catIds);
@@ -354,7 +395,8 @@ class Book extends Component
             // 2. Secondary fallback: If fewer than 6 books found by exact category, complement with same classification or book type
             if ($similar->count() < 6) {
                 $excludedIds = $similar->pluck('id')->push($this->bookDetailId)->toArray();
-                $additionalQuery = BookDetailModel::with(['bookData.authors', 'bookData.categories', 'bookType', 'books'])
+                $additionalQuery = BookDetailModel::with(['bookData.authors', 'bookData.categories', 'bookType', 'books' => $copiesScope])
+                    ->tap($activeBooksScope)
                     ->whereNotIn('id', $excludedIds);
 
                 if (!empty($current?->classification)) {
@@ -369,7 +411,8 @@ class Book extends Component
                 // 3. Fallback: Fill remaining slots if still fewer than 4 books
                 if ($similar->count() < 4) {
                     $excludedIds = $similar->pluck('id')->push($this->bookDetailId)->toArray();
-                    $fillers = BookDetailModel::with(['bookData.authors', 'bookData.categories', 'bookType', 'books'])
+                    $fillers = BookDetailModel::with(['bookData.authors', 'bookData.categories', 'bookType', 'books' => $copiesScope])
+                        ->tap($activeBooksScope)
                         ->whereNotIn('id', $excludedIds)
                         ->latest('id')
                         ->limit(10 - $similar->count())

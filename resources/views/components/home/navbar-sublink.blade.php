@@ -105,6 +105,7 @@
                         $isExternal = str_starts_with($itemUrl, 'http://') || str_starts_with($itemUrl, 'https://');
                         $isLoggedIn = auth()->check();
                         $targetUrl = ($isExternal && !$isLoggedIn) ? route('online-resources.access', ['url' => $itemUrl]) : $itemUrl;
+                        $isItemActive = !empty($item['active']) || (!empty($itemUrl) && $itemUrl !== '#' && (request()->url() === $itemUrl || request()->fullUrl() === $itemUrl));
                     @endphp
                     <a
                         href="{{ $targetUrl }}"

@@ -54,6 +54,18 @@ class OpacCatalogView extends Model
     public $timestamps = false;
 
     /**
+     * The "booted" method of the model.
+     * Enforces that disabled or soft-deleted books (titles with 0 active copies) are never shown in OPAC.
+     */
+    protected static function booted(): void
+    {
+        static::addGlobalScope('activeCopies', function (Builder $builder) {
+            $builder->whereNotNull('total_copies')
+                    ->where('total_copies', '>', 0);
+        });
+    }
+
+    /**
      * The attributes that aren't mass assignable (View is read-only).
      */
     protected $guarded = ['*'];
