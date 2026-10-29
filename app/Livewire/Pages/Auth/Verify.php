@@ -76,27 +76,44 @@ class Verify extends Component
 
         $storedPath = null;
 
-        if ($this->uploadedFile) {
-            $ext = strtolower($this->uploadedFile->getClientOriginalExtension() ?: 'jpg');
-            $filename = 'verify_' . $student->id . '_' . time() . '_' . Str::random(6) . '.' . $ext;
-            $storedPath = $this->uploadedFile->storeAs('verifications/students', $filename, 'public');
-        } elseif (! empty($this->capturedImageBase64)) {
-            if (! preg_match('/^data:image\/(jpeg|jpg|png|webp);base64,(.+)$/i', $this->capturedImageBase64, $matches)) {
-                throw ValidationException::withMessages([
-                    'uploadedFile' => 'Invalid captured camera image format. Please retake the photo.',
-                ]);
-            }
+        try {
+                if ($this->uploadedFile) {
+                    $ext = strtolower($this->uploadedFile->getClientOriginalExtension() ?: 'jpg');
+                    $filename = 'verify_' . $student->id . '_' . time() . '_' . Str::random(6) . '.' . $ext;
+                    $storedPath = $this->uploadedFile->storeAs('verifications/students', $filename, 'public');
+                } elseif (! empty($this->capturedImageBase64)) {
+                    if (! preg_match('/^data:image\/(jpeg|jpg|png|webp);base64,(.+)$/i', $this->capturedImageBase64, $matches)) {
+                        throw ValidationException::withMessages([
+                            'uploadedFile' => 'Invalid captured camera image format. Please retake the photo.',
+                        ]);
+                    }
 
-            $binary = base64_decode($matches[2], true);
-            if ($binary === false || strlen($binary) > 5 * 1024 * 1024) {
-                throw ValidationException::withMessages([
-                    'uploadedFile' => 'Captured photo exceeds the 5MB size limit. Please retake the photo.',
-                ]);
-            }
+                    $binary = base64_decode($matches[2], true);
+                    if ($binary === false || strlen($binary) > 5 * 1024 * 1024) {
+                        throw ValidationException::withMessages([
+                            'uploadedFile' => 'Captured photo exceeds the 5MB size limit. Please retake the photo.',
+                        ]);
+                    }
 
-            $ext = strtolower($matches[1]) === 'jpeg' ? 'jpg' : strtolower($matches[1]);
-            $storedPath = 'verifications/students/capture_' . $student->id . '_' . time() . '_' . Str::random(6) . '.' . $ext;
-            Storage::disk('public')->put($storedPath, $binary);
+                    $ext = strtolower($matches[1]) === 'jpeg' ? 'jpg' : strtolower($matches[1]);
+                    $storedPath = 'verifications/students/capture_' . $student->id . '_' . time() . '_' . Str::random(6) . '.' . $ext;
+                    if (! Storage::disk('public')->put($storedPath, $binary)) {
+                        throw new \RuntimeException('The uploaded photo could not be written to storage.');
+                    }
+                }
+        } catch (ValidationException $e) {
+                throw $e;
+        } catch (\Throwable $e) {
+                report($e);
+                throw ValidationException::withMessages([
+                    'uploadedFile' => 'The file could not be saved. Please try again or contact the library administrator.',
+                ]);
+        }
+
+        if (! $storedPath) {
+                throw ValidationException::withMessages([
+                    'uploadedFile' => 'The file could not be saved. Please try again or contact the library administrator.',
+                ]);
         }
 
         // Delete previous declined file if replacing after rejection
