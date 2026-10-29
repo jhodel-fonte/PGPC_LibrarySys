@@ -127,7 +127,7 @@
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-[#E2E8F0] text-[#334155]">
-                                @foreach(['actual' => ['Actual ratings', $actual], 'predicted' => ['Predicted ratings', $predicted]] as [$type, [$label, $stats]])
+                                @foreach([['Actual ratings', $actual], ['Predicted ratings', $predicted]] as [$label, $stats])
                                     @if($stats)
                                         <tr>
                                             <th class="whitespace-nowrap px-3 py-3 font-semibold text-[#0F172A]">{{ $label }}</th>
