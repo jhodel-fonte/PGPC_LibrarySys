@@ -52,6 +52,10 @@ Route::get('/account/deactivated', function () {
 Route::redirect('/account-deactivated', '/account/deactivated');
 
 Route::middleware('auth')->group(function () {
+    // Student Account Verification & Registration Status Pages
+    Route::get('/verify', \App\Livewire\Pages\Auth\Verify::class)->name('verification.upload');
+    Route::get('/registration-status', \App\Livewire\Pages\Auth\RegistrationStatus::class)->name('verification.status');
+
     Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
     Volt::route('confirm-password', 'pages.auth.confirm-password')->name('password.confirm');
 });

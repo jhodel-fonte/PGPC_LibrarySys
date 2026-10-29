@@ -26,7 +26,10 @@ class Register extends Component
             } elseif (in_array($roleName, ['headlibrarian', 'librarian'])) {
                 $this->redirect(route('librarian.dashboard'), navigate: false);
             } else {
-                $this->redirect(route('student.dashboard'), navigate: false);
+                $target = $user->isApprovedStudent()
+                    ? route('student.dashboard')
+                    : $user->getVerificationRedirectRoute();
+                $this->redirect($target, navigate: false);
             }
             return;
         }
@@ -71,7 +74,7 @@ class Register extends Component
             session()->regenerate();
             session()->forget('url.intended');
 
-            $this->redirect(route('student.dashboard'), navigate: false);
+            $this->redirect(route('verification.upload'), navigate: false);
         } catch (\Illuminate\Validation\ValidationException $e) {
             $this->dispatch('registration-failed');
             $this->dispatch('scroll-to-error');

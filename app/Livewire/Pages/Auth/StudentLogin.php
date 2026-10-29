@@ -26,7 +26,10 @@ class StudentLogin extends Component
             } elseif (in_array($roleName, ['librarian', 'headlibrarian'])) {
                 $this->redirect(route('librarian.dashboard'), navigate: false);
             } else {
-                $this->redirect(route('student.dashboard'), navigate: false);
+                $target = $user->isApprovedStudent()
+                    ? route('student.dashboard')
+                    : $user->getVerificationRedirectRoute();
+                $this->redirect($target, navigate: false);
             }
         }
     }
@@ -43,6 +46,12 @@ class StudentLogin extends Component
             Session::regenerate();
             $intended = session()->get('url.intended');
             session()->forget('url.intended');
+
+            $user = auth()->user();
+            if ($user && ! $user->isApprovedStudent()) {
+                $this->redirect($user->getVerificationRedirectRoute(), navigate: false);
+                return;
+            }
 
             if ($intended && filter_var($intended, FILTER_VALIDATE_URL)) {
                 $this->redirect($intended, navigate: false);

@@ -367,6 +367,9 @@ class CheckOutBook extends Component
     {
         $this->errorMessage = '';
         $statusName = $student->libraryStatus ? $student->libraryStatus->status : 'Active';
+        if ($student->account && method_exists($student->account, 'isApprovedStudent') && ! $student->account->isApprovedStudent()) {
+            $statusName = 'Pending Verification';
+        }
 
         $this->scannedMember = [
             'id' => $student->id,

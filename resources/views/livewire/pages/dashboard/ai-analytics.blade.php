@@ -30,9 +30,16 @@
                     <span @class([
                         'h-2 w-2 rounded-full',
                         'bg-[#3B82F6]' => $evaluation['available'],
-                        'bg-[#EF4444]' => ! $evaluation['available'],
+                        'bg-[#FCC719]' => ! $evaluation['available'] && $latestRun,
+                        'bg-[#EF4444]' => ! $evaluation['available'] && ! $latestRun,
                     ])></span>
-                    {{ $evaluation['available'] ? 'Live' : 'Unavailable' }} · checked {{ $checkedAt->format('M j, g:i A') }}
+                    @if($evaluation['available'])
+                        Live · checked {{ $checkedAt->format('M j, g:i A') }}
+                    @elseif($latestRun)
+                        Offline (Saved data) · checked {{ $checkedAt->format('M j, g:i A') }}
+                    @else
+                        Unavailable · checked {{ $checkedAt->format('M j, g:i A') }}
+                    @endif
                 </span>
                 <button
                     type="button"
@@ -59,9 +66,9 @@
                     <p class="font-semibold">{{ $evaluation['error'] }}</p>
                     <p class="mt-0.5">
                         @if($latestRun)
-                            Showing the last saved result from {{ $latestRun->evaluated_at->format('M j, Y g:i A') }}.
+                            Displaying locally saved evaluation data ({{ $history->total() }} {{ \Illuminate\Support\Str::plural('run', $history->total()) }} in history, latest evaluated {{ $latestRun->evaluated_at->format('M j, Y g:i A') }} UTC).
                         @else
-                            No saved results yet. Results appear here once the service responds.
+                            No saved results yet. Results appear here and are saved automatically once the service responds.
                         @endif
                     </p>
                 </div>
@@ -157,7 +164,8 @@
         <section class="overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white">
             <div class="flex flex-col gap-1 border-b border-[#E2E8F0] px-5 py-4 sm:flex-row sm:items-baseline sm:justify-between">
                 <h2 class="text-sm font-bold text-[#0F172A]">Evaluation history</h2>
-                <p class="text-xs text-[#64748B]">A new entry is added only when the model's results change.</p>
+                <p class="text-xs text-[#64748B]">Synced from the recommender's persistent evaluation log (newest first) and saved locally for offline access.</p>
+                <p class="text-xs text-[#64748B]">Note: Historical records and offline fallback metrics are soft data snapshots and may be inaccurate if the model has been updated.</p>
             </div>
 
             @if($history->isEmpty())

@@ -22,8 +22,8 @@ class AccountFactory extends Factory
         return [
             'role_id' => 4, // Patron / Student
             'status_id' => 1, // Active
-            'username' => fake()->unique()->userName(),
-            'email' => fake()->unique()->safeEmail(),
+            'username' => 'student_' . \Illuminate\Support\Str::lower(\Illuminate\Support\Str::random(12)),
+            'email' => \Illuminate\Support\Str::lower(\Illuminate\Support\Str::random(12)) . '@example.test',
             'is_email_verified' => true,
             'email_verified_at' => now(),
             'password_hash' => static::$password ??= \Illuminate\Support\Facades\Hash::make('password'),

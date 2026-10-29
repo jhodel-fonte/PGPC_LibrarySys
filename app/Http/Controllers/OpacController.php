@@ -125,6 +125,19 @@ class OpacController extends Controller
             return redirect()->route('login')->with('warning', 'Please sign in to reserve books.');
         }
 
+        $currentUser = Auth::user();
+        if ($currentUser && method_exists($currentUser, 'isStudent') && $currentUser->isStudent() && ! $currentUser->isApprovedStudent()) {
+            $redirectUrl = $currentUser->getVerificationRedirectRoute();
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success'  => false,
+                    'message'  => 'Your account is awaiting verification. Book reservations are disabled until a librarian approves your account.',
+                    'redirect' => $redirectUrl,
+                ], 403);
+            }
+            return redirect()->to($redirectUrl)->with('warning', 'Please complete account verification before reserving books.');
+        }
+
         try {
             $reservation = DB::transaction(function () use ($bookId) {
                 // Bug fix #7: OPAC passes book_detail_id — resolve an available copy via BookDetail

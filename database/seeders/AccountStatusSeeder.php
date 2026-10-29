@@ -36,6 +36,11 @@ class AccountStatusSeeder extends Seeder
                 'status_name' => 'Pending',
                 'description' => 'Account is awaiting email verification or admin approval.',
             ],
+            [
+                'id' => 5,
+                'status_name' => 'Not Approved',
+                'description' => 'Verification document was not approved and requires resubmission.',
+            ],
         ];
 
         $data = array_map(function ($status) use ($now) {

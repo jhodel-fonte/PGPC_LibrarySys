@@ -60,6 +60,10 @@ class Book extends Component
         if (!Auth::check()) {
             return redirect()->route('login');
         }
+        $user = Auth::user();
+        if ($user && method_exists($user, 'isStudent') && $user->isStudent() && !$user->isApprovedStudent()) {
+            return redirect()->to($user->getVerificationRedirectRoute());
+        }
         $this->reserveStatus = null;
         $this->reservationModalOpen = true;
     }
@@ -74,6 +78,10 @@ class Book extends Component
     {
         if (!Auth::check()) {
             return redirect()->route('login');
+        }
+        $user = Auth::user();
+        if ($user && method_exists($user, 'isStudent') && $user->isStudent() && !$user->isApprovedStudent()) {
+            return redirect()->to($user->getVerificationRedirectRoute());
         }
 
         $this->reserveStatus = 'loading';
@@ -517,7 +525,7 @@ class Book extends Component
                     $availableCopies = $copies->filter(fn($c) => strtolower($c->status ?? '') === 'available')->count();
                     $firstCopy = $copies->first();
                     $accNo = $firstCopy?->accession_number;
-                    $primaryCat = $data?->categories?->first()?->name 
+                    $primaryCat = $data?->categories?->first()?->name
                         ?: ($item->classification ?: ($item->bookType ? $item->bookType->name : 'General'));
 
                     return [

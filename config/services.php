@@ -53,11 +53,12 @@ return [
     ],
 
     'recommender' => [
-        'url' => env('ML_RECOMMENDER_URL', 'http://127.0.0.1:5002'),
+        'url' => env('ML_RECOMMENDER_URL', 'http://127.0.0.1:8005'),
         'container_url' => env('ML_RECOMMENDER_CONTAINER_URL', 'http://recommender-api:5000'),
         'key' => env('ML_API_KEY', env('API_KEY')),
         'timeout' => env('ML_REQUEST_TIMEOUT_SECONDS', 30),
         'evaluation_path' => env('ML_EVALUATION_PATH', '/api/metrics'),
+        'evaluation_history_path' => env('ML_EVALUATION_HISTORY_PATH', '/api/metrics/history'),
     ],
 
 ];

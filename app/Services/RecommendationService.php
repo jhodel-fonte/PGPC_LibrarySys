@@ -122,18 +122,18 @@ class RecommendationService
     }
 
     /**
-     * Read the recommender's evaluation snapshot for the admin analytics page.
+     * Read the recommender's evaluation snapshot and persistent history for the admin analytics page.
      *
-     * The endpoint is intentionally read-only and returns a normalized shape so
-     * the dashboard remains stable when the model service adds extra fields.
-     * Every successful read is saved to `ml_evaluation_runs` so the page can
-     * show a history, and fall back to the last saved result when offline.
+     * Syncs all evaluation runs from `GET /api/metrics/history` (`model_metrics_history.jsonl`)
+     * as well as the latest snapshot from `GET /api/metrics` (`model_metrics.json`) into
+     * `ml_evaluation_runs` (and a local JSON fallback) so the dashboard always has saved data
+     * even when the ML service is offline.
      *
-     * @return array{available: bool, metrics: array<string, float>, checked_at: string, error: ?string}
+     * @return array<string, mixed>
      */
     public function evaluation(): array
     {
-        return Cache::remember('recommender:evaluation', now()->addSeconds(60), function (): array {
+        return Cache::remember($this->evaluationCacheKey(), now()->addSeconds(60), function (): array {
             return $this->fetchEvaluation();
         });
     }
@@ -141,86 +141,209 @@ class RecommendationService
     public function clearEvaluationCache(): void
     {
         Cache::forget('recommender:evaluation');
+        Cache::forget($this->evaluationCacheKey());
+    }
+
+    protected function evaluationCacheKey(): string
+    {
+        $metricsEndpoint = $this->endpoint((string) config('services.recommender.evaluation_path', '/api/metrics'));
+        $historyEndpoint = $this->endpoint((string) config('services.recommender.evaluation_history_path', '/api/metrics/history'));
+
+        return 'recommender:evaluation:' . md5($metricsEndpoint . '|' . $historyEndpoint);
     }
 
     protected function fetchEvaluation(): array
     {
         $checkedAt = now()->toIso8601String();
         $endpointUrl = $this->endpoint((string) config('services.recommender.evaluation_path', '/api/metrics'));
+        $historyEndpointUrl = $this->endpoint((string) config('services.recommender.evaluation_history_path', '/api/metrics/history'));
+
+        $metricsResponse = null;
+        $historyResponse = null;
+        $connectionError = null;
 
         try {
-            $response = $this->client()
+            $metricsResponse = $this->client()
                 ->connectTimeout(1)
-                ->timeout(2)
+                ->timeout(3)
                 ->get($endpointUrl);
         } catch (ConnectionException $exception) {
             report($exception);
-
-            return $this->unavailableEvaluation(
-                'The recommendation service could not be reached.',
-                $checkedAt,
-                $endpointUrl,
-                null,
-                ['exception' => $exception->getMessage()]
-            );
+            $connectionError = 'The recommendation service could not be reached.';
         } catch (Throwable $exception) {
             report($exception);
-
-            return $this->unavailableEvaluation(
-                'The recommendation service is temporarily unavailable.',
-                $checkedAt,
-                $endpointUrl,
-                null,
-                ['exception' => $exception->getMessage()]
-            );
-        }
-
-        if (! $response->successful()) {
-            report(new RuntimeException('Recommendation evaluation failed with HTTP '.$response->status().'.'));
-
-            return $this->unavailableEvaluation(
-                $response->status() === 404
-                    ? 'The recommender is reachable, but its configured evaluation endpoint was not found.'
-                    : ($response->status() === 401
-                        ? 'The recommender rejected the API key. Check the Laravel and recommender API key configuration.'
-                        : 'The recommendation service is temporarily unavailable.'),
-                $checkedAt,
-                $endpointUrl,
-                $response->status(),
-                $response->json() ?? $response->body()
-            );
-        }
-
-        $payload = $response->json();
-        $payload = is_array($payload) ? $payload : [];
-        $metrics = $this->normalizeMetrics(is_array($payload['metrics'] ?? null) ? $payload['metrics'] : $payload);
-
-        if ($metrics === []) {
-            return $this->unavailableEvaluation(
-                'The recommendation service responded without any evaluation metrics.',
-                $checkedAt,
-                $endpointUrl,
-                $response->status(),
-                $payload ?: $response->body()
-            );
+            $connectionError = 'The recommendation service is temporarily unavailable.';
         }
 
         try {
-            MlEvaluationRun::record($metrics, $payload);
+            $historyResponse = $this->client()
+                ->connectTimeout(1)
+                ->timeout(3)
+                ->get($historyEndpointUrl);
         } catch (Throwable $exception) {
-            // Never break the dashboard because the history could not be written.
             report($exception);
+            if ($connectionError === null) {
+                $connectionError = 'The recommendation service could not be reached.';
+            }
         }
 
-        return [
-            'available' => true,
-            'endpoint' => $endpointUrl,
-            'status' => $response->status(),
-            'raw' => $payload,
-            'metrics' => $metrics,
-            'checked_at' => $checkedAt,
-            'error' => null,
-        ];
+        $historyPayload = $historyResponse && $historyResponse->successful() ? $historyResponse->json() : null;
+        $historyEntries = $this->extractHistoryEntries($historyPayload);
+        $syncedRunsCount = 0;
+        $latestHistoryMetrics = [];
+        $latestHistoryEvaluatedAt = null;
+
+        if ($historyEntries !== []) {
+            // `/api/metrics/history` returns newest evaluations first; sync oldest-to-newest.
+            $chronologicalEntries = array_reverse($historyEntries);
+            $lastIndex = count($chronologicalEntries) - 1;
+
+            foreach ($chronologicalEntries as $idx => $entry) {
+                $entryMetrics = $this->normalizeMetrics(is_array($entry['metrics'] ?? null) ? $entry['metrics'] : $entry);
+                if ($entryMetrics === []) {
+                    continue;
+                }
+
+                $entryEvaluatedAt = $entry['evaluated_at']
+                    ?? $entry['timestamp']
+                    ?? $entry['created_at']
+                    ?? ($entry['metrics']['evaluated_at'] ?? null);
+
+                try {
+                    $shouldBump = ($idx === $lastIndex) && (! $metricsResponse || ! $metricsResponse->successful());
+                    MlEvaluationRun::record($entryMetrics, $entry, $entryEvaluatedAt, bumpCheck: $shouldBump);
+                    $syncedRunsCount++;
+                } catch (Throwable $exception) {
+                    report($exception);
+                }
+
+                if ($idx === $lastIndex) {
+                    $latestHistoryMetrics = $entryMetrics;
+                    $latestHistoryEvaluatedAt = $entryEvaluatedAt;
+                }
+            }
+        }
+
+        $metricsPayload = $metricsResponse && $metricsResponse->successful() ? $metricsResponse->json() : null;
+        $metricsPayload = is_array($metricsPayload) ? $metricsPayload : [];
+        $liveMetrics = $metricsPayload !== []
+            ? $this->normalizeMetrics(is_array($metricsPayload['metrics'] ?? null) ? $metricsPayload['metrics'] : $metricsPayload)
+            : [];
+        $liveEvaluatedAt = $metricsPayload['evaluated_at']
+            ?? $metricsPayload['timestamp']
+            ?? ($metricsPayload['metrics']['evaluated_at'] ?? null)
+            ?? $latestHistoryEvaluatedAt;
+
+        if ($liveMetrics !== []) {
+            try {
+                MlEvaluationRun::record($liveMetrics, $metricsPayload, $liveEvaluatedAt, bumpCheck: true);
+                $syncedRunsCount = max(1, $syncedRunsCount);
+            } catch (Throwable $exception) {
+                report($exception);
+            }
+        }
+
+        $resolvedMetrics = $liveMetrics !== [] ? $liveMetrics : $latestHistoryMetrics;
+
+        if ($resolvedMetrics !== []) {
+            MlEvaluationRun::saveLocalFallback();
+
+            return [
+                'available' => true,
+                'endpoint' => $endpointUrl,
+                'history_endpoint' => $historyEndpointUrl,
+                'status' => $metricsResponse?->status(),
+                'history_status' => $historyResponse?->status(),
+                'evaluated_at' => $liveEvaluatedAt,
+                'synced_runs' => $syncedRunsCount,
+                'raw' => $metricsPayload ?: ($metricsResponse?->json() ?? $metricsResponse?->body()),
+                'raw_history' => $historyPayload ?? ($historyResponse?->json() ?? $historyResponse?->body()),
+                'metrics' => $resolvedMetrics,
+                'checked_at' => $checkedAt,
+                'fallback_available' => true,
+                'error' => null,
+            ];
+        }
+
+        // Neither endpoint returned live metrics — ensure local fallback is restored into DB if needed.
+        MlEvaluationRun::restoreFromLocalFallbackIfEmpty();
+
+        if ($metricsResponse === null && $historyResponse === null) {
+            return $this->unavailableEvaluation(
+                $connectionError ?? 'The recommendation service could not be reached.',
+                $checkedAt,
+                $endpointUrl,
+                null,
+                null,
+                $historyEndpointUrl,
+                null,
+                null
+            );
+        }
+
+        $status = $metricsResponse?->status() ?? $historyResponse?->status();
+        $rawBody = $metricsResponse ? ($metricsResponse->json() ?? $metricsResponse->body()) : null;
+        $rawHistoryBody = $historyResponse ? ($historyResponse->json() ?? $historyResponse->body()) : null;
+
+        if ($metricsResponse && ! $metricsResponse->successful()) {
+            report(new RuntimeException('Recommendation evaluation failed with HTTP ' . $metricsResponse->status() . '.'));
+
+            $apiErrorMsg = is_array($rawBody) && isset($rawBody['error']) && is_string($rawBody['error'])
+                ? $rawBody['error']
+                : null;
+
+            $errorMessage = match ($metricsResponse->status()) {
+                404 => $apiErrorMsg ?: 'The recommender is reachable, but its configured evaluation endpoint was not found.',
+                401, 403 => 'The recommender rejected the API key. Check the Laravel and recommender API key configuration.',
+                default => $apiErrorMsg ?: 'The recommendation service is temporarily unavailable.',
+            };
+
+            return $this->unavailableEvaluation(
+                $errorMessage,
+                $checkedAt,
+                $endpointUrl,
+                $status,
+                $rawBody,
+                $historyEndpointUrl,
+                $historyResponse?->status(),
+                $rawHistoryBody
+            );
+        }
+
+        return $this->unavailableEvaluation(
+            'The recommendation service responded without any evaluation metrics.',
+            $checkedAt,
+            $endpointUrl,
+            $status,
+            $rawBody,
+            $historyEndpointUrl,
+            $historyResponse?->status(),
+            $rawHistoryBody
+        );
+    }
+
+    /**
+     * Extract the array of history run objects from `/api/metrics/history`.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    protected function extractHistoryEntries(mixed $payload): array
+    {
+        if (! is_array($payload)) {
+            return [];
+        }
+
+        if (array_is_list($payload)) {
+            return array_values(array_filter($payload, 'is_array'));
+        }
+
+        foreach (['history', 'evaluations', 'runs', 'records', 'items', 'data', 'metrics_history'] as $key) {
+            if (isset($payload[$key]) && is_array($payload[$key]) && array_is_list($payload[$key])) {
+                return array_values(array_filter($payload[$key], 'is_array'));
+            }
+        }
+
+        return [];
     }
 
     /**
@@ -263,14 +386,33 @@ class RecommendationService
         string $checkedAt,
         ?string $endpoint = null,
         ?int $status = null,
-        mixed $raw = null
+        mixed $raw = null,
+        ?string $historyEndpoint = null,
+        ?int $historyStatus = null,
+        mixed $rawHistory = null
     ): array {
+        $latestSaved = null;
+        $savedCount = 0;
+
+        try {
+            $latestSaved = MlEvaluationRun::query()->latest('evaluated_at')->latest('id')->first();
+            $savedCount = MlEvaluationRun::query()->count();
+        } catch (Throwable) {
+            // Ignore DB lookup errors when building fallback status.
+        }
+
         return [
             'available' => false,
             'endpoint' => $endpoint,
+            'history_endpoint' => $historyEndpoint,
             'status' => $status,
+            'history_status' => $historyStatus,
             'raw' => $raw,
-            'metrics' => [],
+            'raw_history' => $rawHistory,
+            'metrics' => $latestSaved ? $latestSaved->metrics() : [],
+            'evaluated_at' => $latestSaved?->evaluated_at?->copy()->utc()->toIso8601String(),
+            'fallback_available' => $latestSaved !== null,
+            'saved_runs_count' => $savedCount,
             'checked_at' => $checkedAt,
             'error' => $error,
         ];
@@ -287,10 +429,14 @@ class RecommendationService
     {
         $url = rtrim((string) config('services.recommender.url'), '/');
         $configuredEvaluationPath = trim((string) config('services.recommender.evaluation_path', '/api/metrics'), '/');
+        $configuredHistoryPath = trim((string) config('services.recommender.evaluation_history_path', '/api/metrics/history'), '/');
         $urlPath = trim((string) parse_url($url, PHP_URL_PATH), '/');
 
-        if ($urlPath !== '' && $urlPath === $configuredEvaluationPath) {
-            $url = substr($url, 0, -strlen($urlPath) - 1);
+        foreach ([$configuredHistoryPath, $configuredEvaluationPath] as $stripPath) {
+            if ($stripPath !== '' && $urlPath === $stripPath) {
+                $url = substr($url, 0, -strlen($stripPath) - 1);
+                break;
+            }
         }
 
         if (
