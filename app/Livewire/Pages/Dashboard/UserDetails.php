@@ -182,8 +182,8 @@ class UserDetails extends Component
         $fines = Fine::where('student_id', $studentId)->get();
 
         $total = $fines->sum('amount');
-        $paid = $fines->where('status', 'paid')->sum('amount');
-        $pending = $total - $paid;
+        $paid = $fines->where('fine_status', 'paid')->sum('amount');
+        $pending = $fines->where('fine_status', 'unpaid')->sum('amount');
 
         return [
             'total' => $total,
@@ -231,7 +231,7 @@ class UserDetails extends Component
             return collect();
         }
 
-        return Fine::with(['fineType', 'borrowingTransaction.book.bookDetail.bookData'])
+        return Fine::with(['fineType', 'transaction.book.bookDetail.bookData'])
             ->where('student_id', $this->user->student->id)
             ->latest()
             ->paginate(8, ['*'], 'finesPage');

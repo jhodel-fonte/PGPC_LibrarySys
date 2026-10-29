@@ -1,191 +1,141 @@
-<div class="min-h-full bg-[#F8FAFC] pb-16 font-sans text-slate-800 selection:bg-[#102B70] selection:text-white">
-    <div class="mx-auto w-full max-w-[1360px] space-y-5 px-4 py-5 sm:px-6 lg:px-8 lg:py-6">
+<div class="bg-[#F8FAFC] flex flex-col min-h-0 flex-1 overflow-hidden font-sans text-slate-800 selection:bg-[#102B70] selection:text-white">
+    <div class="mx-auto w-full max-w-[1600px] p-3 sm:p-4 lg:p-6 relative flex flex-col gap-3 sm:gap-4 min-h-0 flex-1">
 
         <!-- ======================================================== -->
         <!-- 1. PAGE HEADER & QUICK ACTIONS                          -->
         <!-- ======================================================== -->
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-                <div>
-                    <div>
-                        <h1 class="text-xl font-semibold tracking-tight text-[#102B70]">Book Reservations</h1>
-                        <p class="mt-1 text-base text-slate-600">Manage pending requests, fulfill pickups, and track student book holds.</p>
-                    </div>
+        <div class="relative z-10 flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-start sm:justify-between lg:shrink-0">
+            <div class="flex min-w-0 items-start gap-3.5">
+                <div class="min-w-0 pl-0 sm:pl-2">
+                    <h1 class="text-xl font-bold tracking-[-0.02em] text-[#102B70] sm:text-2xl">Book Reservations</h1>
+                    <p class="mt-0.5 max-w-2xl text-xs sm:text-sm font-medium text-slate-600">Manage pending requests, fulfill pickups, and track student book holds.</p>
                 </div>
             </div>
 
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2 sm:shrink-0">
                 <button
                     type="button"
                     wire:click="openCreateModal"
-                    class="h-11 px-5 sm:px-6 rounded-xl bg-[#102B70] hover:bg-[#0B225E] text-white text-base font-semibold  transition-all flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#EFF6FF]"
+                    class="inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-[#102B70] px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#0B225E] active:translate-y-px cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70] focus-visible:ring-offset-2"
                 >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
                     <span>New Reservation</span>
                 </button>
             </div>
         </div>
 
         <!-- ======================================================== -->
-        <!-- 2. STATS SUMMARY CARDS                                   -->
+        <!-- 2. RESERVATIONS DATA TABLE (Scrollable like Book Table) -->
         <!-- ======================================================== -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
-            <!-- Total Reservations -->
-            <button
-                type="button"
-                wire:click="$set('statusFilter', 'all')"
-                class="text-left rounded-xl border p-4 bg-white transition-all cursor-pointer hover:shadow-sm {{ $statusFilter === 'all' ? 'border-[#102B70] bg-[#F8FAFC]' : 'border-[#E2E8F0]' }}"
-            >
-                <div class="mb-2 text-slate-600">
-                    <span class="text-base font-semibold uppercase tracking-wider">Total</span>
-                </div>
-                <div class="text-2xl font-extrabold text-[#102B70]">{{ number_format($stats['total']) }}</div>
-                <div class="text-sm text-slate-500 mt-1">All catalog requests</div>
-            </button>
-
-            <!-- Pending Review -->
-            <button
-                type="button"
-                wire:click="$set('statusFilter', 'pending')"
-                class="text-left rounded-xl border p-4 bg-white transition-all cursor-pointer hover:shadow-sm {{ $statusFilter === 'pending' ? 'border-[#102B70] bg-[#F8FAFC]' : 'border-[#E2E8F0]' }}"
-            >
-                <div class="mb-2 text-slate-600">
-                    <span class="text-base font-semibold uppercase tracking-wider">Pending Review</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <div class="text-2xl font-extrabold text-[#102B70]">{{ number_format($stats['pending']) }}</div>
-
-                </div>
-                <div class="text-sm text-slate-500 font-medium mt-1">Awaiting approval</div>
-            </button>
-
-            <!-- Approved / Ready for Pickup -->
-            <button
-                type="button"
-                wire:click="$set('statusFilter', 'approved')"
-                class="text-left rounded-xl border p-4 bg-white transition-all cursor-pointer hover:shadow-sm {{ $statusFilter === 'approved' ? 'border-[#102B70] bg-[#F8FAFC]' : 'border-[#E2E8F0]' }}"
-            >
-                <div class="mb-2 text-slate-600">
-                    <span class="text-base font-semibold uppercase tracking-wider">Ready for Pickup</span>
-                </div>
-                <div class="text-2xl font-extrabold text-[#102B70]">{{ number_format($stats['approved']) }}</div>
-                <div class="text-sm text-slate-500 font-medium mt-1">Reserved at desk</div>
-            </button>
-
-            <!-- Fulfilled -->
-            <button
-                type="button"
-                wire:click="$set('statusFilter', 'fulfilled')"
-                class="text-left rounded-xl border p-4 bg-white transition-all cursor-pointer hover:shadow-sm {{ $statusFilter === 'fulfilled' ? 'border-[#102B70] bg-[#F8FAFC]' : 'border-[#E2E8F0]' }}"
-            >
-                <div class="mb-2 text-slate-600">
-                    <span class="text-base font-semibold uppercase tracking-wider">Fulfilled</span>
-                </div>
-                <div class="text-2xl font-extrabold text-[#102B70]">{{ number_format($stats['fulfilled']) }}</div>
-                <div class="text-sm text-slate-500 font-medium mt-1">Checked out to borrower</div>
-            </button>
-
-            <!-- Cancelled / Expired -->
-            <button
-                type="button"
-                wire:click="$set('statusFilter', 'cancelled')"
-                class="text-left rounded-xl border p-4 bg-white transition-all cursor-pointer hover:shadow-sm  {{ in_array($statusFilter, ['cancelled', 'expired']) ? 'border-[#102B70] bg-slate-50' : 'border-[#E2E8F0]' }}"
-            >
-                <div class="mb-2 text-slate-600">
-                    <span class="text-base font-semibold uppercase tracking-wider">Cancelled / Expired</span>
-                </div>
-                <div class="text-2xl font-extrabold text-slate-700">{{ number_format($stats['cancelled']) }}</div>
-                <div class="text-sm text-slate-500 mt-1">Released copies</div>
-            </button>
-        </div>
-
-        <!-- ======================================================== -->
-        <!-- 3. SEARCH & FILTER TOOLBAR                              -->
-        <!-- ======================================================== -->
-        <div class="rounded-xl border border-[#E2E8F0] bg-white p-4  space-y-4">
-            <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <!-- Search Input: 56px height, 16px radius, left icon per design system -->
-                <div class="relative min-w-0 flex-1 md:max-w-xl">
-                    <input
-                        type="text"
-                        wire:model.live.debounce.300ms="search"
-                        placeholder="Search by student name, ID number, book title, accession number..."
-                        class="h-11 w-full rounded-xl border border-[#CBD5E1] bg-white px-3 pr-16 text-base text-[#0F172A] placeholder-slate-400 transition-colors focus:border-[#102B70] focus:outline-none focus:ring-4 focus:ring-[#EFF6FF]"
-                    >
-                    @if($search)
+        <x-widget.data-table
+            :headers="[
+                ['index' => 'id', 'label' => 'Reservation ID', 'sortable' => true, 'width' => '10%'],
+                ['index' => 'student', 'label' => 'Borrower / Student', 'width' => '16%'],
+                ['index' => 'book', 'label' => 'Requested Book', 'width' => '22%'],
+                ['index' => 'reservation_date', 'label' => 'Date Reserved', 'sortable' => true, 'width' => '11%'],
+                ['index' => 'due_date', 'label' => 'Pickup Deadline', 'sortable' => true, 'width' => '11%'],
+                ['index' => 'status', 'label' => 'Status', 'width' => '12%'],
+                ['index' => 'actions', 'label' => 'Actions', 'align' => 'right', 'width' => '18%'],
+            ]"
+            :sort="['column' => $sortColumn, 'direction' => $sortDirection]"
+            :paginator="$reservations"
+            :showSearch="true"
+            searchModel="search"
+            searchPlaceholder="Search by student name, ID number, book title, accession number..."
+            :showFilter="true"
+            :showColumns="true"
+            :activeFilterCount="$this->activeFilterCount"
+            perPageModel="perPage"
+            headerTextSize="text-xs"
+            minWidth="1100px"
+        >
+            <x-slot:toolbarLeft>
+                @php
+                    $statusTabs = [
+                        'all' => ['label' => 'All', 'count' => $stats['total'] ?? 0],
+                        'pending' => ['label' => 'Pending Review', 'count' => $stats['pending'] ?? 0],
+                        'approved' => ['label' => 'Ready for Pickup', 'count' => $stats['approved'] ?? 0],
+                        'fulfilled' => ['label' => 'Fulfilled', 'count' => $stats['fulfilled'] ?? 0],
+                        'cancelled' => ['label' => 'Cancelled / Expired', 'count' => $stats['cancelled'] ?? 0],
+                    ];
+                @endphp
+                <div class="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0" aria-label="Reservation status filters">
+                    @foreach($statusTabs as $tabKey => $tab)
+                        @php
+                            $isActive = $statusFilter === $tabKey || ($tabKey === 'cancelled' && in_array($statusFilter, ['cancelled', 'expired']));
+                        @endphp
                         <button
                             type="button"
-                            wire:click="$set('search', '')"
-                            class="absolute inset-y-0 right-0 px-3 text-base font-medium text-slate-600 hover:text-[#102B70]"
+                            wire:click="setTab('{{ $tabKey }}')"
+                            aria-pressed="{{ $isActive ? 'true' : 'false' }}"
+                            class="inline-flex shrink-0 items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors active:translate-y-px cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70] {{ $isActive ? 'bg-[#102B70] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-[#102B70]' }}"
                         >
-                        Clear</button>
-                    @endif
-                </div>
-
-                <!-- Filters -->
-                <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                    <!-- Status Filter Dropdown -->
-                    <select
-                        wire:model.live="statusFilter"
-                        class="h-11 rounded-xl border border-[#CBD5E1] bg-white px-3.5 text-base font-semibold text-[#334155] transition-all hover:border-[#102B70] focus:border-[#102B70] focus:outline-none focus:ring-2 focus:ring-[#EFF6FF] cursor-pointer"
-                    >
-                        <option value="all">All Statuses</option>
-                        <option value="pending">Pending</option>
-                        <option value="approved">Approved</option>
-                        <option value="fulfilled">Fulfilled</option>
-                        <option value="cancelled">Cancelled</option>
-                        <option value="expired">Expired</option>
-                    </select>
-
-                    <!-- Time Filter Dropdown -->
-                    <select
-                        wire:model.live="timeFilter"
-                        class="h-11 rounded-xl border border-[#CBD5E1] bg-white px-3.5 text-base font-semibold text-[#334155] transition-all hover:border-[#102B70] focus:border-[#102B70] focus:outline-none focus:ring-2 focus:ring-[#EFF6FF] cursor-pointer"
-                    >
-                        <option value="all">Any Date</option>
-                        <option value="today">Today</option>
-                        <option value="this_week">This Week</option>
-                        <option value="this_month">This Month</option>
-                    </select>
-
-                    @if($search !== '' || $statusFilter !== 'all' || $timeFilter !== 'all')
-                        <button
-                            type="button"
-                            wire:click="$set('search', ''); $set('statusFilter', 'all'); $set('timeFilter', 'all');"
-                            class="h-11 px-3.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-base font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
-                        >
-                            <span>Reset Filters</span>
+                            <span>{{ $tab['label'] }}</span>
+                            <span class="inline-flex min-w-[22px] items-center justify-center rounded px-1.5 py-0.5 text-[10px] font-bold tabular-nums {{ $isActive ? 'bg-[#071943] text-white' : 'bg-slate-100 text-slate-600' }}">{{ number_format($tab['count']) }}</span>
                         </button>
-                    @endif
+                    @endforeach
                 </div>
-            </div>
-        </div>
+            </x-slot:toolbarLeft>
 
-        <!-- ======================================================== -->
-        <!-- 4. RESERVATIONS DATA TABLE                              -->
-        <!-- ======================================================== -->
-        <div class="rounded-xl border border-[#E2E8F0] bg-white  overflow-hidden">
-            <div class="overflow-x-auto overscroll-x-contain">
-                <table class="min-w-[1040px] w-full text-left border-collapse">
-                    <thead>
-                        <tr class="border-b border-[#E2E8F0] bg-[#F8FAFC] text-sm font-bold uppercase tracking-wider text-slate-500">
-                            <th class="py-3.5 px-4 sm:px-6">Reservation ID</th>
-                            <th class="py-3.5 px-4 sm:px-6">Borrower / Student</th>
-                            <th class="py-3.5 px-4 sm:px-6">Requested Book</th>
-                            <th class="py-3.5 px-4 sm:px-6 cursor-pointer select-none group" wire:click="sortBy('reservation_date')">
-                                <div class="flex items-center">
-                                    <span>Date Reserved</span>
-                                </div>
-                            </th>
-                            <th class="py-3.5 px-4 sm:px-6 cursor-pointer select-none group" wire:click="sortBy('due_date')">
-                                <div class="flex items-center">
-                                    <span>Pickup Deadline</span>
-                                </div>
-                            </th>
-                            <th class="py-3.5 px-4 sm:px-6">Status</th>
-                            <th class="py-3.5 px-4 sm:px-6 text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-[#E2E8F0] text-base text-slate-700">
+            <x-slot:filterDropdown>
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                    <h3 class="text-sm font-bold text-[#0F172A]">Filter Options</h3>
+                    <button
+                        type="button"
+                        wire:click="clearFilters"
+                        @click="filterOpen = false"
+                        class="text-xs font-semibold text-[#102B70] hover:underline cursor-pointer"
+                    >
+                        Clear All
+                    </button>
+                </div>
+
+                <div class="py-4 space-y-3.5">
+                    <div class="grid grid-cols-3 items-center gap-2">
+                        <label for="reservation-filter-status" class="text-xs font-semibold text-slate-600">Status</label>
+                        <div class="col-span-2 relative">
+                            <select
+                                id="reservation-filter-status"
+                                wire:model.live="statusFilter"
+                                class="w-full h-9 px-3 rounded-lg border border-[#E2E8F0] bg-white text-xs font-medium text-slate-800 outline-none focus:border-[#102B70] cursor-pointer"
+                            >
+                                <option value="all">All Statuses</option>
+                                <option value="pending">Pending</option>
+                                <option value="approved">Approved</option>
+                                <option value="fulfilled">Fulfilled</option>
+                                <option value="cancelled">Cancelled</option>
+                                <option value="expired">Expired</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 items-center gap-2">
+                        <label for="reservation-filter-time" class="text-xs font-semibold text-slate-600">Date</label>
+                        <div class="col-span-2 relative">
+                            <select
+                                id="reservation-filter-time"
+                                wire:model.live="timeFilter"
+                                class="w-full h-9 px-3 rounded-lg border border-[#E2E8F0] bg-white text-xs font-medium text-slate-800 outline-none focus:border-[#102B70] cursor-pointer"
+                            >
+                                <option value="all">Any Date</option>
+                                <option value="today">Today</option>
+                                <option value="this_week">This Week</option>
+                                <option value="this_month">This Month</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2.5">
+                    <button
+                        type="button"
+                        @click="filterOpen = false"
+                        class="px-4 h-9 rounded-lg bg-[#102B70] text-xs font-bold text-white shadow-sm hover:bg-[#0B225E] transition-colors cursor-pointer"
+                    >
+                        Done
+                    </button>
+                </div>
+            </x-slot:filterDropdown>
                         @forelse($reservations as $reservation)
                             @php
                                 $statusId = (int) $reservation->reservation_status_id;
@@ -203,12 +153,12 @@
                             @endphp
                             <tr class="hover:bg-slate-50/80 transition-colors {{ $statusId === 1 ? 'bg-transparent' : '' }}">
                                 <!-- Reservation ID -->
-                                <td class="py-4 px-4 sm:px-6 whitespace-nowrap">
-                                    <span class="font-mono text-base font-semibold text-[#102B70]">#RES-{{ str_pad($reservation->id, 5, '0', STR_PAD_LEFT) }}</span>
+                                <td x-show="cols['id'] !== false" class="desktop-cell px-4 py-3 whitespace-nowrap">
+                                    <span class="text-sm font-semibold text-[#102B70]">#RES-{{ str_pad($reservation->id, 5, '0', STR_PAD_LEFT) }}</span>
                                 </td>
 
                                 <!-- Student Details -->
-                                <td class="py-4 px-4 sm:px-6">
+                                <td x-show="cols['student'] !== false" class="desktop-cell px-4 py-3 text-sm">
                                     @if($student)
                                         <div class="flex items-center gap-3">
                                             <div class="h-9 w-9 rounded-xl bg-[#EFF6FF] border border-[#DBEAFE] text-[#102B70] font-bold text-sm flex items-center justify-center shrink-0">
@@ -222,7 +172,7 @@
                                                 >
                                                     {{ $student->first_name }} {{ $student->last_name }}
                                                 </a>
-                                                <span class="text-base text-slate-500 font-mono block">{{ $student->school_id_number ?: 'No ID' }}</span>
+                                                <span class="text-xs text-slate-500 block">{{ $student->school_id_number ?: 'No ID' }}</span>
                                             </div>
                                         </div>
                                     @else
@@ -231,20 +181,20 @@
                                 </td>
 
                                 <!-- Requested Book -->
-                                <td class="py-4 px-4 sm:px-6 max-w-xs">
+                                <td x-show="cols['book'] !== false" class="desktop-cell px-4 py-3 text-sm max-w-xs">
                                     <div class="flex items-center gap-3">
                                         <img
                                             src="{{ $coverUrl }}"
                                             alt="{{ $bookData?->book_title ?? 'Book' }}"
-                                            class="h-12 w-9 rounded object-cover  border border-slate-200 shrink-0"
+                                            class="h-10 w-8 rounded object-cover border border-slate-200 shrink-0"
                                             onerror="this.src='{{ asset('images/book-cover.webp') }}'"
                                         >
                                         <div class="min-w-0">
                                             <div class="font-bold text-slate-900 truncate" title="{{ $bookData?->book_title ?? 'Untitled Book' }}">
                                                 {{ $bookData?->book_title ?? 'Untitled Book' }}
                                             </div>
-                                            <div class="text-base text-slate-500 truncate">{{ $authors }}</div>
-                                            <div class="text-sm font-mono text-slate-500 mt-0.5">
+                                            <div class="text-xs text-slate-500 truncate">{{ $authors }}</div>
+                                            <div class="text-xs text-slate-500 mt-0.5 break-words">
                                                 Acc: {{ $book?->accession_number ?: 'N/A' }} | Call: {{ $bookDetail?->call_number ?: 'N/A' }}
                                             </div>
                                         </div>
@@ -252,21 +202,21 @@
                                 </td>
 
                                 <!-- Reservation Date -->
-                                <td class="py-4 px-4 sm:px-6 whitespace-nowrap">
-                                    <div class="text-base font-medium text-slate-800">
+                                <td x-show="cols['reservation_date'] !== false" class="desktop-cell px-4 py-3 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-slate-800">
                                         {{ $reservation->reservation_date ? \Carbon\Carbon::parse($reservation->reservation_date)->format('M d, Y') : '—' }}
                                     </div>
-                                    <div class="text-sm text-slate-500">
+                                    <div class="text-xs text-slate-500">
                                         {{ $reservation->reservation_date ? \Carbon\Carbon::parse($reservation->reservation_date)->format('h:i A') : '' }}
                                     </div>
                                 </td>
 
                                 <!-- Pickup Deadline -->
-                                <td class="py-4 px-4 sm:px-6 whitespace-nowrap">
-                                    <div class="text-base font-semibold {{ $isOverdue ? 'text-slate-700' : 'text-slate-800' }}">
+                                <td x-show="cols['due_date'] !== false" class="desktop-cell px-4 py-3 whitespace-nowrap">
+                                    <div class="text-sm font-semibold {{ $isOverdue ? 'text-slate-700' : 'text-slate-800' }}">
                                         {{ $dueDate ? $dueDate->format('M d, Y') : '—' }}
                                     </div>
-                                    <div class="text-sm {{ $isOverdue ? 'text-rose-500 font-bold' : 'text-slate-500' }}">
+                                    <div class="text-xs {{ $isOverdue ? 'text-rose-500 font-bold' : 'text-slate-500' }}">
                                         @if($isOverdue)
                                             Expired ({{ $dueDate->diffForHumans() }})
                                         @elseif($dueDate && in_array($statusId, [1, 2]))
@@ -280,46 +230,43 @@
                                 </td>
 
                                 <!-- Status Badge -->
-                                <td class="py-4 px-4 sm:px-6 whitespace-nowrap">
+                                <td x-show="cols['status'] !== false" class="desktop-cell px-4 py-3 whitespace-nowrap">
                                     @if($statusId === 1)
-                                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-base font-semibold bg-slate-100 text-slate-700 border border-slate-200">
-
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
                                             Pending Review
                                         </span>
                                     @elseif($statusId === 2)
-                                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-base font-semibold bg-slate-100 text-slate-700 border border-slate-200">
-
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
                                             Ready for Pickup
                                         </span>
                                     @elseif($statusId === 3)
-                                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-base font-semibold bg-slate-100 text-slate-700 border border-slate-200">
-
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
                                             Fulfilled
                                         </span>
                                     @elseif($statusId === 4)
-                                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-base font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
                                             Cancelled
                                         </span>
                                     @elseif($statusId === 5)
-                                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-base font-semibold bg-slate-50 text-slate-700 border border-slate-200">
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-50 text-slate-700 border border-slate-200">
                                             Expired
                                         </span>
                                     @else
-                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-base font-semibold bg-slate-100 text-slate-700">
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-700">
                                             {{ $statusName }}
                                         </span>
                                     @endif
                                 </td>
 
                                 <!-- Actions -->
-                                <td class="py-4 px-4 sm:px-6 text-right whitespace-nowrap">
-                                    <div class="flex items-center justify-end gap-1.5">
+                                <td class="desktop-cell px-4 py-3 text-right whitespace-nowrap">
+                                    <div class="flex items-center justify-end gap-1">
                                         <!-- View Details Button -->
                                         <button
                                             type="button"
                                             wire:click="viewDetails({{ $reservation->id }})"
                                             aria-label="View reservation details"
-                                            class="h-8 rounded-lg border border-[#CBD5E1] bg-white px-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                                            class="h-8 rounded-lg border border-[#CBD5E1] bg-white px-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
                                         >View</button>
 
                                         @if($statusId === 1)
@@ -328,7 +275,7 @@
                                                 type="button"
                                                 wire:click="approveReservation({{ $reservation->id }})"
                                                 title="Approve this reservation"
-                                                class="h-8 rounded-lg bg-[#102B70] px-2.5 text-sm font-medium text-white hover:bg-[#0B225E]"
+                                                class="h-8 rounded-lg bg-[#102B70] px-2 text-xs font-medium text-white hover:bg-[#0B225E]"
                                             >
                                                 Approve
                                             </button>
@@ -340,7 +287,7 @@
                                                 type="button"
                                                 wire:click="fulfillReservation({{ $reservation->id }})"
                                                 title="Fulfill and check out copy to student"
-                                                class="h-8 rounded-lg bg-[#102B70] px-2.5 text-sm font-medium text-white hover:bg-[#0B225E]"
+                                                class="h-8 rounded-lg bg-[#102B70] px-2 text-xs font-medium text-white hover:bg-[#0B225E]"
                                             >
                                                 Fulfill
                                             </button>
@@ -350,7 +297,7 @@
                                                 type="button"
                                                 wire:click="extendPickup({{ $reservation->id }})"
                                                 title="Extend pickup window by 3 days"
-                                                class="h-8 rounded-lg border border-slate-300 bg-white px-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                                                class="h-8 rounded-lg border border-slate-300 bg-white px-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
                                             >
                                                 Extend 3 days
                                             </button>
@@ -362,9 +309,40 @@
                                                 type="button"
                                                 wire:click="openCancelModal({{ $reservation->id }})"
                                                 title="Cancel reservation"
-                                                class="h-8 rounded-lg border border-slate-300 bg-white px-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                                                class="h-8 rounded-lg border border-slate-300 bg-white px-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
                                             >Cancel</button>
                                         @endif
+                                    </div>
+                                </td>
+                                <td class="mobile-cell" colspan="7">
+                                    <div class="rounded-xl border border-[#DCE3EC] bg-white p-4 text-sm text-slate-700">
+                                        <div class="flex items-start justify-between gap-3">
+                                            <div class="min-w-0">
+                                                <p x-show="cols['id'] !== false" class="font-semibold text-[#102B70]">#RES-{{ str_pad($reservation->id, 5, '0', STR_PAD_LEFT) }}</p>
+                                                <p x-show="cols['book'] !== false" class="mt-1 break-words font-bold text-slate-900">{{ $bookData?->book_title ?? 'Untitled Book' }}</p>
+                                                <p x-show="cols['book'] !== false" class="mt-0.5 break-words text-slate-600">{{ $authors }}</p>
+                                            </div>
+                                            <img x-show="cols['book'] !== false" src="{{ $coverUrl }}" alt="" class="h-16 w-12 shrink-0 rounded object-cover" onerror="this.src='{{ asset('images/book-cover.webp') }}'">
+                                        </div>
+                                        <dl class="mt-4 grid grid-cols-2 gap-x-3 gap-y-2 border-t border-slate-100 pt-3">
+                                            <div x-show="cols['student'] !== false"><dt class="text-xs text-slate-500">Borrower</dt><dd class="break-words font-medium">@if($student)<a href="{{ route($routePrefix . 'user-details', \App\Models\Account::encodeId($student->account_id ?? $student->id)) }}" wire:navigate class="text-[#102B70] hover:underline">{{ trim($student->first_name . ' ' . $student->last_name) }}</a>@else Guest / External request @endif</dd><dd class="text-xs text-slate-500">{{ $student?->school_id_number }}</dd></div>
+                                            <div x-show="cols['status'] !== false"><dt class="text-xs text-slate-500">Status</dt><dd class="font-medium">{{ match($statusId) { 1 => 'Pending Review', 2 => 'Ready for Pickup', 3 => 'Fulfilled', 4 => 'Cancelled', 5 => 'Expired', default => $statusName } }}</dd></div>
+                                            <div x-show="cols['reservation_date'] !== false"><dt class="text-xs text-slate-500">Date Reserved</dt><dd>{{ $reservation->reservation_date?->format('M d, Y h:i A') ?? '—' }}</dd></div>
+                                            <div x-show="cols['due_date'] !== false"><dt class="text-xs text-slate-500">Pickup Deadline</dt><dd class="{{ $isOverdue ? 'font-semibold text-rose-700' : '' }}">{{ $dueDate?->format('M d, Y') ?? '—' }}{{ $isOverdue ? ' · Expired' : '' }}</dd></div>
+                                            <div x-show="cols['book'] !== false" class="col-span-2"><dt class="text-xs text-slate-500">Copy</dt><dd class="break-words">Acc: {{ $book?->accession_number ?: 'N/A' }} | Call: {{ $bookDetail?->call_number ?: 'N/A' }}</dd></div>
+                                        </dl>
+                                        <div class="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-3">
+                                            <button type="button" wire:click="viewDetails({{ $reservation->id }})" class="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-[#102B70] hover:bg-slate-50">View</button>
+                                            @if($statusId === 1)
+                                                <button type="button" wire:click="approveReservation({{ $reservation->id }})" class="rounded-lg bg-[#102B70] px-3 py-2 text-xs font-semibold text-white hover:bg-[#0B225E]">Approve</button>
+                                            @elseif($statusId === 2)
+                                                <button type="button" wire:click="fulfillReservation({{ $reservation->id }})" class="rounded-lg bg-[#102B70] px-3 py-2 text-xs font-semibold text-white hover:bg-[#0B225E]">Fulfill</button>
+                                                <button type="button" wire:click="extendPickup({{ $reservation->id }})" class="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">Extend 3 days</button>
+                                            @endif
+                                            @if(in_array($statusId, [1, 2]))
+                                                <button type="button" wire:click="openCancelModal({{ $reservation->id }})" class="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">Cancel</button>
+                                            @endif
+                                        </div>
                                     </div>
                                 </td>
                             </tr>
@@ -378,17 +356,7 @@
                                 </td>
                             </tr>
                         @endforelse
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Pagination -->
-            @if($reservations->hasPages())
-                <div class="border-t border-[#E2E8F0] px-4 sm:px-6 py-4 bg-[#F8FAFC]">
-                    {{ $reservations->links() }}
-                </div>
-            @endif
-        </div>
+        </x-widget.data-table>
 
     </div>
 

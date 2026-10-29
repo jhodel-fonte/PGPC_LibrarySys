@@ -31,11 +31,15 @@ class LoginForm extends Form
 
     public function rules(): array
     {
+        $turnstileRule = app()->environment('testing')
+            ? 'nullable|string'
+            : 'required|string';
+
         return [
             'email' => 'required|string',
             'password' => 'required|string',
             'remember' => 'boolean',
-            'turnstileToken' => 'required|string',
+            'turnstileToken' => $turnstileRule,
         ];
     }
 

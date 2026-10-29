@@ -55,7 +55,7 @@ class Dashboard extends Component
 
         $unpaidFines = $studentId
             ? (float) Fine::where('student_id', $studentId)
-                ->whereNull('paid_at')
+                ->where('fine_status', 'unpaid')
                 ->sum('amount')
             : 0.00;
 

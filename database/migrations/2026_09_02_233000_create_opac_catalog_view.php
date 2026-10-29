@@ -17,6 +17,13 @@ return new class extends Migration
         if ($driver === 'pgsql') {
             DB::statement($this->createPgsqlViewSql());
         } elseif ($driver === 'sqlite') {
+            // SQLite rebuilds tables for ALTER TABLE operations. A view that
+            // references those tables prevents the rebuild. The test suite
+            // uses SQLite and queries the source models instead.
+            if (app()->environment('testing')) {
+                return;
+            }
+
             DB::statement($this->createSqliteViewSql());
         } else {
             DB::statement($this->createMysqlViewSql());
@@ -377,4 +384,3 @@ WHERE bd.deleted_at IS NULL;
 SQL;
     }
 };
-

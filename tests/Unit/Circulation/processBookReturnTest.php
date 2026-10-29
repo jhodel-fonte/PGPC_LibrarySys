@@ -31,10 +31,12 @@ class processBookReturnTest extends TestCase
     public function test_get_fine_amount_calculates_correct_fine(): void
     {
         $confirmReturn = new ConfirmReturn();
-        $dueDate = Carbon::now()->subDays(3)->toDateTimeString(); // 3 days overdue * 20 PHP fine = 60 PHP
+        $dueDate = Carbon::now()->subDays(3)->toDateTimeString();
 
         $fine = $confirmReturn->getFineAmount($dueDate);
 
-        $this->assertEquals(60.00, round($fine, 2));
+        $expectedFine = 3 * (float) config('settings.library_config.penalty_fee', 50.00);
+
+        $this->assertEquals($expectedFine, round($fine, 2));
     }
 }

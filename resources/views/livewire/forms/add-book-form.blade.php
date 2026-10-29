@@ -57,6 +57,7 @@
                     <span>Manual Entry</span>
                 </button>
 
+                @if($catalogKind === 'book')
                 <!-- Tab 2: Auto-Fill via ISBN -->
                 <button
                     type="button"
@@ -66,11 +67,12 @@
                     <svg class="w-4 h-4 {{ $activeTab === 'isbn' ? 'text-[#FCC719]' : 'text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
                     </svg>
-                    <span>Auto-Fill via ISBN</span>
+                    <span>Auto-Fill Book via ISBN</span>
                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider {{ $activeTab === 'isbn' ? 'bg-[#FCC719] text-[#071943]' : 'bg-[#EFF6FF] text-[#102B70]' }}">
                         Open Library API
                     </span>
                 </button>
+                @endif
             </div>
         </div>
     </div>
@@ -78,7 +80,7 @@
     <!-- ============================================== -->
     <!-- ISBN AUTO-FILL CARD (Visible when tab is 'isbn') -->
     <!-- ============================================== -->
-    @if($activeTab === 'isbn')
+    @if($catalogKind === 'book' && $activeTab === 'isbn')
         <div class="col-span-1 lg:col-span-12 rounded-2xl border border-[#102B70]/20 bg-gradient-to-r from-white via-[#F8FAFC] to-[#EFF6FF]/40 p-6 md:p-7 shadow-[0_4px_24px_rgba(16,43,112,0.06)] animate-fade-in space-y-5">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E2E8F0] pb-4">
                 <div class="space-y-1">
@@ -220,7 +222,7 @@
 
                         <div class="space-y-1">
                             <div class="flex items-center gap-2">
-        
+
                                 <span class="text-xs font-mono font-semibold text-slate-500">ISBN: {{ $retrievedBookSummary['isbn'] }}</span>
                             </div>
                             <h4 class="text-base font-bold text-[#102B70] leading-snug">{{ $retrievedBookSummary['title'] }}</h4>
@@ -248,13 +250,14 @@
     <!-- LEFT COLUMN: Physical Copy & Visual Cover      -->
     <!-- ============================================== -->
     <div class="lg:col-span-4 xl:col-span-4 space-y-6">
-        
+        @include('livewire.forms.catalog-item-fields')
+
         <!-- 1. INITIAL PHYSICAL COPY CARD -->
         <div class="rounded-2xl border border-[#E2E8F0] bg-white p-6 space-y-5 shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
             <div class="flex items-center gap-3 border-b border-[#F1F5F9] pb-4">
                 <div>
-                    <h2 class="text-base font-bold text-[#102B70]">Book Copy</h2>
-                    <p class="text-xs text-slate-500 font-medium">Fill up all the required fields to add a new book copy.</p>
+                    <h2 class="text-base font-bold text-[#102B70]">{{ $catalogKind === 'book' ? 'Book Copy' : 'Asset Copy' }}</h2>
+                    <p class="text-xs text-slate-500 font-medium">{{ $catalogKind === 'book' ? 'Track the accession, barcode, and location of this book copy.' : 'Track the asset tag, barcode, condition, and location of this physical item.' }}</p>
                 </div>
 
             </div>
@@ -408,8 +411,8 @@
             <!-- Header -->
             <div class="flex items-center gap-3 border-b border-[#F1F5F9] pb-4">
                 <div>
-                    <h2 class="text-base font-bold text-[#102B70]">Book Cover</h2>
-                    <p class="text-xs text-slate-500 font-medium">Upload a Book Cover</p>
+                    <h2 class="text-base font-bold text-[#102B70]">{{ $catalogKind === 'book' ? 'Book Cover' : 'Item Image' }}</h2>
+                    <p class="text-xs text-slate-500 font-medium">{{ $catalogKind === 'book' ? 'Upload a book cover' : 'Upload an image of the physical item' }}</p>
                 </div>
             </div>
 
@@ -497,17 +500,18 @@
     </div>
 
     <!-- ============================================== -->
-    <!-- RIGHT COLUMN: Bibliographic Information        -->
+    <!-- RIGHT COLUMN: Catalog Information              -->
     <!-- ============================================== -->
     <div class="lg:col-span-8 xl:col-span-8 rounded-2xl border border-[#E2E8F0] bg-white p-6 lg:p-8 space-y-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
-        
+
         <div class="flex items-center gap-3 border-b border-[#F1F5F9] pb-4">
             <div>
-                <h2 class="text-base font-bold text-[#102B70]">Bibliographic Information</h2>
-                <p class="text-xs text-slate-500 font-medium">Core title, authorship, identifiers, and classification</p>
+                <h2 class="text-base font-bold text-[#102B70]">{{ $catalogKind === 'book' ? 'Bibliographic Information' : 'Physical Item Information' }}</h2>
+                <p class="text-xs text-slate-500 font-medium">{{ $catalogKind === 'book' ? 'Core title, authorship, identifiers, and classification' : 'Name, description, and inventory details for this physical item' }}</p>
             </div>
         </div>
 
+        @if($catalogKind === 'book')
         <!-- ISBN & ISSN Row -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div class="space-y-1.5">
@@ -570,15 +574,17 @@
             </div>
         </div>
 
-        <!-- Book Title -->
+        @endif
+
+        <!-- Title / Item Name -->
         <div class="space-y-1.5">
             <label class="text-sm font-semibold text-[#334155]">
-                Book Title <span class="text-[#EF4444] font-bold">*</span>
+                {{ $catalogKind === 'book' ? 'Book Title' : 'Item Name' }} <span class="text-[#EF4444] font-bold">*</span>
             </label>
             <input
                 wire:model="bookTitle"
                 type="text"
-                placeholder="Enter the complete book title"
+                placeholder="{{ $catalogKind === 'book' ? 'Enter the complete book title' : 'Enter the name of the physical item' }}"
                 class="w-full h-14 px-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-400 outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all"
             >
             @error('bookTitle') <span class="text-xs font-semibold text-[#EF4444]">{{ $message }}</span> @enderror
@@ -596,6 +602,32 @@
             @error('subtitle') <span class="text-xs font-semibold text-[#EF4444]">{{ $message }}</span> @enderror
         </div>
 
+        @if($catalogKind !== 'book')
+            <div class="space-y-4 rounded-2xl">
+                <div>
+                    <h3 class="text-sm font-bold text-[#102B70]">Asset metadata</h3>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div class="space-y-1.5">
+                        <label class="text-sm font-semibold text-[#334155]">Manufacturer / brand</label>
+                        <input type="text" wire:model="manufacturer" placeholder="e.g. Casio" class="w-full h-14 px-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-400 outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all">
+                        @error('manufacturer') <span class="text-xs font-semibold text-[#EF4444]">{{ $message }}</span> @enderror
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="text-sm font-semibold text-[#334155]">Model number</label>
+                        <input type="text" wire:model="modelNumber" placeholder="e.g. fx-991EX" class="w-full h-14 px-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-400 outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all">
+                        @error('modelNumber') <span class="text-xs font-semibold text-[#EF4444]">{{ $message }}</span> @enderror
+                    </div>
+                </div>
+                <div class="space-y-1.5">
+                    <label class="text-sm font-semibold text-[#334155]">Package contents</label>
+                    <textarea wire:model="packageContents" rows="3" placeholder="List included parts, accessories, or components" class="w-full p-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-400 outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all"></textarea>
+                    @error('packageContents') <span class="text-xs font-semibold text-[#EF4444]">{{ $message }}</span> @enderror
+                </div>
+            </div>
+        @endif
+
+        @if($catalogKind === 'book')
         <!-- Author Field with Live Alpine.js + AJAX Autocomplete Search -->
         <div class="space-y-3"
              x-data="{
@@ -766,7 +798,7 @@
                             <div class="px-3.5 py-1.5 text-xs font-semibold text-slate-400 bg-slate-50 border-b border-[#F1F5F9]">
                                 Existing Authors in Catalog
                             </div>
-                            <template x-for="(author, index) in results" :key="author.id">
+                            <template x-for="(author, index) in results" :key="typeof author.id === 'object' ? index : (author.id || ('auth-' + index))">
                                 <div
                                     @click="selectAuthor(author)"
                                     @mouseenter="highlightedIndex = index"
@@ -859,6 +891,9 @@
             </div>
         </div>
 
+        @endif
+
+        @if($catalogKind === 'book')
         <!-- Call Number & Classification Row -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div class="space-y-1.5">
@@ -965,13 +1000,15 @@
             </div>
         </div>
 
+        @endif
+
         <!-- Book Description -->
         <div class="space-y-1.5">
-            <label class="text-sm font-semibold text-[#334155]">Book Description</label>
+            <label class="text-sm font-semibold text-[#334155]">{{ $catalogKind === 'book' ? 'Book Description' : 'Item Description' }}</label>
             <textarea
                 wire:model="bookDescription"
                 rows="3"
-                placeholder="Write a brief summary..."
+                placeholder="{{ $catalogKind === 'book' ? 'Write a brief summary...' : 'Describe the item and its intended use...' }}"
                 class="w-full p-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-400 outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all"
             ></textarea>
             @error('bookDescription') <span class="text-xs font-semibold text-[#EF4444]">{{ $message }}</span> @enderror
@@ -1005,7 +1042,7 @@
                 class="px-7 h-12 rounded-2xl bg-[#102B70] hover:bg-[#0B225E] text-white text-sm font-semibold transition-all shadow-sm flex items-center gap-2 focus:outline-none disabled:opacity-60"
             >
                 <span wire:loading.remove wire:target="save" class="flex items-center gap-2">
-                    <span>Save Book Details</span>
+                    <span>{{ $catalogKind === 'book' ? 'Save Book Details' : 'Save Physical Item' }}</span>
                 </span>
                 <span wire:loading.flex wire:target="save" class="items-center gap-2">
                     <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

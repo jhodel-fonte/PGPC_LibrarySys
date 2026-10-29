@@ -57,6 +57,7 @@ class Account extends Authenticatable
     ];
 
     protected $casts = [
+        'reservations_blocked' => 'boolean',
         'is_email_verified' => 'boolean',
         'email_verified_at' => 'datetime',
         'last_login' => 'datetime',

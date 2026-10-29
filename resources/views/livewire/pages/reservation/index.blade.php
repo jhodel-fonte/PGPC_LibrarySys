@@ -31,7 +31,20 @@
             </div>
         </div>
 
-        <!-- ======================================================== -->
+        @if($waitingEntries->isNotEmpty())
+            <section class="rounded-xl border border-[#E2E8F0] bg-white p-5" aria-labelledby="waitlist-heading">
+                <h2 id="waitlist-heading" class="text-lg font-semibold text-[#102B70]">My waitlist</h2>
+                <p class="mt-1 text-sm text-slate-600">We will notify you when a copy is reserved for you.</p>
+                <ul class="mt-3 divide-y divide-slate-100">
+                    @foreach($waitingEntries as $entry)
+                        <li class="flex items-center justify-between gap-3 py-3">
+                            <span>{{ $entry->book_title }}</span>
+                            <button type="button" wire:click="leaveWaitlist({{ $entry->id }})" class="text-sm font-semibold text-[#102B70] underline">Leave waitlist</button>
+                        </li>
+                    @endforeach
+                </ul>
+            </section>
+        @endif
         <!-- 2. SEARCH & CATEGORY FILTERS                             -->
         <!-- ======================================================== -->
         <div class="rounded-xl border border-[#E2E8F0] bg-white p-4 sm:p-5  space-y-4">
@@ -144,7 +157,7 @@
                             wire:click="openReservationModal({{ $item->id }})"
                             class="w-full h-11 rounded-xl bg-[#102B70] hover:bg-[#0B225E] text-white text-base font-bold transition-all flex items-center justify-center cursor-pointer active:scale-[0.98]"
                         >
-                            <span>Reserve This Book</span>
+                            <span>{{ $availableCopiesCount ? 'Reserve This Book' : 'Join Waitlist' }}</span>
                         </button>
                     </div>
                 </div>
@@ -168,7 +181,7 @@
         <!-- Pagination -->
         @if($books->hasPages())
             <div class="rounded-xl border border-[#E2E8F0] bg-white p-4 ">
-                {{ $books->links() }}
+                {{ $books->links('components.widget.cursor-pagination') }}
             </div>
         @endif
 
@@ -189,7 +202,7 @@
             <div class="my-auto w-full max-w-lg rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150 space-y-5 text-base">
                 <div class="flex items-center justify-between pb-3 border-b border-slate-100">
                     <div class="flex items-center gap-2">
-                        <h3 class="text-lg font-bold text-[#102B70]">Confirm Book Reservation</h3>
+                        <h3 class="text-lg font-bold text-[#102B70]">{{ $selectedBookCopyId ? 'Confirm Book Reservation' : 'Join the Waitlist?' }}</h3>
                     </div>
                     <button type="button" wire:click="closeModal" class="rounded-lg px-2 py-1 text-base font-medium text-slate-600 hover:bg-[#F8FAFC] hover:text-slate-700">
                     Close</button>
@@ -212,6 +225,9 @@
                     </div>
                 </div>
 
+                @if(!$selectedBookCopyId)
+                    <p class="text-base text-slate-700">All copies are borrowed or reserved. Would you like to join the waitlist? We will automatically reserve the next available copy for you and notify you.</p>
+                @else
                 <!-- Reservation Form -->
                 <div class="space-y-4">
                     <!-- Available Copy Selection -->
@@ -261,6 +277,7 @@
                     </div>
                 </div>
 
+                @endif
                 <div class="flex flex-col-reverse gap-2 border-t border-slate-100 pt-3 sm:flex-row sm:items-center sm:justify-end">
                     <button
                         type="button"
@@ -275,7 +292,7 @@
                         wire:loading.attr="disabled"
                         class="h-11 w-full px-6 rounded-xl bg-[#102B70] hover:bg-[#0B225E] text-white text-base font-bold transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] disabled:opacity-50 sm:w-auto"
                     >
-                        <span wire:loading.remove wire:target="submitReservation">Confirm Reservation</span>
+                        <span wire:loading.remove wire:target="submitReservation">{{ $selectedBookCopyId ? 'Confirm Reservation' : 'Join Waitlist' }}</span>
                         <span wire:loading wire:target="submitReservation">Processing...</span>
                     </button>
                 </div>

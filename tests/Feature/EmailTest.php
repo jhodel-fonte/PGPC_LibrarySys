@@ -19,7 +19,7 @@ class EmailTest extends TestCase
 
         Mail::to($recipient)->send(new WelcomeEmail());
 
-        Mail::assertSent(WelcomeEmail::class, function ($mail) use ($recipient) {
+        Mail::assertQueued(WelcomeEmail::class, function ($mail) use ($recipient) {
             return $mail->hasTo($recipient);
         });
     }

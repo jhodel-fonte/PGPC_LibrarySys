@@ -42,6 +42,11 @@ class EditBookForm extends Component
 
     // 3. Bibliographic Information
     public string $bookTitle = '';
+    public string $catalogKind = 'book';
+    public $dailyFine = null;
+    public string $manufacturer = '';
+    public string $modelNumber = '';
+    public string $packageContents = '';
     public string $subtitle = '';
 
     // Authors
@@ -173,6 +178,11 @@ class EditBookForm extends Component
 
         // 5. Identifiers & Publication
         $this->isbn = $bookDetail->isbn ?? '';
+        $this->catalogKind = $bookDetail->catalog_kind ?? 'book';
+        $this->dailyFine = $bookDetail->daily_fine;
+        $this->manufacturer = $bookDetail->manufacturer ?? '';
+        $this->modelNumber = $bookDetail->model_number ?? '';
+        $this->packageContents = $bookDetail->package_contents ?? '';
         $this->issn = $bookDetail->issn ?? '';
         $this->callNumber = $bookDetail->call_number ?? '';
         $this->classification = $bookDetail->classification ?? '';
@@ -328,7 +338,7 @@ class EditBookForm extends Component
         $hasAuthorSearch = !empty(trim($this->authorSearch));
         $hasNewNames = !empty(trim($this->newAuthorLastName)) || !empty(trim($this->newAuthorFirstName));
 
-        if (!$hasAuthorId && !$hasAuthorSearch && !$hasNewNames) {
+        if ($this->catalogKind === 'book' && !$hasAuthorId && !$hasAuthorSearch && !$hasNewNames) {
             $this->addError('authorSearch', 'The Author field is required.');
         }
 
@@ -346,6 +356,11 @@ class EditBookForm extends Component
             'dateAcquired' => 'nullable|date',
 
             'bookTitle' => 'required|string|max:255',
+            'catalogKind' => 'required|in:book,equipment,multimedia,periodical,specimen',
+            'dailyFine' => 'nullable|numeric|min:0|max:999999.99',
+            'manufacturer' => 'nullable|string|max:255',
+            'modelNumber' => 'nullable|string|max:255',
+            'packageContents' => 'nullable|string|max:3000',
             'subtitle' => 'nullable|string|max:255',
             'authorId' => 'nullable|exists:authors,id',
             'authorSearch' => 'nullable|string|max:200',
@@ -354,7 +369,7 @@ class EditBookForm extends Component
 
             'isbn' => 'nullable|string|max:15',
             'issn' => 'nullable|string|max:15',
-            'callNumber' => 'required|string|max:30',
+            'callNumber' => ($this->catalogKind === 'book' ? 'required' : 'nullable').'|string|max:30',
             'classification' => 'nullable|string|max:30',
             'publisherName' => 'nullable|string|max:150',
             'publicationYear' => 'nullable|integer|min:1000|max:' . (date('Y') + 1),
@@ -543,6 +558,11 @@ class EditBookForm extends Component
 
                 // 7. Update BookDetail
                 $bookDetail->update([
+                    'catalog_kind' => $this->catalogKind,
+                    'daily_fine' => $this->dailyFine === '' ? null : $this->dailyFine,
+                    'manufacturer' => trim($this->manufacturer) ?: null,
+                    'model_number' => trim($this->modelNumber) ?: null,
+                    'package_contents' => trim($this->packageContents) ?: null,
                     'isbn' => trim($this->isbn) ?: null,
                     'issn' => trim($this->issn) ?: null,
                     'publication_year' => $this->publicationYear,

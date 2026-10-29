@@ -8,11 +8,32 @@
         highlightedIndex: 0,
 
         init() {
-            if (!Array.isArray(this.selectedLanguages)) this.selectedLanguages = [];
+            if (!Array.isArray(this.selectedLanguages)) {
+                if (this.selectedLanguages && typeof this.selectedLanguages === 'object') {
+                    this.selectedLanguages = Object.values(this.selectedLanguages);
+                } else if (this.selectedLanguages !== null && this.selectedLanguages !== undefined && this.selectedLanguages !== '') {
+                    this.selectedLanguages = [this.selectedLanguages];
+                } else {
+                    this.selectedLanguages = [];
+                }
+            }
+        },
+
+        get langs() {
+            if (Array.isArray(this.selectedLanguages)) {
+                return this.selectedLanguages;
+            }
+            if (this.selectedLanguages && typeof this.selectedLanguages === 'object') {
+                return Object.values(this.selectedLanguages);
+            }
+            if (this.selectedLanguages !== null && this.selectedLanguages !== undefined && this.selectedLanguages !== '') {
+                return [this.selectedLanguages];
+            }
+            return [];
         },
 
         isSelected(name) {
-            return (this.selectedLanguages || []).some(l => l.toLowerCase() === String(name).toLowerCase());
+            return this.langs.some(l => String(l).toLowerCase() === String(name).toLowerCase());
         },
 
         get filteredLanguages() {
@@ -36,7 +57,7 @@
                 this.preloads.push({ id: lang.id, name: lang.name });
             }
             if (!this.isSelected(name)) {
-                this.selectedLanguages = [...(this.selectedLanguages || []), name];
+                this.selectedLanguages = [...this.langs, name];
             }
             this.query = '';
             this.highlightedIndex = 0;
@@ -45,7 +66,7 @@
         },
 
         removeLanguage(name) {
-            this.selectedLanguages = (this.selectedLanguages || []).filter(l => l.toLowerCase() !== String(name).toLowerCase());
+            this.selectedLanguages = this.langs.filter(l => String(l).toLowerCase() !== String(name).toLowerCase());
             this.highlightedIndex = 0;
             this.isOpen = true;
             this.$nextTick(() => this.$refs.langSearchInput?.focus());
@@ -60,7 +81,7 @@
                         this.preloads.push(newLang);
                     }
                     if (!this.isSelected(newLang.name)) {
-                        this.selectedLanguages = [...(this.selectedLanguages || []), newLang.name];
+                        this.selectedLanguages = [...this.langs, newLang.name];
                     }
                 }
             });
@@ -79,8 +100,8 @@
         },
 
         handleBackspace() {
-            if (this.query === '' && (this.selectedLanguages || []).length > 0) {
-                const removed = this.selectedLanguages[this.selectedLanguages.length - 1];
+            if (this.query === '' && this.langs.length > 0) {
+                const removed = this.langs[this.langs.length - 1];
                 this.removeLanguage(removed);
             }
         },
@@ -169,7 +190,7 @@
                 @keydown.escape="isOpen = false"
                 @keydown.backspace="handleBackspace()"
                 type="text"
-                :placeholder="selectedLanguages.length === 0 ? 'Type to search or select languages...' : 'Add language...'"
+                :placeholder="langs.length === 0 ? 'Type to search or select languages...' : 'Add language...'"
                 class="flex-1 min-w-[110px] h-8 bg-transparent border-0 border-none p-0 m-0 text-sm font-medium text-[#0F172A] placeholder-slate-400 focus:outline-none focus:ring-0 focus:border-0 shadow-none"
                 style="outline: none !important; box-shadow: none !important; border: none !important;"
             >
@@ -178,7 +199,7 @@
             <div class="absolute right-3 top-3.5 flex items-center gap-1 shrink-0">
                 <button
                     type="button"
-                    x-show="selectedLanguages.length > 0 || (query && query.length > 0)"
+                    x-show="langs.length > 0 || (query && query.length > 0)"
                     x-cloak
                     @click.stop="clearAll()"
                     class="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"

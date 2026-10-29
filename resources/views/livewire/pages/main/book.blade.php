@@ -433,6 +433,11 @@
                         
                         
 
+                        <a href="{{ route('student.reservations', ['search' => $book['title'] ?? '']) }}"
+                           class="flex h-[42px] w-full items-center justify-center rounded-xl bg-[#102B70] px-4 text-sm font-semibold text-white hover:bg-[#0B225E] focus:outline-none focus:ring-2 focus:ring-[#102B70] focus:ring-offset-2">
+                            {{ ($book['available_copies'] ?? 0) > 0 ? 'Reserve this book' : 'Join waitlist' }}
+                        </a>
+
                         <!-- Button 3: Share (Copies link to clipboard via Alpine) -->
                         <div x-data="{ copied: false }" class="w-full">
                             <button

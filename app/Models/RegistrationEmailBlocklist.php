@@ -7,6 +7,13 @@ use Illuminate\Support\Carbon;
 
 class RegistrationEmailBlocklist extends Model
 {
+    /**
+     * The migration intentionally uses the singular table name.
+     * Keep the model explicit so Eloquent does not infer a plural table
+     * that does not exist in PostgreSQL.
+     */
+    protected $table = 'registration_email_blocklist';
+
     protected $fillable = [
         'email',
         'banned_at',

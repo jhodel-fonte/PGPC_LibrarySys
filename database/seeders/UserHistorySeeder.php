@@ -12,7 +12,7 @@ class UserHistorySeeder extends Seeder
     public function run(): void
     {
         $accounts = Account::query()->orderBy('id')->get(['id']);
-        $isbns = DB::table('book_details')->whereNotNull('isbn')->whereRaw("BTRIM(isbn) <> ''")
+        $isbns = DB::table('book_details')->whereNotNull('isbn')->whereRaw("TRIM(isbn) <> ''")
             ->orderBy('id')->pluck('isbn')->map(fn ($isbn) => trim((string) $isbn))->unique()->values();
 
         if ($accounts->isEmpty() || $isbns->isEmpty()) {

@@ -18,6 +18,12 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        \App\Models\Book::updated(function (\App\Models\Book $book) {
+            if (! $book->trashed() && $book->wasChanged('status') && $book->status === 'available' && $book->book_detail_id) {
+                app(\App\Services\ReservationWaitlistService::class)->allocate($book->book_detail_id);
+            }
+        });
+
         if (config('app.env') === 'production') {
             URL::forceScheme('https');
         }

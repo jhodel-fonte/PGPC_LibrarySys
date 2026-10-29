@@ -57,7 +57,7 @@ class Borrow extends Component
             });
         }
 
-        $activeLoans = $activeQuery->orderBy('due_date', 'asc')->paginate(10, ['*'], 'active_page');
+        $activeLoans = $activeQuery->orderBy('due_date', 'asc')->orderBy('id', 'asc')->cursorPaginate(10, ['*'], 'active_page');
 
         // 2. History Loans Query
         $historyQuery = BorrowingTransaction::query()
@@ -79,7 +79,7 @@ class Borrow extends Component
             });
         }
 
-        $historyLoans = $historyQuery->orderBy('return_date', 'desc')->paginate(10, ['*'], 'history_page');
+        $historyLoans = $historyQuery->orderBy('return_date', 'desc')->orderBy('id', 'desc')->cursorPaginate(10, ['*'], 'history_page');
 
         // 3. Fines Query
         $fines = $studentId
@@ -93,7 +93,7 @@ class Borrow extends Component
         $activeCount = $studentId ? BorrowingTransaction::where('school_id', $studentId)->whereNull('return_date')->count() : 0;
         $overdueCount = $studentId ? BorrowingTransaction::where('school_id', $studentId)->whereNull('return_date')->where('due_date', '<', now())->count() : 0;
         $historyCount = $studentId ? BorrowingTransaction::where('school_id', $studentId)->whereNotNull('return_date')->count() : 0;
-        $unpaidFinesTotal = (float) $fines->whereNull('paid_at')->sum('amount');
+        $unpaidFinesTotal = (float) $fines->where('fine_status', 'unpaid')->sum('amount');
 
         return view('livewire.pages.student.borrow', [
             'student' => $student,

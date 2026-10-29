@@ -72,7 +72,7 @@ class UserRecommendation extends Model
             return new Collection();
         }
 
-        return BookDetail::with([
+        return BookDetail::publicCatalog()->with([
             'bookData.authors',
             'bookData.categories',
             'publisher',

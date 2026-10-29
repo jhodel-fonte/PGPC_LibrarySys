@@ -62,65 +62,22 @@ class BookDetail extends Component
 
     public function confirmDeleteCopy(int $copyId): void
     {
-        $book = Book::find($copyId);
-        if (!$book) {
-            return;
-        }
-
-        if ($book->status === 'borrowed') {
-            $this->dispatch('toast', message: 'Cannot delete a book copy that is currently checked out / borrowed.', type: 'error');
-            return;
-        }
-
-        $this->copyIdToDelete = $copyId;
-        $this->copyAccessionToDelete = $book->accession_number;
-        $this->showDeleteCopyModal = true;
+        abort_unless(auth()->user()?->can('delete', Book::class), 403);
+        $this->dispatch('request-catalog-delete', type: 'copy', ids: [$copyId]);
     }
 
     public function cancelDeleteCopy(): void
     {
-        $this->copyIdToDelete = null;
-        $this->copyAccessionToDelete = null;
         $this->showDeleteCopyModal = false;
+        $this->copyIdToDelete = null;
     }
 
     public function deleteCopy(?int $copyId = null): void
     {
-        if (auth()->check() && !auth()->user()->can('delete', Book::class)) {
-            $this->dispatch('toast', message: 'Unauthorized action. You do not have permission to delete book copies.', type: 'error');
-            $this->cancelDeleteCopy();
-            return;
+        if ($copyId ?? $this->copyIdToDelete) {
+            $this->confirmDeleteCopy($copyId ?? $this->copyIdToDelete);
         }
-
-        $targetId = $copyId ?? $this->copyIdToDelete;
-        if (!$targetId) {
-            return;
-        }
-
-        $book = Book::find($targetId);
-        if ($book) {
-            if ($book->status === 'borrowed') {
-                $this->dispatch('toast', message: 'Cannot delete a book copy that is currently checked out / borrowed.', type: 'error');
-                $this->cancelDeleteCopy();
-                return;
-            }
-
-            $accNum = $book->accession_number;
-            $deletedId = $book->id;
-            $book->delete();
-            $this->dispatch('toast', [
-                'message' => "Physical copy '{$accNum}' deleted.",
-                'type' => 'warning',
-                'undoEvent' => 'restore-book-copy',
-                'undoPayload' => ['copyId' => $deletedId],
-                'duration' => 10000,
-            ]);
-            $this->dispatch('book-details-updated');
-        }
-
-        $this->cancelDeleteCopy();
     }
-
     #[On('restore-book-copy')]
     public function restoreBookCopy($copyId = null): void
     {
@@ -131,6 +88,8 @@ class BookDetail extends Component
 
         $book = Book::withTrashed()->find($id);
         if ($book && $book->trashed()) {
+            abort_unless(auth()->user()?->can('update', Book::class) || auth()->user()?->can('create', Book::class), 403);
+            BookDetailModel::onlyTrashed()->find($book->book_detail_id)?->restore();
             $book->restore();
             $this->dispatch('toast', message: "Physical copy '{$book->accession_number}' was restored successfully.", type: 'success');
             $this->dispatch('book-details-updated');
@@ -160,7 +119,7 @@ class BookDetail extends Component
             : null;
 
         $qrCodeSvg = null;
-        if ($bookDetail) {
+        if ($bookDetail && $bookDetail->catalog_kind === 'book') {
             try {
                 $payload = route('opac.book.detail', ['identifier' => $bookDetail->isbn ?: $bookDetail->id]);
                 $qrCodeSvg = (string) QrCode::size(200)

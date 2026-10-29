@@ -23,6 +23,7 @@ class StudentDetail extends Component
     // Delete & Disable student modals
     public bool $showDeleteModal = false;
     public bool $showDisableModal = false;
+    public ?int $paymentFineId = null;
 
     // Edit profile modal
     public bool $showEditModal = false;
@@ -95,7 +96,9 @@ class StudentDetail extends Component
                 'borrowingTransactions.receivedBy',
                 'borrowingTransactions.borrowType',
                 'borrowingTransactions.fines',
-                'fines',
+                'fines.fineType',
+                'fines.transaction.book.bookDetail.bookData',
+                'fines.payments.receivedBy',
             ]),
         ])->find($this->userId);
     }
@@ -182,7 +185,37 @@ class StudentDetail extends Component
     #[Computed]
     public function unpaidFinesTotal(): float
     {
-        return (float) ($this->student?->fines->whereNull('paid_at')->sum('amount') ?? 0);
+        return (float) ($this->student?->fines->where('fine_status', 'unpaid')->sum('amount') ?? 0);
+    }
+
+    public function openFinePayment(int $fineId): void
+    {
+        abort_unless(\App\Services\EmployeeRoleService::canManageFines(auth()->user()), 403);
+        $fine = $this->student?->fines->firstWhere('id', $fineId);
+        abort_unless($fine && $fine->fine_status === 'unpaid', 404);
+        $this->paymentFineId = $fineId;
+    }
+
+    public function confirmFinePayment(): void
+    {
+        abort_unless(\App\Services\EmployeeRoleService::canManageFines(auth()->user()), 403);
+        $librarian = auth()->user()?->librarian;
+        if (! $librarian) {
+            $this->dispatch('toast', message: 'A librarian profile is required to record this payment.', type: 'error');
+            return;
+        }
+
+        abort_unless($this->student && $this->paymentFineId, 404);
+        try {
+            app(\App\Services\FineService::class)->confirmPayment($this->paymentFineId, $this->student->id, $librarian);
+            $this->paymentFineId = null;
+            unset($this->user, $this->student, $this->unpaidFinesTotal);
+            $this->dispatch('toast', message: 'Payment confirmed. The fine is now paid.', type: 'success');
+        } catch (\DomainException $e) {
+            $this->paymentFineId = null;
+            unset($this->user, $this->student, $this->unpaidFinesTotal);
+            $this->dispatch('toast', message: $e->getMessage(), type: 'error');
+        }
     }
 
     #[Computed]
@@ -258,7 +291,7 @@ class StudentDetail extends Component
             ->whereNull('deleted_at')
             ->where('status', 'available')
             ->whereNotIn(\Illuminate\Support\Facades\DB::raw('LOWER(status)'), ['disabled', 'archived'])
-            ->whereHas('bookDetail', fn($bd) => $bd->whereNull('deleted_at')->whereHas('bookData', fn($b) => $b->whereNull('deleted_at')))
+            ->whereHas('bookDetail', fn($bd) => $bd->publicCatalog()->whereNull('deleted_at')->whereHas('bookData', fn($b) => $b->whereNull('deleted_at')))
             ->where(function ($q) use ($term) {
                 $q->where('accession_number', 'like', "%{$term}%")
                   ->orWhereHas('bookDetail.bookData', function ($b) use ($term) {
@@ -298,6 +331,10 @@ class StudentDetail extends Component
 
     public function confirmProfileReservation(): void
     {
+        if ($this->user?->reservations_blocked) {
+            $this->dispatch('toast', message: 'This account cannot place reservations.', type: 'error');
+            return;
+        }
         $this->validate([
             'selectedBookId' => 'required|exists:books,id',
             'reservePickupDays' => 'required|integer|min:1|max:7',
@@ -318,7 +355,14 @@ class StudentDetail extends Component
         }
 
         try {
+            $detailId = \App\Models\Book::whereKey($this->selectedBookId)->value('book_detail_id');
+            app(\App\Services\ReservationWaitlistService::class)->allocate($detailId);
             \Illuminate\Support\Facades\DB::transaction(function () use ($student) {
+                $detailId = \App\Models\Book::whereKey($this->selectedBookId)->value('book_detail_id');
+                \App\Models\BookDetail::publicCatalog()->lockForUpdate()->findOrFail($detailId);
+                if (\App\Models\ReservationWaitlist::where('book_detail_id', $detailId)->where('status', 'waiting')->exists()) {
+                    throw new \RuntimeException('Copies are reserved for people already on the waitlist.');
+                }
                 $book = \App\Models\Book::lockForUpdate()->findOrFail($this->selectedBookId);
 
                 if ($book->status !== 'available') {
@@ -349,6 +393,16 @@ class StudentDetail extends Component
         } catch (\Throwable $e) {
             $this->dispatch('toast', message: 'Reservation failed: ' . $e->getMessage(), type: 'error');
         }
+    }
+
+    public function setReservationBlock(bool $blocked): void
+    {
+        abort_unless(\App\Services\EmployeeRoleService::canManageStudents(auth()->user()), 403);
+        $account = Account::findOrFail($this->userId);
+        $account->reservations_blocked = $blocked;
+        $account->save();
+        unset($this->user);
+        $this->dispatch('toast', message: $blocked ? 'Reservations blocked for this account.' : 'Reservation access restored.', type: 'success');
     }
 
     public function cancelReservation(int $id): void

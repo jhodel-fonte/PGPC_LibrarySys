@@ -69,7 +69,7 @@
         <!-- Modal Header -->
         <div class="flex items-start justify-between px-6 py-4 border-b border-[#E2E8F0] bg-slate-50 shrink-0">
             <div class="flex flex-col">
-                <h3 class="text-base font-bold text-[#102B70] tracking-tight">Search Student, Book, or Reservation</h3>
+                <h3 class="text-base font-bold text-[#102B70] tracking-tight">Search Student, Item, or Reservation</h3>
                 <p class="text-[11px] text-[#64748B] font-medium mt-0.5">Search by name, ID, reference, title, author, or accession number</p>
             </div>
             <button type="button"
@@ -139,7 +139,7 @@
                         wire:click="setTab('books')"
                         @click="isLoading = true; selectedIndex = -1;"
                         class="px-4 py-2 rounded-full text-xs font-bold transition-all {{ $activeTab === 'books' ? 'bg-[#102B70] text-white shadow-sm' : 'bg-slate-50 border border-[#E2E8F0] text-[#64748B] hover:bg-slate-100 hover:text-[#0F172A]' }}">
-                    Books ({{ $bookCount }})
+                    Items ({{ $bookCount }})
                 </button>
                 @if($service === 'check-out')
                     <button type="button"
@@ -178,7 +178,7 @@
 
                 @if($activeTab === 'all' || $activeTab === 'books')
                     <div class="flex flex-col gap-2 {{ $activeTab === 'all' ? 'mt-1' : '' }}">
-                        <span class="text-[11px] font-bold text-[#94A3B8] uppercase tracking-wider pl-1">Searching Books...</span>
+                        <span class="text-[11px] font-bold text-[#94A3B8] uppercase tracking-wider pl-1">Searching Items...</span>
                         <div class="border border-[#E2E8F0] rounded-2xl bg-white overflow-hidden divide-y divide-[#F1F5F9]">
                             @for($i = 0; $i < 2; $i++)
                                 <div class="flex items-center justify-between p-3.5">
@@ -294,7 +294,7 @@
                 <!-- Books Group -->
                 @if($booksList->isNotEmpty())
                     <div class="flex flex-col gap-2 {{ $membersList->isNotEmpty() ? 'mt-1' : '' }}">
-                        <span class="text-[11px] font-bold text-[#94A3B8] uppercase tracking-wider pl-1">Books</span>
+                        <span class="text-[11px] font-bold text-[#94A3B8] uppercase tracking-wider pl-1">Items</span>
 
                         <div class="border border-[#E2E8F0] rounded-2xl bg-white overflow-hidden shadow-inner divide-y divide-[#F1F5F9]">
                             @foreach($booksList as $item)
@@ -336,7 +336,7 @@
                                             @click="open = false; $dispatch('set-search-value', { code: '{{ $item['code'] }}' })"
                                             class="h-8 px-4 border border-[#102B70] text-[#102B70] hover:bg-[#102B70] hover:text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm shrink-0"
                                     >
-                                        Select Book
+                                        Select Item
                                     </button>
                                 </div>
                             @endforeach
@@ -366,7 +366,7 @@
                 <!-- Empty States -->
                 @if(strlen(trim($searchQuery)) >= 2 && count($results) === 0)
                     <div class="py-12 text-center text-xs text-[#64748B] font-semibold bg-[#F8FAFC]/50 border border-dashed border-[#E2E8F0] rounded-2xl">
-                        No students, books, or pending reservations found matching "{{ $searchQuery }}".
+                        No students, items, or pending reservations found matching "{{ $searchQuery }}".
                     </div>
                 @elseif(strlen(trim($searchQuery)) < 2)
                     <div class="py-12 text-center text-xs text-[#94A3B8] font-semibold bg-[#F8FAFC]/50 border border-dashed border-[#E2E8F0] rounded-2xl">

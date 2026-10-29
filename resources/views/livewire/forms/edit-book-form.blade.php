@@ -43,13 +43,14 @@
     <!-- LEFT COLUMN: Physical Copy & Visual Cover      -->
     <!-- ============================================== -->
     <div class="lg:col-span-4 xl:col-span-4 space-y-6">
+        @include('livewire.forms.catalog-item-fields')
         
         <!-- 1. INITIAL PHYSICAL COPY CARD -->
         <div class="rounded-2xl border border-[#E2E8F0] bg-white p-6 space-y-5 shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
             <div class="flex items-center gap-3 border-b border-[#F1F5F9] pb-4">
                 <div>
-                    <h2 class="text-base font-bold text-[#102B70]">Book Copy</h2>
-                    <p class="text-xs text-slate-500 font-medium">Fill up all the required fields to add a new book copy.</p>
+                    <h2 class="text-base font-bold text-[#102B70]">{{ $catalogKind === 'book' ? 'Book Copy' : 'Physical Asset' }}</h2>
+                    <p class="text-xs text-slate-500 font-medium">{{ $catalogKind === 'book' ? 'Update the accession, barcode, and location of this book copy.' : 'Update the asset tag, barcode, condition, and location of this physical item.' }}</p>
                 </div>
             </div>
 
@@ -130,7 +131,7 @@
         </div>
 
         <!-- 2. BOOK COVER CARD (Instant Alpine Preview + Livewire Direct Upload) -->
-        <div
+<div
             class="rounded-2xl border border-[#E2E8F0] bg-white p-6 space-y-4 shadow-[0_4px_20px_rgba(0,0,0,0.02)]"
             x-data="{
                 previewUrl: null,
@@ -200,8 +201,8 @@
             <!-- Header -->
             <div class="flex items-center gap-3 border-b border-[#F1F5F9] pb-4">
                 <div>
-                    <h2 class="text-base font-bold text-[#102B70]">Book Cover</h2>
-                    <p class="text-xs text-slate-500 font-medium">Upload a Book Cover</p>
+                    <h2 class="text-base font-bold text-[#102B70]">{{ $catalogKind === 'book' ? 'Book Cover' : 'Item Image' }}</h2>
+                    <p class="text-xs text-slate-500 font-medium">{{ $catalogKind === 'book' ? 'Upload a book cover' : 'Upload an image of the physical item' }}</p>
                 </div>
             </div>
 
@@ -289,14 +290,14 @@
     </div>
 
     <!-- ============================================== -->
-    <!-- RIGHT COLUMN: Bibliographic Information        -->
+    <!-- RIGHT COLUMN: Catalog Information              -->
     <!-- ============================================== -->
     <div class="lg:col-span-8 xl:col-span-8 rounded-2xl border border-[#E2E8F0] bg-white p-6 lg:p-8 space-y-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
         
         <div class="flex items-center gap-3 border-b border-[#F1F5F9] pb-4">
             <div>
-                <h2 class="text-base font-bold text-[#102B70]">Bibliographic Information</h2>
-                <p class="text-xs text-slate-500 font-medium">Core title, authorship, identifiers, and classification</p>
+                <h2 class="text-base font-bold text-[#102B70]">{{ $catalogKind === 'book' ? 'Bibliographic Information' : 'Physical Item Information' }}</h2>
+                <p class="text-xs text-slate-500 font-medium">{{ $catalogKind === 'book' ? 'Core title, authorship, identifiers, and classification' : 'Name, description, and inventory details for this physical item' }}</p>
             </div>
         </div>
 
@@ -324,15 +325,15 @@
             </div>
         </div>
 
-        <!-- Book Title -->
+        <!-- Title / Item Name -->
         <div class="space-y-1.5">
             <label class="text-sm font-semibold text-[#334155]">
-                Book Title <span class="text-[#EF4444] font-bold">*</span>
+                {{ $catalogKind === 'book' ? 'Book Title' : 'Item Name' }} <span class="text-[#EF4444] font-bold">*</span>
             </label>
             <input
                 wire:model="bookTitle"
                 type="text"
-                placeholder="Enter the complete book title"
+                placeholder="{{ $catalogKind === 'book' ? 'Enter the complete book title' : 'Enter the name of the physical item' }}"
                 class="w-full h-14 px-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-400 outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all"
             >
             @error('bookTitle') <span class="text-xs font-semibold text-[#EF4444]">{{ $message }}</span> @enderror

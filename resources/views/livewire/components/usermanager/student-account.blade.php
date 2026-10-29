@@ -8,6 +8,17 @@
 @endphp
 
 <div class="relative rounded-2xl md:rounded-3xl border border-[#E2E8F0] bg-white p-5 sm:p-6 lg:p-8 shadow-[0_4px_20px_rgba(16,43,112,0.03)] space-y-9 text-base text-slate-800">
+    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+        <div>
+            <p class="font-semibold text-[#102B70]">Reservation access: {{ $user?->reservations_blocked ? 'Blocked' : 'Allowed' }}</p>
+            <p class="text-sm text-slate-600">Blocking reservations does not prevent sign-in or returning borrowed books.</p>
+        </div>
+        @if(\App\Services\EmployeeRoleService::canManageStudents(auth()->user()))
+            <button type="button" wire:click="setReservationBlock({{ $user?->reservations_blocked ? 'false' : 'true' }})" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-[#102B70] hover:bg-slate-50">
+                {{ $user?->reservations_blocked ? 'Restore reservation access' : 'Block reservations' }}
+            </button>
+        @endif
+    </div>
     
     <!-- SECTION 1: ACCOUNT CREDENTIALS -->
     <div class="space-y-4">

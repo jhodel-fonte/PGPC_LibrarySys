@@ -47,6 +47,7 @@ class ConfirmReturn extends Component
 
         $transactions = BorrowingTransaction::with([
             'book' => fn ($q) => $q->withTrashed(),
+            'book.bookDetail' => fn ($q) => $q->withTrashed(),
             'book.bookDetail.bookData',
             'book.bookDetail.bookData.authors',
             'issuedCondition'
@@ -69,7 +70,7 @@ class ConfirmReturn extends Component
             }
 
             $overdueDays = $this->getOverdueDays($t->due_date);
-            $fineAmount = $this->getFineAmount($t->due_date);
+            $fineAmount = $this->getFineAmount($t->due_date, $detail);
 
             if ($fineAmount > 0) {
                 $this->overdueCount++;
@@ -93,18 +94,12 @@ class ConfirmReturn extends Component
 
     public function getOverdueDays($dueDate)
     {
-        $due = Carbon::parse($dueDate);
-        if ($due->isPast()) {
-            return $due->diffInDays(Carbon::now());
-        }
-        return 0;
+        return app(\App\Services\FineService::class)->overdueDays($dueDate);
     }
 
-    public function getFineAmount($dueDate)
+    public function getFineAmount($dueDate, ?\App\Models\BookDetail $detail = null)
     {
-        $overdueDays = $this->getOverdueDays($dueDate);
-        $penaltyPerDay = (float) config('settings.library_config.penalty_fee', config('settings.penalty_fee', 50.00));
-        return $overdueDays * $penaltyPerDay;
+        return app(\App\Services\FineService::class)->overdueAmount($dueDate, $detail);
     }
 
     public function confirmReturn()
@@ -134,7 +129,7 @@ class ConfirmReturn extends Component
                 $now = Carbon::now();
                 $librarianId = auth()->user()?->librarian?->id ?? Librarian::first()?->id ?? null;
 
-                $transactions = BorrowingTransaction::with(['book' => fn ($q) => $q->withTrashed()])
+                $transactions = BorrowingTransaction::with(['book' => fn ($q) => $q->withTrashed(), 'book.bookDetail' => fn ($q) => $q->withTrashed()])
                     ->whereIn('id', $this->transactionIds)
                     ->get();
 
@@ -158,7 +153,7 @@ class ConfirmReturn extends Component
                     }
 
                     // Generate overdue fine record if applicable
-                    $fineAmount = $this->getFineAmount($transaction->due_date);
+                    $fineAmount = $this->getFineAmount($transaction->due_date, $transaction->book?->bookDetail);
                     if ($fineAmount > 0) {
                         DB::table('fines')->insert([
                             'borrowing_transaction_id' => $transaction->id,
@@ -200,4 +195,3 @@ class ConfirmReturn extends Component
         ]);
     }
 }
-

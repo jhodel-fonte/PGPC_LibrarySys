@@ -1,3 +1,4 @@
+<div wire:key="return-workstation" class="return-workstation-root">
 <div class="relative w-full h-auto lg:h-[calc(100vh-70px)] flex flex-col items-center justify-start pt-4 px-3 md:px-6 xl:px-12 pb-5 font-sans bg-[#F8FAFC] overflow-y-auto lg:overflow-hidden check-in-workstation">
 
     <!-- Lock page layout scroll -->
@@ -57,10 +58,10 @@
             <div class="flex flex-col md:flex-row pt-2 justify-between items-start md:items-center">
                 <div>
                     <h1 class="text-[1.5rem] font-bold text-[#102B70] tracking-tight leading-tight">
-                        Return Books
+                        Return Items
                     </h1>
                     <p class="mt-0.5 text-sm text-[#64748B] font-medium">
-                        Scan or enter a member ID or book barcode to process returns.
+                        Scan or enter a member ID or item barcode to process returns.
                     </p>
                 </div>
             </div>
@@ -90,7 +91,7 @@
                     <livewire:components.circulation.top-notification-banner
                         type="warning"
                         title="Unsaved Returns Session"
-                        :message="'You have already scanned ' . count($returnedBooks) . ' book(s) in this session. Switching student to <b>' . $pendingStudentName . '</b> will clear this return session. Proceed?'"
+                        :message="'You have already scanned ' . count($returnedBooks) . ' item(s) in this session. Switching student to <b>' . $pendingStudentName . '</b> will clear this return session. Proceed?'"
                         confirm-action="confirmChangeMember"
                         confirm-label="Yes, Switch Student"
                         cancel-action="cancelChangeMember"
@@ -107,7 +108,7 @@
 
                     <livewire:components.circulation.qr-search-bar
                         label="Member ID / Code"
-                        placeholder="Enter or scan member ID or book code"
+                        placeholder="Enter or scan member ID or item code"
                     />
                     @if($errorMessage)
                         @php($isWarning = str_contains(strtolower($errorMessage), 'warning'))
@@ -128,7 +129,7 @@
                             <livewire:components.circulation.live-camera />
                         </div>
 
-                        <!-- Reusable Scanned Book Details Preview Component -->
+                        <!-- Reusable Scanned Item Details Preview Component -->
                         <livewire:components.widgets.circulation-book-preview
                             :book="$lastReturnedBook"
                             mode="check-in"
@@ -143,7 +144,7 @@
                         :scanned-member="$scannedMember"
                         :selected-accession="$lastReturnedBook['accession'] ?? null"
                         mode="check-in"
-                        title="Borrowed Books on Account"
+                        title="Borrowed Items on Account"
                         class="md:col-span-8 h-[400px] md:h-full"
                     />
 
@@ -225,4 +226,5 @@
 
     <!-- Search Entity Modal Component -->
     <livewire:components.circulation.search-entity-modal service="check-in" />
+</div>
 </div>

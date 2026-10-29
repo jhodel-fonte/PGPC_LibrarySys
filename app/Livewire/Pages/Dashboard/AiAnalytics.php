@@ -118,7 +118,7 @@ class AiAnalytics extends Component
             'metrics' => $metrics,
             'metricColumns' => MlEvaluationRun::METRICS,
             'evaluationTrend' => $evaluationTrend,
-            'history' => MlEvaluationRun::query()->latest('evaluated_at')->latest('id')->paginate(10),
+            'history' => MlEvaluationRun::query()->latest('evaluated_at')->latest('id')->cursorPaginate(10, ['*'], 'page'),
         ]);
     }
 

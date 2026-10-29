@@ -511,7 +511,7 @@ class CatalogSpreadsheetImport extends Component
                 $progressPercent = min(100, max(5, (int) round(($processed / $totalRows) * 100)));
             }
 
-            $query = $catalogImport->rows()->orderBy('row_number');
+            $query = $catalogImport->rows()->orderBy('row_number')->orderBy('id');
 
             // Tab filter
             if ($this->activeTab === 'ready') {
@@ -542,7 +542,7 @@ class CatalogSpreadsheetImport extends Component
                 }
             }
 
-            $paginatedRows = $query->paginate($this->perPage);
+            $paginatedRows = $query->cursorPaginate($this->perPage, ['*'], 'page');
         }
 
         $routePrefix = request()->is('librarian*') ? 'librarian.' : 'admin.';

@@ -10,7 +10,7 @@
             <!-- Stats List -->
             <div class="flex flex-col gap-0.5 text-xs font-semibold">
                 <div class="flex justify-between items-center py-2.5 border-b border-[#E2E8F0]">
-                    <span class="text-[#475569]">Total Books to Return</span>
+                    <span class="text-[#475569]">Total Items to Return</span>
                     <span class="text-[#0F172A] font-bold tabular-nums">{{ $stats['total'] }}</span>
                 </div>
 
@@ -79,7 +79,7 @@
                         </svg>
                         Account Clear
                     </span>
-                    <span class="text-xs text-[#2563EB] leading-normal font-semibold">No active borrowed books on account</span>
+                    <span class="text-xs text-[#2563EB] leading-normal font-semibold">No active borrowed items on account</span>
                 </div>
 
                 <button disabled class="w-full h-12 bg-[#F1F5F9] text-[#94A3B8] rounded-xl font-bold flex items-center justify-center cursor-not-allowed text-xs uppercase tracking-wider">
@@ -88,7 +88,7 @@
             @elseif($stats['returned'] == 0)
                 <!-- State when member is loaded but no books have been scanned yet -->
                 <div class="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-3 text-center">
-                    <span class="text-xs text-[#475569] font-medium leading-normal">Scan a book code to begin return</span>
+                    <span class="text-xs text-[#475569] font-medium leading-normal">Scan an item code to begin return</span>
                 </div>
 
                 <button disabled class="w-full h-12 bg-[#F1F5F9] text-[#94A3B8] rounded-xl font-bold flex items-center justify-center cursor-not-allowed text-xs uppercase tracking-wider">
@@ -103,7 +103,7 @@
                         </svg>
                         Partial Return
                     </span>
-                    <span class="text-xs text-[#B45309] leading-normal font-semibold">{{ $stats['remaining'] }} {{ Str::plural('book', $stats['remaining']) }} will remain on the account</span>
+                    <span class="text-xs text-[#B45309] leading-normal font-semibold">{{ $stats['remaining'] }} {{ Str::plural('item', $stats['remaining']) }} will remain on the account</span>
                 </div>
 
                 <!-- Review Return Button -->
@@ -131,7 +131,7 @@
                         <svg class="w-4 h-4 text-[#15803D]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
-                        All Books Returned
+                        All Items Returned
                     </span>
                     <span class="text-xs text-[#166534] leading-normal font-semibold">Ready to complete this transaction</span>
                 </div>

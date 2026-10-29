@@ -633,6 +633,7 @@ class CatalogSpreadsheetImportService
             'book_data_id' => $bookData->id,
             'isbn' => !empty($data['isbn']) ? mb_substr(trim($data['isbn']), 0, 50) : null,
             'call_number' => mb_substr($callNum, 0, 255),
+            'catalog_kind' => in_array($matKey, ['equipment', 'multimedia', 'periodical', 'specimen'], true) ? $matKey : 'book',
         ], [
             'issn' => !empty($data['issn']) ? mb_substr(trim($data['issn']), 0, 50) : null,
             'lccn' => !empty($data['lccn']) ? mb_substr(trim($data['lccn']), 0, 50) : null,

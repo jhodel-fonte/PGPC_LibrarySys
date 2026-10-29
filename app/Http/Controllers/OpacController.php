@@ -126,6 +126,10 @@ class OpacController extends Controller
         }
 
         $currentUser = Auth::user();
+        if ($currentUser?->reservations_blocked) {
+            $message = 'Your account cannot place reservations. Please contact the library.';
+            return $request->expectsJson() ? response()->json(['success' => false, 'message' => $message], 403) : back()->with('error', $message);
+        }
         if ($currentUser && method_exists($currentUser, 'isStudent') && $currentUser->isStudent() && ! $currentUser->isApprovedStudent()) {
             $redirectUrl = $currentUser->getVerificationRedirectRoute();
             if ($request->expectsJson()) {
@@ -139,9 +143,24 @@ class OpacController extends Controller
         }
 
         try {
+            $detailId = BookDetail::whereKey($bookId)->value('id') ?? Book::whereKey($bookId)->value('book_detail_id');
+            if (! $detailId || ! BookDetail::publicCatalog()->whereKey($detailId)->exists()) {
+                $message = 'This item is for counter loan only and cannot be reserved online.';
+                return $request->expectsJson() ? response()->json(['success' => false, 'message' => $message], 422) : back()->with('error', $message);
+            }
+            if ($detailId) {
+                app(\App\Services\ReservationWaitlistService::class)->allocate($detailId);
+            }
             $reservation = DB::transaction(function () use ($bookId) {
                 // Bug fix #7: OPAC passes book_detail_id — resolve an available copy via BookDetail
                 $detail = BookDetail::find($bookId);
+                $detailId = $detail?->id ?? Book::whereKey($bookId)->value('book_detail_id');
+                if ($detailId) {
+                    BookDetail::publicCatalog()->lockForUpdate()->findOrFail($detailId);
+                    if (\App\Models\ReservationWaitlist::where('book_detail_id', $detailId)->where('status', 'waiting')->exists()) {
+                        throw new \RuntimeException('not_available');
+                    }
+                }
                 $book   = $detail
                     ? $detail->books()->where('status', 'available')->lockForUpdate()->first()
                     : Book::where('id', $bookId)->where('status', 'available')->lockForUpdate()->first();
@@ -162,7 +181,7 @@ class OpacController extends Controller
                     'book_id'                => $book->id,
                     'student_id'             => $student?->id,
                     'account_id'             => $user?->id,
-                    'reservation_status_id'  => $pendingStatus ? $pendingStatus->id : 1,
+                    'reservation_status_id'  => 1,
                     'reservation_date'       => now(),
                     'due_date'               => now()->addDays(3)->setTime(17, 0, 0),
                     'comment'                => 'Online OPAC reservation by ' . ($user?->username ?? 'student'),

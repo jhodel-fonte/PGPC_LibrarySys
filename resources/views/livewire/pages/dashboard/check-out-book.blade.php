@@ -59,10 +59,10 @@
             <div class="flex flex-col md:flex-row pt-2 justify-between items-start md:items-center">
                 <div>
                     <h1 class="text-xl font-bold text-[#102B70] tracking-tight leading-tight">
-                        Borrow / Issue Books
+                        Borrow Items
                     </h1>
                     <p class="mt-0.5 text-base text-[#64748B] font-medium">
-                        Scan or enter member ID first, then scan book barcodes to process book loans.
+                        Scan or enter a member ID first, then scan item barcodes to process loans.
                     </p>
                 </div>
             </div>
@@ -79,7 +79,7 @@
                     <livewire:components.circulation.top-notification-banner
                         type="warning"
                         title="Unsaved Borrow Session"
-                        :message="'You have already queued ' . count($checkoutBooks) . ' book(s) in this session. Switching student to <b>' . $pendingStudentName . '</b> will clear this borrow list. Proceed?'"
+                        :message="'You have already queued ' . count($checkoutBooks) . ' item(s) in this session. Switching student to <b>' . $pendingStudentName . '</b> will clear this borrow list. Proceed?'"
                         confirm-action="confirmChangeMember"
                         confirm-label="Yes, Switch Student"
                         cancel-action="cancelChangeMember"
@@ -125,7 +125,7 @@
                             <livewire:components.circulation.live-camera />
                         </div>
 
-                        <!-- Reusable Scanned Book Details Preview Component -->
+                        <!-- Reusable Scanned Item Details Preview Component -->
                         <livewire:components.widgets.circulation-book-preview
                             :book="$lastScannedBook"
                             mode="check-out"
@@ -140,7 +140,7 @@
                         :scanned-member="$scannedMember"
                         :selected-accession="$lastScannedBook['accession'] ?? null"
                         mode="check-out"
-                        title="Books to Check Out"
+                        title="Items to Borrow"
                         class="md:col-span-8 h-[400px] md:h-full"
                     />
 
@@ -256,9 +256,9 @@
 
               <!-- Content -->
               <div class="flex flex-col gap-1.5">
-                  <h3 class="text-xl font-bold text-[#102B70]">Books Issued Successfully</h3>
+                  <h3 class="text-xl font-bold text-[#102B70]">Items Borrowed Successfully</h3>
                   <p class="text-base text-[#64748B] font-semibold leading-relaxed px-4">
-                      All books have been successfully checked out and due date records logged.
+                      All items have been successfully borrowed and due date records logged.
                   </p>
               </div>
 

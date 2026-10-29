@@ -29,6 +29,7 @@ class BorrowingTransaction extends Model
         'issued_date' => 'datetime',
         'due_date' => 'datetime',
         'return_date' => 'datetime',
+        'due_reminder_for' => 'datetime',
     ];
 
     public function book(): BelongsTo
@@ -76,3 +77,4 @@ class BorrowingTransaction extends Model
         return $this->hasMany(Fine::class);
     }
 }
+

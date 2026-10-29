@@ -7,6 +7,6 @@
     </div>
     <div>
         <h3 class="text-[#0F172A] font-bold text-[14px]">Scanner Readsy</h3>
-        <p class="text-[#64748B] text-[12px] mt-0.5">Scan book barcode or enter manually</p>
+        <p class="text-[#64748B] text-[12px] mt-0.5">Scan item barcode or enter manually</p>
     </div>
 </div>
