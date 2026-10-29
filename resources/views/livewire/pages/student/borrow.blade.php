@@ -1,5 +1,5 @@
 <div class="min-h-full bg-[#eef3f7] text-base text-slate-800">
-    <div class="mx-auto w-full max-w-[1600px] p-4 lg:p-6 space-y-5">
+    <div class="mx-auto w-full max-w-[1600px] p-3 sm:p-4 lg:p-6 space-y-5">
         
         <!-- Page Header -->
         <div class="bg-white rounded-2xl border border-[#E2E8F0] shadow-[0_1px_2px_rgba(15,23,42,0.04),0_1px_3px_rgba(15,23,42,0.03)] p-5 lg:p-6">
@@ -11,8 +11,8 @@
                     </p>
                 </div>
                 
-                <div class="flex items-center gap-2">
-                    <a href="{{ route('opac.index') }}" class="h-11 px-5 bg-[#102B70] hover:bg-[#0B225E] text-white text-sm font-bold rounded-xl transition-colors flex items-center gap-2 shadow-xs shrink-0">
+                <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                        <a href="{{ route('opac.index') }}" class="h-11 w-full px-5 bg-[#102B70] hover:bg-[#0B225E] text-white text-sm font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-xs shrink-0 sm:w-auto">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>

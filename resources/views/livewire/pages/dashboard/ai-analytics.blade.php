@@ -1,6 +1,8 @@
 @php
     $routePrefix = \App\Services\EmployeeRoleService::getRoutePrefix();
     $formatMetric = fn ($value) => $value === null ? '—' : number_format((float) $value, 4);
+    $formatCount = fn ($value) => $value === null ? '—' : number_format((int) $value);
+    $formatDetail = fn ($value) => $value === null ? '—' : number_format((float) $value, 4);
 @endphp
 
 <div class="min-h-full bg-[#F8FAFC]">
@@ -74,6 +76,76 @@
                 </div>
             </div>
         @endunless
+
+        {{-- Evaluation dataset --}}
+        @php
+            $details = $evaluationDetails;
+            $actual = $details['actual'] ?? [];
+            $predicted = $details['predicted'] ?? [];
+        @endphp
+        @if($latestRun && ($details['training_interactions'] !== null || $details['test_interactions'] !== null))
+            <section class="rounded-2xl border border-[#E2E8F0] bg-white p-5 sm:p-6">
+                <div class="flex flex-col gap-1 border-b border-[#E2E8F0] pb-4 sm:flex-row sm:items-baseline sm:justify-between">
+                    <div>
+                        <h2 class="text-sm font-bold text-[#0F172A]">Evaluation dataset</h2>
+                        <p class="mt-1 text-xs text-[#64748B]">The data volume and score distributions used for the latest model evaluation.</p>
+                    </div>
+                    @if($details['rating_scale'])
+                        <span class="text-xs font-semibold text-[#64748B]">
+                            Rating scale: {{ implode('–', $details['rating_scale']) }}
+                        </span>
+                    @endif
+                </div>
+
+                <div class="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+                    @foreach([
+                        ['Training interactions', $details['training_interactions'], 'records used to train'],
+                        ['Training users', $details['training_users'], 'users used to train'],
+                        ['Test interactions', $details['test_interactions'], 'held-out records'],
+                        ['Test users', $details['test_users'], 'held-out users'],
+                    ] as [$label, $value, $caption])
+                        <div class="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] px-4 py-3">
+                            <p class="text-[11px] font-semibold uppercase tracking-wide text-[#64748B]">{{ $label }}</p>
+                            <p class="mt-1 text-xl font-bold tabular-nums text-[#102B70]">{{ $formatCount($value) }}</p>
+                            <p class="mt-0.5 text-[11px] text-[#94A3B8]">{{ $caption }}</p>
+                        </div>
+                    @endforeach
+                </div>
+
+                @if($actual || $predicted)
+                    <div class="mt-5 overflow-x-auto">
+                        <table class="min-w-full text-left text-xs">
+                            <thead class="border-b border-[#E2E8F0] text-[10px] font-semibold uppercase tracking-wide text-[#64748B]">
+                                <tr>
+                                    <th class="px-3 py-2">Score distribution</th>
+                                    <th class="px-3 py-2 text-right">Count</th>
+                                    <th class="px-3 py-2 text-right">Mean</th>
+                                    <th class="px-3 py-2 text-right">Median</th>
+                                    <th class="px-3 py-2 text-right">Min</th>
+                                    <th class="px-3 py-2 text-right">Max</th>
+                                    <th class="px-3 py-2 text-right">Std. deviation</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-[#E2E8F0] text-[#334155]">
+                                @foreach(['actual' => ['Actual ratings', $actual], 'predicted' => ['Predicted ratings', $predicted]] as [$type, [$label, $stats]])
+                                    @if($stats)
+                                        <tr>
+                                            <th class="whitespace-nowrap px-3 py-3 font-semibold text-[#0F172A]">{{ $label }}</th>
+                                            <td class="px-3 py-3 text-right tabular-nums">{{ $formatCount($stats['count'] ?? null) }}</td>
+                                            <td class="px-3 py-3 text-right tabular-nums">{{ $formatDetail($stats['mean'] ?? null) }}</td>
+                                            <td class="px-3 py-3 text-right tabular-nums">{{ $formatDetail($stats['median'] ?? null) }}</td>
+                                            <td class="px-3 py-3 text-right tabular-nums">{{ $formatDetail($stats['min'] ?? null) }}</td>
+                                            <td class="px-3 py-3 text-right tabular-nums">{{ $formatDetail($stats['max'] ?? null) }}</td>
+                                            <td class="px-3 py-3 text-right tabular-nums">{{ $formatDetail($stats['standard_deviation'] ?? null) }}</td>
+                                        </tr>
+                                    @endif
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
+            </section>
+        @endif
 
         {{-- Evaluation trend --}}
         @if($evaluationTrend['labels'] && $evaluationTrend['series'])
@@ -179,6 +251,7 @@
                         <thead class="bg-[#F8FAFC] text-[11px] font-semibold uppercase tracking-wide text-[#334155]">
                             <tr>
                                 <th scope="col" class="whitespace-nowrap px-5 py-3">Evaluated</th>
+                                <th scope="col" class="whitespace-nowrap px-4 py-3 text-right">Data</th>
                                 @foreach($metricColumns as $label => $column)
                                     <th scope="col" class="whitespace-nowrap px-4 py-3 text-right">{{ $label }}</th>
                                 @endforeach
@@ -194,6 +267,12 @@
                                         @if($latestRun && $run->is($latestRun))
                                             <span class="ml-2 rounded-full bg-[#FCC719]/20 px-2 py-0.5 text-[10px] font-bold uppercase text-[#0F172A]">Latest</span>
                                         @endif
+                                    </td>
+                                    @php($runDetails = $run->evaluationDetails())
+                                    <td class="whitespace-nowrap px-4 py-3 text-right text-xs tabular-nums text-[#64748B]">
+                                        {{ $formatCount($runDetails['training_interactions']) }} train
+                                        <span class="text-[#CBD5E1]">·</span>
+                                        {{ $formatCount($runDetails['test_interactions']) }} test
                                     </td>
                                     @foreach($metricColumns as $label => $column)
                                         <td class="whitespace-nowrap px-4 py-3 text-right tabular-nums text-[#334155]">{{ $formatMetric($run->{$column}) }}</td>

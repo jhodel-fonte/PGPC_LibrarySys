@@ -1,5 +1,5 @@
 <div class="min-h-full bg-[#F8FAFC] pb-16 font-sans text-slate-800 selection:bg-[#102B70] selection:text-white">
-    <div class="mx-auto w-full max-w-[850px] space-y-5 px-4 py-5 sm:px-6 lg:px-8 lg:py-6">
+    <div class="mx-auto w-full max-w-[850px] space-y-5 px-3 py-4 sm:px-6 lg:px-8 lg:py-6">
 
         @if(!$reservation)
             <div class="rounded-xl border border-slate-200 bg-white p-8 text-center space-y-3 ">
@@ -37,7 +37,7 @@
             <!-- Printable Voucher Card -->
             <div class="rounded-xl border border-[#E2E8F0] bg-white  overflow-hidden print:shadow-none print:border-none" id="reservation-slip">
                 <!-- Voucher Header -->
-                <div class="bg-[#102B70] text-white p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="bg-[#102B70] text-white p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div class="space-y-1">
                         <span class="text-base font-bold text-white uppercase tracking-wider block">PGPC Library System</span>
                         <h2 class="text-xl sm:text-2xl font-bold tracking-tight">Official Reservation Slip</h2>
@@ -51,9 +51,9 @@
                 </div>
 
                 <!-- Voucher Body -->
-                <div class="p-6 sm:p-8 space-y-6">
+                <div class="p-4 sm:p-8 space-y-6">
                     <!-- Book Info Card -->
-                    <div class="flex flex-col sm:flex-row items-center sm:items-start gap-5 p-5 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC]">
+                    <div class="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-5 p-4 sm:p-5 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC]">
                         <div class="relative shrink-0  rounded-xl overflow-hidden border border-slate-200 bg-white">
                             <img
                                 src="{{ $coverUrl }}"

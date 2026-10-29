@@ -80,4 +80,77 @@ Artisan::command('alert:send {user : Account ID, username, or email} {title : Al
     return 0;
 })->purpose('Dispatch an Alerts notification to a user account');
 
+Artisan::command(
+    'email:approval-test {recipient? : Target email address, username, or Account ID} {--result=approved : Approval result (approved or rejected)} {--remarks= : Reviewer remarks when result is rejected} {--queue : Queue the email instead of sending immediately}',
+    function () {
+        $identifier = trim((string) ($this->argument('recipient') ?? ''));
+        $rawResult = strtolower(trim((string) $this->option('result')));
+        $result = in_array($rawResult, ['rejected', 'not_approved', 'not-approved', 'declined'], true) ? 'rejected' : 'approved';
+        $remarks = $this->option('remarks')
+            ? trim((string) $this->option('remarks'))
+            : ($result === 'rejected'
+                ? 'The uploaded School ID image is blurry and the Student ID number is cut off. Please upload a clearer photo.'
+                : null);
+        $isQueued = (bool) $this->option('queue');
+
+        $account = null;
+        if ($identifier !== '') {
+            $account = is_numeric($identifier)
+                ? \App\Models\Account::with('student')->find((int) $identifier)
+                : \App\Models\Account::with('student')
+                    ->where('username', $identifier)
+                    ->orWhere('email', $identifier)
+                    ->first();
+        }
+
+        if (! $account) {
+            $account = \App\Models\Account::with('student')
+                ->whereHas('student')
+                ->first() ?? \App\Models\Account::with('student')->first();
+        }
+
+        if (! $account) {
+            $account = new \App\Models\Account([
+                'username' => 'juan.delacruz',
+                'email' => filter_var($identifier, FILTER_VALIDATE_EMAIL) ? $identifier : 'jhcyrene@gmail.com',
+            ]);
+            $account->setRelation('student', new \App\Models\Student([
+                'first_name' => 'Juan',
+                'last_name' => 'Dela Cruz',
+                'school_id_number' => '2024-00142',
+            ]));
+        }
+
+        $targetEmail = filter_var($identifier, FILTER_VALIDATE_EMAIL)
+            ? $identifier
+            : ($account->email ?: 'jhcyrene@gmail.com');
+
+        $this->info("Target Recipient : {$targetEmail}");
+        $this->line("Account Username : {$account->username}");
+        $this->line("Status Result    : {$result}");
+        if ($remarks) {
+            $this->line("Reviewer Remarks : \"{$remarks}\"");
+        }
+
+        try {
+            $mailable = new \App\Mail\AccountApprovalResultEmail($account, $result, $remarks);
+
+            if ($isQueued) {
+                \Illuminate\Support\Facades\Mail::to($targetEmail)->queue($mailable);
+                $this->info("✓ Approval status email queued successfully for {$targetEmail}. Run 'php artisan queue:work' to process.");
+            } else {
+                $this->info("Sending approval status email immediately...");
+                \Illuminate\Support\Facades\Mail::to($targetEmail)->sendNow($mailable);
+                $this->info("✓ Approval status email sent successfully to {$targetEmail}!");
+            }
+
+            return 0;
+        } catch (\Throwable $e) {
+            $this->error("✗ Failed to send approval status email: " . $e->getMessage());
+            return 1;
+        }
+    }
+)->purpose('Test sending the student registration approval/rejection result email');
+
+
 

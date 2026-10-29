@@ -59,9 +59,6 @@
                     Review uploaded School IDs and registration documents to verify and activate new student accounts.
                 </p>
             </div>
-            <span class="inline-flex items-center self-start sm:self-auto rounded-xl border border-[#CBD5E1] bg-white px-3.5 py-1.5 text-xs sm:text-sm font-semibold text-[#334155]">
-                Static Design Preview
-            </span>
         </div>
 
         <!-- 2. Summary Cards -->
@@ -409,6 +406,14 @@
                         class="h-11 sm:h-12 rounded-xl border border-[#CBD5E1] bg-white px-5 text-sm sm:text-base font-bold text-[#334155] hover:bg-[#F8FAFC] cursor-pointer"
                     >
                         Cancel
+                    </button>
+                    <button
+                        type="button"
+                        wire:click="blockApplicant({{ $reviewingApplicant['id'] }})"
+                        wire:confirm="Reject this registration and block this email from registering for {{ config('settings.registration.email_block_days', 3) }} days?"
+                        class="h-11 sm:h-12 rounded-xl border border-[#7F1D1D] bg-[#7F1D1D] px-5 text-sm sm:text-base font-bold text-white hover:bg-[#991B1B] cursor-pointer"
+                    >
+                        Reject Registration
                     </button>
                     <button
                         type="button"

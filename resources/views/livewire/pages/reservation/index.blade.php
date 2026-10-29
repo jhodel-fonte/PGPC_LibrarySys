@@ -1,5 +1,5 @@
 <div class="min-h-full bg-[#F8FAFC] pb-16 font-sans text-base text-slate-800 selection:bg-[#102B70] selection:text-white">
-    <div class="mx-auto w-full max-w-[1360px] space-y-5 px-4 py-5 sm:px-6 lg:px-8 lg:py-6">
+    <div class="mx-auto w-full max-w-[1360px] space-y-5 px-3 py-4 sm:px-6 lg:px-8 lg:py-6">
 
         <!-- ======================================================== -->
         <!-- 1. HERO HEADER                                           -->
@@ -14,11 +14,11 @@
                     </p>
                 </div>
 
-                <div class="flex flex-wrap items-center gap-2 shrink-0">
+                <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
                     <a
                         href="{{ route('student.profile') }}"
                         wire:navigate
-                        class="inline-flex h-11 items-center justify-center gap-2.5 rounded-xl border border-[#CBD5E1] bg-white px-4 text-base font-semibold text-[#102B70] transition-colors hover:bg-[#F8FAFC] focus:outline-none focus:ring-2 focus:ring-[#102B70]/20"
+                        class="inline-flex h-11 w-full items-center justify-center gap-2.5 rounded-xl border border-[#CBD5E1] bg-white px-4 text-base font-semibold text-[#102B70] transition-colors hover:bg-[#F8FAFC] focus:outline-none focus:ring-2 focus:ring-[#102B70]/20 sm:w-auto"
                     >
                         <span>My Profile</span>
                         @if($activeCount > 0)
@@ -102,7 +102,7 @@
                     $firstCopy = $item->books->first();
                     $coverUrl = $item->cover_url ?: asset('images/' . config('settings.book_covers.default', 'book-cover.webp'));
                 @endphp
-                <div class="group rounded-xl border border-[#E2E8F0] bg-white p-4  hover: transition-all flex flex-col justify-between">
+                    <div class="group rounded-xl border border-[#E2E8F0] bg-white p-4 transition-all flex flex-col justify-between">
                     <div class="space-y-3">
                         <!-- Book Cover and Badges -->
                         <div class="relative overflow-hidden rounded-xl bg-[#F8FAFC] aspect-[3/4] flex items-center justify-center border border-slate-100">
@@ -142,7 +142,7 @@
                         <button
                             type="button"
                             wire:click="openReservationModal({{ $item->id }})"
-                            class="w-full h-11 rounded-xl bg-[#102B70] hover:bg-[#0B225E] text-white text-base font-bold  hover: transition-all flex items-center justify-center cursor-pointer active:scale-[0.98]"
+                            class="w-full h-11 rounded-xl bg-[#102B70] hover:bg-[#0B225E] text-white text-base font-bold transition-all flex items-center justify-center cursor-pointer active:scale-[0.98]"
                         >
                             <span>Reserve This Book</span>
                         </button>
@@ -265,7 +265,7 @@
                     <button
                         type="button"
                         wire:click="closeModal"
-                        class="h-11 px-5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-base font-bold transition-all cursor-pointer"
+                        class="h-11 w-full px-5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-base font-bold transition-all cursor-pointer sm:w-auto"
                     >
                         Cancel
                     </button>
@@ -273,7 +273,7 @@
                         type="button"
                         wire:click="submitReservation"
                         wire:loading.attr="disabled"
-                        class="h-11 px-6 rounded-xl bg-[#102B70] hover:bg-[#0B225E] text-white text-base font-bold  hover: transition-all flex items-center gap-2 cursor-pointer active:scale-[0.98] disabled:opacity-50"
+                        class="h-11 w-full px-6 rounded-xl bg-[#102B70] hover:bg-[#0B225E] text-white text-base font-bold transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] disabled:opacity-50 sm:w-auto"
                     >
                         <span wire:loading.remove wire:target="submitReservation">Confirm Reservation</span>
                         <span wire:loading wire:target="submitReservation">Processing...</span>
