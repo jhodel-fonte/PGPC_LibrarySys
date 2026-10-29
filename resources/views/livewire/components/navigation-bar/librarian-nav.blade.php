@@ -80,22 +80,33 @@
             </x-slot:icon>
             User Management
             <x-slot:subitems>
-                <x-widget.sidebar-subitem href="{{ route($routePrefix . 'user-management', ['type' => 'student']) }}" :active="request()->routeIs($routePrefix . 'user-management*') && request('type', 'student') === 'student'" wire:navigate>
+                <x-widget.sidebar-subitem href="{{ route($routePrefix . 'user-management', ['type' => 'student']) }}" :active="!request()->routeIs($routePrefix . 'user-management.approvals') && request()->routeIs($routePrefix . 'user-management*') && request('type', 'student') === 'student'" wire:navigate>
                     Students
                 </x-widget.sidebar-subitem>
-                <x-widget.sidebar-subitem href="{{ route($routePrefix . 'user-management', ['type' => 'librarian']) }}" :active="request()->routeIs($routePrefix . 'user-management*') && request('type') === 'librarian'" wire:navigate>
+                <x-widget.sidebar-subitem href="{{ route($routePrefix . 'user-management.approvals') }}" :active="request()->routeIs($routePrefix . 'user-management.approvals')" wire:navigate>
+                    Account Approvals
+                </x-widget.sidebar-subitem>
+                <x-widget.sidebar-subitem href="{{ route($routePrefix . 'user-management', ['type' => 'librarian']) }}" :active="!request()->routeIs($routePrefix . 'user-management.approvals') && request()->routeIs($routePrefix . 'user-management*') && request('type') === 'librarian'" wire:navigate>
                     Librarians
                 </x-widget.sidebar-subitem>
             </x-slot:subitems>
         </x-widget.sidebar-button>
     @elseif($canManageStudents)
-        <x-widget.sidebar-button href="{{ route($routePrefix . 'user-management', ['type' => 'student']) }}" :active="request()->routeIs($routePrefix . 'user-management*') || request()->routeIs($routePrefix . 'user-details')" :textSize="$textClass" wire:navigate>
+        <x-widget.sidebar-button :active="request()->routeIs($routePrefix . 'user-management*') || request()->routeIs($routePrefix . 'user-details')" :textSize="$textClass">
             <x-slot:icon>
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                 </svg>
             </x-slot:icon>
-            Students
+            User Management
+            <x-slot:subitems>
+                <x-widget.sidebar-subitem href="{{ route($routePrefix . 'user-management', ['type' => 'student']) }}" :active="!request()->routeIs($routePrefix . 'user-management.approvals') && request()->routeIs($routePrefix . 'user-management*')" wire:navigate>
+                    Students
+                </x-widget.sidebar-subitem>
+                <x-widget.sidebar-subitem href="{{ route($routePrefix . 'user-management.approvals') }}" :active="request()->routeIs($routePrefix . 'user-management.approvals')" wire:navigate>
+                    Account Approvals
+                </x-widget.sidebar-subitem>
+            </x-slot:subitems>
         </x-widget.sidebar-button>
     @elseif($canManageLibrarians)
         <x-widget.sidebar-button href="{{ route($routePrefix . 'user-management', ['type' => 'librarian']) }}" :active="request()->routeIs($routePrefix . 'user-management*') || request()->routeIs($routePrefix . 'user-details')" :textSize="$textClass" wire:navigate>

@@ -54,7 +54,9 @@ class AiAnalytics extends Component
         $previousRun = $recentRuns->get(1);
 
         // Prefer live values; when the service is offline show the last saved run.
-        $currentMetrics = $evaluation['available'] ? $evaluation['metrics'] : ($latestRun?->metrics() ?? []);
+        $currentMetrics = ! empty($evaluation['metrics'])
+            ? $evaluation['metrics']
+            : ($latestRun?->metrics() ?? []);
         $comparisonRun = $evaluation['available'] && $latestRun && $latestRun->metrics() != $currentMetrics
             ? $latestRun
             : $previousRun;

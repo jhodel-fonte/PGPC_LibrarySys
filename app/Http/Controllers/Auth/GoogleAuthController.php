@@ -55,7 +55,7 @@ class GoogleAuthController extends Controller
         // If an existing account is found, check if deactivated or disabled
         if ($account) {
             $isDeactivated = $account->trashed()
-                || ($account->status_id && $account->status_id !== 1)
+                || in_array((int) $account->status_id, [2, 3], true)
                 || ($account->status && in_array(strtolower($account->status->status_name), ['inactive', 'disabled', 'suspended', 'deactivated']))
                 || ($account->student()->withTrashed()->whereNotNull('deleted_at')->exists())
                 || ($account->librarian()->withTrashed()->whereNotNull('deleted_at')->exists());
@@ -83,6 +83,10 @@ class GoogleAuthController extends Controller
                 return redirect()->route('admin.dashboard');
             } elseif (in_array($roleName, ['librarian', 'headlibrarian', 'staff'])) {
                 return redirect()->route('librarian.dashboard');
+            }
+
+            if (! $account->isApprovedStudent()) {
+                return redirect()->to($account->getVerificationRedirectRoute());
             }
 
             return redirect()->route('student.dashboard');

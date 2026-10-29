@@ -42,6 +42,12 @@ class Student extends Model
         'date_of_birth',
         'gender',
         'image_url',
+        'verification_document_path',
+        'verification_document_type',
+        'verification_submitted_at',
+        'verified_at',
+        'verified_by',
+        'verification_remarks',
         'library_status_id',
         'note',
         'program',
@@ -50,9 +56,47 @@ class Student extends Model
         'enrollment_year',
     ];
 
+    protected $casts = [
+        'verification_submitted_at' => 'datetime',
+        'verified_at' => 'datetime',
+    ];
+
     public function account(): BelongsTo
     {
         return $this->belongsTo(Account::class);
+    }
+
+    public function verifier(): BelongsTo
+    {
+        return $this->belongsTo(Account::class, 'verified_by');
+    }
+
+    public function getVerificationDocumentUrlAttribute(): ?string
+    {
+        $path = $this->verification_document_path;
+        if (empty($path)) {
+            return null;
+        }
+
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return $path;
+        }
+
+        if (str_starts_with($path, '/storage/') || str_starts_with($path, 'storage/')) {
+            return asset(ltrim($path, '/'));
+        }
+
+        return asset('storage/' . ltrim($path, '/'));
+    }
+
+    public function getVerificationDocumentTypeLabelAttribute(): string
+    {
+        return match ($this->verification_document_type) {
+            'school_id' => 'School ID Card',
+            'cor' => 'Certificate of Registration (COR)',
+            'enrollment_form' => 'Official Enrollment Form',
+            default => $this->verification_document_type ?: 'School ID Card',
+        };
     }
 
     public function libraryStatus(): BelongsTo

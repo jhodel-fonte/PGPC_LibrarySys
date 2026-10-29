@@ -29,6 +29,9 @@ return Application::configure(basePath: dirname(__DIR__))
                 } elseif (in_array($roleName, ['librarian', 'headlibrarian'])) {
                     return route('librarian.dashboard');
                 }
+                if (method_exists($user, 'isApprovedStudent') && ! $user->isApprovedStudent()) {
+                    return $user->getVerificationRedirectRoute();
+                }
                 return route('student.dashboard');
             }
             return '/';
@@ -39,6 +42,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => \App\Http\Middleware\PermissionMiddleware::class,
             'check_policy' => \App\Http\Middleware\CheckPolicyAcknowledgements::class,
             'unauthenticated' => \Illuminate\Auth\Middleware\RedirectIfAuthenticated::class,
+            'student.verified' => \App\Http\Middleware\EnsureStudentIsVerified::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

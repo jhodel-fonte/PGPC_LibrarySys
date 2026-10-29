@@ -106,7 +106,7 @@ class RegisterForm extends Form
                 'email' => strtolower(trim($this->email)),
                 'password_hash' => Hash::make($this->password),
                 'role_id' => $studentRoleId,
-                'status_id' => 1, // Active
+                'status_id' => 4, // Pending verification & admin/librarian approval
                 'provider' => $googleAuth ? 'google' : null,
                 'provider_id' => $googleAuth['id'] ?? null,
                 'is_email_verified' => ! empty($googleAuth),

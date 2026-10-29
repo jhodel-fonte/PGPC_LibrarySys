@@ -330,6 +330,47 @@ class Account extends Authenticatable
         return StudentRoleService::isStudent($this);
     }
 
+    /**
+     * Check whether a student account has been approved/activated by an admin or librarian.
+     */
+    public function isApprovedStudent(): bool
+    {
+        if (! $this->isStudent()) {
+            return true;
+        }
+
+        if ((int) $this->status_id === 1) {
+            return true;
+        }
+
+        $statusName = strtolower($this->status?->status_name ?? '');
+        return $statusName === 'active';
+    }
+
+    /**
+     * Check whether the student has already uploaded a verification document.
+     */
+    public function hasSubmittedVerificationDocument(): bool
+    {
+        return ! empty($this->student?->verification_document_path);
+    }
+
+    /**
+     * Get the appropriate verification route for an unverified student account.
+     */
+    public function getVerificationRedirectRoute(): string
+    {
+        if ((int) $this->status_id === 5 || strtolower($this->status?->status_name ?? '') === 'not approved') {
+            return route('verification.status');
+        }
+
+        if ($this->hasSubmittedVerificationDocument()) {
+            return route('verification.status');
+        }
+
+        return route('verification.upload');
+    }
+
     /* =========================================================================
      * DOMAIN PERMISSION CONVENIENCE METHODS
      * ========================================================================= */
