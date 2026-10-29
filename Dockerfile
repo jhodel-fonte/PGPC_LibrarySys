@@ -70,6 +70,11 @@ RUN chown -R www-data:www-data \
 # Expose HTTP and HTTPS ports
 EXPOSE 80 443
 
+# Add these lines near the bottom of your existing Dockerfile
+RUN echo "upload_max_filesize = 70M" > /usr/local/etc/php/conf.d/uploads.ini && \
+    echo "post_max_size = 70M" >> /usr/local/etc/php/conf.d/uploads.ini && \
+    echo "max_execution_time = 300" >> /usr/local/etc/php/conf.d/uploads.ini
+
 # Install the container entrypoint
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
