@@ -1,35 +1,8 @@
 <div wire:key="return-workstation" class="return-workstation-root">
-<div class="relative w-full h-auto lg:h-[calc(100vh-70px)] flex flex-col items-center justify-start pt-4 px-3 md:px-6 xl:px-12 pb-5 font-sans bg-[#F8FAFC] overflow-y-auto lg:overflow-hidden check-in-workstation">
+<div class="relative w-full min-w-0 flex flex-col items-center justify-start pt-4 px-3 md:px-6 xl:px-12 pb-5 font-sans bg-[#F8FAFC] check-in-workstation">
 
     <!-- Lock page layout scroll -->
     <style>
-        @media (min-width: 1024px) {
-            @media (min-height: 800px) {
-                main {
-                    overflow: hidden !important;
-                    display: flex;
-                    flex-direction: column;
-                    height: calc(100vh - 70px) !important;
-                }
-            }
-        }
-
-        /* Zoom and Low Height Viewport Overrides */
-        @media (max-height: 799px) {
-            .check-in-workstation,
-            .check-in-workstation .lg\:overflow-hidden,
-            .check-in-workstation .lg\:h-full,
-            .check-in-workstation .lg\:h-\[calc\(100vh-70px\)\],
-            .check-in-workstation .lg\:h-\[calc\(100\%-80px\)\] {
-                height: auto !important;
-                overflow: visible !important;
-            }
-            main {
-                overflow: auto !important;
-                height: auto !important;
-            }
-        }
-
         @keyframes loading-pulse {
             0% { transform: translateX(-100%); }
             100% { transform: translateX(330%); }
@@ -50,7 +23,7 @@
         }
     </style>
 
-    <div class="w-full max-w-[1460px] flex flex-col h-auto lg:h-full lg:overflow-hidden">
+    <div class="w-full max-w-[1460px] min-w-0 flex flex-col">
         <!-- Header Area -->
         <div class="w-full flex flex-col mb-4 md:mt-2 relative z-10 shrink-0">
 
@@ -81,10 +54,10 @@
         </div>
 
         <!-- Main Content Grid -->
-        <div class="w-full grid grid-cols-1 lg:grid-cols-12 gap-6 relative z-10 mb-2 flex-1 lg:overflow-hidden h-auto lg:h-[calc(100%-80px)]">
+        <div class="w-full grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(260px,320px)] gap-4 lg:gap-6 relative z-10 mb-2 items-start">
 
             <!-- Left Section: Column 1 + Column 2 (col-span-9) -->
-            <div class="lg:col-span-9 h-auto lg:h-full flex flex-col gap-4 lg:overflow-hidden">
+            <div class="min-w-0 flex flex-col gap-4">
 
                 <!-- Switch Student Confirmation Banner -->
                 @if($showConfirmChangeMember)
@@ -100,7 +73,7 @@
                 @endif
 
                 <!-- QR Search / Input Bar (occupies first 2 columns at top) -->
-                <div class="relative overflow-hidden shrink-0 bg-white rounded-3xl border border-[#E2E8F0] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
+                <div class="relative overflow-hidden shrink-0 bg-white rounded-xl border border-[#E2E8F0] p-4">
                     <!-- Indeterminate Top Progress Bar -->
                     <div wire:loading class="absolute top-0 left-0 right-0 h-1 bg-[#EFF6FF] overflow-hidden">
                         <div class="h-full w-1/3 bg-[#FCC719] animate-loading-pulse rounded-full"></div>
@@ -111,7 +84,9 @@
                         placeholder="Enter or scan member ID or item code"
                     />
                     @if($errorMessage)
-                        @php($isWarning = str_contains(strtolower($errorMessage), 'warning'))
+                        @php
+                            $isWarning = str_contains(strtolower($errorMessage), 'warning');
+                        @endphp
                         <div wire:key="checkin-alert-{{ md5($errorMessage) }}" x-data="{ open: true }" x-init="setTimeout(() => open = false, 6000)" x-show="open" x-transition class="mt-3 flex items-start justify-between gap-3 rounded-lg border p-3 text-sm font-medium {{ $isWarning ? 'border-amber-200 bg-amber-50 text-amber-800' : 'border-rose-200 bg-rose-50 text-rose-800' }}">
                             <span>{{ $errorMessage }}</span>
                             <button type="button" @click="open = false" class="shrink-0 font-semibold underline underline-offset-2">Dismiss</button>
@@ -120,12 +95,12 @@
                 </div>
 
                 <!-- Sub Grid: Column 1 (Camera + Book Scanned) & Column 2 (Table) side-by-side -->
-                <div class="grid grid-cols-1 md:grid-cols-12 gap-4 flex-1 lg:overflow-hidden h-auto lg:h-full">
+                <div class="grid grid-cols-1 md:grid-cols-[minmax(220px,1fr)_minmax(0,2fr)] gap-4 min-w-0">
 
                     <!-- COLUMN 1: Scanner + Scanned Book Details (md:col-span-4) -->
-                    <div class="md:col-span-4 flex flex-col gap-4 h-auto lg:h-full lg:overflow-hidden">
+                    <div class="min-w-0 flex flex-col gap-4">
                         <!-- Scanner Card -->
-                        <div class="bg-white rounded-3xl border border-[#E2E8F0] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.02)] shrink-0">
+                        <div class="bg-white rounded-xl border border-[#E2E8F0] p-5 shrink-0">
                             <livewire:components.circulation.live-camera />
                         </div>
 
@@ -145,17 +120,18 @@
                         :selected-accession="$lastReturnedBook['accession'] ?? null"
                         mode="check-in"
                         title="Borrowed Items on Account"
-                        class="md:col-span-8 h-[400px] md:h-full"
+                        class="min-w-0 min-h-[400px]"
                     />
 
                 </div>
             </div>
 
             
-            <div class="lg:col-span-3 h-auto lg:h-full flex flex-col gap-4 lg:overflow-hidden">
+            <div class="min-w-0 w-full flex flex-col gap-4">
             
-                <div wire:loading.class="opacity-65 transition-opacity duration-300" class="bg-white rounded-3xl border border-[#E2E8F0] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.02)] shrink-0 min-h-[150px] flex flex-col">
+                <div wire:loading.class="opacity-65 transition-opacity duration-300" class="bg-white rounded-xl border border-[#E2E8F0] p-5 shrink-0 min-h-[220px] flex flex-col">
                     <div class="flex flex-col gap-3 flex-1">
+                        <span class="block text-base font-semibold text-[#64748B]">Student</span>
                         @if($scannedMember)
                             @php
                                 if (!empty($scannedMember['name'])) {
@@ -164,7 +140,7 @@
                                 }
                                 $isStatusActive = strtolower($scannedMember['status'] ?? 'active') === 'active';
                             @endphp
-                            <div class="bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl p-4 flex flex-col flex-1 justify-between">
+                            <div class="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4 flex flex-col gap-4 flex-1 justify-between">
                                 <div class="flex items-center gap-3.5">
                                     <div class="min-w-0 flex-1">
                                         <div class="flex items-center gap-2 flex-wrap">
@@ -207,7 +183,8 @@
                                 </div>
                             </div>
                         @else
-                            <div class="bg-[#F8FAFC] border border-dashed border-[#CBD5E1] rounded-2xl p-6 flex flex-col items-center justify-center text-center gap-2.5 flex-1 mt-1">
+                            <div class="bg-[#F8FAFC] border border-dashed border-[#CBD5E1] rounded-xl p-6 flex flex-col items-center justify-center text-center gap-2.5 flex-1 mt-1">
+                                <span class="text-base font-bold text-[#334155]">No Student Profile</span>
                                 <span class="text-sm font-medium text-[#64748B] max-w-[190px] leading-relaxed">Scan or enter member ID number to process returns.</span>
                             </div>
                         @endif

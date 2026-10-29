@@ -39,11 +39,12 @@ class CheckInTest extends TestCase
         $this->librarian->librarian()->create([
             'first_name' => 'Librarian',
             'last_name' => 'User',
-            'employee_id_number' => 'EMP-001',
+            'school_id_number' => 'EMP-TEST-001',
         ]);
 
         // Create Student
         $this->student = Student::create([
+            'account_id' => Account::factory()->create(['role_id' => 4])->id,
             'school_id_number' => '2026-0001',
             'first_name' => 'John',
             'last_name' => 'Doe',
@@ -53,8 +54,8 @@ class CheckInTest extends TestCase
         ]);
 
         // Create Book Cataloging relations
-        $bookData = BookData::create(['book_title' => 'Test Book', 'subtitle' => 'BK']);
-        $bookDetail = BookDetail::create(['book_data_id' => $bookData->id, 'call_number' => 'CN-123']);
+        $bookData = BookData::create(['book_title' => 'Test Book', 'subtitle' => 'BK', 'language_id' => \App\Models\Language::firstOrCreate(['lang' => 'English'])->id]);
+        $bookDetail = BookDetail::create(['book_data_id' => $bookData->id, 'call_number' => 'CN-123', 'format' => 'Book', 'book_type_id' => \App\Models\BookType::first()->id, 'publisher_id' => \App\Models\Publisher::first()->id]);
 
         // Create physical book
         $this->book = Book::create([
@@ -81,8 +82,11 @@ class CheckInTest extends TestCase
 
     public function test_librarian_can_access_checkin_page(): void
     {
-        $response = $this->actingAs($this->librarian)->get('/admin/circulation-desk/return');
-        $response->assertStatus(200);
+        $response = $this->actingAs($this->librarian)->get('/librarian/circulation-desk/return');
+        $response->assertStatus(200)
+            ->assertSee('Borrowed Items on Account')
+            ->assertSee('Return Summary')
+            ->assertSee('No Student Profile');
     }
 
     public function test_scan_student_loads_profile_and_borrowed_books(): void
@@ -114,7 +118,49 @@ class CheckInTest extends TestCase
             ->assertCount('returnedBooks', 1)
             ->call('undoReturn', 'ACC-999')
             ->assertCount('returnedBooks', 0)
-            ->assertNull('lastReturnedBook');
+            ->assertSet('lastReturnedBook.is_returned', false);
+    }
+
+    public function test_return_review_uses_librarian_route(): void
+    {
+        Livewire::actingAs($this->librarian)
+            ->test(CheckInBook::class)
+            ->call('handleSearchCode', '2026-0001')
+            ->call('handleSearchCode', 'BAR-999')
+            ->call('reviewReturn')
+            ->assertRedirect(route('librarian.circulation-desk.return.confirm'));
+    }
+
+    public function test_confirming_return_records_it_and_releases_copy(): void
+    {
+        session([
+            'confirm_return_student_id' => $this->student->id,
+            'confirm_return_transaction_ids' => [$this->transaction->id],
+        ]);
+
+        Livewire::actingAs($this->librarian)
+            ->test(\App\Livewire\Pages\Dashboard\ConfirmReturn::class)
+            ->call('confirmReturn')
+            ->assertDispatched('return-completed', redirectUrl: route('librarian.circulation-desk.return'));
+
+        $this->assertNotNull($this->transaction->fresh()->return_date);
+        $this->assertSame('available', $this->book->fresh()->status);
+    }
+
+    public function test_return_confirmation_rejects_a_loan_from_another_student(): void
+    {
+        $other = Student::create([
+            'account_id' => Account::factory()->create(['role_id' => 4])->id,
+            'school_id_number' => '2026-0002', 'first_name' => 'Jane', 'last_name' => 'Doe', 'library_status_id' => 1,
+        ]);
+        session(['confirm_return_student_id' => $other->id, 'confirm_return_transaction_ids' => [$this->transaction->id]]);
+
+        Livewire::actingAs($this->librarian)
+            ->test(\App\Livewire\Pages\Dashboard\ConfirmReturn::class)
+            ->call('confirmReturn')
+            ->assertDispatched('return-failed');
+
+        $this->assertNull($this->transaction->fresh()->return_date);
+        $this->assertSame('borrowed', $this->book->fresh()->status);
     }
 }
-

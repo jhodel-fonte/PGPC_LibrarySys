@@ -51,7 +51,7 @@ class ConfirmReturn extends Component
             'book.bookDetail.bookData',
             'book.bookDetail.bookData.authors',
             'issuedCondition'
-        ])->whereIn('id', $this->transactionIds)->get();
+        ])->where('school_id', $this->studentId)->whereNull('return_date')->whereIn('id', $this->transactionIds)->get();
 
         $this->totalFine = 0.00;
         $this->overdueCount = 0;
@@ -104,6 +104,7 @@ class ConfirmReturn extends Component
 
     public function confirmReturn()
     {
+        EmployeeRoleService::authorizeReturn('Unauthorized action. You do not have permission to confirm book returns.');
         $this->errorMessage = null;
         $prefix = EmployeeRoleService::getRoutePrefix();
         $returnUrl = route($prefix . 'circulation-desk.return');
@@ -112,26 +113,21 @@ class ConfirmReturn extends Component
             return $this->redirect($returnUrl, navigate: true);
         }
 
-        // Backend duplicate check: if transactions are already marked as returned, do not process again
-        $alreadyProcessed = BorrowingTransaction::whereIn('id', $this->transactionIds)
-            ->whereNotNull('return_date')
-            ->exists();
-
-        if ($alreadyProcessed) {
-            session()->forget(['confirm_return_student_id', 'confirm_return_transaction_ids']);
-            session()->flash('success_message', 'Books returned successfully (already processed).');
-            $this->dispatch('return-completed', redirectUrl: $returnUrl);
-            return;
-        }
-
         try {
             DB::transaction(function () {
                 $now = Carbon::now();
                 $librarianId = auth()->user()?->librarian?->id ?? Librarian::first()?->id ?? null;
 
                 $transactions = BorrowingTransaction::with(['book' => fn ($q) => $q->withTrashed(), 'book.bookDetail' => fn ($q) => $q->withTrashed()])
+                    ->where('school_id', $this->studentId)
                     ->whereIn('id', $this->transactionIds)
+                    ->whereNull('return_date')
+                    ->lockForUpdate()
                     ->get();
+
+                if ($transactions->count() !== count(array_unique($this->transactionIds))) {
+                    throw new \RuntimeException('Some selected items were already returned or do not belong to this student. Please review the return again.');
+                }
 
                 // Safely resolve Overdue fine type ID
                 $overdueFineTypeId = DB::table('fine_types')->where('name', 'Overdue')->value('id')
