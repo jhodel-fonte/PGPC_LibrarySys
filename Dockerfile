@@ -51,6 +51,7 @@ RUN npm install \
 
 # Install Nginx and Supervisor configurations
 COPY docker/nginx.conf /etc/nginx/nginx.conf
+COPY docker/php.ini /usr/local/etc/php/conf.d/zz-upload.ini
 COPY docker/supervisord.conf /etc/supervisord.conf
 
 # Create Nginx FastCGI temporary directories
