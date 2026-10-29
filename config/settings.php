@@ -97,6 +97,10 @@ return [
         'from_name' => env('MAIL_FROM_NAME', 'PGPC Support'),
     ],
 
+    'registration' => [
+        'email_block_days' => 3,
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | iProgSMS Gateway Configuration

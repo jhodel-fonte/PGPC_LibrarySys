@@ -4,10 +4,13 @@ namespace App\Livewire\Pages\Dashboard;
 
 use App\Models\Account;
 use App\Models\Student;
+use App\Models\RegistrationEmailBlocklist;
+use App\Mail\AccountApprovalResultEmail;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
@@ -103,6 +106,7 @@ class UserApprovals extends Component
     {
         $account = $this->baseStudentsQuery()
             ->with('student')
+            ->where('accounts.status_id', 4)
             ->whereKey($accountId)
             ->first();
 
@@ -123,6 +127,7 @@ class UserApprovals extends Component
                 'verification_remarks' => null,
             ]);
         });
+        Mail::to($account->email)->queue(new AccountApprovalResultEmail($account->fresh('student'), 'approved'));
 
         $this->selectedIds = array_values(array_diff(array_map('strval', $this->selectedIds), [(string) $accountId]));
         $this->pageCursors = [];
@@ -140,6 +145,7 @@ class UserApprovals extends Component
 
         $account = $this->baseStudentsQuery()
             ->with('student')
+            ->where('accounts.status_id', 4)
             ->whereKey($accountId)
             ->first();
 
@@ -161,11 +167,52 @@ class UserApprovals extends Component
                 ]);
             }
         });
+        Mail::to($account->email)->queue(new AccountApprovalResultEmail($account->fresh('student'), 'rejected', $remarks));
 
         $this->selectedIds = array_values(array_diff(array_map('strval', $this->selectedIds), [(string) $accountId]));
         $this->pageCursors = [];
         $this->closeReview();
         $this->dispatch('toast', message: 'Resubmission requested from student.', type: 'info');
+    }
+
+    public function blockApplicant(int $accountId): void
+    {
+        $account = $this->baseStudentsQuery()
+            ->with('student')
+            ->where('accounts.status_id', 4)
+            ->whereKey($accountId)
+            ->first();
+
+        if (! $account) {
+            $this->closeReview();
+            return;
+        }
+
+        $days = (int) config('settings.registration.email_block_days', 3);
+        $block = DB::transaction(function () use ($account) {
+            $account->update(['status_id' => 2]); // Inactive
+
+            if ($account->student) {
+                $account->student->update([
+                    'verified_at' => now(),
+                    'verified_by' => Auth::id(),
+                    'verification_remarks' => 'Registration rejected. This email is temporarily blocked from registration.',
+                ]);
+            }
+
+            return RegistrationEmailBlocklist::ban($account->email);
+        });
+
+        Mail::to($account->email)->queue(new AccountApprovalResultEmail(
+            $account->fresh('student'),
+            'blocked',
+            "Your email is temporarily blocked from registration until {$block->expires_at->format('M d, Y')}.",
+        ));
+
+        $this->selectedIds = array_values(array_diff(array_map('strval', $this->selectedIds), [(string) $accountId]));
+        $this->pageCursors = [];
+        $this->closeReview();
+        $this->dispatch('toast', message: "Registration rejected. The email is blocked for {$days} days.", type: 'info');
     }
 
     public function bulkApprove(): void
@@ -175,6 +222,12 @@ class UserApprovals extends Component
             $this->selectedIds = [];
             return;
         }
+
+        $accounts = $this->baseStudentsQuery()
+            ->with('student')
+            ->whereIn('accounts.id', $ids)
+            ->get()
+            ->keyBy('id');
 
         DB::transaction(function () use ($ids) {
             Account::whereIn('id', $ids)->update([
@@ -188,6 +241,9 @@ class UserApprovals extends Component
                 'verification_remarks' => null,
             ]);
         });
+        foreach ($accounts as $account) {
+            Mail::to($account->email)->queue(new AccountApprovalResultEmail($account->fresh('student'), 'approved'));
+        }
 
         $this->selectedIds = [];
         $this->pageCursors = [];
@@ -202,6 +258,12 @@ class UserApprovals extends Component
             return;
         }
 
+        $accounts = $this->baseStudentsQuery()
+            ->with('student')
+            ->whereIn('accounts.id', $ids)
+            ->get()
+            ->keyBy('id');
+
         DB::transaction(function () use ($ids) {
             Account::whereIn('id', $ids)->update([
                 'status_id' => 5, // Not Approved
@@ -213,6 +275,13 @@ class UserApprovals extends Component
                 'verification_remarks' => 'Please upload a clearer verification document.',
             ]);
         });
+        foreach ($accounts as $account) {
+            Mail::to($account->email)->queue(new AccountApprovalResultEmail(
+                $account->fresh('student'),
+                'rejected',
+                'Please upload a clearer verification document.',
+            ));
+        }
 
         $this->selectedIds = [];
         $this->pageCursors = [];

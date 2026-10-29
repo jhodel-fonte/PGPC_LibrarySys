@@ -22,7 +22,7 @@
     <!-- ======================================================== -->
     <!-- 1. BREADCRUMBS & TOP HEADER (TITLE & EDIT BUTTON)       -->
     <!-- ======================================================== -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
             <!-- Page Title & Subtitle -->
             <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-[#102B70]">
@@ -39,11 +39,11 @@
         @endphp
         @if($this->isProfile)
             <!-- Student's Own Profile Top Right Action: Reserve Book -->
-            <div class="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
+            <div class="flex w-full flex-col gap-2.5 sm:flex-row lg:w-auto">
                 <button
                     type="button"
                     wire:click="openReserveModal"
-                    class="h-11 px-5 sm:px-6 rounded-2xl bg-[#102B70] hover:bg-[#0B225E] text-white text-base font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#EFF6FF]"
+                    class="h-11 w-full px-5 sm:px-6 rounded-2xl bg-[#102B70] hover:bg-[#0B225E] text-white text-base font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#EFF6FF] sm:w-auto"
                 >
                     <svg class="w-4 h-4 text-[#FCC719]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
@@ -54,7 +54,7 @@
                 <a
                     href="{{ route('student.reservations') }}"
                     wire:navigate
-                    class="h-11 px-5 sm:px-6 rounded-2xl border border-[#CBD5E1] bg-white hover:bg-slate-50 hover:border-[#102B70] text-[#102B70] text-base font-bold transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#102B70]"
+                    class="h-11 w-full px-5 sm:px-6 rounded-2xl border border-[#CBD5E1] bg-white hover:bg-slate-50 hover:border-[#102B70] text-[#102B70] text-base font-bold transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#102B70] sm:w-auto"
                 >
                     <svg class="w-4 h-4 text-[#102B70]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />

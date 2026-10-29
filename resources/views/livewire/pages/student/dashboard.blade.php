@@ -1,15 +1,15 @@
 <div class="min-h-full bg-[#eef3f7] text-base text-slate-800">
-    <div class="mx-auto w-full max-w-[1600px] p-4 lg:p-6 space-y-5">
+    <div class="mx-auto w-full max-w-[1600px] p-3 sm:p-4 lg:p-6 space-y-5">
         
         <!-- Top Row: Student Hero Banner & Status Notice -->
-        <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,2.15fr)_minmax(330px,1fr)] gap-5 items-stretch">
+        <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,2.15fr)_minmax(330px,1fr)] gap-5 items-stretch">
             
             <!-- Student Greeting Banner -->
             <div class="bg-[#17357A] rounded-[16px] p-5 sm:p-6 lg:p-7 relative overflow-hidden shadow-sm flex flex-col justify-center">
                 <!-- Background Decoration -->
                 <div class="absolute inset-0 pointer-events-none" style="background: linear-gradient(105deg, transparent 0%, transparent 60%, rgba(255,255,255,.03) 60%);"></div>
 
-                <div class="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+                <div class="relative z-10 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6">
                     <!-- Left Column: Student Greeting & Info -->
                     <div class="flex-1 min-w-0">
                         <div class="flex flex-wrap items-center gap-2 mb-1.5">
@@ -219,7 +219,7 @@
         </div>
 
         <!-- Bottom Row: Currently Borrowed Books & Information Widgets -->
-        <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,2.15fr)_minmax(330px,1fr)] gap-5 items-start">
+        <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,2.15fr)_minmax(330px,1fr)] gap-5 items-start">
             
             <!-- Left Main Column: Currently Borrowed Books -->
             <div class="space-y-5">
@@ -422,4 +422,3 @@
 
     </div>
 </div>
-

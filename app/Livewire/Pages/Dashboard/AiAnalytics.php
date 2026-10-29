@@ -52,6 +52,15 @@ class AiAnalytics extends Component
 
         $latestRun = $recentRuns->first();
         $previousRun = $recentRuns->get(1);
+        $evaluationDetails = $latestRun?->evaluationDetails() ?? [
+            'training_interactions' => null,
+            'training_users' => null,
+            'test_interactions' => null,
+            'test_users' => null,
+            'rating_scale' => [],
+            'actual' => [],
+            'predicted' => [],
+        ];
 
         // Prefer live values; when the service is offline show the last saved run.
         $currentMetrics = ! empty($evaluation['metrics'])
@@ -104,6 +113,7 @@ class AiAnalytics extends Component
             'evaluation' => $evaluation,
             'checkedAt' => Carbon::parse($evaluation['checked_at']),
             'latestRun' => $latestRun,
+            'evaluationDetails' => $evaluationDetails,
             'comparisonRun' => $comparisonRun,
             'metrics' => $metrics,
             'metricColumns' => MlEvaluationRun::METRICS,

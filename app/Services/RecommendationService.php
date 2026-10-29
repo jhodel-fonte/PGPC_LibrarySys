@@ -199,7 +199,7 @@ class RecommendationService
             $lastIndex = count($chronologicalEntries) - 1;
 
             foreach ($chronologicalEntries as $idx => $entry) {
-                $entryMetrics = $this->normalizeMetrics(is_array($entry['metrics'] ?? null) ? $entry['metrics'] : $entry);
+                $entryMetrics = $this->normalizeMetrics($entry);
                 if ($entryMetrics === []) {
                     continue;
                 }
@@ -227,7 +227,7 @@ class RecommendationService
         $metricsPayload = $metricsResponse && $metricsResponse->successful() ? $metricsResponse->json() : null;
         $metricsPayload = is_array($metricsPayload) ? $metricsPayload : [];
         $liveMetrics = $metricsPayload !== []
-            ? $this->normalizeMetrics(is_array($metricsPayload['metrics'] ?? null) ? $metricsPayload['metrics'] : $metricsPayload)
+            ? $this->normalizeMetrics($metricsPayload)
             : [];
         $liveEvaluatedAt = $metricsPayload['evaluated_at']
             ?? $metricsPayload['timestamp']
@@ -365,16 +365,49 @@ class RecommendationService
         ];
 
         $metrics = [];
-        foreach ($raw as $key => $value) {
-            $normalizedKey = str_replace([' ', '_', '-'], '', strtolower((string) $key));
-            $label = $aliases[$normalizedKey] ?? null;
+        $readMetric = function (array $values) use (&$readMetric, &$metrics, $aliases): void {
+            foreach ($values as $key => $value) {
+                if (is_array($value)) {
+                    $readMetric($value);
+                    continue;
+                }
 
-            if ($label !== null && is_numeric($value)) {
-                $metrics[$label] = round((float) $value, 4);
+                $normalizedKey = str_replace([' ', '_', '-'], '', strtolower((string) $key));
+                $label = $aliases[$normalizedKey] ?? null;
+
+                if ($label !== null && is_numeric($value) && ! array_key_exists($label, $metrics)) {
+                    $metrics[$label] = round((float) $value, 4);
+                }
+            }
+        };
+
+        $readMetric($raw);
+
+        // The recommender reports these descriptive metrics in its absolute
+        // error statistics object rather than at the response root.
+        $errorStatistics = $raw['absolute_error_statistics'] ?? null;
+        if (is_array($errorStatistics)) {
+            foreach ([
+                'mean' => 'Mean',
+                'median' => 'Median',
+                'standard_deviation' => 'Standard deviation',
+            ] as $key => $label) {
+                if (! array_key_exists($label, $metrics) && is_numeric($errorStatistics[$key] ?? null)) {
+                    $metrics[$label] = round((float) $errorStatistics[$key], 4);
+                }
             }
         }
 
-        // Keep a stable display order.
+        // Some service versions wrap the payload under `metrics`.
+        if (is_array($raw['metrics'] ?? null)) {
+            $readMetric($raw['metrics']);
+        }
+
+        /*
+         * Re-apply the preferred order after recursively reading nested
+         * payloads. This also prevents unrelated statistics from becoming
+         * dashboard metrics.
+         */
         return collect(array_keys(MlEvaluationRun::METRICS))
             ->filter(fn ($label) => array_key_exists($label, $metrics))
             ->mapWithKeys(fn ($label) => [$label => $metrics[$label]])

@@ -4,10 +4,10 @@
     $pastReservations = $this->pastReservations ?? collect();
 @endphp
 
-<div class="space-y-6 text-base">
+<div class="space-y-5 text-base">
 
     <!-- Active Reservations Section -->
-    <div class="rounded-2xl md:rounded-3xl border border-[#E2E8F0] bg-white p-5 sm:p-6 lg:p-7 shadow-[0_4px_20px_rgba(16,43,112,0.03)] space-y-5">
+    <div class="rounded-2xl border border-[#E2E8F0] bg-white p-4 sm:p-6 lg:p-7 shadow-[0_4px_20px_rgba(16,43,112,0.03)] space-y-5">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-3">
             <div>
                 <div class="flex items-center gap-2">
@@ -24,7 +24,7 @@
             <button
                 type="button"
                 wire:click="openReserveModal"
-                class="h-11 px-5 rounded-xl bg-[#102B70] hover:bg-[#0B225E] text-white text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer active:scale-[0.98] shrink-0"
+                class="h-11 w-full sm:w-auto px-5 rounded-xl bg-[#102B70] hover:bg-[#0B225E] text-white text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer active:scale-[0.98] shrink-0"
             >
                 <svg class="w-4 h-4 text-[#FCC719]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -34,7 +34,7 @@
         </div>
 
         @if($activeReservations->isNotEmpty())
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
                 @foreach($activeReservations as $res)
                     @php
                         $rBook = $res->book;
@@ -47,8 +47,8 @@
                         $rDue = $res->due_date ? \Carbon\Carbon::parse($res->due_date) : null;
                         $rIsDueSoon = $rDue && $rDue->diffInDays(now()) <= 1;
                     @endphp
-                    <div class="rounded-2xl border border-slate-200 bg-[#F8FAFC]/60 p-4.5 flex flex-col justify-between gap-4 hover:border-[#102B70]/40 transition-colors">
-                        <div class="flex gap-4">
+                    <div class="rounded-2xl border border-slate-200 bg-[#F8FAFC]/60 p-3 sm:p-4 flex flex-col justify-between gap-4 hover:border-[#102B70]/40 transition-colors">
+                        <div class="flex items-start gap-3 sm:gap-4">
                             <img
                                 src="{{ $rCover }}"
                                 alt="{{ $rTitle }}"
@@ -56,7 +56,7 @@
                                 onerror="this.src='{{ asset('images/book-cover.webp') }}'"
                             >
                             <div class="space-y-1 min-w-0 flex-1">
-                                <div class="flex items-center justify-between gap-2">
+                                <div class="flex flex-wrap items-start justify-between gap-2">
                                     <span class="font-mono text-xs font-bold text-[#102B70]">
                                         #RES-{{ str_pad($res->id, 5, '0', STR_PAD_LEFT) }}
                                     </span>
@@ -86,7 +86,7 @@
                         </div>
 
                         <!-- Pickup Window Banner -->
-                        <div class="p-3 rounded-xl border {{ $rIsDueSoon ? 'border-amber-200 bg-amber-50/70' : 'border-slate-200 bg-white' }} flex items-center justify-between text-sm">
+                        <div class="p-3 rounded-xl border {{ $rIsDueSoon ? 'border-amber-200 bg-amber-50/70' : 'border-slate-200 bg-white' }} flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between text-sm">
                             <div class="flex items-center gap-2">
                                 <svg class="w-4 h-4 {{ $rIsDueSoon ? 'text-amber-600' : 'text-slate-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                 <span class="font-medium text-slate-700">Claim Deadline:</span>
@@ -97,7 +97,7 @@
                         </div>
 
                         <!-- Card Actions -->
-                        <div class="flex items-center justify-between pt-1 border-t border-slate-100">
+                        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between pt-1 border-t border-slate-100">
                             <a
                                 href="{{ route('student.reservations.confirmation', $res->id) }}"
                                 wire:navigate
@@ -141,7 +141,7 @@
     </div>
 
     <!-- Past / Historical Reservations -->
-    <div class="rounded-2xl md:rounded-3xl border border-[#E2E8F0] bg-white p-5 sm:p-6 lg:p-7 shadow-[0_4px_20px_rgba(16,43,112,0.03)] space-y-4">
+    <div class="rounded-2xl border border-[#E2E8F0] bg-white p-4 sm:p-6 lg:p-7 shadow-[0_4px_20px_rgba(16,43,112,0.03)] space-y-4">
         <div class="pb-3 border-b border-slate-100">
             <h3 class="text-lg sm:text-xl font-bold text-[#102B70]">Reservation History</h3>
             <p class="text-sm sm:text-base text-slate-500 font-medium mt-0.5">Record of fulfilled, cancelled, and expired requests.</p>

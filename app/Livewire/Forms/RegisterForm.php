@@ -5,6 +5,7 @@ namespace App\Livewire\Forms;
 use App\Models\Account;
 use App\Models\Role;
 use App\Models\Student;
+use App\Models\RegistrationEmailBlocklist;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -30,6 +31,8 @@ class RegisterForm extends Form
      */
     public function rules(): array
     {
+        RegistrationEmailBlocklist::removeExpired();
+
         return [
             'student_id_number' => ['required', 'string', 'max:50', 'unique:students,school_id_number'],
             'first_name' => ['required', 'string', 'max:255'],
@@ -37,7 +40,19 @@ class RegisterForm extends Form
             'last_name' => ['required', 'string', 'max:255'],
             'program' => ['required', 'string', \Illuminate\Validation\Rule::in(array_keys(config('settings.college.programs', [])))],
             'year_level' => ['required', 'string', 'in:1st Year,2nd Year,3rd Year,4th Year'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:accounts,email'],
+            'email' => [
+                'required',
+                'string',
+                'email',
+                'max:255',
+                'unique:accounts,email',
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    if (RegistrationEmailBlocklist::isBlocked((string) $value)) {
+                        $days = (int) config('settings.registration.email_block_days', 3);
+                        $fail("This email is temporarily blocked from registration. Please try again after {$days} days.");
+                    }
+                },
+            ],
             'contact_num' => ['nullable', 'string', 'max:20'],
             'username' => ['required', 'string', 'min:3', 'max:50', 'unique:accounts,username'],
             'password' => [

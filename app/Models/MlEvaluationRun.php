@@ -67,6 +67,7 @@ class MlEvaluationRun extends Model
         Carbon|string|null $evaluatedAt = null,
         bool $bumpCheck = true
     ): self {
+        $metrics = self::completeMetricsFromPayload($metrics, $payload);
         $values = [];
         foreach (self::METRICS as $label => $column) {
             $values[$column] = isset($metrics[$label]) ? round((float) $metrics[$label], 4) : null;
@@ -106,6 +107,11 @@ class MlEvaluationRun extends Model
                     'fingerprint' => $fingerprint,
                     'last_checked_at' => now(),
                 ];
+                foreach ($values as $column => $value) {
+                    if ($existing->{$column} === null && $value !== null) {
+                        $updates[$column] = $value;
+                    }
+                }
                 if ($bumpCheck) {
                     $updates['times_checked'] = $existing->times_checked + 1;
                 }
@@ -146,6 +152,30 @@ class MlEvaluationRun extends Model
             'evaluated_at' => now(),
             'last_checked_at' => now(),
         ]);
+    }
+
+    /**
+     * Fill descriptive metrics that older recommender responses nested inside
+     * their absolute-error statistics object.
+     */
+    protected static function completeMetricsFromPayload(array $metrics, array $payload): array
+    {
+        $statistics = $payload['absolute_error_statistics'] ?? null;
+        if (! is_array($statistics)) {
+            return $metrics;
+        }
+
+        foreach ([
+            'mean' => 'Mean',
+            'median' => 'Median',
+            'standard_deviation' => 'Standard deviation',
+        ] as $key => $label) {
+            if (! array_key_exists($label, $metrics) && is_numeric($statistics[$key] ?? null)) {
+                $metrics[$label] = (float) $statistics[$key];
+            }
+        }
+
+        return $metrics;
     }
 
     /**
@@ -232,5 +262,49 @@ class MlEvaluationRun extends Model
 
         return $metrics;
     }
-}
 
+    /**
+     * Dataset and score-distribution details returned by the recommender.
+     *
+     * @return array<string, mixed>
+     */
+    public function evaluationDetails(): array
+    {
+        $payload = is_array($this->payload) ? $this->payload : [];
+        $training = is_array($payload['training_data'] ?? null) ? $payload['training_data'] : [];
+        $evaluation = is_array($payload['evaluation'] ?? null) ? $payload['evaluation'] : [];
+
+        return [
+            'training_interactions' => $this->integerValue($training['training_interactions'] ?? null),
+            'training_users' => $this->integerValue($training['training_users'] ?? null),
+            'test_interactions' => $this->integerValue($evaluation['test_interactions'] ?? null),
+            'test_users' => $this->integerValue($evaluation['test_users'] ?? null),
+            'rating_scale' => is_array($evaluation['rating_scale'] ?? null) ? $evaluation['rating_scale'] : [],
+            'actual' => $this->statistics($payload['actual_rating_statistics'] ?? null),
+            'predicted' => $this->statistics($payload['predicted_rating_statistics'] ?? null),
+        ];
+    }
+
+    /**
+     * @return array<string, float|int|null>
+     */
+    protected function statistics(mixed $statistics): array
+    {
+        if (! is_array($statistics)) {
+            return [];
+        }
+
+        return collect(['count', 'mean', 'median', 'min', 'max', 'standard_deviation'])
+            ->mapWithKeys(fn (string $key) => [
+                $key => is_numeric($statistics[$key] ?? null)
+                    ? (in_array($key, ['count'], true) ? (int) $statistics[$key] : (float) $statistics[$key])
+                    : null,
+            ])
+            ->all();
+    }
+
+    protected function integerValue(mixed $value): ?int
+    {
+        return is_numeric($value) ? (int) $value : null;
+    }
+}
