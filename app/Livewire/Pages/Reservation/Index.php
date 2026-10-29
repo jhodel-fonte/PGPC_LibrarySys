@@ -56,7 +56,7 @@ class Index extends Component
     public function currentStudent(): ?Student
     {
         $user = Auth::user();
-        return $user?->student ?? Student::first();
+        return $user?->student;
     }
 
     #[Computed]
@@ -81,7 +81,7 @@ class Index extends Component
     #[Computed]
     public function catalogBooks()
     {
-        $query = BookDetail::query()
+        $query = BookDetail::publicCatalog()
             ->whereNull('deleted_at')
             ->whereHas('bookData', fn($q) => $q->whereNull('deleted_at'))
             ->with([
@@ -96,8 +96,7 @@ class Index extends Component
             ])
             ->whereHas('books', function ($q) {
                 $q->whereNull('deleted_at')
-                  ->where('status', 'available')
-                  ->whereNotIn(DB::raw('LOWER(status)'), ['disabled', 'archived']);
+                  ->whereIn('status', ['available', 'borrowed', 'reserved']);
             });
 
         // 1. Search Query
@@ -125,7 +124,7 @@ class Index extends Component
             });
         }
 
-        return $query->orderBy('id', 'desc')->paginate($this->perPage);
+        return $query->orderBy('id', 'desc')->cursorPaginate($this->perPage, ['*'], 'page');
     }
 
     #[Computed]
@@ -135,7 +134,7 @@ class Index extends Component
             return null;
         }
 
-        return BookDetail::with([
+        return BookDetail::publicCatalog()->with([
             'bookData.authors',
             'bookData.categories',
             'publisher',
@@ -150,13 +149,19 @@ class Index extends Component
 
     public function openReservationModal(int $bookDetailId): void
     {
-        $this->selectedBookDetailId = $bookDetailId;
-        $detail = BookDetail::with(['books' => fn($q) => $q->whereNull('deleted_at')
+        $detail = BookDetail::publicCatalog()->with(['books' => fn($q) => $q->whereNull('deleted_at')
             ->where('status', 'available')
             ->whereNotIn(DB::raw('LOWER(status)'), ['disabled', 'archived'])])
             ->whereNull('deleted_at')
             ->whereHas('bookData', fn($q) => $q->whereNull('deleted_at'))
             ->find($bookDetailId);
+
+        if (!$detail) {
+            $this->dispatch('toast', message: 'This item is for counter loan only and cannot be reserved online.', type: 'error');
+            return;
+        }
+
+        $this->selectedBookDetailId = $detail->id;
         $firstAvailableCopy = $detail?->books->first();
 
         $this->selectedBookCopyId = $firstAvailableCopy?->id;
@@ -175,6 +180,31 @@ class Index extends Component
 
     public function submitReservation()
     {
+        if (Auth::user()?->reservations_blocked) {
+            $this->dispatch('toast', message: 'Your account cannot place reservations. Please contact the library.', type: 'error');
+            return;
+        }
+
+        $detail = $this->selectedBookDetailId
+            ? BookDetail::publicCatalog()->whereKey($this->selectedBookDetailId)->first()
+            : null;
+
+        if (!$detail) {
+            $this->dispatch('toast', message: 'This item is for counter loan only and cannot be reserved online.', type: 'error');
+            return;
+        }
+
+        if (! $this->selectedBookCopyId) {
+            try {
+                app(\App\Services\ReservationWaitlistService::class)->join($detail->id, Auth::user());
+                $this->closeModal();
+                $this->dispatch('toast', message: 'You joined the waitlist. We will notify you when a copy is reserved for you.', type: 'success');
+            } catch (\Throwable $e) {
+                $this->dispatch('toast', message: $e->getMessage(), type: 'error');
+            }
+            return;
+        }
+
         $this->validate([
             'selectedBookCopyId' => 'required|exists:books,id',
             'pickupDays' => 'required|integer|min:1|max:7',
@@ -202,9 +232,13 @@ class Index extends Component
 
         try {
             $reservation = DB::transaction(function () use ($student) {
+                $detail = BookDetail::publicCatalog()->lockForUpdate()->findOrFail($this->selectedBookDetailId);
+                if (\App\Models\ReservationWaitlist::where('book_detail_id', $this->selectedBookDetailId)->where('status', 'waiting')->exists()) {
+                    throw new \RuntimeException('Copies are reserved for people already on the waitlist.');
+                }
                 $book = Book::lockForUpdate()->findOrFail($this->selectedBookCopyId);
 
-                if ($book->status !== 'available') {
+                if ($book->book_detail_id !== $detail->id || $book->status !== 'available') {
                     throw new \RuntimeException('This book copy is no longer available. Please select another copy or title.');
                 }
 
@@ -244,6 +278,19 @@ class Index extends Component
             'categories' => $this->categories,
             'student' => $this->currentStudent,
             'activeCount' => $this->activeReservationsCount,
+            'waitingEntries' => DB::table('reservation_waitlist')
+                ->join('book_details', 'book_details.id', '=', 'reservation_waitlist.book_detail_id')
+                ->join('book_datas', 'book_datas.id', '=', 'book_details.book_data_id')
+                ->where('reservation_waitlist.account_id', Auth::id())
+                ->where('reservation_waitlist.status', 'waiting')
+                ->select('reservation_waitlist.id', 'book_datas.book_title')
+                ->orderBy('reservation_waitlist.id')->get(),
         ]);
+    }
+
+    public function leaveWaitlist(int $id): void
+    {
+        \App\Models\ReservationWaitlist::whereKey($id)->where('account_id', Auth::id())
+            ->where('status', 'waiting')->update(['status' => 'cancelled']);
     }
 }

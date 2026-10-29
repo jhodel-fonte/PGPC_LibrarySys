@@ -61,7 +61,7 @@
                             {{ $bookData['author'] ?? 'Unknown Author' }}
                         </p>
                         <div class="text-sm font-bold text-[#000000] mt-1.5">
-                            <span class="truncate max-w-[150px]">ISBN: {{ !empty($bookData['isbn']) && $bookData['isbn'] !== 'N/A' ? $bookData['isbn'] : 'N/A' }}</span>
+                            <span class="truncate max-w-[150px]">{{ ($bookData['item_type'] ?? 'book') === 'book' ? 'ISBN' : 'Type' }}: {{ ($bookData['item_type'] ?? 'book') === 'book' ? ((!empty($bookData['isbn']) && $bookData['isbn'] !== 'N/A') ? $bookData['isbn'] : 'N/A') : ucfirst($bookData['item_type'] ?? 'item') }}</span>
                         </div>
                     </div>
                 </div>
@@ -163,9 +163,9 @@
                 </svg>
             </div>
             <div>
-                <h4 class="text-base font-bold text-[#0F172A]">Book Details Preview</h4>
+                <h4 class="text-base font-bold text-[#0F172A]">Item Details Preview</h4>
                 <p class="text-sm text-[#64748B] max-w-[220px] leading-relaxed mt-1">
-                    {{ $mode === 'check-out' ? 'Scan a book barcode or click any queued book in the table to preview details.' : 'Scan a book barcode or click any borrowed book in the table to preview details.' }}
+                    {{ $mode === 'check-out' ? 'Scan an item barcode or click any queued item in the table to preview details.' : 'Scan an item barcode or click any borrowed item in the table to preview details.' }}
                 </p>
             </div>
         </div>

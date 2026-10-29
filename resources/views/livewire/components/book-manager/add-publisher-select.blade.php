@@ -174,7 +174,7 @@
                         <span>Existing Publishers in Catalog</span>
                         <span x-text="filteredPublishers.length + ' found'"></span>
                     </div>
-                    <template x-for="(publisher, index) in filteredPublishers" :key="publisher.id">
+                    <template x-for="(publisher, index) in filteredPublishers" :key="typeof publisher.id === 'object' ? index : (publisher.id || ('pub-' + index))">
                         <div
                             @click="selectPublisher(publisher)"
                             @mouseenter="highlightedIndex = index"

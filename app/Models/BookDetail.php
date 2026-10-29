@@ -23,6 +23,11 @@ class BookDetail extends Model
         'format',
         'book_type_id',
         'material_type_id',
+        'catalog_kind',
+        'daily_fine',
+        'manufacturer',
+        'model_number',
+        'package_contents',
         'lccn',
         'call_number',
         'classification',
@@ -37,10 +42,16 @@ class BookDetail extends Model
 
     protected $casts = [
         'total_copies' => 'integer',
+        'daily_fine' => 'decimal:2',
         'available_copies' => 'integer',
         'borrowed_copies' => 'integer',
         'damaged_lost_copies' => 'integer',
     ];
+
+    public function scopePublicCatalog($query)
+    {
+        return $query->where('catalog_kind', 'book');
+    }
 
     public function bookData(): BelongsTo
     {

@@ -68,7 +68,7 @@
                     <p class="font-semibold">{{ $evaluation['error'] }}</p>
                     <p class="mt-0.5">
                         @if($latestRun)
-                            Displaying locally saved evaluation data ({{ $history->total() }} {{ \Illuminate\Support\Str::plural('run', $history->total()) }} in history, latest evaluated {{ $latestRun->evaluated_at->format('M j, Y g:i A') }} UTC).
+                            Displaying locally saved evaluation data (latest evaluated {{ $latestRun->evaluated_at->format('M j, Y g:i A') }} UTC).
                         @else
                             No saved results yet. Results appear here and are saved automatically once the service responds.
                         @endif
@@ -289,7 +289,7 @@
 
                 @if($history->hasPages())
                     <div class="border-t border-[#E2E8F0] px-5 py-3">
-                        {{ $history->links('components.widget.pagination') }}
+                        {{ $history->links('components.widget.cursor-pagination') }}
                     </div>
                 @endif
             @endif

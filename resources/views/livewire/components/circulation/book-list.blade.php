@@ -1,13 +1,13 @@
 <div class="flex flex-col gap-3 h-full overflow-hidden">
     <!-- Card Header (shrink-0) -->
-    <h3 class="text-xs font-bold text-[#64748B] uppercase tracking-wider shrink-0">Borrowed Books ({{ count($books ?? []) }})</h3>
+    <h3 class="text-xs font-bold text-[#64748B] uppercase tracking-wider shrink-0">Borrowed Items ({{ count($books ?? []) }})</h3>
     
     <!-- Table Wrapper (flex-1 overflow-y-auto) -->
     <div class="overflow-x-auto flex-1 overflow-y-auto border border-[#E2E8F0] rounded-2xl bg-white shadow-inner">
         <table class="w-full text-left border-collapse min-w-[600px]">
             <thead class="sticky top-0 bg-white z-10">
                 <tr class="border-b border-[#E2E8F0] text-xs font-bold text-[#64748B] uppercase tracking-wider">
-                    <th class="py-2.5 px-4 w-[45%] bg-white">Book</th>
+                    <th class="py-2.5 px-4 w-[45%] bg-white">Item</th>
                     <th class="py-2.5 px-4 w-[20%] bg-white">Borrowed On</th>
                     <th class="py-2.5 px-4. w-[20%] bg-white">Due Date</th>
                     <th class="py-2.5 px-4 w-[15%] text-right bg-white">Status</th>
@@ -56,7 +56,7 @@
                 @empty
                     <tr>
                         <td colspan="4" class="py-12 text-center text-xs text-[#64748B] font-medium leading-relaxed bg-[#F8FAFC]/30">
-                            No active borrowed books on account.
+                            No active borrowed items on account.
                         </td>
                     </tr>
                 @endforelse

@@ -61,7 +61,8 @@ class OpacCatalogView extends Model
     {
         static::addGlobalScope('activeCopies', function (Builder $builder) {
             $builder->whereNotNull('total_copies')
-                    ->where('total_copies', '>', 0);
+                    ->where('total_copies', '>', 0)
+                    ->whereIn('opac_catalog_view.book_detail_id', BookDetail::publicCatalog()->select('id'));
         });
     }
 
@@ -486,4 +487,3 @@ class OpacCatalogView extends Model
         return $this->hasMany(Book::class, 'book_detail_id');
     }
 }
-

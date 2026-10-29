@@ -11,7 +11,7 @@ use App\Models\BookDetail;
 use App\Models\BorrowingTransaction;
 use Carbon\Carbon;
 
-#[Layout('livewire.layouts.admin', ['title' => 'Circulation Desk', 'subpage' => 'Return Books', 'activepageRoute' => 'admin.circulation-desk.index'])]
+#[Layout('livewire.layouts.admin', ['title' => 'Circulation Desk', 'subpage' => 'Return Items', 'activepageRoute' => 'admin.circulation-desk.index'])]
 class CheckInBook extends Component
 {
     public $scannedMember = null;
@@ -33,7 +33,7 @@ class CheckInBook extends Component
 
     public function mount()
     {
-        \App\Services\EmployeeRoleService::authorizeReturn('Unauthorized action. You do not have permission to process book returns.');
+        \App\Services\EmployeeRoleService::authorizeReturn('Unauthorized action. You do not have permission to process item returns.');
 
         $this->updateStats();
     }
@@ -152,6 +152,7 @@ class CheckInBook extends Component
         $cleanAlnum = preg_replace('/[^a-zA-Z0-9]/', '', $code);
 
         $query = Book::withTrashed()->with([
+            'bookDetail' => fn ($q) => $q->withTrashed(),
             'bookDetail.bookData.authors',
             'bookDetail.bookData.categories',
             'condition'
@@ -185,7 +186,7 @@ class CheckInBook extends Component
         // 3. Match by ISBN (barcode on physical book)
         $cleanIsbn = preg_replace('/[^0-9X]/i', '', $code);
         if (strlen($cleanIsbn) >= 8) {
-            $bookDetail = BookDetail::whereRaw("LOWER(REPLACE(REPLACE(isbn, '-', ''), ' ', '')) = ?", [strtolower($cleanIsbn)])
+            $bookDetail = BookDetail::withTrashed()->whereRaw("LOWER(REPLACE(REPLACE(isbn, '-', ''), ' ', '')) = ?", [strtolower($cleanIsbn)])
                 ->orWhereRaw("LOWER(isbn) = ?", [$lowerCode])
                 ->first();
 
@@ -209,7 +210,7 @@ class CheckInBook extends Component
         }
 
         // 4. Match by Call Number
-        $bookDetail = BookDetail::whereRaw('LOWER(call_number) = ?', [$lowerCode])->first();
+        $bookDetail = BookDetail::withTrashed()->whereRaw('LOWER(call_number) = ?', [$lowerCode])->first();
         if ($bookDetail) {
             if (!empty($preferredBookIds)) {
                 $preferred = (clone $query)->where('book_detail_id', $bookDetail->id)
@@ -322,6 +323,7 @@ class CheckInBook extends Component
         // Fetch their currently borrowed books (not yet returned)
         $transactions = BorrowingTransaction::with([
                 'book' => fn ($q) => $q->withTrashed(),
+                'book.bookDetail' => fn ($q) => $q->withTrashed(),
                 'book.bookDetail.bookData',
                 'book.bookDetail.bookData.authors',
                 'book.bookDetail.bookData.categories',
@@ -360,6 +362,7 @@ class CheckInBook extends Component
                 'transaction_id' => $t->id,
                 'book_id' => $book ? $book->id : null,
                 'book' => $data ? $data->book_title : 'Unknown Book',
+                'item_type' => $detail?->catalog_kind ?: 'book',
                 'author' => $authorName,
                 'category' => $categoryName,
                 'isbn' => $detail ? ($detail->isbn ?: 'N/A') : 'N/A',
@@ -391,7 +394,7 @@ class CheckInBook extends Component
         if ($book) {
             $this->processBookReturn($book);
         } else {
-            $this->errorMessage = 'Book with code/accession "' . $accession . '" could not be found.';
+            $this->errorMessage = 'Item with code/accession "' . $accession . '" could not be found.';
         }
     }
 
@@ -429,7 +432,7 @@ class CheckInBook extends Component
 
         // Check if book is already in the pending returned books list
         if (in_array($book->id, $this->returnedBooks)) {
-            $this->errorMessage = 'Book "' . $book->accession_number . '" is already scanned for return.';
+            $this->errorMessage = 'Item "' . $book->accession_number . '" is already scanned for return.';
             return;
         }
 
@@ -437,6 +440,7 @@ class CheckInBook extends Component
         $transaction = BorrowingTransaction::with([
                 'student',
                 'book' => fn ($q) => $q->withTrashed(),
+                'book.bookDetail' => fn ($q) => $q->withTrashed(),
                 'book.bookDetail.bookData',
                 'book.bookDetail.bookData.authors',
                 'book.bookDetail.bookData.categories',
@@ -446,7 +450,7 @@ class CheckInBook extends Component
             ->first();
 
         if (!$transaction) {
-            $this->errorMessage = 'Book "' . $book->accession_number . '" is not currently marked as borrowed.';
+            $this->errorMessage = 'Item "' . $book->accession_number . '" is not currently marked as borrowed.';
             return;
         }
 
@@ -457,7 +461,7 @@ class CheckInBook extends Component
                 $this->loadMember($transaction->student);
             }
         } else if ($this->scannedMember['id'] !== $transaction->school_id) {
-            $this->errorMessage = 'This book was borrowed by other student.';
+            $this->errorMessage = 'This item was borrowed by another student.';
             return;
         }
 
@@ -593,6 +597,7 @@ class CheckInBook extends Component
             $overdueTransactions = BorrowingTransaction::where('school_id', $studentId)
                 ->whereNull('return_date')
                 ->where('due_date', '<', Carbon::now())
+                ->with(['book' => fn ($q) => $q->withTrashed(), 'book.bookDetail' => fn ($q) => $q->withTrashed()])
                 ->get();
 
             // Count only those that are not yet scanned in returnedBooks queue
@@ -603,8 +608,7 @@ class CheckInBook extends Component
                     // For the books that ARE scanned, calculate their fine
                     $due = Carbon::parse($ot->due_date);
                     if ($due->isPast()) {
-                        $overdueDays = $due->diffInDays(Carbon::now());
-                        $totalFine += $overdueDays * 20.00;
+                        $totalFine += app(\App\Services\FineService::class)->overdueAmount($due, $ot->book?->bookDetail);
                     }
                 }
             }

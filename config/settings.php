@@ -208,6 +208,8 @@ return [
     |
     */
     'notifications' => [
+        // Calendar days before a loan is due when its reminder becomes eligible.
+        'due_reminder_days' => 3,
         'channels' => ['email', 'in_app'],
         'templates' => [
             'due_reminder' => 'Your borrowed book is due soon.',
@@ -352,3 +354,4 @@ return [
         ],
     ],
 ];
+

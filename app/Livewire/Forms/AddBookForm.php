@@ -46,6 +46,11 @@ class AddBookForm extends Component
 
     // 3. Bibliographic Information
     public string $bookTitle = '';
+    public string $catalogKind = 'book';
+    public $dailyFine = null;
+    public string $manufacturer = '';
+    public string $modelNumber = '';
+    public string $packageContents = '';
     public string $subtitle = '';
 
     // Authors
@@ -96,8 +101,37 @@ class AddBookForm extends Component
 
     public function generateBarcode()
     {
-        $this->barcode = 'BK-' . date('Y') . '-' . strtoupper(substr(uniqid(), -5));
+        $prefix = $this->catalogKind === 'book' ? 'BK' : 'AST';
+        $this->barcode = $prefix . '-' . date('Y') . '-' . strtoupper(substr(uniqid(), -5));
         $this->dispatch('toast', message: 'Barcode generated: ' . $this->barcode, type: 'info');
+    }
+
+    public function updatedCatalogKind(string $value): void
+    {
+        if ($value === 'book') {
+            return;
+        }
+
+        $this->activeTab = 'manual';
+        $this->isbnLookupQuery = '';
+        $this->isbn = '';
+        $this->issn = '';
+        $this->authorId = null;
+        $this->authorSearch = '';
+        $this->selectedAuthorName = '';
+        $this->newAuthorLastName = '';
+        $this->newAuthorFirstName = '';
+        $this->publisherId = null;
+        $this->publisherName = '';
+        $this->selectedPublisherName = '';
+        $this->callNumber = '';
+        $this->classification = '';
+        $this->publicationYear = null;
+        $this->copyrightYear = null;
+        $this->edition = '';
+        $this->pages = null;
+        $this->selectedCategories = [];
+        $this->resetErrorBag();
     }
 
     public function selectAuthor(int $id, string $name)
@@ -665,7 +699,7 @@ class AddBookForm extends Component
         $hasAuthorSearch = !empty(trim($this->authorSearch));
         $hasNewNames = !empty(trim($this->newAuthorLastName)) || !empty(trim($this->newAuthorFirstName));
 
-        if (!$hasAuthorId && !$hasAuthorSearch && !$hasNewNames) {
+        if ($this->catalogKind === 'book' && !$hasAuthorId && !$hasAuthorSearch && !$hasNewNames) {
             $this->addError('authorSearch', 'The Author field is required.');
         }
 
@@ -681,6 +715,11 @@ class AddBookForm extends Component
             'dateAcquired' => 'nullable|date',
 
             'bookTitle' => 'required|string|max:255',
+            'catalogKind' => 'required|in:book,equipment,multimedia,periodical,specimen',
+            'dailyFine' => 'nullable|numeric|min:0|max:999999.99',
+            'manufacturer' => 'nullable|string|max:255',
+            'modelNumber' => 'nullable|string|max:255',
+            'packageContents' => 'nullable|string|max:3000',
             'subtitle' => 'nullable|string|max:255',
             'authorId' => 'nullable|exists:authors,id',
             'authorSearch' => 'nullable|string|max:200',
@@ -689,7 +728,7 @@ class AddBookForm extends Component
 
             'isbn' => 'nullable|string|max:15',
             'issn' => 'nullable|string|max:15',
-            'callNumber' => 'required|string|max:30',
+            'callNumber' => ($this->catalogKind === 'book' ? 'required' : 'nullable').'|string|max:30',
             'classification' => 'nullable|string|max:30',
             'publisherName' => 'nullable|string|max:150',
             'publicationYear' => 'nullable|integer|min:1000|max:' . (date('Y') + 1),
@@ -861,6 +900,11 @@ class AddBookForm extends Component
                 // 8. Create BookDetail
                 $bookDetail = BookDetail::create([
                     'book_data_id' => $bookData->id,
+                    'catalog_kind' => $this->catalogKind,
+                    'daily_fine' => $this->dailyFine === '' ? null : $this->dailyFine,
+                    'manufacturer' => trim($this->manufacturer) ?: null,
+                    'model_number' => trim($this->modelNumber) ?: null,
+                    'package_contents' => trim($this->packageContents) ?: null,
                     'isbn' => trim($this->isbn) ?: null,
                     'issn' => trim($this->issn) ?: null,
                     'publication_year' => $this->publicationYear,

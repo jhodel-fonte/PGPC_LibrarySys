@@ -420,6 +420,8 @@
                     Showing <span class="font-bold text-slate-800">{{ $paginator->firstItem() }}</span> to <span class="font-bold text-slate-800">{{ $paginator->lastItem() }}</span> of <span class="font-bold text-slate-800">{{ number_format($paginator->total()) }}</span> {{ $paginator->total() === 1 ? 'result' : 'results' }}
                 @elseif(method_exists($paginator, 'total'))
                     Showing <span class="font-bold text-slate-800">0</span> results
+                @else
+                    Showing <span class="font-bold text-slate-800">{{ $paginator->count() }}</span> results on this page
                 @endif
             </div>
 
@@ -427,7 +429,7 @@
             <div class="flex items-center gap-3 sm:gap-4">
                 @if(method_exists($paginator, 'hasPages') && $paginator->hasPages())
                     <div class="flex items-center">
-                        {{ $paginator->links('components.widget.pagination') }}
+                        {{ $paginator->links($paginator instanceof \Illuminate\Contracts\Pagination\CursorPaginator ? 'components.widget.cursor-pagination' : 'components.widget.pagination') }}
                     </div>
                 @endif
 

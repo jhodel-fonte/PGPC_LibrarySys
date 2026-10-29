@@ -76,69 +76,7 @@ class Book extends Component
 
     public function confirmReservation()
     {
-        if (!Auth::check()) {
-            return redirect()->route('login');
-        }
-        $user = Auth::user();
-        if ($user && method_exists($user, 'isStudent') && $user->isStudent() && !$user->isApprovedStudent()) {
-            return redirect()->to($user->getVerificationRedirectRoute());
-        }
-
-        $this->reserveStatus = 'loading';
-
-        try {
-            $copy = null;
-            if (!empty($this->book['available_book_id'])) {
-                $copy = BookModel::find($this->book['available_book_id']);
-            }
-
-            if (!$copy && $this->bookDetailId) {
-                $copy = BookModel::where('book_detail_id', $this->bookDetailId)
-                    ->where('status', 'available')
-                    ->first();
-            }
-
-            if (!$copy && !empty($this->book['accession_no']) && $this->book['accession_no'] !== 'N/A') {
-                $copy = BookModel::where('accession_number', $this->book['accession_no'])
-                    ->where('status', 'available')
-                    ->first();
-            }
-
-            if ($copy) {
-                $pendingStatus = ReservationStatus::where('name', 'like', '%pending%')->first();
-                $statusId = $pendingStatus ? $pendingStatus->id : 1;
-
-                $user = Auth::user();
-                $student = $user?->student;
-                $userIdentifier = $user->username ?? $user->name ?? $user->email ?? 'User';
-
-                BookReservation::create([
-                    'book_id' => $copy->id,
-                    'student_id' => $student?->id,
-                    'account_id' => $user?->id,
-                    'reservation_status_id' => $statusId,
-                    'reservation_date' => now(),
-                    'due_date' => now()->addDays(3)->setTime(17, 0, 0),
-                    'comment' => 'Online reservation by ' . $userIdentifier,
-                ]);
-
-                $copy->update(['status' => 'reserved']);
-            }
-
-            $this->reserveStatus = 'success';
-            $this->reserveMessage = 'Your reservation has been submitted successfully! Please pick up the item at the circulation desk within 3 days.';
-
-            if ($this->book) {
-                $this->book['status'] = 'reserved';
-                $this->book['status_label'] = 'Reserved';
-                $this->book['status_color'] = 'text-amber-600';
-                $this->book['dot_color'] = 'bg-amber-500';
-                $this->book['can_reserve'] = false;
-            }
-        } catch (\Throwable $e) {
-            $this->reserveStatus = 'error';
-            $this->reserveMessage = 'Failed to submit reservation: ' . $e->getMessage();
-        }
+        return redirect()->route('student.reservations');
     }
 
     public function loadBookData(): void
@@ -218,7 +156,7 @@ class Book extends Component
         }
 
         // Abort 404: do not show soft-deleted or non-existent books
-        if (!$record || $record->trashed()) {
+        if (!$record || $record->trashed() || $record->catalog_kind !== 'book') {
             abort(404, 'The requested book is unavailable or has been removed from the catalog.');
         }
 
@@ -477,7 +415,7 @@ class Book extends Component
             // 1. Primary Query: Books sharing the same category/categories
             $similar = collect();
             if (!empty($catIds)) {
-                $similar = BookDetailModel::with(['bookData.authors', 'bookData.categories', 'bookType', 'books' => $copiesScope])
+                $similar = BookDetailModel::publicCatalog()->with(['bookData.authors', 'bookData.categories', 'bookType', 'books' => $copiesScope])
                     ->tap($activeBooksScope)
                     ->where('id', '!=', $this->bookDetailId)
                     ->whereHas('bookData.categories', function ($q) use ($catIds) {
@@ -490,7 +428,7 @@ class Book extends Component
             // 2. Secondary fallback: If fewer than 6 books found by exact category, complement with same classification or book type
             if ($similar->count() < 6) {
                 $excludedIds = $similar->pluck('id')->push($this->bookDetailId)->toArray();
-                $additionalQuery = BookDetailModel::with(['bookData.authors', 'bookData.categories', 'bookType', 'books' => $copiesScope])
+                $additionalQuery = BookDetailModel::publicCatalog()->with(['bookData.authors', 'bookData.categories', 'bookType', 'books' => $copiesScope])
                     ->tap($activeBooksScope)
                     ->whereNotIn('id', $excludedIds);
 
@@ -506,7 +444,7 @@ class Book extends Component
                 // 3. Fallback: Fill remaining slots if still fewer than 4 books
                 if ($similar->count() < 4) {
                     $excludedIds = $similar->pluck('id')->push($this->bookDetailId)->toArray();
-                    $fillers = BookDetailModel::with(['bookData.authors', 'bookData.categories', 'bookType', 'books' => $copiesScope])
+                    $fillers = BookDetailModel::publicCatalog()->with(['bookData.authors', 'bookData.categories', 'bookType', 'books' => $copiesScope])
                         ->tap($activeBooksScope)
                         ->whereNotIn('id', $excludedIds)
                         ->latest('id')

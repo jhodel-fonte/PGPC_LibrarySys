@@ -80,8 +80,42 @@ class AdminDashboard extends Component
         $this->resetPage();
     }
 
+    public function updatedPerPage(): void
+    {
+        $this->resetPage();
+    }
+
+    public function setTab(string $tab): void
+    {
+        $this->statusFilter = $tab;
+        $this->resetPage();
+    }
+
+    public function clearFilters(): void
+    {
+        $this->search = '';
+        $this->statusFilter = 'all';
+        $this->timeFilter = 'all';
+        $this->resetPage();
+    }
+
+    #[Computed]
+    public function activeFilterCount(): int
+    {
+        $count = 0;
+        if ($this->statusFilter !== 'all') {
+            $count++;
+        }
+        if ($this->timeFilter !== 'all') {
+            $count++;
+        }
+
+        return $count;
+    }
+
     public function sortBy(string $column): void
     {
+        $this->resetPage();
         if ($this->sortColumn === $column) {
             $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
         } else {
@@ -220,8 +254,11 @@ class AdminDashboard extends Component
             : 'reservation_date';
 
         $query->orderBy($column, $this->sortDirection);
+        if ($column !== 'id') {
+            $query->orderBy('id', $this->sortDirection);
+        }
 
-        return $query->paginate($this->perPage);
+        return $query->cursorPaginate($this->perPage, ['*'], 'page');
     }
 
     #[Computed]
@@ -501,13 +538,23 @@ class AdminDashboard extends Component
         ]);
 
         try {
+            $detailId = Book::whereKey($this->createSelectedBookId)->value('book_detail_id');
+            app(\App\Services\ReservationWaitlistService::class)->allocate($detailId);
             DB::transaction(function () {
+                $detailId = Book::whereKey($this->createSelectedBookId)->value('book_detail_id');
+                \App\Models\BookDetail::lockForUpdate()->findOrFail($detailId);
+                if (\App\Models\ReservationWaitlist::where('book_detail_id', $detailId)->where('status', 'waiting')->exists()) {
+                    throw new \RuntimeException('Copies are reserved for people already on the waitlist.');
+                }
                 $book = Book::lockForUpdate()->findOrFail($this->createSelectedBookId);
                 if ($book->status !== 'available') {
                     throw new \RuntimeException('Selected book copy is no longer available.');
                 }
 
                 $student = Student::findOrFail($this->createSelectedStudentId);
+                if ($student->account?->reservations_blocked) {
+                    throw new \RuntimeException('This account cannot place reservations.');
+                }
 
                 $reservation = BookReservation::create([
                     'book_id' => $book->id,

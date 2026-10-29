@@ -89,3 +89,15 @@ Follow these steps to set up the PGPC Library System in your local development e
 ## License
 
 The PGPC Library System is proprietary software designed specifically for Padre Garcia Polytechnic College. All rights reserved.
+
+### Advance loan reminders
+
+Outstanding loans are reminded once per due date, starting three calendar days before the due date. Change `notifications.due_reminder_days` in `config/settings.php` to adjust the lead time. Reminders use in-app notifications, email when an address is available, and SMS when a student phone number is available. Existing mail and SMS settings apply.
+
+Run `php artisan migrate` after updating. The Laravel scheduler must run continuously (`php artisan schedule:work`), or run `php artisan schedule:run` every minute via cron. Docker Compose includes a scheduler service. A queue worker (`php artisan queue:work`) is also required for asynchronous delivery. To run the reminder check manually, use `php artisan loans:send-due-reminders`.
+
+### Reservation waitlist
+
+Students can join the waitlist from the reservation catalog when all copies of a title are borrowed or reserved. Copies are assigned in queue order when released, and the student receives a notification with the pickup deadline. Students can leave their waitlist from the same page. Accounts at the three-reservation limit or with reservations blocked are skipped until eligible; their waitlist entry remains active. Staff can block or restore reservation access on the student's account tab without disabling login or returns.
+
+Run `php artisan migrate` to add the waitlist and reservation access flag. The scheduler and queue worker described above must be running for allocation retries and notifications. `php artisan reservations:allocate-waitlist` runs an allocation check manually.

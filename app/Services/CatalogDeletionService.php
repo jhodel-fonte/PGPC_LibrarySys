@@ -1,0 +1,59 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\Book;
+use App\Models\BookDetail;
+use App\Models\BookReservation;
+use App\Models\BorrowingTransaction;
+use Illuminate\Support\Facades\DB;
+
+class CatalogDeletionService
+{
+    public function inspect(string $type, array $ids): array
+    {
+        $copies = $type === 'title'
+            ? Book::whereIn('book_detail_id', $ids)->get()
+            : Book::whereIn('id', $ids)->get();
+        $copyIds = $copies->modelKeys();
+        $loans = BorrowingTransaction::whereIn('book_id', $copyIds)->whereNull('return_date')->count();
+        $reservations = BookReservation::whereIn('book_id', $copyIds)->whereIn('reservation_status_id', [1, 2])->count();
+        $loanRecords = BorrowingTransaction::whereIn('book_id', $copyIds)->count();
+        $reservationRecords = BookReservation::withTrashed()->whereIn('book_id', $copyIds)->count();
+        $waitlist = $type === 'title' ? DB::table('reservation_waitlist')->whereIn('book_detail_id', $ids)->where('status', 'waiting')->count() : 0;
+        $other = $copies->filter(fn ($copy) => $copy->status !== 'available')->count();
+
+        return ['copies' => $copies->count(), 'loans' => $loans, 'reservations' => $reservations, 'other' => $other,
+            'loan_records' => $loanRecords, 'reservation_records' => $reservationRecords, 'waitlist' => $waitlist,
+            'requires_confirmation' => $loanRecords > 0 || $reservationRecords > 0 || $waitlist > 0 || $other > 0];
+    }
+
+    public function delete(string $type, array $ids, bool $confirmed): void
+    {
+        DB::transaction(function () use ($type, $ids, $confirmed) {
+            if ($type === 'title') {
+                $details = BookDetail::whereIn('id', $ids)->lockForUpdate()->get();
+                if ($details->count() !== count($ids)) {
+                    throw new \RuntimeException('A selected title is no longer available.');
+                }
+                $copies = Book::whereIn('book_detail_id', $ids)->lockForUpdate()->get();
+            } else {
+                $copies = Book::whereIn('id', $ids)->lockForUpdate()->get();
+                if ($copies->count() !== count($ids)) {
+                    throw new \RuntimeException('A selected copy is no longer available.');
+                }
+            }
+            if ($this->inspect($type, $ids)['requires_confirmation'] && ! $confirmed) {
+                throw new \RuntimeException('The records have changed. Type DELETE to confirm.');
+            }
+            foreach ($copies as $copy) {
+                $copy->delete();
+            }
+            if ($type === 'title') {
+                foreach ($details as $detail) {
+                    $detail->delete();
+                }
+            }
+        }, 3);
+    }
+}

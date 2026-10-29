@@ -14,7 +14,7 @@ class EmailTestHelper extends TestCase
         try {
             Mail::fake();
             Mail::to($recipient)->send(new WelcomeEmail());
-            Mail::assertSent(WelcomeEmail::class);
+            Mail::assertQueued(WelcomeEmail::class);
             $this->assertTrue(true);
         } catch (\Throwable $e) {
             $this->fail("Failed to send email. Error: " . $e->getMessage());

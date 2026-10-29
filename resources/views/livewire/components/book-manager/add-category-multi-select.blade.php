@@ -9,15 +9,36 @@
         lastAutoDetectedId: null,
 
         init() {
-            if (!Array.isArray(this.selectedIds)) this.selectedIds = [];
+            if (!Array.isArray(this.selectedIds)) {
+                if (this.selectedIds && typeof this.selectedIds === 'object') {
+                    this.selectedIds = Object.values(this.selectedIds);
+                } else if (this.selectedIds !== null && this.selectedIds !== undefined && this.selectedIds !== '') {
+                    this.selectedIds = [this.selectedIds];
+                } else {
+                    this.selectedIds = [];
+                }
+            }
+        },
+
+        get ids() {
+            if (Array.isArray(this.selectedIds)) {
+                return this.selectedIds;
+            }
+            if (this.selectedIds && typeof this.selectedIds === 'object') {
+                return Object.values(this.selectedIds);
+            }
+            if (this.selectedIds !== null && this.selectedIds !== undefined && this.selectedIds !== '') {
+                return [this.selectedIds];
+            }
+            return [];
         },
 
         isSelected(id) {
-            return (this.selectedIds || []).some(s => String(s) === String(id));
+            return this.ids.some(s => String(s) === String(id));
         },
 
         get selectedItems() {
-            return (this.selectedIds || [])
+            return this.ids
                 .map(id => (this.preloads || []).find(c => String(c.id) === String(id)))
                 .filter(Boolean);
         },
@@ -74,7 +95,7 @@
                 this.preloads.push({ id: cat.id, name: cat.name, code: cat.code || null });
             }
             if (!this.isSelected(cat.id)) {
-                this.selectedIds = [...(this.selectedIds || []), cat.id];
+                this.selectedIds = [...this.ids, cat.id];
             }
             this.query = '';
             this.highlightedIndex = 0;
@@ -86,7 +107,7 @@
             if (this.lastAutoDetectedId && String(this.lastAutoDetectedId) === String(id)) {
                 this.lastAutoDetectedId = null;
             }
-            this.selectedIds = (this.selectedIds || []).filter(item => String(item) !== String(id));
+            this.selectedIds = this.ids.filter(item => String(item) !== String(id));
             this.highlightedIndex = 0;
             this.isOpen = true;
             this.$nextTick(() => this.$refs.catSearchInput?.focus());
@@ -101,7 +122,7 @@
                         this.preloads.push({ id: newCat.id, name: newCat.name, code: newCat.code || null });
                     }
                     if (!this.isSelected(newCat.id)) {
-                        this.selectedIds = [...(this.selectedIds || []), newCat.id];
+                        this.selectedIds = [...this.ids, newCat.id];
                     }
                 }
             });
@@ -121,8 +142,8 @@
         },
 
         handleBackspace() {
-            if (this.query === '' && (this.selectedIds || []).length > 0) {
-                const removedId = this.selectedIds[this.selectedIds.length - 1];
+            if (this.query === '' && this.ids.length > 0) {
+                const removedId = this.ids[this.ids.length - 1];
                 this.removeCategory(removedId);
             }
         },
@@ -176,7 +197,7 @@
 
             // If previously auto-detected category is different from new match, auto-remove it
             if (this.lastAutoDetectedId && String(this.lastAutoDetectedId) !== String(newId)) {
-                this.selectedIds = (this.selectedIds || []).filter(item => String(item) !== String(this.lastAutoDetectedId));
+                this.selectedIds = this.ids.filter(item => String(item) !== String(this.lastAutoDetectedId));
                 this.lastAutoDetectedId = null;
             }
 
@@ -186,7 +207,7 @@
                     this.preloads.push({ id: matched.id, name: matched.name, code: matched.code || null });
                 }
                 if (!this.isSelected(matched.id)) {
-                    this.selectedIds = [...(this.selectedIds || []), matched.id];
+                    this.selectedIds = [...this.ids, matched.id];
                 }
                 this.lastAutoDetectedId = matched.id;
             }
@@ -210,8 +231,8 @@
 >
     <div class="flex items-center justify-between">
         <label class="text-sm font-semibold text-[#334155]">Categories</label>
-        <template x-if="selectedIds.length > 0">
-            <span class="text-xs font-semibold text-[#102B70]" x-text="selectedIds.length + ' selected'"></span>
+        <template x-if="ids.length > 0">
+            <span class="text-xs font-semibold text-[#102B70]" x-text="ids.length + ' selected'"></span>
         </template>
     </div>
 
@@ -252,7 +273,7 @@
                 @keydown.escape="isOpen = false"
                 @keydown.backspace="handleBackspace()"
                 type="text"
-                :placeholder="selectedIds.length === 0 ? 'Type to search or select categories...' : 'Add category...'"
+                :placeholder="ids.length === 0 ? 'Type to search or select categories...' : 'Add category...'"
                 class="flex-1 min-w-[110px] h-8 bg-transparent border-0 border-none p-0 m-0 text-sm font-medium text-[#0F172A] placeholder-slate-400 focus:outline-none focus:ring-0 focus:border-0 shadow-none"
                 style="outline: none !important; box-shadow: none !important; border: none !important;"
             >
@@ -261,7 +282,7 @@
             <div class="absolute right-3 top-3.5 flex items-center gap-1 shrink-0">
                 <button
                     type="button"
-                    x-show="selectedIds.length > 0 || (query && query.length > 0)"
+                    x-show="ids.length > 0 || (query && query.length > 0)"
                     x-cloak
                     @click.stop="clearAll()"
                     class="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"

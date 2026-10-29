@@ -11,7 +11,7 @@
                 <!-- Table Header: visible on md and up, hidden on mobile -->
                 <thead class="hidden md:table-header-group sticky top-0 bg-[#F8FAFC] z-10 border-b border-[#E2E8F0]">
                     <tr class="text-xs font-bold text-[#475569] uppercase tracking-wider">
-                        <th scope="col" class="py-3 px-4 w-[42%]">Book</th>
+                        <th scope="col" class="py-3 px-4 w-[42%]">Item</th>
                         <th scope="col" class="py-3 px-4 w-[20%]">{{ $mode === 'check-out' ? 'Added On' : 'Borrowed On' }}</th>
                         <th scope="col" class="py-3 px-4 w-[20%]">Due Date</th>
                         <th scope="col" class="py-3 px-4 w-[18%] text-right">{{ $mode === 'check-out' ? 'Action' : 'Status' }}</th>
@@ -30,7 +30,7 @@
                             <!-- Mobile Card Cell (visible on mobile < 768px, hidden on md+) -->
                             <td colspan="4" class="block md:hidden p-3.5 border-b border-[#E2E8F0] last:border-b-0">
                                 <div class="flex flex-col gap-2.5">
-                                    <!-- Top Section: Book Title, Author, Accession & Action/Status -->
+                                    <!-- Top Section: Item Name, Author, Accession & Action/Status -->
                                     <div class="flex items-start justify-between gap-2.5">
                                         <div class="flex flex-col min-w-0 flex-1">
                                             <span class="font-bold text-sm text-[#0F172A] leading-snug line-clamp-2" title="{{ $item['book'] }}">
@@ -50,7 +50,7 @@
                                                 <button type="button"
                                                         @click.stop="$dispatch('remove-checkout-book', { accession: '{{ $item['accession'] ?? '' }}' })"
                                                         class="h-8 px-3 border border-[#FECACA] bg-white hover:bg-[#FEF2F2] text-[#B91C1C] rounded-lg text-xs font-bold transition-all shadow-2xs focus:outline-none focus:ring-2 focus:ring-[#B91C1C]/20 cursor-pointer"
-                                                        aria-label="Remove {{ $item['book'] }} from checkout">
+                                                        aria-label="Remove {{ $item['book'] }} from borrow queue">
                                                     Remove
                                                 </button>
                                             @else
@@ -113,7 +113,7 @@
                                     <button type="button"
                                             @click.stop="$dispatch('remove-checkout-book', { accession: '{{ $item['accession'] ?? '' }}' })"
                                             class="h-8 px-3 border border-[#FECACA] bg-white hover:bg-[#FEF2F2] text-[#B91C1C] rounded-lg text-xs font-bold transition-all shadow-2xs focus:outline-none focus:ring-2 focus:ring-[#B91C1C]/20"
-                                            aria-label="Remove {{ $item['book'] }} from checkout">
+                                            aria-label="Remove {{ $item['book'] }} from borrow queue">
                                         Remove
                                     </button>
                                 @else
@@ -139,7 +139,7 @@
                     @empty
                         <tr>
                             <td colspan="4" class="py-14 text-center text-xs text-[#64748B] font-medium leading-relaxed bg-[#F8FAFC]">
-                                {{ $mode === 'check-out' ? 'No books added to checkout queue.' : 'No active borrowed books on account.' }}
+                                {{ $mode === 'check-out' ? 'No items added to borrow queue.' : 'No active borrowed items on account.' }}
                             </td>
                         </tr>
                     @endforelse

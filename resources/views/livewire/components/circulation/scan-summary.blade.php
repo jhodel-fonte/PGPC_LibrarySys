@@ -17,7 +17,7 @@
         <!-- Stats List -->
         <div class="flex flex-col gap-0.5 text-sm font-semibold">
             <div class="flex justify-between items-center py-2.5 border-b border-[#F1F5F9]">
-                <span class="text-[#64748B]">Total Books to Return</span>
+                <span class="text-[#64748B]">Total Items to Return</span>
                 <span class="text-[#0F172A] font-bold">{{ $stats['total'] }}</span>
             </div>
             
@@ -79,7 +79,7 @@
                     </svg>
                     Account Clear
                 </span>
-                <span class="text-[11px] text-[#2563EB] leading-normal font-semibold">No active borrowed books on account</span>
+                <span class="text-[11px] text-[#2563EB] leading-normal font-semibold">No active borrowed items on account</span>
             </div>
             
             <button disabled class="w-full h-12 bg-slate-100 text-slate-400 rounded-xl font-bold flex items-center justify-center cursor-not-allowed text-xs uppercase tracking-wider">
@@ -94,7 +94,7 @@
                     </svg>
                     Partial Return
                 </span>
-                <span class="text-[11px] text-[#EA580C] leading-normal font-semibold">{{ $stats['remaining'] }} {{ Str::plural('book', $stats['remaining']) }} will remain on the account</span>
+                <span class="text-[11px] text-[#EA580C] leading-normal font-semibold">{{ $stats['remaining'] }} {{ Str::plural('item', $stats['remaining']) }} will remain on the account</span>
             </div>
 
             <!-- Review Return Button -->
@@ -113,7 +113,7 @@
                     <svg class="w-3.5 h-3.5 text-[#1E40AF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
-                    All Books Returned
+                    All Items Returned
                 </span>
                 <span class="text-[11px] text-[#2563EB] leading-normal font-semibold">Ready to complete this transaction</span>
             </div>

@@ -127,6 +127,7 @@
                                                 <p class="text-base font-bold text-slate-900 line-clamp-1" title="{{ $bookData->book_title ?? 'Untitled Book' }}">
                                                     {{ $bookData->book_title ?? 'Untitled Book' }}
                                                 </p>
+                                                @if($loan->book?->bookDetail?->catalog_kind !== 'book')<span class="text-xs font-semibold text-blue-700">Physical item · {{ ucfirst($loan->book?->bookDetail?->catalog_kind ?? 'item') }}</span>@endif
                                                 <p class="text-sm text-slate-500 truncate mt-0.5">
                                                     {{ $authors }}
                                                 </p>
@@ -179,7 +180,7 @@
 
                 @if($activeLoans->hasPages())
                     <div class="px-6 py-4 border-t border-[#E2E8F0] bg-[#F8FAFC]">
-                        {{ $activeLoans->links() }}
+                        {{ $activeLoans->links('components.widget.cursor-pagination') }}
                     </div>
                 @endif
             </div>
@@ -220,6 +221,7 @@
                                                 <p class="text-base font-bold text-slate-900 line-clamp-1" title="{{ $bookData->book_title ?? 'Untitled Book' }}">
                                                     {{ $bookData->book_title ?? 'Untitled Book' }}
                                                 </p>
+                                                @if($record->book?->bookDetail?->catalog_kind !== 'book')<span class="text-xs font-semibold text-blue-700">Physical item · {{ ucfirst($record->book?->bookDetail?->catalog_kind ?? 'item') }}</span>@endif
                                                 <p class="text-sm text-slate-500 truncate mt-0.5">
                                                     {{ $authors }}
                                                 </p>
@@ -258,7 +260,7 @@
 
                 @if($historyLoans->hasPages())
                     <div class="px-6 py-4 border-t border-[#E2E8F0] bg-[#F8FAFC]">
-                        {{ $historyLoans->links() }}
+                        {{ $historyLoans->links('components.widget.cursor-pagination') }}
                     </div>
                 @endif
             </div>
@@ -282,7 +284,7 @@
                             @forelse ($fines as $fine)
                                 @php
                                     $bookTitle = $fine->transaction?->book?->bookDetail?->bookData?->book_title ?? 'General Library Penalty';
-                                    $isPaid = !is_null($fine->paid_at);
+                                    $isPaid = $fine->fine_status === 'paid';
                                 @endphp
                                 <tr class="hover:bg-slate-50/80 transition-colors">
                                     <td class="px-6 sm:px-7 py-4">
@@ -303,8 +305,10 @@
                                     <td class="px-6 sm:px-7 py-4 text-right whitespace-nowrap">
                                         @if($isPaid)
                                             <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs sm:text-sm font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                                                Paid on {{ $fine->paid_at->format('M d, Y') }}
+                                                Paid{{ $fine->paid_at ? ' on ' . $fine->paid_at->format('M d, Y') : '' }}
                                             </span>
+                                        @elseif($fine->fine_status === 'waived')
+                                            <span class="inline-flex items-center px-2.5 py-1 rounded-md text-sm font-bold bg-slate-100 text-slate-700">Waived</span>
                                         @else
                                             <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs sm:text-sm font-bold bg-amber-100 text-amber-800 border border-amber-200">
                                                 Unpaid Balance

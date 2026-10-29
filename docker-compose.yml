@@ -44,6 +44,19 @@ services:
     networks:
       - pgpc-internal
 
+  scheduler:
+    image: pgpc-app:latest
+    container_name: pgpc_scheduler
+    restart: unless-stopped
+    command: php artisan schedule:work
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - web
+    networks:
+      - pgpc-internal
+
 volumes:
   pgdata:
 

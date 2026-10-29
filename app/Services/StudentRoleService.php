@@ -174,7 +174,8 @@ class StudentRoleService
      */
     public static function canReserve(?Account $user = null): bool
     {
-        return self::isStudent($user) && self::isActive($user);
+        $user = $user ?? auth()->user();
+        return self::isStudent($user) && self::isActive($user) && ! $user->reservations_blocked;
     }
 
     /**

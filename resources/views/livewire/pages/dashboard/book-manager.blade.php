@@ -61,8 +61,8 @@
         <div class="relative z-10 flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-start sm:justify-between lg:shrink-0">
             <div class="flex min-w-0 items-start gap-3.5">
                 <div class="min-w-0 pl-0 sm:pl-2">
-                    <h1 class="text-xl font-bold tracking-[-0.02em] text-[#102B70] sm:text-2xl">Book Management</h1>
-                    <p class="mt-0.5 max-w-2xl text-xs sm:text-sm font-medium text-slate-600">Manage catalog records, physical copies, shelf locations, and availability.</p>
+                    <h1 class="text-xl font-bold tracking-[-0.02em] text-[#102B70] sm:text-2xl">Catalog Management</h1>
+                    <p class="mt-0.5 max-w-2xl text-xs sm:text-sm font-medium text-slate-600">Manage books, physical assets, copies, shelf locations, and availability.</p>
                 </div>
             </div>
 
@@ -72,13 +72,13 @@
                     <a href="{{ route($routePrefix . 'book-management.add') }}" wire:navigate
                         class="inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-[#102B70] px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#0B225E] active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70] focus-visible:ring-offset-2">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
-                        <span>Add Book</span>
+                        <span>Add Catalog Item</span>
                     </a>
 
                     <!-- Secondary Action -->
                     <a href="{{ route($routePrefix . 'book-management.import') }}" wire:navigate class="inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-[#CBD5E1] bg-white px-4 text-sm font-semibold text-[#102B70] shadow-sm transition-colors hover:border-[#102B70] hover:bg-slate-50 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70] focus-visible:ring-offset-2">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
-                        <span>Import Book</span>
+                        <span>Import Catalog</span>
                     </a>
                 @endif
             </div>
@@ -129,6 +129,7 @@
                 }
             @endphp
             <div class="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0" aria-label="Inventory view and status filters">
+                <select wire:model.live="catalogFilter" aria-label="Catalog type" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-[#102B70]"><option value="books">Books</option><option value="physical">Items</option></select>
                 @foreach(['Titles' => $totalTitles, 'Copies' => $totalCopies] as $viewName => $viewCount)
                     <button
                         type="button"
@@ -380,7 +381,7 @@
                 class="group h-auto md:h-[64px] transition-colors hover:bg-slate-50/70 {{ $isTrashed ? 'opacity-85' : '' }}"
             >
                 <!-- Mobile Card Cell (Visible on mobile screens <= 768px) -->
-                <td colspan="8" class="mobile-cell">
+                <td colspan="9" class="mobile-cell">
                     <div
                         :class="isSelected('{{ $book->id }}') ? 'border-[#102B70] bg-blue-50/30 ring-1 ring-[#102B70]' : ''"
                         class="bg-white rounded-2xl border border-[#E2E8F0] p-4 shadow-xs relative transition-all hover:shadow-sm"
@@ -427,7 +428,7 @@
                                         {{ $data ? $data->book_title : 'Unknown Title' }}
                                     </button>
                                     <span class="text-xs text-slate-500 font-medium truncate mt-0.5">
-                                        {{ $authorName }}
+                                        {{ $detail?->catalog_kind === 'book' ? $authorName : ucfirst($detail?->catalog_kind ?? 'item') }} · Fine ₱{{ number_format($detail?->daily_fine ?? config('settings.library_config.penalty_fee', 50), 2) }}/day
                                     </span>
                                 </div>
                             </div>
@@ -455,36 +456,29 @@
                                             Edit Book
                                         </a>
 
+                                        @if($inventoryView === 'Copies')
                                         <button
                                             type="button"
-                                            wire:click="editCopy({{ $book->id }})"
-                                            @click="open = false"
+                                            @click="open = false; $dispatch('open-edit-copy', { copyId: {{ $book->id }} })"
                                             class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 rounded-xl transition-colors"
                                         >
                                             <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                                            Change Location
+                                            Edit Copy
                                         </button>
 
+                                        @if(false)
                                         <button
                                             type="button"
-                                            wire:click="editCopy({{ $book->id }})"
+                                            @click="open = false; $dispatch('open-edit-copy', { copyId: {{ $book->id }} })"
                                             @click="open = false"
                                             class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 rounded-xl transition-colors"
                                         >
-                                            <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
-                                            Update Condition
-                                        </button>
+                                            <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg                                            >
+                                                Update Condition
+                                            </button>
+                                        @endif
                                     @endif
-
-                                    <button
-                                        type="button"
-                                        wire:click="viewHistory({{ $book->id }})"
-                                        @click="open = false"
-                                        class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 rounded-xl transition-colors"
-                                    >
-                                        <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                        View History
-                                    </button>
+                                    @endif
 
                                     @if($isTrashed)
                                         @if($canUpdateBook)
@@ -505,12 +499,11 @@
                                             <button
                                                 type="button"
                                                 wire:click="deleteCopy({{ $book->id }})"
-                                                @disabled($book->status === 'borrowed')
                                                 @click="open = false"
                                                 class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-xl transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                                             >
                                                 <svg class="h-3.5 w-3.5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                                Delete Copy
+                                                Delete {{ $inventoryView === 'Titles' ? 'Title' : 'Copy' }}
                                             </button>
                                         @endif
                                     @endif
@@ -592,7 +585,7 @@
                             >
                                 {{ $data ? $data->book_title : 'Unknown Title' }}
                             </button>
-                            <span class="text-xs text-slate-500 font-medium truncate mt-0.5">{{ $authorName }}</span>
+                            <span class="text-xs text-slate-500 font-medium truncate mt-0.5">{{ $detail?->catalog_kind === 'book' ? $authorName : ucfirst($detail?->catalog_kind ?? 'item') }}</span>
                         </div>
                     </div>
                 </td>
@@ -630,6 +623,8 @@
                     @endif
                 </td>
 
+                <td x-show="cols['fine'] !== false" class="desktop-cell px-4 py-3 align-middle text-sm text-slate-700">₱{{ number_format($detail?->daily_fine ?? config('settings.library_config.penalty_fee', 50), 2) }}</td>
+
                 <!-- Actions -->
                 <td class="desktop-cell px-4 py-3 align-middle text-right pr-6">
                     <div class="flex items-center justify-end gap-3">
@@ -653,35 +648,29 @@
                                 Edit Book
                             </a>
 
+                            @if($inventoryView === 'Copies')
                             <button
                                 type="button"
-                                wire:click="editCopy({{ $book->id }})"
+                                @click="open = false; $dispatch('open-edit-copy', { copyId: {{ $book->id }} })"
                                 @click="open = false"
                                 class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 rounded-xl transition-colors"
                             >
                                 <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                                Change Location
+                                Edit Copy
                             </button>
 
+                            @if(false)
                             <button
                                 type="button"
-                                wire:click="editCopy({{ $book->id }})"
+                                @click="open = false; $dispatch('open-edit-copy', { copyId: {{ $book->id }} })"
                                 @click="open = false"
                                 class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 rounded-xl transition-colors"
                             >
                                 <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
                                 Update Condition
                             </button>
-
-                            <button
-                                type="button"
-                                wire:click="viewHistory({{ $book->id }})"
-                                @click="open = false"
-                                class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 rounded-xl transition-colors"
-                            >
-                                <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                View History
-                            </button>
+                            @endif
+                            @endif
 
                             @if($isTrashed)
                                 @if($canUpdateBook)
@@ -702,12 +691,11 @@
                                     <button
                                         type="button"
                                         wire:click="deleteCopy({{ $book->id }})"
-                                        @disabled($book->status === 'borrowed')
                                         @click="open = false"
                                         class="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-xl transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                                     >
                                         <svg class="h-3.5 w-3.5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                        Delete Copy
+                                        Delete {{ $inventoryView === 'Titles' ? 'Title' : 'Copy' }}
                                     </button>
                                 @endif
                             @endif
@@ -915,4 +903,5 @@
     @endif
 
     <livewire:pages.dashboard.book-detail />
+    <livewire:components.book-manager.delete-catalog-modal />
 </div>

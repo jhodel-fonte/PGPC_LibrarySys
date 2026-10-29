@@ -182,6 +182,9 @@
                 @endif
             </button>
 
+            @if(!$this->isProfile && \App\Services\EmployeeRoleService::canManageFines(auth()->user()))
+                <button type="button" @click="activeTab = 'fines'" class="inline-flex items-center gap-2 py-3.5 px-3 sm:px-4 text-sm sm:text-base font-bold border-b-2 whitespace-nowrap" :class="activeTab === 'fines' ? 'border-[#102B70] text-[#102B70]' : 'border-transparent text-slate-500'">Fines</button>
+            @endif
         </nav>
     </div>
 
@@ -220,6 +223,43 @@
     <div x-show="activeTab === 'reservations'" x-cloak>
         @include('livewire.components.usermanager.student-reservations')
     </div>
+
+    @if(!$this->isProfile && \App\Services\EmployeeRoleService::canManageFines(auth()->user()))
+        <div x-show="activeTab === 'fines'" x-cloak class="rounded-xl border border-slate-200 bg-white overflow-hidden">
+            <div class="p-5 border-b border-slate-200">
+                <h2 class="text-lg font-bold text-[#102B70]">Fines and payments</h2>
+                <p class="text-sm text-slate-600">Unpaid balance: ₱{{ number_format($this->unpaidFinesTotal, 2) }}</p>
+            </div>
+            <div class="overflow-x-auto"><table class="w-full text-left text-sm">
+                <thead class="bg-slate-50 text-slate-600"><tr><th class="p-4">Book / fine</th><th class="p-4">Amount</th><th class="p-4">Status</th><th class="p-4">Payment confirmed by</th><th class="p-4">Action</th></tr></thead>
+                <tbody class="divide-y divide-slate-100">
+                    @forelse($this->student?->fines?->sortByDesc('created_at') ?? collect() as $fine)
+                        <tr wire:key="fine-{{ $fine->id }}">
+                            <td class="p-4"><div class="font-semibold">{{ $fine->transaction?->book?->bookDetail?->bookData?->book_title ?? 'Book unavailable' }}</div><div class="text-slate-500">{{ $fine->fineType?->name ?? 'Fine' }} · {{ $fine->note }}</div></td>
+                            <td class="p-4">₱{{ number_format($fine->amount, 2) }}</td>
+                            <td class="p-4">{{ ucfirst($fine->fine_status) }} @if($fine->paid_at) · {{ $fine->paid_at->format('M d, Y') }} @endif</td>
+                            <td class="p-4">{{ $fine->payments->last()?->receivedBy?->first_name ?? '—' }} {{ $fine->payments->last()?->receivedBy?->last_name ?? '' }}</td>
+                            <td class="p-4">@if($fine->fine_status === 'unpaid')<button type="button" wire:click="openFinePayment({{ $fine->id }})" class="rounded-lg bg-[#102B70] px-3 py-2 font-semibold text-white">Confirm payment</button>@else — @endif</td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="5" class="p-6 text-center text-slate-500">No fines recorded.</td></tr>
+                    @endforelse
+                </tbody>
+            </table></div>
+        </div>
+    @endif
+
+    @if($paymentFineId)
+        @php $paymentFine = $this->student?->fines->firstWhere('id', $paymentFineId); @endphp
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" role="dialog" aria-modal="true" aria-labelledby="fine-payment-title">
+            <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+                <h2 id="fine-payment-title" class="text-lg font-bold text-[#102B70]">Confirm payment</h2>
+                <p class="mt-3 text-slate-700">Confirm that {{ $fullName }} paid ₱{{ number_format($paymentFine?->amount ?? 0, 2) }} for this fine?</p>
+                <p class="mt-2 text-sm text-slate-500">Your name and the payment date will be recorded.</p>
+                <div class="mt-6 flex justify-end gap-3"><button type="button" wire:click="$set('paymentFineId', null)" class="rounded-lg border border-slate-300 px-4 py-2">Cancel</button><button type="button" wire:click="confirmFinePayment" wire:loading.attr="disabled" class="rounded-lg bg-[#102B70] px-4 py-2 font-semibold text-white">Confirm paid</button></div>
+            </div>
+        </div>
+    @endif
 
     <!-- ======================================================== -->
     <!-- MODAL 1: STATUS CHANGE                                   -->

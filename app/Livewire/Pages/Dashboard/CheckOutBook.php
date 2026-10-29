@@ -15,7 +15,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
-#[Layout('livewire.layouts.admin', ['title' => 'Circulation Desk', 'subpage' => 'Borrow Books', 'activepageRoute' => 'admin.circulation-desk.index'])]
+#[Layout('livewire.layouts.admin', ['title' => 'Circulation Desk', 'subpage' => 'Borrow Items', 'activepageRoute' => 'admin.circulation-desk.index'])]
 class CheckOutBook extends Component
 {
     public $scannedMember = null;
@@ -37,7 +37,7 @@ class CheckOutBook extends Component
 
     public function mount()
     {
-        \App\Services\EmployeeRoleService::authorizeBorrow('Unauthorized action. You do not have permission to process book borrowings.');
+        \App\Services\EmployeeRoleService::authorizeBorrow('Unauthorized action. You do not have permission to process item borrowings.');
 
         $this->updateStats();
     }
@@ -420,6 +420,7 @@ class CheckOutBook extends Component
             'book_id' => $book->id,
             'book' => $data ? $data->book_title : 'Unknown Book',
             'title' => $data ? $data->book_title : 'Unknown Book',
+            'item_type' => $detail?->catalog_kind ?: 'book',
             'author' => $authorName,
             'category' => $categoryName,
             'isbn' => $detail ? ($detail->isbn ?: 'N/A') : 'N/A',
@@ -436,45 +437,45 @@ class CheckOutBook extends Component
         $this->lastScannedBook = $bookItem;
 
         if (!$this->scannedMember) {
-            $this->errorMessage = 'Please scan or load a student profile first before checking out books.';
+            $this->errorMessage = 'Please scan or load a student profile first before borrowing items.';
             return;
         }
 
         // Validation 0: Book copy deleted/archived check
         if ($book->trashed()) {
-            $this->errorMessage = 'Cannot add book: This copy has been archived or deleted.';
+            $this->errorMessage = 'Cannot add item: This copy has been archived or deleted.';
             return;
         }
 
         // Validation 1: Student Status Check
         if (strtolower($this->scannedMember['status']) !== 'active') {
-            $this->errorMessage = 'Cannot add book: Student profile is currently inactive or blocked.';
+            $this->errorMessage = 'Cannot add item: Student profile is currently inactive or blocked.';
             return;
         }
 
         // Validation 2: Overdue Books Block
         if ($this->stats['overdue_count'] > 0) {
-            $this->errorMessage = 'Cannot add book: Student has overdue items that must be settled first.';
+            $this->errorMessage = 'Cannot add item: Student has overdue items that must be settled first.';
             return;
         }
 
         // Validation 3: Book copy status check
         $isReservedForThisCheckout = $reservation && $reservation->book_id === $book->id && $reservation->student_id === $this->scannedMember['id'];
         if (strtolower($book->status) !== 'available' && !($isReservedForThisCheckout && strtolower($book->status) === 'reserved')) {
-            $this->errorMessage = 'Cannot add book: This copy is currently not available (Status: ' . ucfirst($book->status) . ').';
+            $this->errorMessage = 'Cannot add item: This copy is currently not available (Status: ' . ucfirst($book->status) . ').';
             return;
         }
 
         // Validation 4: Book damage status check
         if (in_array($book->book_condition_id, [4, 5])) {
-            $this->errorMessage = 'Cannot add book: This copy is marked as ' . ($book->condition ? $book->condition->status : 'damaged/lost') . '.';
+            $this->errorMessage = 'Cannot add item: This copy is marked as ' . ($book->condition ? $book->condition->status : 'damaged/lost') . '.';
             return;
         }
 
         // Validation 5: Double checkout scanning check
         foreach ($this->checkoutBooks as $item) {
             if ($item['book_id'] === $book->id) {
-                $this->errorMessage = 'Book "' . $book->accession_number . '" is already in the checkout queue.';
+                $this->errorMessage = 'Item "' . $book->accession_number . '" is already in the borrow queue.';
                 return;
             }
         }
@@ -486,7 +487,7 @@ class CheckOutBook extends Component
         $totalQueued = count($this->checkoutBooks);
         $maxCapacity = (int) config('settings.library_config.max_loan_limit', 3);
         if (($activeBorrowedCount + $totalQueued) >= $maxCapacity) {
-            $this->errorMessage = "Cannot add book: Max borrowing capacity reached (limit is {$maxCapacity} active loans).";
+            $this->errorMessage = "Cannot add item: Max borrowing capacity reached (limit is {$maxCapacity} active loans).";
             return;
         }
 
@@ -678,7 +679,7 @@ class CheckOutBook extends Component
         $this->scannedMember = null;
         $this->updateStats();
 
-        session()->flash('success_message', 'Books successfully checked out!');
+        session()->flash('success_message', 'Items successfully borrowed!');
 
         // Dispatch checkout-completed event to show the frontend countdown success modal
         $this->dispatch('checkout-completed', redirectUrl: route('admin.circulation-desk.index'));

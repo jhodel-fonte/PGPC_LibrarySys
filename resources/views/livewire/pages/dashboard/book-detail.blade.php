@@ -69,7 +69,7 @@
         >
             <header class="flex shrink-0 items-start justify-between border-b border-slate-200 px-5 py-4 sm:px-6">
                 <div>
-                    <h2 id="book-details-title" class="text-xl font-bold tracking-[-0.02em] text-[#102B70]">Book Details</h2>
+                    <h2 id="book-details-title" class="text-xl font-bold tracking-[-0.02em] text-[#102B70]">Catalog Item Details</h2>
                     <p id="book-details-description" class="mt-0.5 text-sm text-slate-500">
                         <span x-show="!isFetching">View title information and all available physical copies.</span>
                     </p>
@@ -189,6 +189,8 @@
                 @if($bookDetail)
                     @php
                         $data = $bookDetail->bookData;
+                        $isPhysical = $bookDetail->catalog_kind !== 'book';
+                        $itemTypeLabel = $isPhysical ? ucfirst($bookDetail->catalog_kind ?: 'physical item') : 'Book';
                         $authors = $data && $data->authors ? $data->authors : collect();
                         $authorNames = $authors->isNotEmpty()
                             ? $authors->map(fn($a) => trim($a->first_name . ' ' . $a->last_name))->filter()->implode(', ')
@@ -214,7 +216,7 @@
                         wire:key="modal-content-{{ $bookDetail->id }}"
                         class="grid gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] items-start"
                     >
-                        <!-- Left Side: Cover and Book Details -->
+                        <!-- Left Side: Cover and Catalog Details -->
                         <div class="grid gap-6 sm:grid-cols-[180px_minmax(0,1fr)]">
                             <aside class="w-full sm:w-[180px] shrink-0">
                                 <div
@@ -291,6 +293,24 @@
                                             @endif
                                         </dd>
                                     </div>
+                                    @if($isPhysical)
+                                    <div>
+                                        <dt class="text-sm font-medium text-slate-500">Item Type</dt>
+                                        <dd class="mt-0.5 text-sm font-bold text-black">{{ $itemTypeLabel }}</dd>
+                                    </div>
+                                    <div>
+                                        <dt class="text-sm font-medium text-slate-500">Manufacturer / Brand</dt>
+                                        <dd class="mt-0.5 text-sm font-bold text-black">{{ $bookDetail->manufacturer ?: 'Not specified' }}</dd>
+                                    </div>
+                                    <div>
+                                        <dt class="text-sm font-medium text-slate-500">Model Number</dt>
+                                        <dd class="mt-0.5 text-sm font-bold text-black">{{ $bookDetail->model_number ?: 'Not specified' }}</dd>
+                                    </div>
+                                    <div>
+                                        <dt class="text-sm font-medium text-slate-500">Overdue Fine / Day</dt>
+                                        <dd class="mt-0.5 text-sm font-bold tabular-nums text-black">₱{{ number_format($bookDetail->daily_fine ?? config('settings.library_config.penalty_fee', 50), 2) }}</dd>
+                                    </div>
+                                    @else
                                     <div>
                                         <dt class="text-sm font-medium text-slate-500">Author</dt>
                                         <dd class="mt-0.5 text-sm font-bold text-black">{{ $authorNames }}</dd>
@@ -319,6 +339,7 @@
                                         <dt class="text-sm font-medium text-slate-500">Publication Year</dt>
                                         <dd class="mt-0.5 text-sm font-bold tabular-nums text-black">{{ $bookDetail->publication_year ?: ($data?->copyright_year ?: 'N/A') }}</dd>
                                     </div>
+                                    @endif
                                     <div>
                                         <dt class="text-sm font-medium text-slate-500">Available Copies</dt>
                                         <dd class="mt-0.5 text-sm font-bold tabular-nums text-black">{{ number_format($availableCopies) }}</dd>
@@ -333,8 +354,17 @@
                                     </div>
                                 </dl>
 
+                                @if($isPhysical)
+                                    <div class="mt-5 rounded-lg border border-amber-200 bg-amber-50/60 p-4">
+                                        <h3 class="text-sm font-bold text-black">Package Contents</h3>
+                                        <p class="mt-1.5 whitespace-pre-line text-sm leading-relaxed text-black">
+                                            {{ $bookDetail->package_contents ?: 'No package contents recorded.' }}
+                                        </p>
+                                    </div>
+                                @endif
+
                                 <div class="mt-5 rounded-lg border border-slate-200 bg-slate-50/70 p-4">
-                                    <h3 class="text-sm font-bold text-black">Description / Notes</h3>
+                                    <h3 class="text-sm font-bold text-black">{{ $isPhysical ? 'Item Description / Notes' : 'Description / Notes' }}</h3>
                                     <p class="mt-1.5 text-sm leading-relaxed text-black">
                                         {{ $data?->description ?: ($data?->note ?: 'No description or summary provided for this catalog record.') }}
                                     </p>
@@ -349,7 +379,7 @@
                                 <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
                                     <div>
                                         <h3 class="flex items-center gap-2 text-sm font-bold text-[#102B70]">
-                                            Physical Copies ({{ number_format($totalCopies) }})
+                                            {{ $isPhysical ? 'Asset Copies' : 'Physical Copies' }} ({{ number_format($totalCopies) }})
                                         </h3>
                                         <p class="text-xs text-slate-500 mt-0.5">{{ $availableCopies }} available, {{ $borrowedCopies }} borrowed</p>
                                     </div>
@@ -444,7 +474,7 @@
                                                                     value: @js($copy->accession_number),
                                                                     title: 'Physical Copy QR Code',
                                                                     subtitle: 'Accession / Barcode QR',
-                                                                    name: @js($data?->book_title ?? 'Book Copy'),
+                                                                    name: @js($data?->book_title ?? ($isPhysical ? 'Physical Asset' : 'Book Copy')),
                                                                     label: 'Accession No.:',
                                                                     secondaryInfo: @js('Code: ' . ($copy->code ?: 'Not assigned') . ($copy->location ? ' • Shelf: ' . $copy->location : '')),
                                                                     instruction: 'Present this QR code during checkout, return, or inventory audit.'
@@ -475,19 +505,6 @@
 
                                                             {{-- Delete Copy --}}
                                                             @can('delete', \App\Models\Book::class)
-                                                                @if($copy->status === 'borrowed')
-                                                                    <button
-                                                                        type="button"
-                                                                        disabled
-                                                                        class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-300 cursor-not-allowed"
-                                                                        title="Cannot delete borrowed copy"
-                                                                        aria-label="Cannot delete borrowed copy {{ $copy->accession_number }}"
-                                                                    >
-                                                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                                            <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                                                                        </svg>
-                                                                    </button>
-                                                                @else
                                                                     <button
                                                                         type="button"
                                                                         wire:click="confirmDeleteCopy({{ $copy->id }})"
@@ -499,7 +516,6 @@
                                                                             <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
                                                                         </svg>
                                                                     </button>
-                                                                @endif
                                                             @endcan
                                                         </div>
                                                     </td>
