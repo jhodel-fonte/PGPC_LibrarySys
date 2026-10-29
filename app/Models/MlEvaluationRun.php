@@ -115,8 +115,11 @@ class MlEvaluationRun extends Model
                 if ($bumpCheck) {
                     $updates['times_checked'] = $existing->times_checked + 1;
                 }
-                if (! empty($payload) && empty($existing->payload)) {
-                    $updates['payload'] = $payload;
+                if (! empty($payload)) {
+                    $updates['payload'] = array_replace_recursive(
+                        is_array($existing->payload) ? $existing->payload : [],
+                        $payload
+                    );
                 }
 
                 $existing->forceFill($updates)->save();
