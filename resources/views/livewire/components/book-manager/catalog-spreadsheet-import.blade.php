@@ -46,7 +46,10 @@
                     type="button"
                     wire:click="resetImport"
                     @disabled($isImporting)
-                    class="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg border border-[#E2E8F0] bg-white px-4 text-xs sm:text-sm font-semibold text-slate-700 shadow-xs transition-colors hover:bg-slate-50 hover:text-rose-600 active:translate-y-px disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    wire:loading.attr="disabled"
+                    wire:target="review,spreadsheet,importSpreadsheet,resetImport"
+                    wire:loading.class="cursor-not-allowed opacity-50"
+                    class="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg border border-[#E2E8F0] bg-white px-4 text-xs sm:text-sm font-semibold text-slate-700 shadow-xs transition-colors hover:bg-slate-50 hover:text-rose-600 active:translate-y-px disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-slate-700 cursor-pointer"
                 >
                     <span>Start Over</span>
                 </button>
@@ -423,7 +426,10 @@
                         type="button"
                         wire:click="resetImport"
                         @disabled($isImporting)
-                        class="h-10 px-4 rounded-lg border border-[#E2E8F0] bg-white hover:bg-slate-50 text-xs sm:text-sm font-semibold text-slate-700 shadow-xs transition cursor-pointer"
+                        wire:loading.attr="disabled"
+                        wire:target="importSpreadsheet,resetImport"
+                        wire:loading.class="cursor-not-allowed opacity-50"
+                        class="h-10 px-4 rounded-lg border border-[#E2E8F0] bg-white hover:bg-slate-50 text-xs sm:text-sm font-semibold text-slate-700 shadow-xs transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white"
                     >
                         Start Over
                     </button>
@@ -453,8 +459,9 @@
                             wire:click="importSpreadsheet"
                             wire:loading.attr="disabled"
                             wire:target="importSpreadsheet"
+                            wire:loading.class="cursor-not-allowed opacity-50"
                             @disabled($validRows === 0)
-                            class="h-10 px-5 rounded-lg bg-[#102B70] hover:bg-[#0B225E] disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm font-semibold text-white shadow-xs transition cursor-pointer inline-flex items-center justify-center"
+                            class="h-10 px-5 rounded-lg bg-[#102B70] hover:bg-[#0B225E] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#102B70] text-xs sm:text-sm font-semibold text-white shadow-xs transition cursor-pointer inline-flex items-center justify-center"
                         >
                             <span wire:loading.remove wire:target="importSpreadsheet">Import Valid Rows ({{ $validRows }})</span>
                             <span wire:loading wire:target="importSpreadsheet">Starting Background Job...</span>
@@ -614,8 +621,9 @@
                                 type="button"
                                 wire:click="review"
                                 wire:loading.attr="disabled"
-                                wire:target="review"
-                                class="inline-flex h-9 items-center justify-center rounded-lg bg-[#102B70] hover:bg-[#0B225E] text-white px-4 text-xs font-semibold shadow-xs transition cursor-pointer"
+                                wire:target="review,spreadsheet"
+                                wire:loading.class="cursor-not-allowed opacity-50"
+                                class="inline-flex h-9 items-center justify-center rounded-lg bg-[#102B70] hover:bg-[#0B225E] text-white px-4 text-xs font-semibold shadow-xs transition cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-[#102B70]"
                             >
                                 <span wire:loading.remove wire:target="review">Review Records</span>
                                 <span wire:loading wire:target="review">Validating Records...</span>
@@ -624,7 +632,10 @@
                             <button
                                 type="button"
                                 wire:click="clearFile"
-                                class="inline-flex h-9 items-center justify-center rounded-lg border border-[#CBD5E1] bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition cursor-pointer"
+                                wire:loading.attr="disabled"
+                                wire:target="review,clearFile,spreadsheet"
+                                wire:loading.class="cursor-not-allowed opacity-50"
+                                class="inline-flex h-9 items-center justify-center rounded-lg border border-[#CBD5E1] bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white"
                             >
                                 Change File
                             </button>
@@ -721,8 +732,9 @@
                             type="button"
                             wire:click="review"
                             wire:loading.attr="disabled"
-                            wire:target="review"
-                            class="h-10 w-full sm:w-auto px-6 rounded-lg bg-[#102B70] hover:bg-[#0B225E] text-xs sm:text-sm font-semibold text-white shadow-xs transition cursor-pointer inline-flex items-center justify-center min-w-[200px]"
+                            wire:target="review,spreadsheet"
+                            wire:loading.class="cursor-not-allowed opacity-50"
+                            class="h-10 w-full sm:w-auto px-6 rounded-lg bg-[#102B70] hover:bg-[#0B225E] text-xs sm:text-sm font-semibold text-white shadow-xs transition cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-[#102B70] inline-flex items-center justify-center min-w-[200px]"
                         >
                             <span wire:loading.remove wire:target="review">Review &amp; Validate Records</span>
                             <span wire:loading wire:target="review">Reading &amp; Validating Records...</span>
