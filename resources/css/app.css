@@ -2,6 +2,43 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Use the space left by the sidebar, rather than viewport width, for portal layouts. */
+.student-page {
+    container: student-page / inline-size;
+    overflow-wrap: anywhere;
+}
+.student-page :where(input, select, textarea) { min-width: 0; max-width: 100%; }
+.student-record-table { display: none; }
+.student-record-cards { display: block; }
+.student-loans-panel { container: student-loans / inline-size; }
+.student-loans-panel .student-record-table { display: none; }
+.student-loans-panel .student-record-cards { display: block; }
+
+@container student-loans (min-width: 48rem) {
+    .student-loans-panel .student-record-table { display: block; }
+    .student-loans-panel .student-record-cards { display: none; }
+}
+
+@container student-page (min-width: 42rem) {
+    .student-catalog-filters { grid-template-columns: minmax(0, 1fr) minmax(0, 16rem); }
+    .student-catalog-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@container student-page (min-width: 64rem) {
+    .student-page-heading { flex-direction: row; align-items: center; }
+    .student-page-heading > :first-child { min-width: 0; flex: 1; }
+    .student-page-heading > :last-child { flex-shrink: 0; }
+    .student-borrow-controls { flex-direction: row; align-items: center; }
+    .student-borrow-controls > :first-child { flex: 1; }
+    .student-borrow-controls > :last-child { width: 18rem; }
+    .student-record-table { display: block; }
+    .student-record-cards { display: none; }
+    .student-catalog-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 359px) {
+    .portal-topbar { padding-inline: .5rem; }
+}
+
 /* Hide Livewire's default NProgress bar to prevent conflicts with custom top-loader */
 #nprogress {
     display: none !important;

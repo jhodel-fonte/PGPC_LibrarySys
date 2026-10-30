@@ -1,4 +1,6 @@
 import { Html5Qrcode } from 'html5-qrcode';
+import { saveQrImage } from './qr-image';
+window.saveQrImage = saveQrImage;
 window.Html5Qrcode = Html5Qrcode;
 
 import tallstackui_chart from '../../vendor/tallstackui/tallstackui/src/Components/Chart/alpine.js';

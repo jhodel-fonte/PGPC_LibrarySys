@@ -12,7 +12,7 @@
     $profileImageUrl = $hasCustomImage ? $personProfile->image_url : null;
 @endphp
 <div x-data="{ dropdownOpen: false, imgError: false }" class="relative">
-    <button @click="dropdownOpen = !dropdownOpen" @click.away="dropdownOpen = false" class="flex items-center gap-3 pl-3 md:pl-4 border-l border-white/10 md:border-gray-200 group focus:outline-none cursor-pointer" title="My Profile">
+    <button @click="dropdownOpen = !dropdownOpen" @click.away="dropdownOpen = false" class="min-h-11 flex items-center gap-3 pl-3 md:pl-4 border-l border-white/10 md:border-gray-200 group focus:outline-none cursor-pointer" title="My Profile">
         <div class="flex items-center gap-2">
             @if($hasCustomImage)
                 <!-- Profile Image -->
@@ -34,8 +34,8 @@
             </div>
 
             <!-- Name & Chevron for Desktop -->
-            <div class="hidden md:flex items-center gap-1.5">
-                <span class="text-sm font-semibold text-gray-700 group-hover:text-[#102B70] transition-colors">
+            <div class="hidden xl:flex items-center gap-1.5">
+                <span class="max-w-40 truncate text-sm font-semibold text-gray-700 group-hover:text-[#102B70] transition-colors">
                     {{ $profileName }}
                 </span>
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 group-hover:text-[#102B70] transition-transform duration-200" :class="dropdownOpen ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor">

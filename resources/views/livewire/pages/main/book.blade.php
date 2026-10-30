@@ -695,17 +695,9 @@
                 </div>
             </div>
 
-            <!-- 3. Recommendations / Similar Books Row -->
-            <div class="mt-8">
-                @if(auth()->check() && auth()->user()->isStudent())
-                    <livewire:components.main.personal-recommendations :book-detail-id="$bookDetailId" :key="'recommend-book-'.$bookDetailId" />
-                @endif
-                <x-recommendation.book-view-recommendation
-                    :category="$book['category'] ?? ($book['subjects'][0] ?? null)"
-                    :books="$similarBooks ?? []"
-                    :limit="10"
-                />
-            </div>
+            @if(auth()->check() && auth()->user()->isStudent())
+                <livewire:components.main.personal-recommendations :book-detail-id="$bookDetailId" :key="'recommend-book-'.$bookDetailId" />
+            @endif
 
             <!-- 4. Reservation Modal Popup -->
             @if($reservationModalOpen)

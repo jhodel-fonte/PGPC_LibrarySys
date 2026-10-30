@@ -21,9 +21,24 @@ chown -R www-data:www-data storage bootstrap/cache
 chmod -R u+rwX,g+rwX storage bootstrap/cache
 
 echo "Preparing Nginx temporary upload directories..."
+
+# Create Nginx temporary directories
 mkdir -p /var/lib/nginx/tmp/fastcgi /var/lib/nginx/tmp/client_body
+
+# FIX: Allow Nginx workers to traverse the parent directory
+chmod 751 /var/lib/nginx
+
+# Assign temporary directories to Nginx's worker user
 chown -R www-data:www-data /var/lib/nginx/tmp
-chmod 770 /var/lib/nginx/tmp /var/lib/nginx/tmp/fastcgi /var/lib/nginx/tmp/client_body
+
+# Secure permissions for temporary directories
+chmod 770 /var/lib/nginx/tmp
+chmod 700 /var/lib/nginx/tmp/fastcgi
+chmod 700 /var/lib/nginx/tmp/client_body
+
+# Verify that www-data can traverse and write to the directory
+su -s /bin/sh www-data -c 'test -w /var/lib/nginx/tmp/client_body'
+
 php artisan storage:link --force
 
 echo "Verifying upload runtime configuration..."

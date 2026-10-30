@@ -1,4 +1,4 @@
-<div class="space-y-6 font-sans antialiased text-base text-[#0F172A]" x-data="{ activeTab: @entangle('activeTab') }">
+<div class="min-w-0 space-y-6 font-sans antialiased text-base text-[#0F172A]" x-data="{ activeTab: @entangle('activeTab') }">
 
     @php
         $user = $user ?? null;
@@ -22,7 +22,7 @@
     <!-- ======================================================== -->
     <!-- 1. BREADCRUMBS & TOP HEADER (TITLE & EDIT BUTTON)       -->
     <!-- ======================================================== -->
-    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+    <div class="flex flex-wrap items-start justify-between gap-4">
         <div>
             <!-- Page Title & Subtitle -->
             <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-[#102B70]">
@@ -110,7 +110,7 @@
     <!-- 3. NAVIGATION TABS BAR                                  -->
     <!-- ======================================================== -->
     <div class="border-b border-[#E2E8F0]">
-        <nav class="flex items-center gap-1 sm:gap-4 overflow-x-auto" aria-label="Student details tabs">
+        <nav class="flex flex-wrap items-center gap-1 sm:gap-4" aria-label="Student details tabs">
             
             <!-- Tab 1: Overview -->
             <button
@@ -230,7 +230,7 @@
                 <h2 class="text-lg font-bold text-[#102B70]">Fines and payments</h2>
                 <p class="text-sm text-slate-600">Unpaid balance: ₱{{ number_format($this->unpaidFinesTotal, 2) }}</p>
             </div>
-            <div class="overflow-x-auto"><table class="w-full text-left text-sm">
+            <div tabindex="0" role="region" aria-label="Circulation history" class="max-w-full overflow-x-auto"><table class="w-full text-left text-sm">
                 <thead class="bg-slate-50 text-slate-600"><tr><th class="p-4">Book / fine</th><th class="p-4">Amount</th><th class="p-4">Status</th><th class="p-4">Payment confirmed by</th><th class="p-4">Action</th></tr></thead>
                 <tbody class="divide-y divide-slate-100">
                     @forelse($this->student?->fines?->sortByDesc('created_at') ?? collect() as $fine)

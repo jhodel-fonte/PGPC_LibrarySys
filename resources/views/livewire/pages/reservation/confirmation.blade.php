@@ -1,4 +1,4 @@
-<div class="min-h-full bg-[#F8FAFC] pb-16 font-sans text-slate-800 selection:bg-[#102B70] selection:text-white">
+<div class="student-page min-w-0 w-full min-h-full bg-[#F8FAFC] pb-16 font-sans text-slate-800 selection:bg-[#102B70] selection:text-white">
     <div class="mx-auto w-full max-w-[850px] space-y-5 px-3 py-4 sm:px-6 lg:px-8 lg:py-6">
 
         @if(!$reservation)
@@ -139,9 +139,9 @@
 
                     <!-- QR Verification Code -->
                     @if($qrCodeSvg)
-                        <div class="p-5 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] flex flex-col sm:flex-row items-center justify-between gap-5">
+                        <div class="p-4 sm:p-5 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,18rem)] items-center gap-6">
                             <div class="space-y-2 text-center sm:text-left flex-1">
-                                <div class="flex items-center justify-center sm:justify-start gap-2">
+                                <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2">
                                     <span class="text-base font-bold uppercase tracking-wider text-slate-500">Circulation Verification</span>
                                     @if($statusId === 1)
                                         <span class="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full text-sm font-bold bg-slate-100 text-slate-700 border border-slate-200">
@@ -177,9 +177,7 @@
                                     <span class="font-mono text-sm font-black text-[#102B70] tracking-wider">PGPC-RES-{{ str_pad($reservation->id, 5, '0', STR_PAD_LEFT) }}</span>
                                 </div>
                             </div>
-                            <div class="h-32 w-32 bg-white p-2.5 rounded-xl border border-slate-200/80  flex items-center justify-center shrink-0 [&>svg]:w-full [&>svg]:h-full">
-                                {!! $qrCodeSvg !!}
-                            </div>
+                            <x-qr-image :svg="$qrCodeSvg" :filename="'reservation-'.$reservation->id" label="Reservation verification QR code" />
                         </div>
                     @endif
 
