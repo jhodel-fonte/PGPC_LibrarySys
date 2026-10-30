@@ -40,7 +40,7 @@
      @keydown.enter.prevent.window="if (open && selectedIndex >= 0 && selectedIndex < resultsCount()) { selectRowAtIndex(selectedIndex); }"
      x-show="open"
      x-cloak
-     class="absolute inset-0 z-50 flex items-center justify-center overflow-x-hidden overflow-y-auto"
+     class="fixed inset-0 z-50 flex items-center justify-center overflow-x-hidden overflow-y-auto p-3"
      role="dialog"
      aria-modal="true"
 >
@@ -57,7 +57,8 @@
     ></div>
 
     <!-- Centered Modal Content Card (Width changed to max-w-2xl) -->
-    <div class="relative w-full max-w-2xl mx-4 bg-white rounded-3xl border border-[#E2E8F0] shadow-2xl overflow-hidden z-50 transition-all transform flex flex-col max-h-[90%] pb-4 font-sans"
+    <div class="relative w-full max-w-2xl bg-white rounded-3xl border border-[#E2E8F0] shadow-2xl overflow-hidden z-50 transition-all transform flex flex-col pb-4 font-sans"
+         style="max-height: 90vh; max-height: 90dvh;"
          x-show="open"
          x-transition:enter="ease-out duration-300"
          x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
@@ -105,7 +106,7 @@
                            wire:model.live.debounce.300ms="searchQuery"
                            @input="isLoading = true; selectedIndex = -1;"
                            placeholder="Type to search..."
-                           class="w-full pl-11 pr-10 h-11 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl text-[14px] font-semibold text-[#0F172A] placeholder-[#64748B] tracking-wide focus:outline-none focus:ring-2 focus:ring-[#102B70]/20 focus:border-[#102B70] transition-shadow"
+                           class="workstation-modal-search w-full pl-11 pr-10 h-11 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl text-base sm:text-sm font-semibold text-[#0F172A] placeholder-[#64748B] tracking-wide focus:outline-none focus:ring-2 focus:ring-[#102B70]/20 focus:border-[#102B70] transition-shadow"
                     >
                     <!-- Clear Input Button (Client-side instant toggle and focus retention) -->
                     <button type="button"
@@ -122,7 +123,7 @@
             </div>
 
             <!-- Pill Tabs -->
-            <div class="flex items-ceter gap-2 border-b border-[#E2E8F0] pb-3">
+            <div class="flex flex-wrap items-center gap-2 border-b border-[#E2E8F0] pb-3">
                 <button type="button"
                         wire:click="setTab('all')"
                         @click="isLoading = true; selectedIndex = -1;"
@@ -153,7 +154,7 @@
         </div>
 
         <!-- Scrollable Results Section -->
-        <div class="px-6 py-4 flex flex-col gap-4 overflow-y-auto flex-1 custom-scrollbar bg-slate-50/10">
+        <div class="px-4 sm:px-6 py-4 flex flex-col gap-4 min-h-0 overflow-y-auto flex-1 custom-scrollbar bg-slate-50/10">
             <!-- Alpine Skeletal Loading Design -->
             <div x-show="isLoading" class="flex flex-col gap-4" x-cloak>
                 @if($activeTab === 'all' || $activeTab === 'members')

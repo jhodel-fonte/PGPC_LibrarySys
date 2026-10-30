@@ -12,10 +12,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use App\Services\EmployeeRoleService;
 use App\Services\StudentRoleService;
 use Laravel\Scout\Searchable;
+use Laravel\Sanctum\HasApiTokens;
 
 class Account extends Authenticatable
 {
-    use HasFactory, SoftDeletes, Notifiable, Searchable;
+    use HasFactory, SoftDeletes, Notifiable, Searchable, HasApiTokens;
 
     /**
      * Get the indexable data array for Scout.
@@ -58,6 +59,8 @@ class Account extends Authenticatable
 
     protected $casts = [
         'reservations_blocked' => 'boolean',
+        'setup_email_required' => 'boolean',
+        'setup_password_prompt' => 'boolean',
         'is_email_verified' => 'boolean',
         'email_verified_at' => 'datetime',
         'last_login' => 'datetime',

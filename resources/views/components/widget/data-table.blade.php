@@ -30,7 +30,7 @@
     $initialCols = collect($headers)->pluck('index')->filter()->mapWithKeys(fn($k) => [$k => true])->toArray();
 @endphp
 
-<div class="relative z-10 flex flex-col overflow-visible rounded-xl border border-[#DCE3EC] bg-white font-sans antialiased shadow-[0_8px_24px_rgba(15,43,112,0.045)] min-h-0 flex-1 {{ $textSize }}"
+<div class="admin-table-container relative z-10 flex flex-col overflow-visible rounded-xl border border-[#DCE3EC] bg-white font-sans antialiased shadow-[0_8px_24px_rgba(15,43,112,0.045)] min-h-0 flex-1 {{ $textSize }}"
      x-data="{
          localSearch: @entangle($searchModel).live,
          filterOpen: false,
@@ -282,7 +282,7 @@
     <div
         :class="hasError ? 'overflow-hidden' : 'overflow-auto'"
         x-effect="if (hasError) { $el.scrollTop = 0; $el.scrollLeft = 0; }"
-        class="w-full relative flex-1 min-h-0"
+        class="admin-table-scroll w-full relative flex-1 min-h-0"
     >
         
         <!-- Long Loading State Overlay (Shown only when request takes > 1.2s) -->
@@ -476,6 +476,9 @@
         height: auto !important;
     }
     .table-responsive-cards > tbody > tr > td.desktop-cell {
+        display: none !important;
+    }
+    .table-responsive-cards > tbody > tr:has(> td.mobile-cell) > td:not(.mobile-cell) {
         display: none !important;
     }
     .table-responsive-cards > tbody > tr > td.mobile-cell {

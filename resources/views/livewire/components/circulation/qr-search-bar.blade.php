@@ -10,11 +10,11 @@
      @search-modal-closed.window="openingAdd = false"
 >
     <label for="circulation-search-input" class="block text-xs font-bold text-[#334155] uppercase tracking-wider">{{ $label }}</label>
-    <div class="relative w-full flex items-center">
+    <div class="workstation-search-row relative w-full flex items-center">
         <!-- Clickable Barcode/Scanner Icon Button on the Left -->
         <button type="button"
                 @click="$dispatch('start-camera')"
-                class="absolute inset-y-0 left-0 pl-4 flex items-center text-[#64748B] hover:text-[#102B70] transition-colors focus:outline-none z-10"
+                class="workstation-scanner-button absolute inset-y-0 left-0 pl-4 flex items-center text-[#64748B] hover:text-[#102B70] transition-colors focus:outline-none z-10"
                 aria-label="Activate camera scanner"
                 title="Start/Resume Scanner">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -33,7 +33,7 @@
                class="w-full pl-12 pr-[160px] h-14 bg-white border border-[#E2E8F0] rounded-2xl text-sm font-semibold text-[#0F172A] placeholder-[#64748B] tracking-wide focus:outline-none focus:ring-2 focus:ring-[#102B70]/20 focus:border-[#102B70] transition-all shadow-2xs">
 
         <!-- Action Buttons Container (Search, Clear & Add side-by-side) -->
-        <div class="absolute right-2 top-2 bottom-2 flex items-center gap-1.5 z-10">
+        <div class="workstation-search-actions absolute right-2 top-2 bottom-2 flex items-center gap-1.5 z-10">
             <!-- Loading Spinner (Shown only when Livewire is loading) -->
             <div wire:loading.flex class="items-center justify-center px-3 gap-2 text-[#102B70] h-10 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl">
                 <svg class="animate-spin h-4 w-4 text-[#102B70]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">

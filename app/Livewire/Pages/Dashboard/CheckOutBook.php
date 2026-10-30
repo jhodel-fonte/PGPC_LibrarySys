@@ -41,6 +41,15 @@ class CheckOutBook extends Component
         \App\Services\EmployeeRoleService::authorizeBorrow('Unauthorized action. You do not have permission to process item borrowings.');
 
         $this->updateStats();
+
+        $reservationId = request()->query('reservation');
+        if ($reservationId !== null) {
+            if (is_scalar($reservationId) && ctype_digit((string) $reservationId)) {
+                $this->handleSearchCode('RES-' . $reservationId);
+            } else {
+                $this->errorMessage = 'The reservation could not be found. Search for it to continue.';
+            }
+        }
     }
 
     public function getQrConfig()
@@ -349,6 +358,10 @@ class CheckOutBook extends Component
         if ($reservation) {
             $this->processReservationCheckout($reservation);
             $this->dispatch('clear-search-input');
+            return;
+        }
+        if (preg_match('/^(?:#?RES-|PGPC-RES-?)/i', $code)) {
+            $this->errorMessage = 'The reservation could not be found. Search for it to continue.';
             return;
         }
         // 1. Check if the code matches a member ID (Student table)

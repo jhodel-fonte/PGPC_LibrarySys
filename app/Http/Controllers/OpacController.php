@@ -126,6 +126,10 @@ class OpacController extends Controller
         }
 
         $currentUser = Auth::user();
+        if ($currentUser?->isStudent() && ($currentUser->setup_email_required || $currentUser->setup_password_prompt)) {
+            $message = 'Complete your account setup before making a reservation.';
+            return $request->expectsJson() ? response()->json(['success' => false, 'message' => $message, 'redirect' => route('student.setup')], 403) : redirect()->route('student.setup');
+        }
         if (! $currentUser?->student) {
             $message = 'A student account is required to place a reservation.';
             return $request->expectsJson() ? response()->json(['success' => false, 'message' => $message], 403) : back()->with('error', $message);

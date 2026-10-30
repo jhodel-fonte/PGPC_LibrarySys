@@ -36,6 +36,18 @@ class CheckInBook extends Component
         \App\Services\EmployeeRoleService::authorizeReturn('Unauthorized action. You do not have permission to process item returns.');
 
         $this->updateStats();
+
+        $loanId = request()->query('loan');
+        if ($loanId !== null) {
+            $loan = is_scalar($loanId) && ctype_digit((string) $loanId)
+                ? BorrowingTransaction::with(['student.libraryStatus', 'student.account'])->whereNull('return_date')->find((int) $loanId)
+                : null;
+            if ($loan?->student && $loan->student->account) {
+                $this->loadMember($loan->student);
+            } else {
+                $this->errorMessage = 'This active loan or its student could not be found. Search for the member to continue.';
+            }
+        }
     }
 
     public function getQrConfig()

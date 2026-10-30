@@ -202,8 +202,8 @@
                 </span>
             </div>
 
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm font-sans">
+            <div class="admin-mobile-table-scroll overflow-x-auto">
+                <table class="admin-mobile-table w-full text-left text-sm font-sans">
                     <thead class="bg-slate-50 text-xs font-bold uppercase tracking-wider text-slate-600 border-b border-slate-200">
                         <tr>
                             <th class="py-3 px-4 w-12 text-center">Rank</th>
@@ -217,32 +217,32 @@
                     <tbody class="divide-y divide-slate-100 text-sm">
                         @foreach($popularBooks as $index => $book)
                             <tr class="hover:bg-slate-50/70 transition-colors">
-                                <td class="py-3.5 px-4 text-center font-bold text-slate-400">
+                                <td data-label="Rank" class="py-3.5 px-4 text-center font-bold text-slate-400">
                                     #{{ $index + 1 }}
                                 </td>
-                                <td class="py-3.5 px-4 min-w-[260px]">
+                                <td data-label="Book and author" class="py-3.5 px-4 min-w-[260px]">
                                     <div class="flex flex-col">
                                         <span class="font-bold text-[#102B70] text-sm leading-tight">{{ $book['title'] }}</span>
                                         <span class="text-sm text-slate-500 font-medium mt-0.5">by {{ $book['author'] }}</span>
                                     </div>
                                 </td>
-                                <td class="py-3.5 px-4 whitespace-nowrap">
+                                <td data-label="Category" class="py-3.5 px-4 whitespace-nowrap">
                                     <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-[#EFF6FF] text-[#102B70] border border-[#BFDBFE]">
                                         {{ $book['category'] }}
                                     </span>
                                 </td>
-                                <td class="py-3.5 px-4 text-center whitespace-nowrap">
+                                <td data-label="Borrow frequency" class="py-3.5 px-4 text-center whitespace-nowrap"><span>
                                     <span class="font-bold text-[#0F172A] text-sm">{{ $book['borrows'] }}</span>
                                     <span class="text-slate-500 text-sm ml-1">borrows</span>
-                                </td>
-                                <td class="py-3.5 px-4 text-center whitespace-nowrap">
+                                </span></td>
+                                <td data-label="Physical copies" class="py-3.5 px-4 text-center whitespace-nowrap">
                                     <div class="inline-flex items-center gap-1.5 font-semibold text-sm">
                                         <span class="{{ $book['available_copies'] <= 1 ? 'text-amber-600 font-bold' : 'text-slate-700' }}">{{ $book['available_copies'] }} avail</span>
                                         <span class="text-slate-300">/</span>
                                         <span class="text-slate-500">{{ $book['total_copies'] }} total</span>
                                     </div>
                                 </td>
-                                <td class="py-3.5 px-4 text-right whitespace-nowrap">
+                                <td data-label="Recommendation" class="py-3.5 px-4 text-right whitespace-nowrap">
                                     @if($book['needs_copies'])
                                         <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200">
                                             <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
@@ -487,8 +487,8 @@
             </div>
 
             <!-- Table -->
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm font-sans">
+            <div class="admin-mobile-table-scroll overflow-x-auto">
+                <table class="admin-mobile-table w-full text-left text-sm font-sans">
                     <thead class="bg-slate-50 text-xs font-bold uppercase tracking-wider text-slate-600 border-b border-slate-200">
                         <tr>
                             <th class="py-3 px-6">Borrower / Student</th>
@@ -523,7 +523,7 @@
 
                             <tr class="hover:bg-slate-50/70 transition-colors h-[72px]">
                                 <!-- 1. STUDENT / BORROWER INFO -->
-                                <td class="px-6 py-4 align-middle">
+                                <td data-label="Borrower" class="px-6 py-4 align-middle">
                                     <div class="flex items-center gap-3.5">
                                         @if($student?->image_url)
                                             <img src="{{ $student->image_url }}" alt="{{ $fullName }}" class="w-10 h-10 rounded-full object-cover border border-[#CBD5E1] shrink-0">
@@ -549,7 +549,7 @@
                                 </td>
 
                                 <!-- 2. BOOK DETAILS & ACCESSION -->
-                                <td class="px-6 py-4 align-middle">
+                                <td data-label="Book" class="px-6 py-4 align-middle">
                                     <div class="flex flex-col min-w-0">
                                         <span class="text-sm font-bold text-slate-900 leading-tight truncate max-w-[340px]" title="{{ $bTitle }}">
                                             {{ $bTitle }}
@@ -564,7 +564,7 @@
                                 </td>
 
                                 <!-- 3. BORROWED DATE -->
-                                <td class="px-6 py-4 align-middle whitespace-nowrap">
+                                <td data-label="Borrowed" class="px-6 py-4 align-middle whitespace-nowrap">
                                     <div class="flex flex-col">
                                         <span class="text-sm font-semibold text-slate-800">
                                             {{ $item->issued_date ? $item->issued_date->format('M d, Y') : '—' }}
@@ -578,7 +578,7 @@
                                 </td>
 
                                 <!-- 4. DUE DATE -->
-                                <td class="px-6 py-4 align-middle whitespace-nowrap">
+                                <td data-label="Due" class="px-6 py-4 align-middle whitespace-nowrap">
                                     @if($isReturned)
                                         <div class="flex flex-col">
                                             <span class="text-sm font-semibold text-slate-500">
@@ -610,7 +610,7 @@
                                 </td>
 
                                 <!-- 5. LOAN STATUS BADGE -->
-                                <td class="px-6 py-4 align-middle">
+                                <td data-label="Status" class="px-6 py-4 align-middle">
                                     @if($isReturned)
                                         <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
                                             <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">

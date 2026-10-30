@@ -419,8 +419,8 @@
                                     @endcan
                                 </div>
 
-                                <div class="overflow-x-auto rounded-lg border border-[#DCE3EC] max-h-[500px] custom-scrollbar overflow-y-auto">
-                                    <table class="w-full min-w-[500px] text-left text-sm">
+                                <div class="admin-mobile-table-scroll overflow-x-auto rounded-lg border border-[#DCE3EC] max-h-[500px] custom-scrollbar overflow-y-auto">
+                                    <table class="admin-mobile-table w-full min-w-[500px] text-left text-sm">
                                         <thead class="sticky top-0 z-10 bg-[#F5F8FC] text-xs font-semibold text-slate-600 border-b border-[#DCE3EC]">
                                             <tr>
                                                 <th class="px-3.5 py-2.5">Accession No.</th>
@@ -442,18 +442,18 @@
                                                     };
                                                 @endphp
                                                 <tr class="hover:bg-slate-50/80 transition-colors">
-                                                    <td class="px-3.5 py-2.5 text-sm font-semibold tabular-nums text-black">
+                                                    <td data-label="Accession No." class="px-3.5 py-2.5 text-sm font-semibold tabular-nums text-black">
                                                         {{ $copy->accession_number }}
                                                     </td>
-                                                    <td class="px-3.5 py-2.5 text-xs font-medium tabular-nums text-slate-600">
+                                                    <td data-label="Unique code" class="px-3.5 py-2.5 text-xs font-medium tabular-nums text-slate-600">
                                                         {{ $copy->code ?: 'Not assigned' }}
                                                     </td>
-                                                    <td class="px-3.5 py-2.5">
+                                                    <td data-label="Status" class="px-3.5 py-2.5">
                                                         <span class="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold border {{ $statBadgeClass }}">
                                                             {{ ucfirst($copy->status) }}
                                                         </span>
                                                     </td>
-                                                    <td class="px-3.5 py-2.5 text-right">
+                                                    <td data-label="Actions" class="px-3.5 py-2.5 text-right">
                                                         <div class="inline-flex items-center justify-end gap-1.5">
                                                             {{-- Show QR Code --}}
                                                             <button

@@ -1,6 +1,6 @@
-<div class="min-h-[220px] lg:flex-1 flex flex-col min-h-0">
+<div class="workstation-preview min-h-[220px] lg:flex-1 flex flex-col min-h-0">
     @if($bookData)
-        <div class="bg-white rounded-3xl border border-[#E2E8F0] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.02)] min-h-[220px] flex-1 flex flex-col justify-between gap-3.5 animate-fade-in overflow-y-auto">
+        <div class="workstation-preview-card bg-white rounded-3xl border border-[#E2E8F0] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.02)] min-h-[220px] flex-1 flex flex-col justify-between gap-3.5 animate-fade-in overflow-y-auto">
             <div>
                 <div class="flex items-start gap-3.5">
                     <!-- Book Cover Thumbnail -->
@@ -54,7 +54,7 @@
 
                     <!-- Book Title, Author & ISBN Tag -->
                     <div class="flex-1 min-w-0">
-                        <h4 class="text-base font-bold text-[#0F172A] leading-snug line-clamp-2" title="{{ $bookData['title'] ?? $bookData['book'] ?? 'Unknown Book' }}">
+                        <h4 class="circulation-item-title text-sm font-bold text-[#0F172A] leading-snug" title="{{ $bookData['title'] ?? $bookData['book'] ?? 'Unknown Book' }}">
                             {{ $bookData['title'] ?? $bookData['book'] ?? 'Unknown Book' }}
                         </h4>
                         <p class="text-sm text-[#64748B] font-medium mt-1 truncate">

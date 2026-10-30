@@ -47,7 +47,7 @@
             this.selected = [];
         }
     }"
-    class="bg-[#F8FAFC] flex flex-col min-h-0 flex-1 overflow-hidden"
+    class="admin-page-table bg-[#F8FAFC] flex flex-col min-h-0 flex-1 overflow-hidden"
 >
     <div class="mx-auto w-full max-w-[1600px] p-3 sm:p-4 lg:p-6 relative flex flex-col gap-3 sm:gap-4 min-h-0 flex-1">
         @php

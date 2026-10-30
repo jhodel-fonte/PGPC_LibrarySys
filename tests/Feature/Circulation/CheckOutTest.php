@@ -71,6 +71,51 @@ class CheckOutTest extends TestCase
         $response->assertStatus(200);
     }
 
+    public function test_approved_reservation_link_loads_student_and_copy_without_checkout(): void
+    {
+        $this->book->update(['status' => 'reserved']);
+        $reservation = \App\Models\BookReservation::create([
+            'book_id' => $this->book->id, 'student_id' => $this->student->id,
+            'account_id' => $this->student->account_id, 'reservation_status_id' => 2,
+            'reservation_date' => now(), 'due_date' => now()->addDay(),
+        ]);
+        Livewire::actingAs($this->librarian)->withQueryParams(['reservation' => $reservation->id])
+            ->test(CheckOutBook::class)
+            ->assertSet('scannedMember.id', $this->student->id)
+            ->assertSet('checkoutBooks.0.reservation_id', $reservation->id);
+        $this->assertSame(2, (int) $reservation->fresh()->reservation_status_id);
+        $this->assertSame('reserved', $this->book->fresh()->status);
+    }
+
+    public function test_fulfill_action_opens_checkout_without_changing_reservation(): void
+    {
+        $this->book->update(['status' => 'reserved']);
+        $reservation = \App\Models\BookReservation::create([
+            'book_id' => $this->book->id, 'student_id' => $this->student->id,
+            'account_id' => $this->student->account_id, 'reservation_status_id' => 2,
+            'reservation_date' => now(), 'due_date' => now()->addDay(),
+        ]);
+        Livewire::actingAs($this->librarian)->test(\App\Livewire\Pages\Reservation\AdminDashboard::class)
+            ->call('fulfillReservation', $reservation->id)
+            ->assertRedirect(route('librarian.circulation-desk.borrow', ['reservation' => $reservation->id]));
+        $this->assertSame(2, (int) $reservation->fresh()->reservation_status_id);
+        $this->assertSame('reserved', $this->book->fresh()->status);
+    }
+
+    public function test_unapproved_reservation_link_does_not_load_checkout(): void
+    {
+        $reservation = \App\Models\BookReservation::create([
+            'book_id' => $this->book->id, 'student_id' => $this->student->id,
+            'account_id' => $this->student->account_id, 'reservation_status_id' => 1,
+            'reservation_date' => now(), 'due_date' => now()->addDay(),
+        ]);
+        Livewire::actingAs($this->librarian)->withQueryParams(['reservation' => $reservation->id])
+            ->test(CheckOutBook::class)
+            ->assertSet('scannedMember', null)
+            ->assertCount('checkoutBooks', 0)
+            ->assertSee('is not approved for pickup');
+    }
+
     public function test_scan_student_loads_profile_for_checkout(): void
     {
         Livewire::actingAs($this->librarian)

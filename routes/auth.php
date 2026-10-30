@@ -52,6 +52,14 @@ Route::get('/account/deactivated', function () {
 Route::redirect('/account-deactivated', '/account/deactivated');
 
 Route::middleware('auth')->group(function () {
+    Route::get('/account/setup', \App\Livewire\Pages\Auth\StudentSetup::class)->name('student.setup');
+    Route::get('/account/setup/verify/{id}/{hash}', function (\Illuminate\Http\Request $request, string $id, string $hash) {
+        $user = $request->user();
+        abort_unless($user && $user->isStudent() && $user->setup_email_required && (string) $user->id === $id && $user->email && hash_equals(sha1($user->email), $hash), 403);
+        $user->forceFill(['is_email_verified' => true, 'email_verified_at' => now(), 'setup_email_required' => false])->save();
+        \App\Models\StudentImportRow::where('account_id', $user->id)->where('email_status', 'email_required')->update(['email_status' => 'verified']);
+        return redirect()->route('student.setup');
+    })->middleware(['signed', 'throttle:6,1'])->name('student.setup.verify');
     // Student Account Verification & Registration Status Pages
     Route::get('/verify', \App\Livewire\Pages\Auth\Verify::class)->name('verification.upload');
     Route::get('/registration-status', \App\Livewire\Pages\Auth\RegistrationStatus::class)->name('verification.status');

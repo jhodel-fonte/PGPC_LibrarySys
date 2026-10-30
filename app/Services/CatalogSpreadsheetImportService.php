@@ -382,7 +382,7 @@ class CatalogSpreadsheetImportService
     /**
      * Fast, lightweight native CSV reader with auto-delimiter detection and UTF-8 conversion.
      */
-    private function readCsvRows(string $path): \Generator
+    public function readCsvRows(string $path): \Generator
     {
         $stream = @fopen($path, 'rb');
         if ($stream === false) {
@@ -433,7 +433,7 @@ class CatalogSpreadsheetImportService
         }
     }
 
-    private function readSpreadsheetRows(string $path): \Generator
+    public function readSpreadsheetRows(string $path): \Generator
     {
         $reader = IOFactory::createReaderForFile($path);
         $reader->setReadDataOnly(true);
@@ -470,7 +470,7 @@ class CatalogSpreadsheetImportService
         }
     }
 
-    private function guardSpreadsheetMemory(string $path, string $extension): void
+    public function guardSpreadsheetMemory(string $path, string $extension): void
     {
         $limit = ini_get('memory_limit');
         if (! $limit || $limit === '-1') {

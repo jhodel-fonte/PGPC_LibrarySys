@@ -2,6 +2,9 @@
 
 namespace App\Livewire\Pages\Dashboard;
 
+use App\Models\BookReservation;
+use App\Models\BorrowingTransaction;
+use App\Models\Fine;
 use Livewire\Component;
 
 use Livewire\Attributes\Layout;
@@ -11,6 +14,11 @@ class CirculationDesk extends Component
 {
     public function render()
     {
-        return view('livewire.pages.dashboard.circulation-desk');
+        return view('livewire.pages.dashboard.circulation-desk', [
+            'reservedCount' => BookReservation::whereIn('reservation_status_id', [1, 2])->count(),
+            'borrowedCount' => BorrowingTransaction::whereNull('return_date')->count(),
+            'dueTodayCount' => BorrowingTransaction::whereNull('return_date')->whereDate('due_date', today())->count(),
+            'unpaidFinesCount' => Fine::where('fine_status', 'unpaid')->count(),
+        ]);
     }
 }

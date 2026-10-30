@@ -1,5 +1,7 @@
 <div wire:key="return-workstation" class="return-workstation-root">
-<div class="relative w-full min-w-0 flex flex-col items-center justify-start pt-4 px-3 md:px-6 xl:px-12 pb-5 font-sans bg-[#F8FAFC] check-in-workstation">
+<div class="relative w-full min-w-0 flex flex-col items-center justify-start p-3 sm:p-4 lg:p-6 font-sans bg-[#F8FAFC] check-in-workstation circulation-workstation">
+
+    @include('livewire.components.circulation.workstation-styles')
 
     <!-- Lock page layout scroll -->
     <style>
@@ -23,9 +25,9 @@
         }
     </style>
 
-    <div class="w-full max-w-[1460px] min-w-0 flex flex-col">
+    <div class="workstation-content w-full min-w-0 flex flex-col">
         <!-- Header Area -->
-        <div class="w-full flex flex-col mb-4 md:mt-2 relative z-10 shrink-0">
+        <div class="workstation-header w-full flex flex-col mb-4 md:mt-2 relative z-10 shrink-0">
 
             <!-- Title Row -->
             <div class="flex flex-col md:flex-row pt-2 justify-between items-start md:items-center">
@@ -54,10 +56,10 @@
         </div>
 
         <!-- Main Content Grid -->
-        <div class="w-full grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(260px,320px)] gap-4 lg:gap-6 relative z-10 mb-2 items-start">
+        <div class="workstation-grid w-full grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(260px,320px)] gap-4 lg:gap-6 relative z-10 mb-2 items-start">
 
             <!-- Left Section: Column 1 + Column 2 (col-span-9) -->
-            <div class="min-w-0 flex flex-col gap-4">
+            <div class="workstation-main min-w-0 flex flex-col gap-4">
 
                 <!-- Switch Student Confirmation Banner -->
                 @if($showConfirmChangeMember)
@@ -73,7 +75,7 @@
                 @endif
 
                 <!-- QR Search / Input Bar (occupies first 2 columns at top) -->
-                <div class="relative overflow-hidden shrink-0 bg-white rounded-xl border border-[#E2E8F0] p-4">
+                <div class="workstation-search relative overflow-hidden shrink-0 bg-white rounded-xl border border-[#E2E8F0] p-4">
                     <!-- Indeterminate Top Progress Bar -->
                     <div wire:loading class="absolute top-0 left-0 right-0 h-1 bg-[#EFF6FF] overflow-hidden">
                         <div class="h-full w-1/3 bg-[#FCC719] animate-loading-pulse rounded-full"></div>
@@ -95,12 +97,12 @@
                 </div>
 
                 <!-- Sub Grid: Column 1 (Camera + Book Scanned) & Column 2 (Table) side-by-side -->
-                <div class="grid grid-cols-1 md:grid-cols-[minmax(220px,1fr)_minmax(0,2fr)] gap-4 min-w-0">
+                <div class="workstation-details grid grid-cols-1 md:grid-cols-[minmax(220px,1fr)_minmax(0,2fr)] gap-4 min-w-0">
 
                     <!-- COLUMN 1: Scanner + Scanned Book Details (md:col-span-4) -->
-                    <div class="min-w-0 flex flex-col gap-4">
+                    <div class="workstation-scanner min-w-0 flex flex-col gap-4">
                         <!-- Scanner Card -->
-                        <div class="bg-white rounded-xl border border-[#E2E8F0] p-5 shrink-0">
+                        <div class="workstation-camera bg-white rounded-xl border border-[#E2E8F0] p-4 sm:p-5 shrink-0">
                             <livewire:components.circulation.live-camera />
                         </div>
 
@@ -120,16 +122,16 @@
                         :selected-accession="$lastReturnedBook['accession'] ?? null"
                         mode="check-in"
                         title="Borrowed Items on Account"
-                        class="min-w-0 min-h-[400px]"
+                        class="workstation-table min-w-0 min-h-[320px]"
                     />
 
                 </div>
             </div>
 
             
-            <div class="min-w-0 w-full flex flex-col gap-4">
+            <div class="workstation-sidebar min-w-0 w-full flex flex-col gap-4">
             
-                <div wire:loading.class="opacity-65 transition-opacity duration-300" class="bg-white rounded-xl border border-[#E2E8F0] p-5 shrink-0 min-h-[220px] flex flex-col">
+                <div wire:loading.class="opacity-65 transition-opacity duration-300" class="workstation-student bg-white rounded-xl border border-[#E2E8F0] p-5 shrink-0 min-h-[220px] flex flex-col">
                     <div class="flex flex-col gap-3 flex-1">
                         <span class="block text-base font-semibold text-[#64748B]">Student</span>
                         @if($scannedMember)

@@ -28,6 +28,8 @@
                 } catch(e) {}
             });
         </script>
+        @include('livewire.components.circulation.live-camera-script')
+        @include('livewire.layouts.admin-mobile-tables')
         @vite(['resources/css/app.css', 'resources/js/app.js'])
         <tallstackui:script />
         @livewireStyles

@@ -89,6 +89,24 @@ class CheckInTest extends TestCase
             ->assertSee('No Student Profile');
     }
 
+    public function test_active_loan_link_loads_its_student(): void
+    {
+        Livewire::actingAs($this->librarian)->withQueryParams(['loan' => $this->transaction->id])
+            ->test(CheckInBook::class)
+            ->assertSet('scannedMember.id', $this->student->id)
+            ->assertCount('borrowedBooks', 1)
+            ->assertCount('returnedBooks', 0);
+    }
+
+    public function test_returned_loan_link_does_not_load_a_student(): void
+    {
+        $this->transaction->update(['return_date' => now()]);
+        Livewire::actingAs($this->librarian)->withQueryParams(['loan' => $this->transaction->id])
+            ->test(CheckInBook::class)
+            ->assertSet('scannedMember', null)
+            ->assertSee('This active loan or its student could not be found');
+    }
+
     public function test_scan_student_loads_profile_and_borrowed_books(): void
     {
         Livewire::actingAs($this->librarian)

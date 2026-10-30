@@ -380,61 +380,9 @@ class AdminDashboard extends Component
      */
     public function fulfillReservation(int $id): void
     {
-        try {
-            DB::transaction(function () use ($id) {
-                $reservation = BookReservation::with(['book', 'student'])->lockForUpdate()->findOrFail($id);
+        \App\Services\EmployeeRoleService::authorizeBorrow('Unauthorized action. You do not have permission to process item borrowings.');
 
-                if ((int) $reservation->reservation_status_id !== 2 || ! $reservation->book || ! $reservation->student) {
-                    throw new \RuntimeException('Only an approved reservation with a valid student and copy can be fulfilled.');
-                }
-                $copy = Book::lockForUpdate()->findOrFail($reservation->book_id);
-                if ($copy->status !== 'reserved' || BorrowingTransaction::where('book_id', $copy->id)->whereNull('return_date')->exists()) {
-                    throw new \RuntimeException('This copy is no longer available for pickup.');
-                }
-
-                $issue = $reservation->book?->bookDetail?->periodicalIssue;
-                if ($issue && ! $issue->borrowable) {
-                    throw new \RuntimeException('This issue is for library use only.');
-                }
-                // 1. Mark reservation fulfilled
-                $reservation->update([
-                    'reservation_status_id' => 3, // Fulfilled
-                    'fulfilled_date' => now(),
-                ]);
-
-                // 2. Identify staff issuing the book
-                $librarian = Auth::user()?->librarian ?? Librarian::first();
-                $borrowType = BorrowType::first();
-
-                // 3. Create Borrowing Transaction for the student
-                if ($reservation->student && $reservation->book) {
-                    BorrowingTransaction::create([
-                        'book_id' => $reservation->book_id,
-                        'school_id' => $reservation->student->id,
-                        'issued_by_id' => $librarian?->id ?? 1,
-                        'book_reservation_id' => $reservation->id,
-                        'borrow_type_id' => $borrowType?->id ?? 1,
-                        'issued_condition_id' => $reservation->book->book_condition_id ?? 1,
-                        'return_condition_id' => null,
-                        'issued_date' => now(),
-                        'due_date' => now()->addDays($issue?->loan_days ?? (int) config('settings.library_config.loan_period', config('settings.loan_period', 5))),
-                        'return_date' => null,
-                        'received_by_id' => null,
-                    ]);
-
-                    // Update copy status to borrowed
-                    $reservation->book->update(['status' => 'borrowed']);
-                } else {
-                    if ($reservation->book) {
-                        $reservation->book->update(['status' => 'available']);
-                    }
-                }
-            });
-
-            $this->dispatch('toast', message: 'Reservation fulfilled! Book successfully checked out to the student.', type: 'success');
-        } catch (\Throwable $e) {
-            $this->dispatch('toast', message: 'Failed to fulfill reservation: ' . $e->getMessage(), type: 'error');
-        }
+        $this->redirect(route(\App\Services\EmployeeRoleService::getRoutePrefix() . 'circulation-desk.borrow', ['reservation' => $id]), navigate: true);
     }
 
     /**

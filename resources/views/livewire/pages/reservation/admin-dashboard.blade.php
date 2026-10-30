@@ -1,4 +1,4 @@
-<div class="bg-[#F8FAFC] flex flex-col min-h-0 flex-1 overflow-hidden font-sans text-slate-800 selection:bg-[#102B70] selection:text-white">
+<div class="admin-page-table bg-[#F8FAFC] flex flex-col min-h-0 flex-1 overflow-hidden font-sans text-slate-800 selection:bg-[#102B70] selection:text-white">
     <div class="mx-auto w-full max-w-[1600px] p-3 sm:p-4 lg:p-6 relative flex flex-col gap-3 sm:gap-4 min-h-0 flex-1">
 
         <!-- ======================================================== -->
@@ -468,7 +468,7 @@
                     @elseif($res->reservation_status_id === 2)
                         <button
                             type="button"
-                            wire:click="fulfillReservation({{ $res->id }}); closeDetailModal();"
+                            wire:click="fulfillReservation({{ $res->id }})"
                             class="h-10 px-5 rounded-xl bg-[#102B70] hover:bg-[#0B225E] text-white text-base font-semibold transition-all  cursor-pointer flex items-center gap-1.5"
                         >
                             <span>Fulfill Pickup</span>

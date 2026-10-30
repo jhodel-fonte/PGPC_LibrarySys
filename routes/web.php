@@ -49,6 +49,7 @@ Route::middleware(['auth', 'verified', 'role:Admin'])->prefix('admin')->name('ad
         Route::get('/user-management', \App\Livewire\Pages\Dashboard\UserManagement::class)->name('user-management');
         Route::get('/user-management/approvals', \App\Livewire\Pages\Dashboard\UserApprovals::class)->name('user-management.approvals');
         Route::get('/user-management/add', \App\Livewire\Pages\Dashboard\AddUser::class)->name('user-management.add');
+        Route::get('/user-management/import', \App\Livewire\Pages\Dashboard\ImportStudents::class)->name('user-management.import');
         Route::get('/user-management/edit/{id}', \App\Livewire\Pages\Dashboard\EditUserPage::class)->name('user-management.edit');
         Route::get('/user-management/{id}/edit', \App\Livewire\Pages\Dashboard\EditUserPage::class);
         Route::get('/user-management/{id}', \App\Livewire\Pages\Dashboard\UserDetails::class)->name('user-details');
@@ -93,6 +94,7 @@ Route::middleware(['auth', 'verified', 'role:Librarian,Head Librarian,Admin'])->
             Route::get('/user-management', \App\Livewire\Pages\Dashboard\UserManagement::class)->name('user-management');
             Route::get('/user-management/approvals', \App\Livewire\Pages\Dashboard\UserApprovals::class)->name('user-management.approvals')->middleware('permission:manage_users,view_students,edit_students');
             Route::get('/user-management/add', \App\Livewire\Pages\Dashboard\AddUser::class)->name('user-management.add')->middleware('permission:manage_users,create_students,manage_librarians');
+            Route::get('/user-management/import', \App\Livewire\Pages\Dashboard\ImportStudents::class)->name('user-management.import')->middleware('permission:manage_users,create_students');
             Route::get('/user-management/edit/{id}', \App\Livewire\Pages\Dashboard\EditUserPage::class)->name('user-management.edit')->middleware('permission:manage_users,edit_students,manage_librarians');
             Route::get('/user-management/{id}/edit', \App\Livewire\Pages\Dashboard\EditUserPage::class)->middleware('permission:manage_users,edit_students,manage_librarians');
             Route::get('/user-management/{id}', \App\Livewire\Pages\Dashboard\UserDetails::class)->name('user-details');
@@ -201,7 +203,7 @@ Route::get('/preview-reset-email', function () {
     return new \App\Mail\ResetEmail(url('/reset-password/sample-token?email=student@pgpc.edu.ph'));
 });
 
-Route::middleware(['auth', 'verified', 'role:Student', 'student.verified'])->prefix('student')->name('student.')->group(function () {
+Route::middleware(['auth', 'verified', 'role:Student', 'student.setup', 'student.verified'])->prefix('student')->name('student.')->group(function () {
     Route::get('/dashboard', \App\Livewire\Pages\Student\Dashboard::class)->name('dashboard');
     Route::get('/borrow', \App\Livewire\Pages\Student\Borrow::class)->name('borrow');
     Route::get('/profile', \App\Livewire\Pages\Student\Profile::class)->name('profile');

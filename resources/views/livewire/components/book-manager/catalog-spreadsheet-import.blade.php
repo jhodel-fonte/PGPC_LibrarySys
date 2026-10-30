@@ -260,8 +260,8 @@
                 </div>
 
                 <!-- Table Content -->
-                <div class="overflow-x-auto">
-                    <table class="min-w-[960px] w-full text-left text-xs sm:text-sm">
+                <div class="admin-mobile-table-scroll overflow-x-auto">
+                    <table class="admin-mobile-table min-w-[960px] w-full text-left text-xs sm:text-sm">
                         <thead class="bg-[#F8FAFC] text-[11px] font-semibold uppercase tracking-wider text-slate-600 border-b border-[#E2E8F0]">
                             <tr>
                                 <th class="py-2.5 px-3.5 w-12 text-slate-500">#</th>
@@ -286,12 +286,12 @@
                                 @endphp
                                 <tr class="hover:bg-[#F8FAFC] transition-colors {{ $hasIssues ? 'bg-rose-50/20' : '' }}">
                                     <!-- Row # -->
-                                    <td class="py-2.5 px-3.5 font-mono text-xs text-slate-500">
+                                    <td data-label="Row" class="py-2.5 px-3.5 font-mono text-xs text-slate-500">
                                         {{ $row->row_number }}
                                     </td>
 
                                     <!-- Status -->
-                                    <td class="py-2.5 px-3.5 text-xs font-semibold whitespace-nowrap">
+                                    <td data-label="Status" class="py-2.5 px-3.5 text-xs font-semibold whitespace-nowrap">
                                         @if ($isImported)
                                             <span class="text-emerald-700">Imported</span>
                                         @elseif ($isReady)
@@ -302,17 +302,17 @@
                                     </td>
 
                                     <!-- Title & Author -->
-                                    <td class="py-2.5 px-3.5">
+                                    <td data-label="Title and author" class="py-2.5 px-3.5"><div>
                                         <div class="font-semibold text-[#0F172A] line-clamp-1" title="{{ $data['title'] ?? '' }}">
                                             {{ $data['title'] ?? 'Untitled Book' }}
                                         </div>
                                         <div class="text-xs text-slate-500 line-clamp-1 mt-0.5" title="{{ $data['author'] ?? '' }}">
                                             {{ !empty($data['author']) ? $data['author'] : 'Unknown Author' }}
                                         </div>
-                                    </td>
+                                    </div></td>
 
                                     <!-- Accession No -->
-                                    <td class="py-2.5 px-3.5 font-mono text-xs">
+                                    <td data-label="Accession" class="py-2.5 px-3.5 font-mono text-xs">
                                         @if (!empty($data['accession_no']))
                                             <span class="text-slate-800 font-semibold">{{ $data['accession_no'] }}</span>
                                         @else
@@ -321,27 +321,27 @@
                                     </td>
 
                                     <!-- Format & Shelf -->
-                                    <td class="py-2.5 px-3.5 text-xs text-slate-700">
+                                    <td data-label="Format and shelf" class="py-2.5 px-3.5 text-xs text-slate-700"><div>
                                         <div class="font-medium text-slate-800">{{ $data['material_type'] ?? 'Book' }}</div>
                                         <div class="text-[11px] text-slate-500 truncate" title="{{ $data['sublocation'] ?? '' }}">
                                             {{ ($data['sublocation'] ?? '') ?: $defaultCollection }}
                                         </div>
-                                    </td>
+                                    </div></td>
 
                                     <!-- ISBN & Call Number -->
-                                    <td class="py-2.5 px-3.5 text-xs font-mono text-slate-600">
+                                    <td data-label="ISBN / call number" class="py-2.5 px-3.5 text-xs font-mono text-slate-600"><div>
                                         <div>{{ ($data['call_number'] ?? '') ?: '—' }}</div>
                                         <div class="text-[11px] text-slate-400">{{ ($data['isbn'] ?? '') ?: 'No ISBN' }}</div>
-                                    </td>
+                                    </div></td>
 
                                     <!-- Publisher & Year -->
-                                    <td class="py-2.5 px-3.5 text-xs text-slate-600">
+                                    <td data-label="Publisher and year" class="py-2.5 px-3.5 text-xs text-slate-600"><div>
                                         <div class="truncate max-w-[140px]" title="{{ $data['publisher'] ?? '' }}">{{ ($data['publisher'] ?? '') ?: '—' }}</div>
                                         <div class="text-[11px] text-slate-500">{{ ($data['publication_year'] ?? '') ?: '—' }}</div>
-                                    </td>
+                                    </div></td>
 
                                     <!-- Validation Notes -->
-                                    <td class="py-2.5 px-3.5 text-xs">
+                                    <td data-label="Validation" class="py-2.5 px-3.5 text-xs">
                                         @if (!empty($errors))
                                             <ul class="space-y-0.5 text-rose-700 font-medium">
                                                 @foreach ($errors as $err)
@@ -356,7 +356,7 @@
                                     </td>
 
                                     <!-- Inspect Action -->
-                                    <td class="py-2.5 px-3.5 text-right whitespace-nowrap">
+                                    <td data-label="Action" class="py-2.5 px-3.5 text-right whitespace-nowrap">
                                         <button
                                             type="button"
                                             @click="inspectModalOpen = true"

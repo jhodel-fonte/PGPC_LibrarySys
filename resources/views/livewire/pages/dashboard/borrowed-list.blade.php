@@ -1,4 +1,4 @@
-<div class="bg-[#F8FAFC] flex flex-col min-h-0 flex-1 overflow-hidden font-sans">
+<div class="admin-page-table bg-[#F8FAFC] flex flex-col min-h-0 flex-1 overflow-hidden font-sans">
     <div class="mx-auto w-full max-w-[1600px] p-3 sm:p-4 lg:p-6 relative flex flex-col gap-3 sm:gap-4 min-h-0 flex-1">
 
         <!-- Background Watermark -->
@@ -142,8 +142,23 @@
                 @endphp
 
                 <tr class="hover:bg-slate-50/70 transition-colors h-[72px] group">
+                    <td class="mobile-cell" colspan="6">
+                        <article class="rounded-xl border border-slate-200 bg-white p-4 text-sm shadow-sm">
+                            <div class="flex flex-wrap items-start justify-between gap-2">
+                                <div class="min-w-0"><p class="font-bold text-[#102B70] break-words">{{ $fullName }}</p><p class="text-xs text-slate-500 break-words">{{ $idNumber }} @if($programInfo) · {{ $programInfo }} @endif</p></div>
+                                <span class="rounded-full px-2.5 py-1 text-xs font-semibold {{ $isOverdue ? 'bg-red-50 text-red-700' : ($isReturned ? 'bg-slate-100 text-slate-600' : 'bg-emerald-50 text-emerald-700') }}">{{ $isReturned ? 'Returned' : ($isOverdue ? 'Overdue' : 'On Loan') }}</span>
+                            </div>
+                            <p class="mt-3 font-semibold text-slate-900 break-words">{{ $bTitle }}</p><p class="text-xs text-slate-500 break-words">Accession: {{ $bAccession }}</p>
+                            <div class="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-600"><p>Borrowed: {{ $item->issued_date?->format('M d, Y') ?? '—' }}</p><p>Due: {{ $item->due_date?->format('M d, Y') ?? '—' }}</p>@if($isReturned)<p>Returned: {{ $item->return_date?->format('M d, Y') }}</p>@endif</div>
+                            <div class="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3">
+                                @if(!$isReturned)<a href="{{ route($routePrefix . 'circulation-desk.return', ['loan' => $item->id]) }}" wire:navigate class="rounded-lg bg-[#102B70] px-3 py-2 text-xs font-semibold text-white">Process Return</a>@endif
+                                @if($studentAccount)<a href="{{ route($routePrefix . 'user-details', $studentAccount->encrypted_id) }}" wire:navigate class="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-[#102B70]">View Patron</a>@endif
+                                @if($bDetail && in_array($bDetail->catalog_kind, ['book', 'magazine', 'journal'], true))<a href="{{ route('opac.book.detail', $bDetail->id) }}" wire:navigate class="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-[#102B70]">View in OPAC</a>@endif
+                            </div>
+                        </article>
+                    </td>
                     <!-- 1. STUDENT / BORROWER INFO -->
-                    <td x-show="cols['student'] !== false" class="px-6 py-4 align-middle">
+                    <td x-show="cols['student'] !== false" class="desktop-cell px-6 py-4 align-middle">
                         <div class="flex items-center gap-3.5 group/user">
                             @if($student?->image_url)
                                 <img src="{{ $student->image_url }}" alt="{{ $fullName }}" class="w-10 h-10 rounded-full object-cover border border-[#CBD5E1] shrink-0">
@@ -175,7 +190,7 @@
                     </td>
 
                     <!-- 2. BOOK DETAILS & ACCESSION -->
-                    <td x-show="cols['book'] !== false" class="px-6 py-4 align-middle">
+                    <td x-show="cols['book'] !== false" class="desktop-cell px-6 py-4 align-middle">
                             <div class="flex flex-col min-w-0">
                             <span class="text-sm font-bold text-slate-900 leading-tight truncate max-w-[340px]" title="{{ $bTitle }}">
                                     {{ $bTitle }}
@@ -189,7 +204,7 @@
                     </td>
 
                     <!-- 3. BORROWED DATE -->
-                    <td x-show="cols['borrowed_date'] !== false" class="px-6 py-4 align-middle whitespace-nowrap">
+                    <td x-show="cols['borrowed_date'] !== false" class="desktop-cell px-6 py-4 align-middle whitespace-nowrap">
                         <div class="flex flex-col">
                             <span class="text-sm font-semibold text-slate-800">
                                 {{ $item->issued_date ? $item->issued_date->format('M d, Y') : '—' }}
@@ -203,7 +218,7 @@
                     </td>
 
                     <!-- 4. DUE DATE -->
-                    <td x-show="cols['due_date'] !== false" class="px-6 py-4 align-middle whitespace-nowrap">
+                    <td x-show="cols['due_date'] !== false" class="desktop-cell px-6 py-4 align-middle whitespace-nowrap">
                         @if($isReturned)
                             <div class="flex flex-col">
                                 <span class="text-sm font-semibold text-slate-500">
@@ -235,7 +250,7 @@
                     </td>
 
                     <!-- 5. LOAN STATUS BADGE -->
-                    <td x-show="cols['status'] !== false" class="px-6 py-4 align-middle">
+                    <td x-show="cols['status'] !== false" class="desktop-cell px-6 py-4 align-middle">
                         @if($isReturned)
                             <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
                                 <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
@@ -257,11 +272,11 @@
                     </td>
 
                     <!-- 6. ACTIONS -->
-                    <td class="px-6 py-4 align-middle text-right pr-6">
+                    <td class="desktop-cell px-6 py-4 align-middle text-right pr-6">
                         <div class="flex items-center justify-end">
                             <x-widget.table-action-dot>
                                 @if(!$isReturned)
-                                    <a href="{{ route($routePrefix . 'circulation-desk.return') }}" wire:navigate class="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-[#102B70] hover:bg-slate-50 rounded-lg transition-colors">
+                                    <a href="{{ route($routePrefix . 'circulation-desk.return', ['loan' => $item->id]) }}" wire:navigate class="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-[#102B70] hover:bg-slate-50 rounded-lg transition-colors">
                                         <svg class="w-4 h-4 text-[#102B70]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                                         </svg>
