@@ -2,6 +2,17 @@
     @if($isImporting) wire:poll.2s @endif
     x-data="{
         inspectModalOpen: @json(!empty($inspectRowData)),
+        reviewRequestError: '',
+        removeImportHook: null,
+        init() {
+            this.removeImportHook = Livewire.hook('commit', ({ component, commit, fail, succeed }) => {
+                if (component.id !== this.$wire.$id || !commit.calls.some(call => call.method === 'review')) return;
+                this.reviewRequestError = '';
+                fail(() => { this.reviewRequestError = 'The server could not review the uploaded file. It may be too large or the connection was interrupted. Try a smaller file or contact an administrator.'; });
+                succeed(() => { this.reviewRequestError = ''; });
+            });
+        },
+        destroy() { if (this.removeImportHook) this.removeImportHook(); },
     }"
     class="flex flex-col gap-4 font-sans text-slate-800"
 >
@@ -44,6 +55,7 @@
     </div>
 
     <!-- Alert / Message Banner -->
+    <div x-show="reviewRequestError" x-cloak role="alert" class="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm font-medium text-rose-900" x-text="reviewRequestError"></div>
     @if ($message)
         <div
             x-data="{ show: true }"
@@ -86,9 +98,9 @@
                         <div>
                             <h3 class="text-base font-bold text-emerald-950">Catalog import finished</h3>
                             <p class="text-xs sm:text-sm font-medium text-emerald-800 mt-0.5">
-                                <strong class="font-bold">{{ $importedCount }}</strong> physical book copy record(s) cataloged into <strong class="font-bold">{{ $defaultCollection }}</strong>.
+                                <strong class="font-bold">{{ $importedCount }}</strong> record(s) cataloged into <strong class="font-bold">{{ $catalogImport->summary['options']['default_collection'] ?? $defaultCollection }}</strong>.
                                 @if ($failedCount > 0)
-                                    <span class="text-amber-800 font-semibold">({{ $failedCount }} invalid row(s) were excluded).</span>
+                                    <span class="text-amber-800 font-semibold">({{ $failedCount }} record(s) failed or were skipped; see Issues for details).</span>
                                 @endif
                             </p>
                         </div>
@@ -267,7 +279,7 @@
                                     $errors = is_array($row->errors) ? $row->errors : (json_decode($row->errors ?? '[]', true) ?: []);
                                     $isReady = $row->status === 'pending';
                                     $isImported = $row->status === 'imported';
-                                    $hasIssues = in_array($row->status, ['invalid', 'failed']);
+                                    $hasIssues = in_array($row->status, ['invalid', 'failed', 'skipped']);
                                 @endphp
                                 <tr class="hover:bg-[#F8FAFC] transition-colors {{ $hasIssues ? 'bg-rose-50/20' : '' }}">
                                     <!-- Row # -->

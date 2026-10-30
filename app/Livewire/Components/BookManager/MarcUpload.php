@@ -3,6 +3,9 @@
 namespace App\Livewire\Components\BookManager;
 
 use App\Services\ExtractMarcData;
+use App\Models\CatalogImport;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Livewire\Attributes\On;
 use Livewire\Component;
@@ -270,8 +273,8 @@ class MarcUpload extends Component
      */
     public function importSelectedRecords(): void
     {
-        $count = count($this->selectedRecords);
-        if ($count === 0) {
+        $selected = array_values(array_filter($this->getAllRecords(), fn ($record) => in_array((string) $record['id'], $this->selectedRecords, true)));
+        if (empty($selected)) {
             $this->dispatch('show-toast', [
                 'type' => 'error',
                 'title' => 'No Records Selected',
@@ -280,64 +283,43 @@ class MarcUpload extends Component
             return;
         }
 
-        // Open the reusable centered loading modal with backdrop page blur
-        $this->dispatch('open-modal',
-            title: 'Importing MARC Records',
-            message: "Extracting bibliographic data and cataloging {$count} selected books into {$this->defaultCollection}...",
-            type: 'loading',
-            options: [
-                'autoCloseMs' => 2000,
-                'completeEvent' => 'marc-import-completed',
-            ]
-        );
+        abort_unless(auth()->check(), 403);
+
+        try {
+            $import = DB::transaction(function () use ($selected) {
+                $import = CatalogImport::create([
+                    'uploaded_by' => auth()->id(),
+                    'source_file_name' => $this->fileSummary['name'] ?? 'MARC import',
+                    'source_file_path' => '',
+                    'source_type' => 'marc',
+                    'status' => 'reviewing',
+                    'total_rows' => count($selected),
+                    'imported_rows' => 0,
+                    'failed_rows' => 0,
+                    'summary' => ['options' => [
+                        'default_collection' => $this->defaultCollection,
+                        'default_copies' => max(1, $this->defaultCopies),
+                        'accession_prefix' => $this->accessionPrefix,
+                        'start_accession_number' => $this->startAccessionNumber,
+                        'duplicate_policy' => $this->duplicatePolicy,
+                    ]],
+                ]);
+                foreach ($selected as $index => $record) {
+                    $record['author'] = $record['authors'] ?? '';
+                    $import->rows()->create(['row_number' => $index + 1, 'raw_data' => $record, 'status' => 'pending']);
+                }
+                return $import;
+            });
+            $this->dispatch('marc-import-ready', importId: $import->id);
+        } catch (\Throwable $exception) {
+            Log::error('Could not prepare MARC import.', ['exception' => $exception]);
+            $this->dispatch('show-toast', ['type' => 'error', 'title' => 'Import failed', 'message' => 'Could not prepare the MARC records. Please try again.']);
+        }
     }
 
     public function simulateImport(): void
     {
         $this->importSelectedRecords();
-    }
-
-    #[On('marc-import-completed')]
-    public function onImportCompleted(): void
-    {
-        $all = $this->getAllRecords();
-        $selectedObjs = array_values(array_filter($all, function($r) {
-            return in_array((string)$r['id'], $this->selectedRecords);
-        }));
-
-        $service = app(ExtractMarcData::class);
-        $result = $service->importRecords($selectedObjs, [
-            'default_collection' => $this->defaultCollection,
-            'default_copies' => $this->defaultCopies,
-            'accession_prefix' => $this->accessionPrefix,
-            'start_accession_number' => $this->startAccessionNumber,
-            'duplicate_policy' => $this->duplicatePolicy ?? 'skip',
-        ]);
-
-        $this->importedCount = $result['imported_count'];
-        $this->importCompleted = true;
-
-        $parts = [];
-        if ($result['imported_count'] > 0) {
-            $parts[] = "Successfully cataloged {$result['imported_count']} records into {$this->defaultCollection}.";
-        }
-        if (!empty($result['skipped_count'])) {
-            $parts[] = "{$result['skipped_count']} duplicate records were skipped.";
-        }
-        if (!empty($result['failed_count'])) {
-            $firstErr = !empty($result['errors']) ? ' (' . $result['errors'][0] . ')' : '';
-            $parts[] = "{$result['failed_count']} records failed{$firstErr}.";
-        }
-
-        $msg = !empty($parts) ? implode(' ', $parts) : 'No records were processed.';
-        $toastType = ($result['imported_count'] > 0) ? 'success' : (($result['skipped_count'] > 0) ? 'info' : 'error');
-        $toastTitle = ($result['imported_count'] > 0) ? 'Import Successful' : (($result['skipped_count'] > 0) ? 'Duplicates Skipped' : 'Import Failed');
-
-        $this->dispatch('show-toast', [
-            'type' => $toastType,
-            'title' => $toastTitle,
-            'message' => $msg,
-        ]);
     }
 
     public function resetImportState(): void

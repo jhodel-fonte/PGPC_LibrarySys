@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Livewire\Component;
+use Livewire\Attributes\On;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -273,6 +274,16 @@ class CatalogSpreadsheetImport extends Component
     /**
      * Step 2 -> Step 3: Dispatch background queue job to commit valid rows into library catalog.
      */
+    #[On('marc-import-ready')]
+    public function startMarcImport(int $importId): void
+    {
+        $import = CatalogImport::where('uploaded_by', auth()->id())->where('source_type', 'marc')->findOrFail($importId);
+        $this->catalogImportId = $import->id;
+        $this->marcImportKey = null;
+        unset($this->catalogImport);
+        $this->importSpreadsheet();
+    }
+
     public function importSpreadsheet(): void
     {
         $import = $this->catalogImport;
@@ -576,7 +587,7 @@ class CatalogSpreadsheetImport extends Component
             $totalRows = $catalogImport->total_rows;
             $validRows = $catalogImport->rows()->where('status', 'pending')->count();
             $importedRows = $catalogImport->rows()->where('status', 'imported')->count();
-            $issueRows = $catalogImport->rows()->whereIn('status', ['invalid', 'failed'])->count();
+            $issueRows = $catalogImport->rows()->whereIn('status', ['invalid', 'failed', 'skipped'])->count();
 
             if ($isImporting && $totalRows > 0) {
                 $processed = $importedRows + $issueRows;
@@ -591,7 +602,7 @@ class CatalogSpreadsheetImport extends Component
             } elseif ($this->activeTab === 'imported') {
                 $query->where('status', 'imported');
             } elseif ($this->activeTab === 'issues') {
-                $query->whereIn('status', ['invalid', 'failed']);
+                $query->whereIn('status', ['invalid', 'failed', 'skipped']);
             }
 
             // Search filter

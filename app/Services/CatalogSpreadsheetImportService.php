@@ -185,30 +185,28 @@ class CatalogSpreadsheetImportService
         if (in_array($extension, ['csv', 'txt'], true)) {
             $rawRows = $this->readCsvRows($path);
         } else {
-            $reader = IOFactory::createReaderForFile($path);
-            if (method_exists($reader, 'setReadDataOnly')) {
-                $reader->setReadDataOnly(true);
-            }
-            if (method_exists($reader, 'setReadEmptyCells')) {
-                $reader->setReadEmptyCells(false);
-            }
-            $spreadsheet = $reader->load($path);
-            $rawRows = $spreadsheet->getActiveSheet()->toArray('', false, false, false);
-            $spreadsheet->disconnectWorksheets();
-            unset($spreadsheet, $reader);
+            $this->guardSpreadsheetMemory($path, $extension);
+            $rawRows = $this->readSpreadsheetRows($path);
         }
 
-        if (empty($rawRows)) {
+        $iterator = $rawRows instanceof \Iterator ? $rawRows : new \ArrayIterator($rawRows);
+        $iterator->rewind();
+        $firstRows = [];
+        while ($iterator->valid() && count($firstRows) < 10) {
+            $firstRows[] = $iterator->current();
+            $iterator->next();
+        }
+        if (empty($firstRows)) {
             throw new \RuntimeException('The uploaded file contains no data.');
         }
 
         // Intelligently locate the header row within the first 10 rows
         $bestHeaderRowIndex = 0;
         $bestHeaderCount = 0;
-        $maxScan = min(10, count($rawRows));
+        $maxScan = count($firstRows);
 
         for ($i = 0; $i < $maxScan; $i++) {
-            $candidate = $rawRows[$i];
+            $candidate = $firstRows[$i];
             if (!is_array($candidate)) {
                 continue;
             }
@@ -234,8 +232,16 @@ class CatalogSpreadsheetImportService
         }
 
         // Slice rows starting from detected header row
-        $rawRows = array_slice($rawRows, $bestHeaderRowIndex);
-        $rawHeaders = array_shift($rawRows) ?? [];
+        $rawHeaders = $firstRows[$bestHeaderRowIndex] ?? [];
+        $rawRows = (function () use ($firstRows, $bestHeaderRowIndex, $iterator) {
+            foreach (array_slice($firstRows, $bestHeaderRowIndex + 1) as $row) {
+                yield $row;
+            }
+            while ($iterator->valid()) {
+                yield $iterator->current();
+                $iterator->next();
+            }
+        })();
 
         $headers = [];
         $hasValidHeader = false;
@@ -259,28 +265,7 @@ class CatalogSpreadsheetImportService
             $missing[] = 'title';
         }
 
-        // Pre-fetch existing accession numbers for fast DB duplicate checks
-        $candidateAccessions = [];
         $accessionColIndex = array_search('accession_no', $headers, true);
-
-        if ($accessionColIndex !== false) {
-            foreach ($rawRows as $r) {
-                if (is_array($r)) {
-                    $acc = trim((string) ($r[$accessionColIndex] ?? ''));
-                    if ($acc !== '') {
-                        $candidateAccessions[] = $acc;
-                    }
-                }
-            }
-        }
-
-        $existingDbAccessions = [];
-        if (!empty($candidateAccessions)) {
-            $existingDbAccessions = Book::whereIn('accession_number', array_unique($candidateAccessions))
-                ->pluck('accession_number')
-                ->mapWithKeys(fn ($acc) => [strtolower($acc) => true])
-                ->all();
-        }
 
         return DB::transaction(function () use (
             $headers,
@@ -290,7 +275,8 @@ class CatalogSpreadsheetImportService
             $rawRows,
             $userId,
             $options,
-            $existingDbAccessions
+            $accessionColIndex,
+            $bestHeaderRowIndex
         ): CatalogImport {
             $import = CatalogImport::create([
                 'uploaded_by' => $userId,
@@ -313,7 +299,12 @@ class CatalogSpreadsheetImportService
             $invalidCount = 0;
             $seenAccessions = [];
 
-            foreach ($rawRows as $index => $row) {
+            $index = 0;
+            foreach ($this->batchRows($rawRows) as $batch) {
+                $candidateAccessions = $accessionColIndex === false ? [] : array_filter(array_map(fn ($row) => trim((string) ($row[$accessionColIndex] ?? '')), $batch));
+                $existingDbAccessions = $candidateAccessions ? Book::whereIn('accession_number', array_unique($candidateAccessions))->pluck('accession_number')->mapWithKeys(fn ($acc) => [strtolower($acc) => true])->all() : [];
+                foreach ($batch as $row) {
+                $index++;
                 if (!is_array($row)) {
                     continue;
                 }
@@ -340,7 +331,7 @@ class CatalogSpreadsheetImportService
 
                 $errors = $missing
                     ? ['Missing required column: ' . implode(', ', $missing) . '.']
-                    : $this->validateRow($data, $options, $seenAccessions, $existingDbAccessions, $index + 2);
+                    : $this->validateRow($data, $options, $seenAccessions, $existingDbAccessions, $bestHeaderRowIndex + $index + 1);
 
                 $status = empty($errors) ? 'pending' : 'invalid';
                 if ($status === 'pending') {
@@ -351,7 +342,7 @@ class CatalogSpreadsheetImportService
 
                 $pendingRows[] = [
                     'catalog_import_id' => $import->id,
-                    'row_number' => $index + 2,
+                    'row_number' => $bestHeaderRowIndex + $index + 1,
                     'raw_data' => json_encode($data, JSON_UNESCAPED_UNICODE),
                     'status' => $status,
                     'errors' => !empty($errors) ? json_encode($errors, JSON_UNESCAPED_UNICODE) : null,
@@ -360,9 +351,10 @@ class CatalogSpreadsheetImportService
                 ];
                 $totalRows++;
 
-                if (count($pendingRows) >= 500) {
+                if (count($pendingRows) >= 100) {
                     CatalogImportRow::insert($pendingRows);
                     $pendingRows = [];
+                }
                 }
             }
 
@@ -385,26 +377,17 @@ class CatalogSpreadsheetImportService
     /**
      * Fast, lightweight native CSV reader with auto-delimiter detection and UTF-8 conversion.
      */
-    private function readCsvRows(string $path): array
+    private function readCsvRows(string $path): \Generator
     {
-        $content = @file_get_contents($path);
-        if ($content === false) {
+        $stream = @fopen($path, 'rb');
+        if ($stream === false) {
             throw new \RuntimeException('Failed to read uploaded file.');
         }
-
-        // Strip UTF-8 BOM
-        if (str_starts_with($content, "\xEF\xBB\xBF")) {
-            $content = substr($content, 3);
+        $sample = fread($stream, 4096);
+        rewind($stream);
+        if (str_starts_with($sample, "\xEF\xBB\xBF")) {
+            fseek($stream, 3);
         }
-
-        // Convert non-UTF8 encoding if necessary
-        $encoding = mb_detect_encoding($content, ['UTF-8', 'ISO-8859-1', 'Windows-1252', 'ASCII'], true);
-        if ($encoding && $encoding !== 'UTF-8') {
-            $content = mb_convert_encoding($content, 'UTF-8', $encoding);
-        }
-
-        // Detect delimiter from first 4KB
-        $sample = substr($content, 0, 4096);
         $delimiters = [',', ';', "\t", '|'];
         $bestDelimiter = ',';
         $maxCount = 0;
@@ -416,23 +399,101 @@ class CatalogSpreadsheetImportService
             }
         }
 
-        $rows = [];
-        $stream = fopen('php://memory', 'r+');
-        fwrite($stream, $content);
-        rewind($stream);
-
-        while (($row = fgetcsv($stream, 0, $bestDelimiter, '"', '\\')) !== false) {
-            $rows[] = $row;
+        try {
+            while (($row = fgetcsv($stream, 0, $bestDelimiter, '"', '\\')) !== false) {
+                yield array_map(function ($value) {
+                    if ($value !== null && ! mb_check_encoding($value, 'UTF-8')) {
+                        return mb_convert_encoding($value, 'UTF-8', 'Windows-1252');
+                    }
+                    return $value;
+                }, $row);
+            }
+        } finally {
+            fclose($stream);
         }
+    }
 
-        fclose($stream);
-        unset($content);
+    private function batchRows(iterable $rows): \Generator
+    {
+        $batch = [];
+        foreach ($rows as $row) {
+            $batch[] = $row;
+            if (count($batch) === 100) {
+                yield $batch;
+                $batch = [];
+            }
+        }
+        if ($batch) {
+            yield $batch;
+        }
+    }
 
-        return $rows;
+    private function readSpreadsheetRows(string $path): \Generator
+    {
+        $reader = IOFactory::createReaderForFile($path);
+        $reader->setReadDataOnly(true);
+        $reader->setReadEmptyCells(false);
+        $sheets = $reader->listWorksheetInfo($path);
+        if (empty($sheets)) {
+            return;
+        }
+        $sheetName = $sheets[0]['worksheetName'];
+        $totalRows = (int) $sheets[0]['totalRows'];
+        $reader->setLoadSheetsOnly($sheetName);
+
+        for ($start = 1; $start <= $totalRows; $start += 100) {
+            $end = min($start + 99, $totalRows);
+            $reader->setReadFilter(new class($start, $end) implements \PhpOffice\PhpSpreadsheet\Reader\IReadFilter {
+                public function __construct(private int $start, private int $end) {}
+
+                public function readCell(string $columnAddress, int $row, string $worksheetName = ''): bool
+                {
+                    return $row >= $this->start && $row <= $this->end;
+                }
+            });
+            $spreadsheet = $reader->load($path);
+            try {
+                $sheet = $spreadsheet->getActiveSheet();
+                $range = 'A'.$start.':'.$sheet->getHighestDataColumn().$end;
+                foreach ($sheet->rangeToArray($range, '', false, false, false) as $row) {
+                    yield $row;
+                }
+            } finally {
+                $spreadsheet->disconnectWorksheets();
+                unset($spreadsheet);
+            }
+        }
+    }
+
+    private function guardSpreadsheetMemory(string $path, string $extension): void
+    {
+        $limit = ini_get('memory_limit');
+        if (! $limit || $limit === '-1') {
+            return;
+        }
+        $available = max(0, (int) (ini_parse_quantity($limit) - memory_get_usage(true) - 24 * 1024 * 1024));
+        $expanded = filesize($path);
+        if ($extension === 'xlsx' && class_exists(\ZipArchive::class)) {
+            $zip = new \ZipArchive();
+            if ($zip->open($path) === true) {
+                $expanded = 0;
+                for ($i = 0; $i < $zip->numFiles; $i++) {
+                    $entry = $zip->statIndex($i);
+                    $expanded += $entry['size'] ?? 0;
+                }
+                $zip->close();
+            }
+        }
+        // Spreadsheet cell objects and the preview array can occupy several
+        // times the file's uncompressed size.
+        $multiplier = $extension === 'xlsx' ? 4 : (in_array($extension, ['csv', 'txt'], true) ? 8 : 12);
+        if ($expanded * $multiplier > $available) {
+            throw new \RuntimeException('This spreadsheet is too large for the server memory available. Split it into smaller files or ask an administrator to increase the PHP memory limit.');
+        }
     }
 
     /**
-     * Commit all valid (status = pending) rows into the catalog.
+     * Commit at most 100 pending rows. The job schedules the next batch.
      */
     public function commit(CatalogImport $import): CatalogImport
     {
@@ -442,19 +503,35 @@ class CatalogSpreadsheetImportService
         $prefix = $options['accession_prefix'] ?? ('PGPC-' . date('Y') . '-');
         $startNum = (int) ($options['start_accession_number'] ?? 1001);
         $assignedInBatch = [];
-        $context = $this->createCatalogContext($options);
+        $context = $import->source_type === 'marc' ? null : $this->createCatalogContext($options);
 
         $importedCount = $import->rows()->where('status', 'imported')->count();
-        $failedCount = $import->rows()->where('status', 'failed')->count();
+        $failedCount = $import->rows()->whereIn('status', ['failed', 'skipped'])->count();
 
-        foreach ($import->rows()->where('status', 'pending')->cursor() as $row) {
+        foreach ($import->rows()->where('status', 'pending')->orderBy('id')->limit(100)->get() as $row) {
             try {
-                $processed = DB::transaction(function () use ($import, $row, $options, $prefix, &$startNum, &$assignedInBatch, &$context): bool {
+                $processed = DB::transaction(function () use ($import, $row, $options, $prefix, &$startNum, &$assignedInBatch, &$context): string {
                     $currentImport = CatalogImport::whereKey($import->id)->lockForUpdate()->firstOrFail();
                     if ($currentImport->status !== 'importing') {
-                        return false;
+                        return 'cancelled';
+                    }
+                    if ($row->fresh()->status !== 'pending') {
+                        return 'already-processed';
                     }
                     $data = is_array($row->raw_data) ? $row->raw_data : json_decode($row->raw_data, true);
+
+                    if ($import->source_type === 'marc') {
+                        $result = app(ExtractMarcData::class)->importRecords([$data], $options);
+                        if ($result['failed_count'] > 0) {
+                            throw new \RuntimeException(implode(' ', $result['errors']) ?: 'MARC record could not be imported.');
+                        }
+                        if ($result['skipped_count'] > 0) {
+                            $row->update(['status' => 'skipped', 'errors' => ['Duplicate record skipped.']]);
+                            return 'skipped';
+                        }
+                        $row->update(['status' => 'imported', 'book_detail_id' => $result['created_ids'][0] ?? null, 'errors' => null]);
+                        return 'imported';
+                    }
 
                     // Auto-generate accession number if blank
                     if (empty($data['accession_no'])) {
@@ -472,12 +549,19 @@ class CatalogSpreadsheetImportService
                         'book_id' => $book->id,
                         'errors' => null,
                     ]);
-                    return true;
+                    return 'imported';
                 });
-                if (! $processed) {
+                if ($processed === 'cancelled') {
                     return $import->fresh();
                 }
-                $importedCount++;
+                if ($processed === 'already-processed') {
+                    continue;
+                }
+                if ($processed === 'skipped') {
+                    $failedCount++;
+                } else {
+                    $importedCount++;
+                }
             } catch (Throwable $exception) {
                 $row->update([
                     'status' => 'failed',
@@ -492,11 +576,13 @@ class CatalogSpreadsheetImportService
             ]);
         }
 
-        CatalogImport::whereKey($import->id)->where('status', 'importing')->update([
-            'status' => 'completed',
-            'imported_rows' => $importedCount,
-            'failed_rows' => $failedCount,
-        ]);
+        if (! $import->rows()->where('status', 'pending')->exists()) {
+            CatalogImport::whereKey($import->id)->where('status', 'importing')->update([
+                'status' => 'completed',
+                'imported_rows' => $importedCount,
+                'failed_rows' => $failedCount,
+            ]);
+        }
 
         return $import->fresh();
     }
