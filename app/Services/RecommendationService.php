@@ -22,8 +22,9 @@ class RecommendationService
     }
 
     /** Request recommendations using only the account's encrypted identifier. */
-    public function refreshFor(Account $account): UserRecommendation
+    public function refreshFor(Account $account, ?string $viewedIsbn = null, ?int $rating = null): UserRecommendation
     {
+        $this->lastRecommendDebug = null;
         $histories = $account->userHistories()
             ->select(['encrypter_id', 'isbn', 'rating'])
             ->get();
@@ -39,6 +40,7 @@ class RecommendationService
                 'available' => false,
                 'status' => null,
                 'error' => 'Encrypted user identifier is unavailable.',
+                'reason' => 'missing_user_identifier',
             ];
             throw new RuntimeException('Encrypted user identifier is unavailable.');
         }
@@ -47,10 +49,12 @@ class RecommendationService
             $response = $this->client()
                 ->connectTimeout(1)
                 ->timeout(min((int) config('services.recommender.timeout', 30), 5))
-                ->post($endpointUrl, [
+                ->post($endpointUrl, array_filter([
                     'encrypter_id' => (string) $encrypterId,
                     'borrowed_books' => $borrowedIsbns,
-                ]);
+                    'interaction' => $viewedIsbn ? ['isbn' => $viewedIsbn, 'rating' => $rating] : null,
+                    'data' => $viewedIsbn ? ['student_id' => (string) $encrypterId, 'book_id' => $viewedIsbn, 'rating' => $rating] : null,
+                ], fn ($value) => $value !== null));
         } catch (ConnectionException|RequestException $exception) {
             report($exception);
             $this->lastRecommendDebug = [
@@ -58,6 +62,7 @@ class RecommendationService
                 'available' => false,
                 'status' => null,
                 'error' => $exception->getMessage(),
+                'reason' => 'connection_error',
             ];
             throw new RuntimeException('Recommendation service is temporarily unavailable.', previous: $exception);
         } catch (Throwable $exception) {
@@ -67,6 +72,7 @@ class RecommendationService
                 'available' => false,
                 'status' => null,
                 'error' => $exception->getMessage(),
+                'reason' => 'connection_error',
             ];
             throw new RuntimeException('Recommendation service is temporarily unavailable.', previous: $exception);
         }
@@ -78,6 +84,7 @@ class RecommendationService
                 'status' => $response->status(),
                 'raw' => $response->json() ?? $response->body(),
                 'error' => 'HTTP ' . $response->status(),
+                'reason' => 'http_error',
             ];
             report(new RuntimeException('Recommendation request failed with HTTP '.$response->status().'.'));
             throw new RuntimeException($this->safeRecommendationError($response->status()));
@@ -85,30 +92,53 @@ class RecommendationService
 
         $payload = $response->json();
         $recommendations = $response->json('recommendations');
-        if (! is_array($recommendations)) {
+        if (! is_array($recommendations) || ! array_is_list($recommendations)) {
             $this->lastRecommendDebug = [
                 'endpoint' => $endpointUrl,
                 'available' => false,
                 'status' => $response->status(),
                 'raw' => $payload ?? $response->body(),
                 'error' => 'Recommendation response did not contain a recommendations array.',
+                'reason' => 'invalid_response',
             ];
             report(new RuntimeException('Recommendation response did not contain a recommendations array.'));
             throw new RuntimeException('Recommendation service returned an invalid response.');
         }
 
-        $isbns = collect($recommendations)->map(function ($recommendation): string {
-            if (! is_array($recommendation) || ! isset($recommendation['isbn']) || ! is_string($recommendation['isbn'])) {
-                throw new RuntimeException('Recommendation service returned a malformed recommendation.');
+        // Keep the response available even when an individual item is malformed.
+        $this->lastRecommendDebug = [
+            'available' => true,
+            'status' => $response->status(),
+            'raw' => $payload,
+        ];
+
+        $invalidCount = 0;
+        $isbns = collect($recommendations)->map(function ($recommendation) use (&$invalidCount): ?string {
+            $value = is_array($recommendation) ? ($recommendation['isbn'] ?? $recommendation['book_id'] ?? null) : null;
+            // Some model versions serialize ISBNs as JSON integers. Convert
+            // integers to strings before matching; never accept floats, which
+            // can silently lose digits or use scientific notation.
+            if (is_int($value)) {
+                $value = (string) $value;
+            }
+            if (! is_string($value)) {
+                $invalidCount++;
+                return null;
             }
 
-            $isbn = trim($recommendation['isbn']);
+            $isbn = trim($value);
             if ($isbn === '' || strlen($isbn) > 32) {
-                throw new RuntimeException('Recommendation service returned a malformed recommendation.');
+                $invalidCount++;
+                return null;
             }
 
             return $isbn;
-        })->unique()->take(10)->values()->all();
+        })->filter()->unique()->take(10)->values()->all();
+
+        if ($recommendations !== [] && $isbns === []) {
+            $this->lastRecommendDebug = ['available' => false, 'status' => $response->status(), 'raw' => $payload, 'reason' => 'invalid_response'];
+            throw new RuntimeException('Recommendation service returned no valid ISBNs.');
+        }
 
         $this->lastRecommendDebug = [
             'endpoint' => $endpointUrl,
@@ -116,6 +146,7 @@ class RecommendationService
             'status' => $response->status(),
             'raw' => $payload,
             'isbns' => $isbns,
+            'invalid_count' => $invalidCount,
         ];
 
         return UserRecommendation::storeRecommendations($account->id, $isbns);
@@ -455,7 +486,7 @@ class RecommendationService
     {
         return Http::acceptJson()->withHeaders([
             'X-API-Key' => (string) config('services.recommender.key'),
-        ]);
+        ])->withToken((string) config('services.recommender.key'));
     }
 
     protected function endpoint(string $path): string

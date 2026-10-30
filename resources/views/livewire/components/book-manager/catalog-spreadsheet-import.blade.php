@@ -2,6 +2,17 @@
     @if($isImporting) wire:poll.2s @endif
     x-data="{
         inspectModalOpen: @json(!empty($inspectRowData)),
+        reviewRequestError: '',
+        removeImportHook: null,
+        init() {
+            this.removeImportHook = Livewire.hook('commit', ({ component, commit, fail, succeed }) => {
+                if (component.id !== this.$wire.$id || !commit.calls.some(call => call.method === 'review')) return;
+                this.reviewRequestError = '';
+                fail(() => { this.reviewRequestError = 'The server could not review the uploaded file. It may be too large or the connection was interrupted. Try a smaller file or contact an administrator.'; });
+                succeed(() => { this.reviewRequestError = ''; });
+            });
+        },
+        destroy() { if (this.removeImportHook) this.removeImportHook(); },
     }"
     class="flex flex-col gap-4 font-sans text-slate-800"
 >
@@ -35,7 +46,10 @@
                     type="button"
                     wire:click="resetImport"
                     @disabled($isImporting)
-                    class="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg border border-[#E2E8F0] bg-white px-4 text-xs sm:text-sm font-semibold text-slate-700 shadow-xs transition-colors hover:bg-slate-50 hover:text-rose-600 active:translate-y-px disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    wire:loading.attr="disabled"
+                    wire:target="review,spreadsheet,importSpreadsheet,resetImport"
+                    wire:loading.class="cursor-not-allowed opacity-50"
+                    class="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg border border-[#E2E8F0] bg-white px-4 text-xs sm:text-sm font-semibold text-slate-700 shadow-xs transition-colors hover:bg-slate-50 hover:text-rose-600 active:translate-y-px disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-slate-700 cursor-pointer"
                 >
                     <span>Start Over</span>
                 </button>
@@ -44,6 +58,7 @@
     </div>
 
     <!-- Alert / Message Banner -->
+    <div x-show="reviewRequestError" x-cloak role="alert" class="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm font-medium text-rose-900" x-text="reviewRequestError"></div>
     @if ($message)
         <div
             x-data="{ show: true }"
@@ -86,9 +101,9 @@
                         <div>
                             <h3 class="text-base font-bold text-emerald-950">Catalog import finished</h3>
                             <p class="text-xs sm:text-sm font-medium text-emerald-800 mt-0.5">
-                                <strong class="font-bold">{{ $importedCount }}</strong> physical book copy record(s) cataloged into <strong class="font-bold">{{ $defaultCollection }}</strong>.
+                                <strong class="font-bold">{{ $importedCount }}</strong> record(s) cataloged into <strong class="font-bold">{{ $catalogImport->summary['options']['default_collection'] ?? $defaultCollection }}</strong>.
                                 @if ($failedCount > 0)
-                                    <span class="text-amber-800 font-semibold">({{ $failedCount }} invalid row(s) were excluded).</span>
+                                    <span class="text-amber-800 font-semibold">({{ $failedCount }} record(s) failed or were skipped; see Issues for details).</span>
                                 @endif
                             </p>
                         </div>
@@ -267,7 +282,7 @@
                                     $errors = is_array($row->errors) ? $row->errors : (json_decode($row->errors ?? '[]', true) ?: []);
                                     $isReady = $row->status === 'pending';
                                     $isImported = $row->status === 'imported';
-                                    $hasIssues = in_array($row->status, ['invalid', 'failed']);
+                                    $hasIssues = in_array($row->status, ['invalid', 'failed', 'skipped']);
                                 @endphp
                                 <tr class="hover:bg-[#F8FAFC] transition-colors {{ $hasIssues ? 'bg-rose-50/20' : '' }}">
                                     <!-- Row # -->
@@ -411,12 +426,19 @@
                         type="button"
                         wire:click="resetImport"
                         @disabled($isImporting)
-                        class="h-10 px-4 rounded-lg border border-[#E2E8F0] bg-white hover:bg-slate-50 text-xs sm:text-sm font-semibold text-slate-700 shadow-xs transition cursor-pointer"
+                        wire:loading.attr="disabled"
+                        wire:target="importSpreadsheet,resetImport"
+                        wire:loading.class="cursor-not-allowed opacity-50"
+                        class="h-10 px-4 rounded-lg border border-[#E2E8F0] bg-white hover:bg-slate-50 text-xs sm:text-sm font-semibold text-slate-700 shadow-xs transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white"
                     >
                         Start Over
                     </button>
 
                     @if ($isImporting)
+                        <button type="button" wire:click="cancelImport" wire:loading.attr="disabled" wire:target="cancelImport" wire:confirm="Cancel this import? Records already imported will be kept."
+                            class="h-10 px-4 rounded-lg border border-rose-300 bg-white text-rose-700 text-xs sm:text-sm font-semibold hover:bg-rose-50 disabled:opacity-50">
+                            Cancel import
+                        </button>
                         <button
                             type="button"
                             disabled
@@ -424,6 +446,8 @@
                         >
                             <span>Importing ({{ $progressPercent }}%)...</span>
                         </button>
+                    @elseif ($catalogImport->status === 'cancelled')
+                        <span class="text-sm font-semibold text-slate-600">Import cancelled</span>
                     @elseif ($importCompleted)
                         <a href="{{ route($routePrefix . 'book-management.index') }}" wire:navigate
                             class="h-10 px-5 rounded-lg bg-[#102B70] hover:bg-[#0B225E] text-xs sm:text-sm font-semibold text-white shadow-xs transition inline-flex items-center justify-center">
@@ -435,8 +459,9 @@
                             wire:click="importSpreadsheet"
                             wire:loading.attr="disabled"
                             wire:target="importSpreadsheet"
+                            wire:loading.class="cursor-not-allowed opacity-50"
                             @disabled($validRows === 0)
-                            class="h-10 px-5 rounded-lg bg-[#102B70] hover:bg-[#0B225E] disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm font-semibold text-white shadow-xs transition cursor-pointer inline-flex items-center justify-center"
+                            class="h-10 px-5 rounded-lg bg-[#102B70] hover:bg-[#0B225E] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#102B70] text-xs sm:text-sm font-semibold text-white shadow-xs transition cursor-pointer inline-flex items-center justify-center"
                         >
                             <span wire:loading.remove wire:target="importSpreadsheet">Import Valid Rows ({{ $validRows }})</span>
                             <span wire:loading wire:target="importSpreadsheet">Starting Background Job...</span>
@@ -571,6 +596,7 @@
                             <div class="h-2 w-full rounded-full bg-slate-200 overflow-hidden">
                                 <div class="h-full bg-[#102B70] transition-all duration-200 rounded-full" :style="'width: ' + progress + '%'"></div>
                             </div>
+                            <button type="button" @click.stop="$wire.$cancelUpload('spreadsheet'); clearTimeout(uploadTimer); uploading = false; uploadError = 'Upload cancelled. Choose a file to try again.'" class="mt-3 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">Cancel upload</button>
                         </div>
                     </div>
                     <p x-show="uploadError" x-text="uploadError" role="alert" x-cloak class="mt-3 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800"></p>
@@ -595,8 +621,9 @@
                                 type="button"
                                 wire:click="review"
                                 wire:loading.attr="disabled"
-                                wire:target="review"
-                                class="inline-flex h-9 items-center justify-center rounded-lg bg-[#102B70] hover:bg-[#0B225E] text-white px-4 text-xs font-semibold shadow-xs transition cursor-pointer"
+                                wire:target="review,spreadsheet"
+                                wire:loading.class="cursor-not-allowed opacity-50"
+                                class="inline-flex h-9 items-center justify-center rounded-lg bg-[#102B70] hover:bg-[#0B225E] text-white px-4 text-xs font-semibold shadow-xs transition cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-[#102B70]"
                             >
                                 <span wire:loading.remove wire:target="review">Review Records</span>
                                 <span wire:loading wire:target="review">Validating Records...</span>
@@ -605,7 +632,10 @@
                             <button
                                 type="button"
                                 wire:click="clearFile"
-                                class="inline-flex h-9 items-center justify-center rounded-lg border border-[#CBD5E1] bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition cursor-pointer"
+                                wire:loading.attr="disabled"
+                                wire:target="review,clearFile,spreadsheet"
+                                wire:loading.class="cursor-not-allowed opacity-50"
+                                class="inline-flex h-9 items-center justify-center rounded-lg border border-[#CBD5E1] bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white"
                             >
                                 Change File
                             </button>
@@ -702,8 +732,9 @@
                             type="button"
                             wire:click="review"
                             wire:loading.attr="disabled"
-                            wire:target="review"
-                            class="h-10 w-full sm:w-auto px-6 rounded-lg bg-[#102B70] hover:bg-[#0B225E] text-xs sm:text-sm font-semibold text-white shadow-xs transition cursor-pointer inline-flex items-center justify-center min-w-[200px]"
+                            wire:target="review,spreadsheet"
+                            wire:loading.class="cursor-not-allowed opacity-50"
+                            class="h-10 w-full sm:w-auto px-6 rounded-lg bg-[#102B70] hover:bg-[#0B225E] text-xs sm:text-sm font-semibold text-white shadow-xs transition cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-[#102B70] inline-flex items-center justify-center min-w-[200px]"
                         >
                             <span wire:loading.remove wire:target="review">Review &amp; Validate Records</span>
                             <span wire:loading wire:target="review">Reading &amp; Validating Records...</span>

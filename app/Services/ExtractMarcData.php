@@ -503,9 +503,6 @@ class ExtractMarcData
         $startAccessionNumber = (int)($options['start_accession_number'] ?? 1001);
         $duplicatePolicy = $options['duplicate_policy'] ?? 'skip'; // 'skip', 'update', 'always_create'
 
-        // Ensure database marc_record column is TEXT so serialized MARC JSON/raw data doesn't exceed varchar(255)
-        $this->ensureMarcRecordColumnType();
-
         $importedCount = 0;
         $skippedCount = 0;
         $failedCount = 0;

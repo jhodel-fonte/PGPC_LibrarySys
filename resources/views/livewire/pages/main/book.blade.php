@@ -697,25 +697,14 @@
 
             <!-- 3. Recommendations / Similar Books Row -->
             <div class="mt-8">
-                @if(auth()->check() && !empty($personalRecommendations))
-                    <x-recommendation.book-view-recommendation
-                        title="Picked for you"
-                        subtitle="Recommendations based on your library activity"
-                        :books="$personalRecommendations"
-                        :limit="10"
-                        class="border-[#DBEAFE] bg-[#F8FBFF]"
-                    />
-                @elseif(auth()->check() && !empty($recommendationError))
-                    <div class="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
-                        {{ $recommendationError }}
-                    </div>
-                @else
+                @if(auth()->check() && auth()->user()->isStudent())
+                    <livewire:components.main.personal-recommendations :book-detail-id="$bookDetailId" :key="'recommend-book-'.$bookDetailId" />
+                @endif
                 <x-recommendation.book-view-recommendation
                     :category="$book['category'] ?? ($book['subjects'][0] ?? null)"
                     :books="$similarBooks ?? []"
                     :limit="10"
                 />
-                @endif
             </div>
 
             <!-- 4. Reservation Modal Popup -->
@@ -801,9 +790,4 @@
 
     </div>
 
-    @if($mlApiDebug)
-        <script>
-            console.log('[ML API Recommendations]', @js($mlApiDebug));
-        </script>
-    @endif
 </div>

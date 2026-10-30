@@ -58,8 +58,8 @@ COPY docker/supervisord.conf /etc/supervisord.conf
 # and assign permissions to the Nginx worker user
 RUN mkdir -p /var/lib/nginx/tmp/fastcgi /var/lib/nginx/tmp/client_body \
     && chown -R www-data:www-data /var/lib/nginx/tmp \
-    && chmod 700 /var/lib/nginx/tmp \
-    && chmod 700 /var/lib/nginx/tmp/fastcgi /var/lib/nginx/tmp/client_body
+    && chmod 770 /var/lib/nginx/tmp \
+    && chmod 770 /var/lib/nginx/tmp/fastcgi /var/lib/nginx/tmp/client_body
 
 # Set Laravel writable directory permissions
 RUN chown -R www-data:www-data \

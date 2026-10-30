@@ -72,6 +72,10 @@ class UserRecommendation extends Model
             return new Collection();
         }
 
+        $normalize = fn ($isbn) => strtoupper(str_replace(['-', ' '], '', trim((string) $isbn)));
+        $normalizedIsbns = array_values(array_unique(array_map($normalize, $isbns)));
+        $rank = array_flip($normalizedIsbns);
+
         return BookDetail::publicCatalog()->with([
             'bookData.authors',
             'bookData.categories',
@@ -81,12 +85,15 @@ class UserRecommendation extends Model
                 ->whereNull('deleted_at')
                 ->whereNotIn(\Illuminate\Support\Facades\DB::raw('LOWER(status)'), ['disabled', 'archived']),
         ])
-            ->whereIn('isbn', $isbns)
+            ->whereIn(\Illuminate\Support\Facades\DB::raw("UPPER(REPLACE(REPLACE(isbn, '-', ''), ' ', ''))"), $normalizedIsbns)
             ->whereNull('deleted_at')
             ->whereHas('bookData', fn ($query) => $query->whereNull('deleted_at'))
             ->whereHas('books', fn ($query) => $query
                 ->whereNull('deleted_at')
                 ->whereNotIn(\Illuminate\Support\Facades\DB::raw('LOWER(status)'), ['disabled', 'archived']))
-            ->get();
+            ->get()
+            ->sortBy(fn ($book) => $rank[$normalize($book->isbn)] ?? PHP_INT_MAX)
+            ->unique(fn ($book) => $normalize($book->isbn))
+            ->values();
     }
 }

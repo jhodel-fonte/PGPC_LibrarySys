@@ -57,8 +57,17 @@ function opacCatalog() {
         perPage: {{ (int) $perPage }},
         pagination: @json($paginationData),
         isLoggedIn: {{ $isLoggedIn ? 'true' : 'false' }},
+        showRecommendations: true,
+
+        updateRecommendationVisibility(url) {
+            const params = new URL(url, window.location.origin).searchParams;
+            this.showRecommendations = [...params.entries()].every(([key, value]) =>
+                !value || (key === 'page' && value === '1') || (key === 'type' && value === 'all') || key === 'per_page'
+            );
+        },
 
         init() {
+            this.updateRecommendationVisibility(window.location.href);
             window.addEventListener('popstate', () => {
                 this.fetchResults(window.location.href, false);
             });
@@ -80,6 +89,7 @@ function opacCatalog() {
                 });
                 if (!res.ok) throw new Error('Network response not ok');
                 const data = await res.json();
+                this.updateRecommendationVisibility(url);
                 this.results                = data.results || [];
                 this.totalCount             = data.totalResults || 0;
                 this.pagination             = data.pagination  || null;
@@ -333,6 +343,12 @@ function opacCatalog() {
 
             <!-- Right: Results Main Panel -->
             <div class="flex-1 w-full min-w-0">
+
+                @if($isLoggedIn && $currentUser?->isStudent())
+                    <div x-show="showRecommendations" class="mb-8">
+                        <livewire:components.main.personal-recommendations :catalog-list="true" />
+                    </div>
+                @endif
 
                 <!-- 7. Results Header: Count & Sort Bar -->
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
