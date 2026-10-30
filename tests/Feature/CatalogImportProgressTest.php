@@ -59,6 +59,7 @@ class CatalogImportProgressTest extends TestCase
         $component = Livewire::actingAs($user)->test(CatalogSpreadsheetImport::class)
             ->set('spreadsheet', $file)->call('review');
         $import = CatalogImport::findOrFail($component->get('catalogImportId'));
+        $import->update(['status' => 'importing']);
 
         (new ProcessCatalogImportJob($import->id, $user->id, route('admin.book-management.index')))
             ->handle(app(CatalogSpreadsheetImportService::class));
@@ -83,7 +84,26 @@ class CatalogImportProgressTest extends TestCase
             ->assertSee('Title is required.');
 
         $this->assertSame('importing', $import->fresh()->status);
-        Queue::assertPushed(ProcessCatalogImportJob::class, fn ($job) => $job->catalogImportId === $import->id && $job->actionUrl === route('admin.book-management.index'));
+        Queue::assertPushed(ProcessCatalogImportJob::class, fn ($job) => $job->catalogImportId === $import->id && $job->actionUrl === route('admin.book-management.index') && $job->connection === 'database');
+    }
+
+    public function test_cancelled_batch_keeps_imported_rows_and_queued_job_does_not_import_remaining_rows(): void
+    {
+        Queue::fake();
+        $user = Account::factory()->create(['role_id' => 1]);
+        $import = CatalogImport::create(['uploaded_by' => $user->id, 'source_file_name' => 'test.csv', 'source_type' => 'csv', 'status' => 'importing', 'total_rows' => 2, 'imported_rows' => 1]);
+        $import->rows()->create(['row_number' => 2, 'raw_data' => ['title' => 'Already imported'], 'status' => 'imported']);
+        $import->rows()->create(['row_number' => 3, 'raw_data' => ['title' => 'Waiting'], 'status' => 'pending']);
+
+        Livewire::actingAs($user)->test(CatalogSpreadsheetImport::class)
+            ->set('catalogImportId', $import->id)
+            ->call('cancelImport')
+            ->assertSee('Import cancelled');
+
+        (new ProcessCatalogImportJob($import->id, $user->id))->handle(app(CatalogSpreadsheetImportService::class));
+        $this->assertSame('cancelled', $import->fresh()->status);
+        $this->assertSame(1, $import->rows()->where('status', 'imported')->count());
+        $this->assertSame(1, $import->rows()->where('status', 'pending')->count());
     }
 
     public function test_failure_is_recorded_for_the_page_and_completed_import_is_not_overwritten(): void

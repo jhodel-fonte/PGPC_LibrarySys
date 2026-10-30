@@ -300,7 +300,7 @@ class CatalogSpreadsheetImport extends Component
         unset($this->catalogImport);
 
         try {
-            \App\Jobs\ProcessCatalogImportJob::dispatch($import->id, auth()->id(), $actionUrl);
+            \App\Jobs\ProcessCatalogImportJob::dispatch($import->id, auth()->id(), $actionUrl)->onConnection('database');
         } catch (Throwable $exception) {
             Log::error('Could not start catalog import.', ['import_id' => $import->id, 'exception' => $exception]);
             $import->refresh();
@@ -320,6 +320,29 @@ class CatalogSpreadsheetImport extends Component
             'title' => 'Import Queued in Background',
             'message' => 'Adding records to the database. You can safely refresh or navigate away.',
         ]);
+    }
+
+    public function cancelImport(): void
+    {
+        $import = $this->catalogImport;
+        if (! $import) {
+            return;
+        }
+
+        $cancelled = DB::transaction(function () use ($import) {
+            $locked = CatalogImport::whereKey($import->id)->where('uploaded_by', auth()->id())->lockForUpdate()->first();
+            if (! $locked || $locked->status !== 'importing') {
+                return false;
+            }
+            $locked->update(['status' => 'cancelled']);
+            return true;
+        });
+
+        unset($this->catalogImport);
+        $this->message = $cancelled
+            ? 'Import cancelled. Records already imported were kept; remaining rows were not imported.'
+            : 'This import has already finished or stopped.';
+        $this->messageType = $cancelled ? 'warning' : 'info';
     }
 
     /**
@@ -545,6 +568,9 @@ class CatalogSpreadsheetImport extends Component
             } elseif ($catalogImport->status === 'failed' && $this->messageType !== 'error') {
                 $this->message = $catalogImport->summary['error'] ?? 'The import stopped unexpectedly. Review the issues below and try again.';
                 $this->messageType = 'error';
+            } elseif ($catalogImport->status === 'cancelled' && $this->messageType !== 'warning') {
+                $this->message = 'Import cancelled. Records already imported were kept; remaining rows were not imported.';
+                $this->messageType = 'warning';
             }
 
             $totalRows = $catalogImport->total_rows;

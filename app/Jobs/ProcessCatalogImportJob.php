@@ -49,8 +49,8 @@ class ProcessCatalogImportJob implements ShouldQueue
             return;
         }
 
-        if ($import->status === 'completed') {
-            Log::info('[ProcessCatalogImportJob] CatalogImport is already completed.', [
+        if ($import->status !== 'importing') {
+            Log::info('[ProcessCatalogImportJob] CatalogImport is no longer waiting to run.', [
                 'import_id' => $this->catalogImportId,
             ]);
             return;
@@ -64,6 +64,10 @@ class ProcessCatalogImportJob implements ShouldQueue
             ]);
 
             $result = $service->commit($import);
+
+            if ($result->status === 'cancelled') {
+                return;
+            }
 
             Log::info('[ProcessCatalogImportJob] Background catalog import finished successfully.', [
                 'import_id' => $result->id,
@@ -110,7 +114,7 @@ class ProcessCatalogImportJob implements ShouldQueue
     {
         Log::error('Catalog import failed.', ['import_id' => $this->catalogImportId, 'exception' => $exception]);
         $import = CatalogImport::find($this->catalogImportId);
-        if ($import && $import->status !== 'completed') {
+        if ($import && ! in_array($import->status, ['completed', 'cancelled'], true)) {
             $import->update([
                 'status' => 'failed',
                 'summary' => array_merge($import->summary ?? [], [

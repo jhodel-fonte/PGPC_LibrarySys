@@ -36,7 +36,7 @@ services:
     image: pgpc-app:latest
     container_name: pgpc_queue
     restart: unless-stopped
-    command: php artisan queue:work --tries=3 --timeout=90
+    command: php artisan queue:work database --tries=3 --timeout=1800
     env_file:
       - .env
     depends_on:

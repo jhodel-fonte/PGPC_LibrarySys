@@ -438,8 +438,6 @@ class CatalogSpreadsheetImportService
     {
         @set_time_limit(0);
 
-        $import->update(['status' => 'importing']);
-
         $options = $import->summary['options'] ?? [];
         $prefix = $options['accession_prefix'] ?? ('PGPC-' . date('Y') . '-');
         $startNum = (int) ($options['start_accession_number'] ?? 1001);
@@ -451,7 +449,11 @@ class CatalogSpreadsheetImportService
 
         foreach ($import->rows()->where('status', 'pending')->cursor() as $row) {
             try {
-                DB::transaction(function () use ($row, $options, $prefix, &$startNum, &$assignedInBatch, &$context): void {
+                $processed = DB::transaction(function () use ($import, $row, $options, $prefix, &$startNum, &$assignedInBatch, &$context): bool {
+                    $currentImport = CatalogImport::whereKey($import->id)->lockForUpdate()->firstOrFail();
+                    if ($currentImport->status !== 'importing') {
+                        return false;
+                    }
                     $data = is_array($row->raw_data) ? $row->raw_data : json_decode($row->raw_data, true);
 
                     // Auto-generate accession number if blank
@@ -470,7 +472,11 @@ class CatalogSpreadsheetImportService
                         'book_id' => $book->id,
                         'errors' => null,
                     ]);
+                    return true;
                 });
+                if (! $processed) {
+                    return $import->fresh();
+                }
                 $importedCount++;
             } catch (Throwable $exception) {
                 $row->update([
@@ -486,13 +492,13 @@ class CatalogSpreadsheetImportService
             ]);
         }
 
-        $import->update([
+        CatalogImport::whereKey($import->id)->where('status', 'importing')->update([
             'status' => 'completed',
             'imported_rows' => $importedCount,
             'failed_rows' => $failedCount,
         ]);
 
-        return $import->fresh('rows');
+        return $import->fresh();
     }
 
     /**

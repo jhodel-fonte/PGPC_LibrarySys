@@ -417,6 +417,10 @@
                     </button>
 
                     @if ($isImporting)
+                        <button type="button" wire:click="cancelImport" wire:loading.attr="disabled" wire:target="cancelImport" wire:confirm="Cancel this import? Records already imported will be kept."
+                            class="h-10 px-4 rounded-lg border border-rose-300 bg-white text-rose-700 text-xs sm:text-sm font-semibold hover:bg-rose-50 disabled:opacity-50">
+                            Cancel import
+                        </button>
                         <button
                             type="button"
                             disabled
@@ -424,6 +428,8 @@
                         >
                             <span>Importing ({{ $progressPercent }}%)...</span>
                         </button>
+                    @elseif ($catalogImport->status === 'cancelled')
+                        <span class="text-sm font-semibold text-slate-600">Import cancelled</span>
                     @elseif ($importCompleted)
                         <a href="{{ route($routePrefix . 'book-management.index') }}" wire:navigate
                             class="h-10 px-5 rounded-lg bg-[#102B70] hover:bg-[#0B225E] text-xs sm:text-sm font-semibold text-white shadow-xs transition inline-flex items-center justify-center">
@@ -571,6 +577,7 @@
                             <div class="h-2 w-full rounded-full bg-slate-200 overflow-hidden">
                                 <div class="h-full bg-[#102B70] transition-all duration-200 rounded-full" :style="'width: ' + progress + '%'"></div>
                             </div>
+                            <button type="button" @click.stop="$wire.$cancelUpload('spreadsheet'); clearTimeout(uploadTimer); uploading = false; uploadError = 'Upload cancelled. Choose a file to try again.'" class="mt-3 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">Cancel upload</button>
                         </div>
                     </div>
                     <p x-show="uploadError" x-text="uploadError" role="alert" x-cloak class="mt-3 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800"></p>
