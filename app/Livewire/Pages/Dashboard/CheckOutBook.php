@@ -561,6 +561,7 @@ class CheckOutBook extends Component
 
     public function confirmCheckout()
     {
+        \App\Services\EmployeeRoleService::authorizeBorrow('Unauthorized action. You do not have permission to process item borrowings.');
         if (!$this->scannedMember || empty($this->checkoutBooks)) {
             $this->errorMessage = 'No student loaded or checkout books queued.';
             return;
@@ -682,7 +683,8 @@ class CheckOutBook extends Component
         session()->flash('success_message', 'Items successfully borrowed!');
 
         // Dispatch checkout-completed event to show the frontend countdown success modal
-        $this->dispatch('checkout-completed', redirectUrl: route('admin.circulation-desk.index'));
+        $prefix = \App\Services\EmployeeRoleService::getRoutePrefix();
+        $this->dispatch('checkout-completed', redirectUrl: route($prefix . 'circulation-desk.index'));
     }
 
     public function render()

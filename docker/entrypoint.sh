@@ -7,6 +7,7 @@ php artisan package:discover --ansi
 echo "Preparing Laravel upload and storage directories..."
 mkdir -p \
     storage/app/private \
+    storage/app/private/livewire-tmp \
     storage/app/public \
     storage/app/livewire-tmp \
     storage/framework/cache \

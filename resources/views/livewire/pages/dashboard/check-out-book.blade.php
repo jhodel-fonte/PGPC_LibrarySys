@@ -1,37 +1,10 @@
-<div class="relative w-full h-auto lg:h-[calc(100vh-70px)] flex flex-col items-center justify-start pt-4 px-3 md:px-6 xl:px-12 pb-5 font-sans bg-[#F8FAFC] overflow-y-auto lg:overflow-hidden check-out-workstation"
+<div class="relative w-full min-w-0 flex flex-col items-center justify-start pt-4 px-3 md:px-6 xl:px-12 pb-5 font-sans bg-[#F8FAFC] check-out-workstation"
      x-data="completedModalHandler()"
      @checkout-completed.window="triggerModal($event.detail)"
      @checkout-failed.window="triggerErrorModal($event.detail)">
 
     <!-- Lock page layout scroll to prevent entire page scrolling on desktop when screen size permits -->
     <style>
-        @media (min-width: 1024px) {
-            @media (min-height: 800px) {
-                main {
-                    overflow: hidden !important;
-                    display: flex;
-                    flex-direction: column;
-                    height: calc(100vh - 70px) !important;
-                }
-            }
-        }
-
-        /* Zoom and Low Height Viewport Overrides */
-        @media (max-height: 799px) {
-            .check-out-workstation,
-            .check-out-workstation .lg\:overflow-hidden,
-            .check-out-workstation .lg\:h-full,
-            .check-out-workstation .lg\:h-\[calc\(100vh-70px\)\],
-            .check-out-workstation .lg\:h-\[calc\(100\%-80px\)\] {
-                height: auto !important;
-                overflow: visible !important;
-            }
-            main {
-                overflow: auto !important;
-                height: auto !important;
-            }
-        }
-
         @keyframes loading-pulse {
             0% { transform: translateX(-100%); }
             100% { transform: translateX(330%); }
@@ -52,7 +25,7 @@
         }
     </style>
 
-    <div class="w-full max-w-[1460px] flex flex-col h-auto lg:h-full lg:overflow-hidden">
+    <div class="w-full max-w-[1460px] min-w-0 flex flex-col">
         <!-- Header Area -->
         <div class="w-full flex flex-col mb-4 md:mt-2 relative z-10 shrink-0">
             <!-- Title Row -->
@@ -69,10 +42,10 @@
         </div>
 
         <!-- Main Content Grid -->
-        <div class="w-full grid grid-cols-1 lg:grid-cols-12 gap-6 relative z-10 mb-2 flex-1 lg:overflow-hidden h-auto lg:h-[calc(100%-80px)]">
+        <div class="w-full grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(260px,320px)] gap-4 lg:gap-6 relative z-10 mb-2 items-start">
 
             <!-- Left Section: Column 1 + Column 2 (col-span-9) -->
-            <div class="lg:col-span-9 h-auto lg:h-full flex flex-col gap-4 lg:overflow-hidden">
+            <div class="min-w-0 flex flex-col gap-4">
 
                 <!-- Switch Student Confirmation Banner -->
                 @if($showConfirmChangeMember)
@@ -116,10 +89,10 @@
                 </div>
 
                 <!-- Sub Grid: Camera Scanner & Reusable Table side-by-side -->
-                <div class="grid grid-cols-1 md:grid-cols-12 gap-4 flex-1 lg:overflow-hidden h-auto lg:h-full">
+                <div class="grid grid-cols-1 md:grid-cols-[minmax(220px,1fr)_minmax(0,2fr)] gap-4 min-w-0">
 
                     <!-- COLUMN 1: Scanner + Scanned Book Details (md:col-span-4) -->
-                    <div class="md:col-span-4 flex flex-col gap-4 h-auto lg:h-full lg:overflow-hidden">
+                    <div class="min-w-0 flex flex-col gap-4">
                         <!-- Scanner Card -->
                         <div class="bg-white rounded-xl border border-[#E2E8F0] p-5  shrink-0">
                             <livewire:components.circulation.live-camera />
@@ -141,14 +114,14 @@
                         :selected-accession="$lastScannedBook['accession'] ?? null"
                         mode="check-out"
                         title="Items to Borrow"
-                        class="md:col-span-8 h-[400px] md:h-full"
+                        class="min-w-0 min-h-[400px]"
                     />
 
                 </div>
             </div>
 
             <!-- Right Section: Column 3 (col-span-3 Student Card + Checkout Summary Panel) -->
-            <div class="lg:col-span-3 h-auto lg:h-full flex flex-col gap-4 lg:overflow-hidden">
+            <div class="min-w-0 w-full flex flex-col gap-4">
                 <!-- Student Card -->
                 <div wire:loading.class="opacity-65 transition-opacity duration-300" class="bg-white rounded-xl border border-[#E2E8F0] p-5  shrink-0 min-h-[220px] flex flex-col">
                     <div class="flex flex-col gap-3 flex-1">

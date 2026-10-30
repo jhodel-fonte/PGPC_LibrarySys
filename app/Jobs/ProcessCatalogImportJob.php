@@ -71,12 +71,18 @@ class ProcessCatalogImportJob implements ShouldQueue
                 'failed_rows' => $result->failed_rows,
             ]);
 
-            // Dispatch in-app notification to the initiating user
+        } catch (Throwable $e) {
+            $this->markFailed($e);
+            throw $e;
+        }
+
+        // A notification failure must not mark a successfully committed import as failed.
+        try {
             if ($this->userId) {
                 $user = Account::find($this->userId);
                 if ($user) {
                     $fileName = $result->source_file_name ?? 'Catalog File';
-                    $actionUrl = $this->actionUrl ?? (request()->is('librarian*') ? route('librarian.books.index') : route('admin.books.index'));
+                    $actionUrl = $this->actionUrl ?? route(\App\Services\EmployeeRoleService::getRoutePrefix($user) . 'book-management.index');
 
                     $user->notify(new CatalogImportCompletedNotification(
                         importedCount: (int) $result->imported_rows,
@@ -91,34 +97,26 @@ class ProcessCatalogImportJob implements ShouldQueue
                 }
             }
         } catch (Throwable $e) {
-            Log::error('[ProcessCatalogImportJob] Background catalog import failed with exception.', [
-                'import_id' => $import->id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
+            Log::warning('Catalog import notification failed.', ['import_id' => $import->id, 'exception' => $e]);
+        }
+    }
 
+    public function failed(?Throwable $exception): void
+    {
+        $this->markFailed($exception);
+    }
+
+    private function markFailed(?Throwable $exception): void
+    {
+        Log::error('Catalog import failed.', ['import_id' => $this->catalogImportId, 'exception' => $exception]);
+        $import = CatalogImport::find($this->catalogImportId);
+        if ($import && $import->status !== 'completed') {
             $import->update([
                 'status' => 'failed',
+                'summary' => array_merge($import->summary ?? [], [
+                    'error' => 'The import stopped before all rows were processed. Imported rows were kept; retry the remaining rows or contact an administrator with import ID '.$import->id.'.',
+                ]),
             ]);
-
-            if ($this->userId) {
-                $user = Account::find($this->userId);
-                if ($user) {
-                    $fileName = $import->source_file_name ?? 'Catalog File';
-                    $actionUrl = $this->actionUrl ?? (request()->is('librarian*') ? route('librarian.books.index') : route('admin.books.index'));
-
-                    $user->notify(new CatalogImportCompletedNotification(
-                        importedCount: (int) ($import->imported_rows ?? 0),
-                        failedCount: (int) ($import->total_rows ?? 0),
-                        fileName: $fileName,
-                        actionUrl: $actionUrl,
-                        isError: true,
-                        errorMessage: $e->getMessage()
-                    ));
-                }
-            }
-
-            throw $e;
         }
     }
 }

@@ -536,6 +536,7 @@ class CheckInBook extends Component
 
     public function reviewReturn()
     {
+        \App\Services\EmployeeRoleService::authorizeReturn('Unauthorized action. You do not have permission to process item returns.');
         if (!$this->scannedMember || empty($this->returnedBooks)) {
             return;
         }
@@ -547,6 +548,11 @@ class CheckInBook extends Component
             ->pluck('id')
             ->toArray();
 
+        if (count($transactionIds) !== count(array_unique($this->returnedBooks))) {
+            $this->errorMessage = 'Some selected items are no longer borrowed by this student. Refresh the student record and scan them again.';
+            return;
+        }
+
         // Save session data
         session([
             'confirm_return_student_id' => $this->scannedMember['id'],
@@ -554,7 +560,8 @@ class CheckInBook extends Component
         ]);
 
         // Redirect to confirm return page
-        return $this->redirect(route('admin.circulation-desk.return.confirm'), navigate: true);
+        $prefix = \App\Services\EmployeeRoleService::getRoutePrefix();
+        return $this->redirect(route($prefix . 'circulation-desk.return.confirm'), navigate: true);
     }
 
     public function clearMember()

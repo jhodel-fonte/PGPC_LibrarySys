@@ -38,11 +38,12 @@ class CheckOutTest extends TestCase
         $this->librarian->librarian()->create([
             'first_name' => 'Librarian',
             'last_name' => 'User',
-            'employee_id_number' => 'EMP-001',
+            'school_id_number' => 'EMP-TEST-001',
         ]);
 
         // Create Student
         $this->student = Student::create([
+            'account_id' => Account::factory()->create(['role_id' => 4])->id,
             'school_id_number' => '2026-0001',
             'first_name' => 'John',
             'last_name' => 'Doe',
@@ -52,8 +53,8 @@ class CheckOutTest extends TestCase
         ]);
 
         // Create physical book (available for checkout)
-        $bookData = BookData::create(['book_title' => 'Test Book', 'subtitle' => 'BK']);
-        $bookDetail = BookDetail::create(['book_data_id' => $bookData->id, 'call_number' => 'CN-123']);
+        $bookData = BookData::create(['book_title' => 'Test Book', 'subtitle' => 'BK', 'language_id' => \App\Models\Language::firstOrCreate(['lang' => 'English'])->id]);
+        $bookDetail = BookDetail::create(['book_data_id' => $bookData->id, 'call_number' => 'CN-123', 'format' => 'Book', 'book_type_id' => \App\Models\BookType::first()->id, 'publisher_id' => \App\Models\Publisher::first()->id]);
         $this->book = Book::create([
             'book_detail_id' => $bookDetail->id,
             'book_condition_id' => 2, // Good
@@ -66,7 +67,7 @@ class CheckOutTest extends TestCase
 
     public function test_librarian_can_access_checkout_page(): void
     {
-        $response = $this->actingAs($this->librarian)->get('/admin/circulation-desk/checkout');
+        $response = $this->actingAs($this->librarian)->get('/librarian/circulation-desk/borrow');
         $response->assertStatus(200);
     }
 
@@ -120,7 +121,8 @@ class CheckOutTest extends TestCase
             ->call('handleSearchCode', '2026-0001')
             ->call('handleSearchCode', 'BAR-999')
             ->call('confirmCheckout')
-            ->assertHasNoErrors();
+            ->assertHasNoErrors()
+            ->assertDispatched('checkout-completed', redirectUrl: route('librarian.circulation-desk.index'));
 
         $this->assertDatabaseHas('borrowing_transactions', [
             'book_id' => $this->book->id,
@@ -131,4 +133,3 @@ class CheckOutTest extends TestCase
         $this->assertEquals('borrowed', $this->book->fresh()->status);
     }
 }
-

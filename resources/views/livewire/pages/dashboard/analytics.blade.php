@@ -56,15 +56,15 @@
 
                 {{-- Period Selector: Monthly Data vs Yearly Data --}}
                 <div class="inline-flex items-center p-1 bg-white border border-[#E2E8F0] rounded-lg shadow-xs text-xs font-semibold text-[#102B70]">
-                    <button 
-                        type="button" 
+                    <button
+                        type="button"
                         wire:click="setTimePeriod('monthly')"
                         class="px-3 py-1.5 rounded-md transition-all cursor-pointer {{ $timePeriod === 'monthly' ? 'bg-[#102B70] text-white shadow-xs' : 'hover:bg-slate-50 text-[#64748B] hover:text-[#0F172A]' }}"
                     >
                         Monthly Data
                     </button>
-                    <button 
-                        type="button" 
+                    <button
+                        type="button"
                         wire:click="setTimePeriod('yearly')"
                         class="px-3 py-1.5 rounded-md transition-all cursor-pointer {{ $timePeriod === 'yearly' ? 'bg-[#102B70] text-white shadow-xs' : 'hover:bg-slate-50 text-[#64748B] hover:text-[#0F172A]' }}"
                     >
@@ -74,9 +74,9 @@
 
                 {{-- Export Report Action --}}
                 <div class="relative" x-data="{ open: false }">
-                    <button 
-                        @click="open = !open" 
-                        type="button" 
+                    <button
+                        @click="open = !open"
+                        type="button"
                         class="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-white border border-[#E2E8F0] hover:border-[#102B70] text-[#102B70] px-3.5 text-xs font-semibold transition-all shadow-xs cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70]"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -86,19 +86,15 @@
                         <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                     </button>
 
-                    <div 
-                        x-show="open" 
-                        @click.away="open = false" 
-                        x-cloak 
+                    <div
+                        x-show="open"
+                        @click.away="open = false"
+                        x-cloak
                         class="absolute right-0 mt-1.5 w-48 bg-white border border-[#E2E8F0] rounded-xl shadow-lg py-1 z-50 text-xs font-semibold text-[#334155]"
                     >
                         <a href="javascript:void(0)" @click="open = false; window.print()" class="flex items-center gap-2 px-3.5 py-2 hover:bg-[#F8FAFC] text-[#0F172A]">
                             <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                             Print Summary Report
-                        </a>
-                        <a href="javascript:void(0)" @click="open = false" class="flex items-center gap-2 px-3.5 py-2 hover:bg-[#F8FAFC] text-[#0F172A]">
-                            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                            Export to CSV / Excel
                         </a>
                     </div>
                 </div>
@@ -107,50 +103,50 @@
 
         {{-- 2. PRIMARY EXECUTIVE KPI METRICS --}}
         <div id="analytics-overview" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 scroll-mt-24">
-            
+
             {{-- KPI 1: Total Number of Students --}}
-            <x-widget.data-card 
-                title="Total Students" 
-                :value="$kpiMetrics['totalStudents']['value']" 
-                :change="$kpiMetrics['totalStudents']['change']" 
-                :subtext="$kpiMetrics['totalStudents']['subtext']" 
-                changeColor="emerald" 
+            <x-widget.data-card
+                title="Total Students"
+                :value="$kpiMetrics['totalStudents']['value']"
+                :change="$kpiMetrics['totalStudents']['change']"
+                :subtext="$kpiMetrics['totalStudents']['subtext']"
+                changeColor="emerald"
             />
 
             {{-- KPI 2: Total Number of Books --}}
-            <x-widget.data-card 
-                title="Total Books" 
-                :value="$kpiMetrics['totalBooks']['value']" 
-                :change="$kpiMetrics['totalBooks']['change']" 
-                :subtext="$kpiMetrics['totalBooks']['subtext']" 
-                changeColor="blue" 
+            <x-widget.data-card
+                title="Total Books"
+                :value="$kpiMetrics['totalBooks']['value']"
+                :change="$kpiMetrics['totalBooks']['change']"
+                :subtext="$kpiMetrics['totalBooks']['subtext']"
+                changeColor="blue"
             />
 
             {{-- KPI 3: Due Books Today --}}
-            <x-widget.data-card 
-                title="Due Books Today" 
-                :value="$kpiMetrics['dueBooksToday']['value']" 
-                :change="$kpiMetrics['dueBooksToday']['change']" 
-                :subtext="$kpiMetrics['dueBooksToday']['subtext']" 
-                changeColor="amber" 
+            <x-widget.data-card
+                title="Due Books Today"
+                :value="$kpiMetrics['dueBooksToday']['value']"
+                :change="$kpiMetrics['dueBooksToday']['change']"
+                :subtext="$kpiMetrics['dueBooksToday']['subtext']"
+                changeColor="amber"
             />
 
             {{-- KPI 4: Peak Hour --}}
-            <x-widget.data-card 
-                title="Peak Hour" 
-                :value="$kpiMetrics['peakHour']['value']" 
-                :subtext="$kpiMetrics['peakHour']['subtext']" 
-                changeColor="amber" 
+            <x-widget.data-card
+                title="Peak Hour"
+                :value="$kpiMetrics['peakHour']['value']"
+                :subtext="$kpiMetrics['peakHour']['subtext']"
+                changeColor="amber"
                 valueSize="text-xl"
             />
 
             {{-- KPI 5: Gender Breakdown Dominance --}}
-            <x-widget.data-card 
-                title="Most Active Gender" 
-                :value="$kpiMetrics['genderDominance']['value']" 
-                :change="$kpiMetrics['genderDominance']['change']" 
-                :subtext="$kpiMetrics['genderDominance']['subtext']" 
-                changeColor="emerald" 
+            <x-widget.data-card
+                title="Most Active Gender"
+                :value="$kpiMetrics['genderDominance']['value']"
+                :change="$kpiMetrics['genderDominance']['change']"
+                :subtext="$kpiMetrics['genderDominance']['subtext']"
+                changeColor="emerald"
                 valueSize="text-xl"
             />
 
@@ -168,10 +164,10 @@
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-                
+
                 {{-- MAIN CHART --}}
                 <div class="lg:col-span-8 bg-white rounded-xl border border-[#E2E8F0] shadow-xs p-5 sm:p-6 flex flex-col justify-between min-w-0">
-                    
+
                     <div>
                         {{-- Minimalist Chart Header --}}
                         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-[#F1F5F9]">
@@ -188,8 +184,8 @@
                             @if ($timePeriod === 'monthly')
                                 <div class="flex flex-wrap items-center gap-2">
                                     <div class="relative">
-                                        <select 
-                                            wire:model.live="viewMode" 
+                                        <select
+                                            wire:model.live="viewMode"
                                             class="text-xs font-semibold text-[#102B70] bg-[#F8FAFC] border border-[#CBD5E1] rounded-lg pl-2.5 pr-7 py-1.5 cursor-pointer focus:outline-none focus:border-[#102B70] hover:border-[#102B70] transition-colors shadow-xs"
                                         >
                                             <option value="circulation">Circulation Trends</option>
@@ -199,8 +195,8 @@
 
                                     @if ($viewMode === 'circulation')
                                         <div class="relative">
-                                            <select 
-                                                wire:model.live="circulationMetric" 
+                                            <select
+                                                wire:model.live="circulationMetric"
                                                 class="text-xs font-semibold text-[#334155] bg-[#F8FAFC] border border-[#CBD5E1] rounded-lg pl-2.5 pr-7 py-1.5 cursor-pointer focus:outline-none focus:border-[#102B70] hover:border-[#102B70] transition-colors shadow-xs"
                                             >
                                                 <option value="all">All (Loans & Returns)</option>
@@ -222,23 +218,23 @@
                         {{-- Chart Canvas --}}
                         <div class="my-auto py-2" wire:loading.class="opacity-50 transition-opacity">
                             @if ($timePeriod === 'monthly')
-                                <x-widget.graph.main 
-                                    :series="$monthlyTrend['series']" 
-                                    :labels="$monthlyTrend['labels']" 
-                                    line 
-                                    grid 
-                                    legend 
-                                    markers 
-                                    height="300" 
+                                <x-widget.graph.main
+                                    :series="$monthlyTrend['series']"
+                                    :labels="$monthlyTrend['labels']"
+                                    line
+                                    grid
+                                    legend
+                                    markers
+                                    height="300"
                                 />
                             @else
-                                <x-widget.graph.main 
-                                    :series="$yearlyTrend['series']" 
-                                    :labels="$yearlyTrend['labels']" 
-                                    bar 
-                                    grid 
-                                    legend 
-                                    height="300" 
+                                <x-widget.graph.main
+                                    :series="$yearlyTrend['series']"
+                                    :labels="$yearlyTrend['labels']"
+                                    bar
+                                    grid
+                                    legend
+                                    height="300"
                                 />
                             @endif
                         </div>
@@ -248,7 +244,7 @@
 
                 {{-- CHART SUMMARY CARDS --}}
                 <div class="lg:col-span-4 bg-white rounded-xl border border-[#E2E8F0] shadow-xs p-5 sm:p-6 flex flex-col justify-between min-w-0">
-                    
+
                     {{-- Header --}}
                     <div class="flex items-center justify-between pb-3 border-b border-[#F1F5F9]">
                         <div>
@@ -262,7 +258,7 @@
 
                     {{-- Summary Sub-Cards --}}
                     <div class="py-3 space-y-3 my-auto">
-                        
+
                         {{-- Card 1: Peak Circulation Month --}}
                         <div class="flex items-center gap-3 p-3 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] hover:border-[#CBD5E1] transition-colors">
                             <div class="w-9 h-9 rounded-lg bg-[#EFF6FF] text-[#102B70] flex items-center justify-center shrink-0">
@@ -334,10 +330,10 @@
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-                
+
                 {{-- PROGRAM / COURSE BREAKDOWN --}}
                 <div class="lg:col-span-8 bg-white rounded-xl border border-[#E2E8F0] shadow-xs p-5 sm:p-6 flex flex-col justify-between min-w-0">
-                    
+
                     <div>
                         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-[#F1F5F9]">
                             <div>
@@ -350,21 +346,21 @@
 
                         {{-- Grouped Bar Chart of Program Usage --}}
                         <div class="py-4" wire:loading.class="opacity-50 transition-opacity">
-                            <x-widget.graph.main 
-                                :series="$programBreakdown['series']" 
-                                :labels="$programBreakdown['labels']" 
+                            <x-widget.graph.main
+                                :series="$programBreakdown['series']"
+                                :labels="$programBreakdown['labels']"
                                 :colors="['#102B70', '#3B82F6']"
-                                bar 
-                                grid 
-                                legend 
-                                height="210" 
+                                bar
+                                grid
+                                legend
+                                height="210"
                             />
                         </div>
                     </div>
 
                     {{-- Program Details Ranking Table --}}
                     <div class="pt-3 border-t border-[#F1F5F9]">
-                        <div 
+                        <div
                             class="overflow-y-auto divide-y divide-[#F1F5F9] text-xs pr-1"
                             style="max-height: 200px;"
                         >
@@ -385,10 +381,10 @@
                     </div>
 
                 </div>
-                
+
                 {{-- GENDER BREAKDOWN --}}
                 <div id="analytics-demographics" class="lg:col-span-4 bg-white rounded-xl border border-[#E2E8F0] shadow-xs p-5 sm:p-6 flex flex-col justify-between min-w-0 scroll-mt-24">
-                    
+
                     <div>
                         {{-- Card Header --}}
                         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-[#F1F5F9]">
@@ -400,13 +396,13 @@
 
                         {{-- Gender Breakdown Chart --}}
                         <div class="py-4 flex items-center justify-center min-h-[250px]" wire:loading.class="opacity-50 transition-opacity">
-                            <x-charts.pie 
-                                :series="$genderBreakdown['donutSeries']" 
-                                :labels="['Female', 'Male']" 
-                                :colors="['#102B70', '#3B82F6']" 
+                            <x-charts.pie
+                                :series="$genderBreakdown['donutSeries']"
+                                :labels="['Female', 'Male']"
+                                :colors="['#102B70', '#3B82F6']"
                                 :height="250"
-                                pie 
-                                legend 
+                                pie
+                                legend
                                 legend-position="bottom"
                                 legend-text-size="text-xs sm:text-sm font-semibold"
                                 legend-value-size="text-xs sm:text-sm font-bold"
@@ -480,10 +476,10 @@
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-                
+
                 {{-- DUE BOOKS TODAY (6 COLS) --}}
                 <div class="lg:col-span-6 bg-white rounded-xl border border-[#E2E8F0] shadow-xs p-5 sm:p-6 flex flex-col justify-between min-w-0">
-                    
+
                     <div>
                         {{-- Header with Due Books Today Highlight --}}
                         <div class="flex items-center justify-between pb-3 border-b border-[#F1F5F9]">
@@ -525,7 +521,7 @@
 
                 {{-- PEAK CIRCULATION HOURS & HOURLY VELOCITY (6 COLS) --}}
                 <div class="lg:col-span-6 bg-white rounded-xl border border-[#E2E8F0] shadow-xs p-5 sm:p-6 flex flex-col justify-between min-w-0">
-                    
+
                     <div>
                         <div class="flex items-center justify-between pb-3 border-b border-[#F1F5F9]">
                             <div>
@@ -553,8 +549,8 @@
                                         <span class="text-slate-700 tabular-nums text-[11px] font-medium">{{ $slot['count'] }} actions</span>
                                     </div>
                                     <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                                        <div 
-                                            class="h-full rounded-full transition-all duration-500 {{ $slot['isPeak'] ? 'bg-[#FCC719]' : ($slot['pct'] > 60 ? 'bg-[#102B70]' : 'bg-[#3B82F6]') }}" 
+                                        <div
+                                            class="h-full rounded-full transition-all duration-500 {{ $slot['isPeak'] ? 'bg-[#FCC719]' : ($slot['pct'] > 60 ? 'bg-[#102B70]' : 'bg-[#3B82F6]') }}"
                                             style="width: {{ $slot['pct'] }}%"
                                         ></div>
                                     </div>
@@ -575,10 +571,10 @@
         </div>
 
     </div>
-    
+
     {{-- Print & PDF Official Institutional Template --}}
     <div class="hidden print:block w-full">
-        <x-template.analytics 
+        <x-template.analytics
             :kpiMetrics="$kpiMetrics"
             :monthlyTrend="$monthlyTrend"
             :yearlyTrend="$yearlyTrend"
