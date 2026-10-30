@@ -189,8 +189,10 @@
                 @if($bookDetail)
                     @php
                         $data = $bookDetail->bookData;
-                        $isPhysical = $bookDetail->catalog_kind !== 'book';
-                        $itemTypeLabel = $isPhysical ? ucfirst($bookDetail->catalog_kind ?: 'physical item') : 'Book';
+                        $isPeriodical = in_array($bookDetail->catalog_kind, ['magazine', 'journal'], true);
+                        $isPhysical = $bookDetail->catalog_kind !== 'book' && !$isPeriodical;
+                        $itemTypeLabel = $isPhysical ? 'Physical Item' : ucfirst($bookDetail->catalog_kind ?: 'book');
+                        $issue = $bookDetail->periodicalIssue;
                         $authors = $data && $data->authors ? $data->authors : collect();
                         $authorNames = $authors->isNotEmpty()
                             ? $authors->map(fn($a) => trim($a->first_name . ' ' . $a->last_name))->filter()->implode(', ')
@@ -293,53 +295,35 @@
                                             @endif
                                         </dd>
                                     </div>
-                                    @if($isPhysical)
                                     <div>
                                         <dt class="text-sm font-medium text-slate-500">Item Type</dt>
                                         <dd class="mt-0.5 text-sm font-bold text-black">{{ $itemTypeLabel }}</dd>
                                     </div>
-                                    <div>
-                                        <dt class="text-sm font-medium text-slate-500">Manufacturer / Brand</dt>
-                                        <dd class="mt-0.5 text-sm font-bold text-black">{{ $bookDetail->manufacturer ?: 'Not specified' }}</dd>
-                                    </div>
-                                    <div>
-                                        <dt class="text-sm font-medium text-slate-500">Model Number</dt>
-                                        <dd class="mt-0.5 text-sm font-bold text-black">{{ $bookDetail->model_number ?: 'Not specified' }}</dd>
-                                    </div>
-                                    <div>
-                                        <dt class="text-sm font-medium text-slate-500">Overdue Fine / Day</dt>
-                                        <dd class="mt-0.5 text-sm font-bold tabular-nums text-black">₱{{ number_format($bookDetail->daily_fine ?? config('settings.library_config.penalty_fee', 50), 2) }}</dd>
-                                    </div>
+                                    @if($isPhysical)
+                                        <div><dt class="text-sm font-medium text-slate-500">Manufacturer / Brand</dt><dd class="mt-0.5 text-sm font-bold text-black">{{ $bookDetail->manufacturer ?: 'Not specified' }}</dd></div>
+                                        <div><dt class="text-sm font-medium text-slate-500">Model Number</dt><dd class="mt-0.5 text-sm font-bold text-black">{{ $bookDetail->model_number ?: 'Not specified' }}</dd></div>
+                                    @elseif($isPeriodical)
+                                        <div><dt class="text-sm font-medium text-slate-500">ISSN</dt><dd class="mt-0.5 break-words text-sm font-bold text-black">{{ $bookDetail->issn ?: 'Not assigned' }}</dd></div>
+                                        <div><dt class="text-sm font-medium text-slate-500">Volume</dt><dd class="mt-0.5 break-words text-sm font-bold text-black">{{ $issue?->volume ?: 'Not specified' }}</dd></div>
+                                        <div><dt class="text-sm font-medium text-slate-500">Issue Number</dt><dd class="mt-0.5 break-words text-sm font-bold text-black">{{ $issue?->issue_number ?: 'Not specified' }}</dd></div>
+                                        <div><dt class="text-sm font-medium text-slate-500">Issue Label</dt><dd class="mt-0.5 break-words text-sm font-bold text-black">{{ $issue?->issue_label ?: 'Not specified' }}</dd></div>
+                                        <div><dt class="text-sm font-medium text-slate-500">Publication Date</dt><dd class="mt-0.5 text-sm font-bold text-black">{{ $issue?->publication_date?->format('M d, Y') ?: 'Not specified' }}</dd></div>
+                                        <div><dt class="text-sm font-medium text-slate-500">Borrowing</dt><dd class="mt-0.5 text-sm font-bold text-black">{{ $issue ? ($issue->borrowable ? 'Borrowable' : 'Library use only') : 'Not specified' }}</dd></div>
+                                        @if($issue?->borrowable)
+                                            <div><dt class="text-sm font-medium text-slate-500">Loan Period</dt><dd class="mt-0.5 text-sm font-bold text-black">{{ $issue->loan_days ? $issue->loan_days.' days' : 'Library default' }}</dd></div>
+                                        @endif
                                     @else
-                                    <div>
-                                        <dt class="text-sm font-medium text-slate-500">Author</dt>
-                                        <dd class="mt-0.5 text-sm font-bold text-black">{{ $authorNames }}</dd>
-                                    </div>
-                                    <div>
-                                        <dt class="text-sm font-medium text-slate-500">ISBN / ISSN</dt>
-                                        <dd class="mt-0.5 text-sm font-bold tabular-nums text-black">{{ $bookDetail->isbn ?: ($bookDetail->issn ?: 'Not assigned') }}</dd>
-                                    </div>
-                                    <div>
-                                        <dt class="text-sm font-medium text-slate-500">Category</dt>
-                                        <dd class="mt-0.5 text-sm font-bold text-black">{{ $categoryNames }}</dd>
-                                    </div>
-                                    <div>
-                                        <dt class="text-sm font-medium text-slate-500">Shelf Location</dt>
-                                        <dd class="mt-0.5 text-sm font-bold text-black">{{ $shelfLocation }}</dd>
-                                    </div>
-                                    <div>
-                                        <dt class="text-sm font-medium text-slate-500">Publisher</dt>
-                                        <dd class="mt-0.5 text-sm font-bold text-black">{{ $bookDetail->publisher ? $bookDetail->publisher->name : 'Not specified' }}</dd>
-                                    </div>
-                                    <div>
-                                        <dt class="text-sm font-medium text-slate-500">Total Copies</dt>
-                                        <dd class="mt-0.5 text-sm font-bold tabular-nums text-black">{{ number_format($totalCopies) }}</dd>
-                                    </div>
-                                    <div>
-                                        <dt class="text-sm font-medium text-slate-500">Publication Year</dt>
-                                        <dd class="mt-0.5 text-sm font-bold tabular-nums text-black">{{ $bookDetail->publication_year ?: ($data?->copyright_year ?: 'N/A') }}</dd>
-                                    </div>
+                                        <div><dt class="text-sm font-medium text-slate-500">Author</dt><dd class="mt-0.5 break-words text-sm font-bold text-black">{{ $authorNames }}</dd></div>
+                                        <div><dt class="text-sm font-medium text-slate-500">ISBN</dt><dd class="mt-0.5 break-words text-sm font-bold text-black">{{ $bookDetail->isbn ?: 'Not assigned' }}</dd></div>
                                     @endif
+                                    @if(!$isPhysical)
+                                        <div><dt class="text-sm font-medium text-slate-500">Publisher</dt><dd class="mt-0.5 break-words text-sm font-bold text-black">{{ $bookDetail->publisher?->name ?: 'Not specified' }}</dd></div>
+                                        <div><dt class="text-sm font-medium text-slate-500">Category</dt><dd class="mt-0.5 break-words text-sm font-bold text-black">{{ $categoryNames }}</dd></div>
+                                        <div><dt class="text-sm font-medium text-slate-500">Call Number</dt><dd class="mt-0.5 break-words text-sm font-bold text-black">{{ $bookDetail->call_number ?: 'Not assigned' }}</dd></div>
+                                    @endif
+                                    <div><dt class="text-sm font-medium text-slate-500">Shelf Location</dt><dd class="mt-0.5 break-words text-sm font-bold text-black">{{ $shelfLocation }}</dd></div>
+                                    <div><dt class="text-sm font-medium text-slate-500">Total Copies</dt><dd class="mt-0.5 text-sm font-bold text-black">{{ number_format($totalCopies) }}</dd></div>
+                                    <div><dt class="text-sm font-medium text-slate-500">Overdue Fine / Day</dt><dd class="mt-0.5 text-sm font-bold text-black">₱{{ number_format($bookDetail->daily_fine ?? config('settings.library_config.penalty_fee', 50), 2) }}</dd></div>
                                     <div>
                                         <dt class="text-sm font-medium text-slate-500">Available Copies</dt>
                                         <dd class="mt-0.5 text-sm font-bold tabular-nums text-black">{{ number_format($availableCopies) }}</dd>
@@ -353,6 +337,10 @@
                                         <dd class="mt-0.5 text-sm font-bold text-black">{{ $bookDetail->updated_at ? $bookDetail->updated_at->format('M d, Y') : 'N/A' }}</dd>
                                     </div>
                                 </dl>
+
+                                @if($bookDetail->url && in_array(strtolower((string) parse_url($bookDetail->url, PHP_URL_SCHEME)), ['http', 'https'], true))
+                                    <a href="{{ $bookDetail->url }}" target="_blank" rel="noopener noreferrer" class="mt-4 inline-flex min-h-11 items-center text-sm font-semibold text-[#102B70] underline">Open online resource <span class="sr-only">(opens in a new tab)</span></a>
+                                @endif
 
                                 @if($isPhysical)
                                     <div class="mt-5 rounded-lg border border-amber-200 bg-amber-50/60 p-4">
@@ -379,7 +367,7 @@
                                 <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
                                     <div>
                                         <h3 class="flex items-center gap-2 text-sm font-bold text-[#102B70]">
-                                            {{ $isPhysical ? 'Asset Copies' : 'Physical Copies' }} ({{ number_format($totalCopies) }})
+                                            {{ $isPeriodical ? 'Issue Copies' : ($isPhysical ? 'Item Copies' : 'Book Copies') }} ({{ number_format($totalCopies) }})
                                         </h3>
                                         <p class="text-xs text-slate-500 mt-0.5">{{ $availableCopies }} available, {{ $borrowedCopies }} borrowed</p>
                                     </div>
@@ -431,8 +419,8 @@
                                     @endcan
                                 </div>
 
-                                <div class="overflow-x-auto rounded-lg border border-[#DCE3EC] max-h-[500px] custom-scrollbar overflow-y-auto">
-                                    <table class="w-full min-w-[500px] text-left text-sm">
+                                <div class="admin-mobile-table-scroll overflow-x-auto rounded-lg border border-[#DCE3EC] max-h-[500px] custom-scrollbar overflow-y-auto">
+                                    <table class="admin-mobile-table w-full min-w-[500px] text-left text-sm">
                                         <thead class="sticky top-0 z-10 bg-[#F5F8FC] text-xs font-semibold text-slate-600 border-b border-[#DCE3EC]">
                                             <tr>
                                                 <th class="px-3.5 py-2.5">Accession No.</th>
@@ -454,18 +442,18 @@
                                                     };
                                                 @endphp
                                                 <tr class="hover:bg-slate-50/80 transition-colors">
-                                                    <td class="px-3.5 py-2.5 text-sm font-semibold tabular-nums text-black">
+                                                    <td data-label="Accession No." class="px-3.5 py-2.5 text-sm font-semibold tabular-nums text-black">
                                                         {{ $copy->accession_number }}
                                                     </td>
-                                                    <td class="px-3.5 py-2.5 text-xs font-medium tabular-nums text-slate-600">
+                                                    <td data-label="Unique code" class="px-3.5 py-2.5 text-xs font-medium tabular-nums text-slate-600">
                                                         {{ $copy->code ?: 'Not assigned' }}
                                                     </td>
-                                                    <td class="px-3.5 py-2.5">
+                                                    <td data-label="Status" class="px-3.5 py-2.5">
                                                         <span class="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold border {{ $statBadgeClass }}">
                                                             {{ ucfirst($copy->status) }}
                                                         </span>
                                                     </td>
-                                                    <td class="px-3.5 py-2.5 text-right">
+                                                    <td data-label="Actions" class="px-3.5 py-2.5 text-right">
                                                         <div class="inline-flex items-center justify-end gap-1.5">
                                                             {{-- Show QR Code --}}
                                                             <button
@@ -549,7 +537,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                             </svg>
                         </div>
-                        <p class="text-sm font-semibold text-slate-700">No book details found</p>
+                        <p class="text-sm font-semibold text-slate-700">No catalog details found</p>
                         <p class="mt-1 text-xs text-slate-400">The requested title could not be loaded.</p>
                     </div>
                 @endif
@@ -575,7 +563,7 @@
                         class="inline-flex h-9 items-center gap-2 rounded-lg bg-[#102B70] px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#0B225E] active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70] focus-visible:ring-offset-2"
                     >
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="m14.7 6.3 3 3M5 19l3.7-.7L19 8a2.1 2.1 0 0 0-3-3L5.7 15.3 5 19Z"/></svg>
-                        <span>Edit Book</span>
+                        <span>Edit {{ $bookDetail ? $itemTypeLabel : 'Item' }}</span>
                     </a>
                 @endif
             </footer>

@@ -26,7 +26,7 @@
         <span class="text-xs font-bold text-white/50 uppercase tracking-wider">Circulation</span>
     </div>
 
-    <x-widget.sidebar-button href="{{ route($routePrefix . 'circulation-desk.index') }}" :active="request()->routeIs($routePrefix . 'circulation-desk.index') || request()->routeIs($routePrefix . 'circulation-desk.borrow') || request()->routeIs($routePrefix . 'circulation-desk.return*') || request()->routeIs($routePrefix . 'circulation-desk.borrowed-books')" :textSize="$textClass" class="mb-2" wire:navigate>
+    <x-widget.sidebar-button href="{{ route($routePrefix . 'circulation-desk.index') }}" :active="request()->routeIs($routePrefix . 'circulation-desk.index') || request()->routeIs($routePrefix . 'circulation-desk.borrow') || request()->routeIs($routePrefix . 'circulation-desk.return*') || request()->routeIs($routePrefix . 'circulation-desk.borrowed-books') || request()->routeIs($routePrefix . 'circulation-desk.reservations') || request()->routeIs($routePrefix . 'reservations*')" :textSize="$textClass" class="mb-2" wire:navigate>
         <x-slot:icon>
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
@@ -35,14 +35,7 @@
         Circulation Desk
     </x-widget.sidebar-button>
 
-    <x-widget.sidebar-button href="{{ route($routePrefix . 'reservations') }}" :active="request()->routeIs($routePrefix . 'reservations*')" :textSize="$textClass" class="mb-6" wire:navigate>
-        <x-slot:icon>
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
-            </svg>
-        </x-slot:icon>
-        Reservations
-    </x-widget.sidebar-button>
+
 @endif
 
 <!-- CATALOG SECTION -->

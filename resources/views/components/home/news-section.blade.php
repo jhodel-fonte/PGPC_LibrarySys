@@ -5,7 +5,7 @@
     'newsBlogUrl' => 'https://padregarcianews.blogspot.com',
 ])
 
-<section id="news" class="relative w-full bg-[#F8FAFC] py-10 sm:py-14 lg:py-15 select-none">
+<section id="news" class="relative w-full bg-[#F8FAFC] py-12 sm:py-16 lg:py-20 select-none">
     <div class="mx-auto max-w-[1380px] px-4 sm:px-6 lg:px-8">
 
         <!-- Section Header -->

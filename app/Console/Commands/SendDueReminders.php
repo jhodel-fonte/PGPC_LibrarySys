@@ -25,11 +25,18 @@ class SendDueReminders extends Command
             ->chunkById(100, function ($loans) use ($now, $days) {
                 foreach ($loans as $loan) {
                     DB::transaction(function () use ($loan, $now, $days) {
-                        $loan = BorrowingTransaction::with(['student.account', 'book.bookDetail.bookData'])
+                        $loan = BorrowingTransaction::with(['student.account', 'book.bookDetail.bookData', 'borrowType'])
                             ->lockForUpdate()->find($loan->id);
                         if (! $loan || $loan->return_date || ! $loan->due_date ||
                             $loan->due_date->lte($now) || $loan->due_date->gt($now->copy()->addDays($days)->endOfDay()) ||
                             ($loan->due_reminder_for && $loan->due_reminder_for->equalTo($loan->due_date))) {
+                            return;
+                        }
+
+                        $insideLibrary = $loan->isInsideLibrary();
+                        if ($insideLibrary && $now->copy()->setTimezone('Asia/Manila')->lt(
+                            $loan->due_date->copy()->setTimezone('Asia/Manila')->setTime(17, 0)
+                        )) {
                             return;
                         }
 
@@ -39,7 +46,7 @@ class SendDueReminders extends Command
                         }
 
                         $title = $loan->book?->bookDetail?->bookData?->book_title ?? 'Borrowed book';
-                        $dueDate = $loan->due_date->format('M d, Y');
+                        $dueDate = $loan->due_date->copy()->setTimezone('Asia/Manila')->format($insideLibrary ? 'M d, Y h:i A' : 'M d, Y');
                         $account->notify(new Alerts(
                             title: 'Book return reminder',
                             message: "Please return your borrowed book by {$dueDate}.",

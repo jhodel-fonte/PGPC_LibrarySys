@@ -89,6 +89,24 @@ class CheckInTest extends TestCase
             ->assertSee('No Student Profile');
     }
 
+    public function test_active_loan_link_loads_its_student(): void
+    {
+        Livewire::actingAs($this->librarian)->withQueryParams(['loan' => $this->transaction->id])
+            ->test(CheckInBook::class)
+            ->assertSet('scannedMember.id', $this->student->id)
+            ->assertCount('borrowedBooks', 1)
+            ->assertCount('returnedBooks', 0);
+    }
+
+    public function test_returned_loan_link_does_not_load_a_student(): void
+    {
+        $this->transaction->update(['return_date' => now()]);
+        Livewire::actingAs($this->librarian)->withQueryParams(['loan' => $this->transaction->id])
+            ->test(CheckInBook::class)
+            ->assertSet('scannedMember', null)
+            ->assertSee('This active loan or its student could not be found');
+    }
+
     public function test_scan_student_loads_profile_and_borrowed_books(): void
     {
         Livewire::actingAs($this->librarian)
@@ -145,6 +163,32 @@ class CheckInTest extends TestCase
 
         $this->assertNotNull($this->transaction->fresh()->return_date);
         $this->assertSame('available', $this->book->fresh()->status);
+    }
+
+    public function test_late_inside_library_return_has_no_fine(): void
+    {
+        $type = \App\Models\BorrowType::firstOrCreate(['name' => 'Room Use Only']);
+        $this->transaction->update(['borrow_type_id' => $type->id, 'due_date' => now()->subDays(3)]);
+        session(['confirm_return_student_id' => $this->student->id, 'confirm_return_transaction_ids' => [$this->transaction->id]]);
+
+        Livewire::actingAs($this->librarian)->test(\App\Livewire\Pages\Dashboard\ConfirmReturn::class)
+            ->assertSet('totalFine', 0)
+            ->call('confirmReturn')
+            ->assertDispatched('return-completed');
+
+        $this->assertNotNull($this->transaction->fresh()->return_date);
+        $this->assertDatabaseMissing('fines', ['borrowing_transaction_id' => $this->transaction->id]);
+    }
+
+    public function test_reservation_blacklist_does_not_prevent_return(): void
+    {
+        $this->student->account->forceFill(['reservations_blocked' => true])->save();
+        Livewire::actingAs($this->librarian)->test(CheckInBook::class)
+            ->call('handleSearchCode', '2026-0001')
+            ->assertSet('scannedMember.reservations_blocked', true)
+            ->call('handleSearchCode', 'BAR-999')
+            ->call('reviewReturn')
+            ->assertRedirect(route('librarian.circulation-desk.return.confirm'));
     }
 
     public function test_return_confirmation_rejects_a_loan_from_another_student(): void

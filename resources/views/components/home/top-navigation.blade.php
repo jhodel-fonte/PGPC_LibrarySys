@@ -76,13 +76,8 @@
     x-init="updateScroll()"
     @scroll.window.passive="updateScroll()"
     @keydown.escape.window="mobileMenuOpen = false"
-    class="sticky top-0 z-50 w-full transition-all duration-300 ease-in-out select-none border-none"
-    :class="{
-        'shadow-xl shadow-black/40 bg-[#091b45]': isScrolled || mobileMenuOpen,
-        'bg-transparent': !isScrolled && !mobileMenuOpen && ('{{ $active }}' === 'home'),
-        'bg-[#091b45]': !isScrolled && !mobileMenuOpen && ('{{ $active }}' !== 'home')
-    }"
-    :style="(isScrolled || mobileMenuOpen) ? 'background-color: #091b45 !important;' : ''"
+    class="sticky top-0 z-50 w-full border-none bg-[#091b45] transition-all duration-300 ease-in-out select-none"
+    :class="{ 'shadow-xl shadow-black/40': isScrolled || mobileMenuOpen }"
 >
     <!-- Main Top Bar Container (Responsive height) -->
     <div

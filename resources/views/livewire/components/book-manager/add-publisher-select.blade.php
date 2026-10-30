@@ -102,7 +102,7 @@
     <label class="text-sm font-semibold text-[#334155]">Publisher</label>
 
     <!-- Publisher Search Input Container -->
-    <div class="relative">
+    <div wire:ignore class="relative">
         <div class="relative flex items-center">
             <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                 <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">

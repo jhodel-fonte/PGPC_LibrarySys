@@ -695,6 +695,34 @@
                 </div>
             </div>
 
+            @if(!empty($book['issue']))
+                <section class="mb-6 rounded-2xl border border-[#DDE5EF] bg-white p-5 sm:p-6">
+                    <h2 class="text-base font-bold text-[#0B2454]">Issue information</h2>
+                    <p class="mt-2 text-sm text-slate-700">
+                        @if(!empty($book['issue']['volume'])) Volume {{ $book['issue']['volume'] }} @endif
+                        @if(!empty($book['issue']['issue_number'])) - Issue {{ $book['issue']['issue_number'] }} @endif
+                        @if(!empty($book['issue']['issue_label'])) - {{ $book['issue']['issue_label'] }} @endif
+                        @if(!empty($book['issue']['publication_date'])) - {{ \Carbon\Carbon::parse($book['issue']['publication_date'])->format('M j, Y') }} @endif
+                    </p>
+                    @if(!$book['issue']['borrowable'])<p class="mt-2 text-sm font-semibold text-slate-600">For library use only</p>@endif
+                    @if(!empty($book['other_issues']))
+                        <h3 class="mt-4 text-sm font-bold text-[#0B2454]">Other issues</h3>
+                        <ul class="mt-2 flex flex-wrap gap-2">
+                            @foreach($book['other_issues'] as $otherIssue)
+                                <li><a href="{{ route('opac.book.detail', $otherIssue['id']) }}" class="inline-flex min-h-11 items-center rounded-lg border border-slate-200 px-3 text-sm font-semibold text-[#102B70] hover:bg-slate-50">{{ $otherIssue['label'] }}</a></li>
+                            @endforeach
+                        </ul>
+                    @endif
+                </section>
+            @endif
+
+            @if (!empty($book['resource_url']) && in_array(strtolower((string) parse_url($book['resource_url'], PHP_URL_SCHEME)), ['http', 'https'], true))
+                <div class="mb-6 rounded-2xl border border-[#DDE5EF] bg-white p-5 sm:p-6">
+                    <h2 class="text-base font-bold text-[#0B2454]">Online resource</h2>
+                    <a href="{{ $book['resource_url'] }}" target="_blank" rel="noopener noreferrer" class="mt-2 inline-flex min-h-11 items-center font-semibold text-[#102B70] underline hover:text-[#0B225E]">Open resource <span class="sr-only">(opens in a new tab)</span></a>
+                </div>
+            @endif
+
             @if(auth()->check() && auth()->user()->isStudent())
                 <livewire:components.main.personal-recommendations :book-detail-id="$bookDetailId" :key="'recommend-book-'.$bookDetailId" />
             @endif

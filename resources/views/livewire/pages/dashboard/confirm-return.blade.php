@@ -1,4 +1,4 @@
-<div class="relative w-full h-auto lg:h-[calc(100vh-70px)] flex flex-col items-center justify-start pt-4 px-3 md:px-6 xl:px-12 pb-5 font-sans bg-[#F8FAFC] overflow-y-auto lg:overflow-hidden check-in-workstation"
+<div class="admin-page-table relative w-full h-auto lg:h-[calc(100vh-70px)] flex flex-col items-center justify-start pt-4 px-3 md:px-6 xl:px-12 pb-5 font-sans bg-[#F8FAFC] overflow-y-auto lg:overflow-hidden check-in-workstation"
      x-data="completedModalHandler()"
      @return-completed.window="triggerModal($event.detail)"
      @return-failed.window="triggerErrorModal($event.detail)">
@@ -92,7 +92,7 @@
                     <span class="block text-base font-bold text-[#102B70] uppercase tracking-wider mb-4 shrink-0">Items to be Returned ({{ count($transactionsData) }})</span>
 
                     <!-- Table Container -->
-                    <div class="overflow-x-auto flex-1 overflow-y-auto border border-[#E2E8F0] rounded-2xl bg-white shadow-inner mb-4 custom-scrollbar">
+                    <div class="admin-table-scroll overflow-x-auto flex-1 overflow-y-auto border border-[#E2E8F0] rounded-2xl bg-white shadow-inner mb-4 custom-scrollbar">
                         <table class="w-full text-left border-collapse md:min-w-[600px]">
                             <!-- Table Header: visible on md and up, hidden on mobile -->
                             <thead class="hidden md:table-header-group sticky top-0 bg-white z-10 border-b border-[#E2E8F0]">
@@ -588,4 +588,3 @@
         registerLivewireHooks();
     </script>
 </div>
-

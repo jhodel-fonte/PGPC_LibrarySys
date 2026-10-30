@@ -6,8 +6,8 @@
         </div>
 
         <!-- Table Wrapper (flex-1 overflow-y-auto) -->
-        <div class="overflow-x-auto flex-1 overflow-y-auto border border-[#E2E8F0] rounded-xl bg-white custom-scrollbar">
-            <table class="w-full text-left border-collapse md:min-w-[580px]">
+        <div tabindex="0" role="region" aria-label="{{ $displayTitle }}" class="min-h-0 overflow-x-auto flex-1 overflow-y-auto border border-[#E2E8F0] rounded-xl bg-white custom-scrollbar">
+            <table class="circulation-table w-full text-left border-collapse">
                 <!-- Table Header: visible on md and up, hidden on mobile -->
                 <thead class="hidden md:table-header-group sticky top-0 bg-[#F8FAFC] z-10 border-b border-[#E2E8F0]">
                     <tr class="text-xs font-bold text-[#475569] uppercase tracking-wider">
@@ -17,7 +17,7 @@
                         <th scope="col" class="py-3 px-4 w-[18%] text-right">{{ $mode === 'check-out' ? 'Action' : 'Status' }}</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-[#E2E8F0] text-xs text-[#0F172A]">
+                <tbody class="divide-y divide-[#E2E8F0] text-sm text-[#0F172A]">
                     @forelse($borrowedBooks ?? [] as $item)
                         @php
                             $isReturned = ($item['status'] ?? '') === 'Returned';
@@ -28,12 +28,12 @@
                             class="align-middle transition-colors cursor-pointer {{ $isSelected ? 'bg-[#EFF6FF] ring-1 ring-inset ring-[#102B70]/30 shadow-2xs' : ($isReturned ? 'bg-[#EFF6FF]/40 hover:bg-[#EFF6FF]/60' : 'hover:bg-[#F8FAFC]') }}"
                         >
                             <!-- Mobile Card Cell (visible on mobile < 768px, hidden on md+) -->
-                            <td colspan="4" class="block md:hidden p-3.5 border-b border-[#E2E8F0] last:border-b-0">
+                            <td colspan="4" class="circulation-mobile-cell block md:hidden p-3.5 border-b border-[#E2E8F0] last:border-b-0">
                                 <div class="flex flex-col gap-2.5">
                                     <!-- Top Section: Item Name, Author, Accession & Action/Status -->
                                     <div class="flex items-start justify-between gap-2.5">
                                         <div class="flex flex-col min-w-0 flex-1">
-                                            <span class="font-bold text-sm text-[#0F172A] leading-snug line-clamp-2" title="{{ $item['book'] }}">
+                                            <span class="circulation-item-title font-bold text-sm text-[#0F172A] leading-snug" title="{{ $item['book'] }}">
                                                 {{ $item['book'] }}
                                             </span>
                                             <span class="text-xs text-[#475569] mt-0.5 truncate">
@@ -75,7 +75,7 @@
                                     </div>
 
                                     <!-- Bottom Section: Dates bar -->
-                                    <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-[11px] text-[#64748B]">
+                                    <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs text-[#64748B]">
                                         <div class="flex items-center gap-1">
                                             <span class="font-medium text-slate-500">{{ $mode === 'check-out' ? 'Added:' : 'Borrowed:' }}</span>
                                             <span class="font-semibold text-slate-700 tabular-nums">
@@ -93,22 +93,22 @@
                             </td>
 
                             <!-- Desktop Cells (visible on md+, hidden on mobile < 768px) -->
-                            <td class="hidden md:table-cell py-3.5 px-4">
+                            <td class="circulation-desktop-cell hidden md:table-cell py-3 px-2 sm:px-3 align-top">
                                 <div class="flex items-start gap-3">
                                     <div class="flex flex-col min-w-0">
-                                        <span class="font-bold text-sm text-[#0F172A] leading-snug truncate" title="{{ $item['book'] }}">{{ $item['book'] }}</span>
-                                        <span class="text-xs text-[#475569] mt-0.5 truncate">{{ $item['author'] ?? 'Unknown Author' }}</span>
-                                        <span class="text-xs text-[#64748B] tabular-nums mt-0.5">Accession Number: <span class="font-mono text-[#0F172A] font-semibold">{{ $item['accession'] ?? 'N/A' }}</span></span>
+                                        <span class="circulation-item-title font-bold text-sm text-[#0F172A] leading-snug" title="{{ $item['book'] }}">{{ $item['book'] }}</span>
+                                        <span class="text-xs text-[#475569] mt-0.5 break-words">{{ $item['author'] ?? 'Unknown Author' }}</span>
+                                        <span class="text-xs text-[#64748B] tabular-nums mt-0.5">Accession: <span class="font-mono text-[#0F172A] font-semibold">{{ $item['accession'] ?? 'N/A' }}</span></span>
                                     </div>
                                 </div>
                             </td>
-                            <td class="hidden md:table-cell py-3.5 px-4 font-semibold text-[#475569] tabular-nums">
+                            <td class="circulation-desktop-cell hidden md:table-cell py-3 px-2 sm:px-3 align-top text-xs font-semibold text-[#475569] tabular-nums">
                                 {{ $item['borrowed_on'] ?? $item['added_on'] ?? now()->format('M d, Y') }}
                             </td>
-                            <td class="hidden md:table-cell py-3.5 px-4 font-semibold text-[#475569] tabular-nums">
+                            <td class="circulation-desktop-cell hidden md:table-cell py-3 px-2 sm:px-3 align-top text-xs font-semibold text-[#475569] tabular-nums">
                                 {{ $item['due_date'] ?? 'N/A' }}
                             </td>
-                            <td class="hidden md:table-cell py-3.5 px-4 text-right">
+                            <td class="circulation-desktop-cell hidden md:table-cell py-3 px-2 sm:px-3 align-top text-right">
                                 @if($mode === 'check-out')
                                     <button type="button"
                                             @click.stop="$dispatch('remove-checkout-book', { accession: '{{ $item['accession'] ?? '' }}' })"

@@ -12,10 +12,56 @@ use Illuminate\Support\Facades\DB;
 
 class ReservationWaitlistService
 {
+    public function expireReservations(): void
+    {
+        $orphanedReservations = BookReservation::whereIn('reservation_status_id', [1, 2])
+            ->where(function ($query) {
+                $query->whereDoesntHave('book')
+                    ->orWhereHas('book', fn ($book) => $book->whereHas('bookDetail', fn ($detail) => $detail->onlyTrashed()))
+                    ->orWhereHas('book', fn ($book) => $book->whereHas('bookDetail.bookData', fn ($data) => $data->onlyTrashed()));
+            })->get();
+        foreach ($orphanedReservations as $reservation) {
+            $reservation->update([
+                'reservation_status_id' => 4,
+                'cancelled_date' => now(),
+                'comment' => trim(($reservation->comment ?? '') . ' [Auto-cancelled: Catalog item deleted]'),
+            ]);
+        }
+
+        ReservationWaitlist::where('status', 'waiting')
+            ->where(function ($query) {
+                $query->whereDoesntHave('bookDetail')
+                    ->orWhereHas('bookDetail', fn ($detail) => $detail->onlyTrashed())
+                    ->orWhereHas('bookDetail', fn ($detail) => $detail->whereDoesntHave('bookData'))
+                    ->orWhereDoesntHave('bookDetail.books');
+            })->update(['status' => 'unavailable']);
+
+        BookReservation::whereIn('reservation_status_id', [1, 2])->where('due_date', '<', now())
+            ->orderBy('id')->chunkById(100, function ($reservations) {
+                foreach ($reservations as $reservation) {
+                    DB::transaction(function () use ($reservation) {
+                        $reservation = BookReservation::lockForUpdate()->find($reservation->id);
+                        if (! $reservation || ! in_array((int) $reservation->reservation_status_id, [1, 2], true) || ! $reservation->due_date || ! $reservation->due_date->isPast()) {
+                            return;
+                        }
+                        $reservation->update(['reservation_status_id' => 5, 'cancelled_date' => now(),
+                            'comment' => trim(($reservation->comment ?? '') . ' [Auto-expired: Pickup deadline passed]')]);
+                        $book = Book::lockForUpdate()->find($reservation->book_id);
+                        if ($book && $book->status === 'reserved' && ! BookReservation::where('book_id', $book->id)->whereIn('reservation_status_id', [1, 2])->exists()) {
+                            $book->update(['status' => 'available']);
+                        }
+                    });
+                }
+            });
+    }
+
     public function join(int $detailId, Account $account): void
     {
         DB::transaction(function () use ($detailId, $account) {
-            $detail = BookDetail::publicCatalog()->whereHas('bookData')->lockForUpdate()->findOrFail($detailId);
+            $detail = BookDetail::whereHas('bookData')->lockForUpdate()->findOrFail($detailId);
+            if ($detail->periodicalIssue && ! $detail->periodicalIssue->borrowable) {
+                throw new \RuntimeException('This issue is for library use only.');
+            }
             $student = $account->student;
             if (! $student || ! $account->isApprovedStudent() || $account->reservations_blocked) {
                 throw new \RuntimeException('An approved student account is required to join the waitlist.');
@@ -39,10 +85,20 @@ class ReservationWaitlistService
     {
         DB::transaction(function () use ($detailId) {
             $detail = BookDetail::lockForUpdate()->find($detailId);
-            if ($detail && $detail->catalog_kind === 'book') {
+            if ($detail && $detail->bookData && (! $detail->periodicalIssue || $detail->periodicalIssue->borrowable)) {
                 $this->allocateLocked($detail);
             }
         });
+    }
+
+    public function hasEligibleWaiter(int $detailId): bool
+    {
+        return ReservationWaitlist::where('book_detail_id', $detailId)->where('status', 'waiting')->orderBy('id')->get()
+            ->contains(function ($entry) {
+                $account = Account::find($entry->account_id);
+                return $account && $account->student && $account->isApprovedStudent() && ! $account->reservations_blocked
+                    && BookReservation::where('student_id', $entry->student_id)->whereIn('reservation_status_id', [1, 2])->count() < 3;
+            });
     }
 
     private function allocateLocked(BookDetail $detail): void

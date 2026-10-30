@@ -19,7 +19,7 @@
         return !empty($u) && $u !== '#' && (request()->url() === $u || request()->fullUrl() === $u);
     });
 
-    $isTriggerActive = $active || $hasActiveSublink;
+    $isTriggerActive = $active || $hasActiveSublink || request()->routeIs('online-resources.show');
 @endphp
 
 <div
@@ -44,6 +44,7 @@
     <!-- Main Top Link / Trigger Button -->
     <a
         href="{{ $url }}"
+        style="{{ $isTriggerActive ? 'color: #fff !important;' : '' }}"
         class="relative flex items-center gap-1.5 py-2 text-[16px] whitespace-nowrap transition-colors focus:outline-none {{ $isTriggerActive ? 'text-white font-semibold' : 'text-slate-200/90 hover:text-white font-medium' }}"
         :class="{ 'text-white': open }"
     >
@@ -103,13 +104,11 @@
                         $itemDesc = $item['desc'] ?? null;
                         $itemBadge = $item['badge'] ?? null;
                         $isExternal = str_starts_with($itemUrl, 'http://') || str_starts_with($itemUrl, 'https://');
-                        $isLoggedIn = auth()->check();
-                        $targetUrl = ($isExternal && !$isLoggedIn) ? route('online-resources.access', ['url' => $itemUrl]) : $itemUrl;
+                        $targetUrl = $isExternal ? route('online-resources.show', \Illuminate\Support\Str::slug($itemName)) : $itemUrl;
                         $isItemActive = !empty($item['active']) || (!empty($itemUrl) && $itemUrl !== '#' && (request()->url() === $itemUrl || request()->fullUrl() === $itemUrl));
                     @endphp
                     <a
                         href="{{ $targetUrl }}"
-                        @if ($isExternal && $isLoggedIn) target="_blank" rel="noopener noreferrer" @endif
                         class="group/item flex items-start justify-between gap-3 rounded-xl p-2.5 transition-all duration-150 hover:bg-white/10"
                     >
                         <div class="flex-1">

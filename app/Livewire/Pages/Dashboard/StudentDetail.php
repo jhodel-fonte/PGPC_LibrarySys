@@ -268,7 +268,7 @@ class StudentDetail extends Component
     #[Computed]
     public function activeReservationsCount(): int
     {
-        return $this->activeReservations->count();
+        return $this->activeReservations->filter(fn ($reservation) => $reservation->book?->bookDetail?->bookData !== null)->count();
     }
 
     #[Computed]
@@ -291,7 +291,7 @@ class StudentDetail extends Component
             ->whereNull('deleted_at')
             ->where('status', 'available')
             ->whereNotIn(\Illuminate\Support\Facades\DB::raw('LOWER(status)'), ['disabled', 'archived'])
-            ->whereHas('bookDetail', fn($bd) => $bd->publicCatalog()->whereNull('deleted_at')->whereHas('bookData', fn($b) => $b->whereNull('deleted_at')))
+            ->whereHas('bookDetail', fn($bd) => $bd->whereNull('deleted_at')->whereDoesntHave('periodicalIssue', fn ($issue) => $issue->where('borrowable', false))->whereHas('bookData', fn($b) => $b->whereNull('deleted_at')))
             ->where(function ($q) use ($term) {
                 $q->where('accession_number', 'like', "%{$term}%")
                   ->orWhereHas('bookDetail.bookData', function ($b) use ($term) {
@@ -359,8 +359,11 @@ class StudentDetail extends Component
             app(\App\Services\ReservationWaitlistService::class)->allocate($detailId);
             \Illuminate\Support\Facades\DB::transaction(function () use ($student) {
                 $detailId = \App\Models\Book::whereKey($this->selectedBookId)->value('book_detail_id');
-                \App\Models\BookDetail::publicCatalog()->lockForUpdate()->findOrFail($detailId);
-                if (\App\Models\ReservationWaitlist::where('book_detail_id', $detailId)->where('status', 'waiting')->exists()) {
+                $detail = \App\Models\BookDetail::whereHas('bookData')->lockForUpdate()->findOrFail($detailId);
+                if ($detail->periodicalIssue && ! $detail->periodicalIssue->borrowable) {
+                    throw new \RuntimeException('This issue is for library use only.');
+                }
+                if (app(\App\Services\ReservationWaitlistService::class)->hasEligibleWaiter($detailId)) {
                     throw new \RuntimeException('Copies are reserved for people already on the waitlist.');
                 }
                 $book = \App\Models\Book::lockForUpdate()->findOrFail($this->selectedBookId);

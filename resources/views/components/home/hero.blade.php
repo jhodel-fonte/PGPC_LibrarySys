@@ -1,5 +1,5 @@
 <section
-    class="relative flex min-h-[660px] lg:h-[720px] xl:h-[760px] 2xl:h-[780px] w-full items-center overflow-hidden bg-[#071943] text-white select-none -mt-[96px] sm:-mt-[100px] pt-[96px] sm:pt-[100px]"
+    class="relative flex min-h-[calc(100dvh-74px)] w-full items-center overflow-hidden bg-[#071943] text-white select-none sm:min-h-[calc(100dvh-96px)] lg:min-h-[calc(100dvh-100px)]"
 >
     <!-- Background Image with Lazy Loading -->
     <img
@@ -13,7 +13,7 @@
 
     <div class="absolute inset-0 bg-gradient-to-r from-[#071943] via-[#071943]/92 to-[#071943]/65 pointer-events-none"></div>
 
-    <div class="relative z-10 mx-auto w-full max-w-[1380px] px-3 sm:px-6 lg:px-8 py-14 sm:py-16 lg:py-20 xl:py-24 pb-28 sm:pb-32 lg:pb-36">
+    <div class="relative z-10 mx-auto w-full max-w-[1380px] px-4 sm:px-6 lg:px-8 py-10 sm:py-12 lg:py-16 xl:py-20">
         <div class="grid grid-cols-1 items-center gap-10 lg:grid-cols-12 lg:gap-8 xl:gap-12">
 
             <div class="lg:col-span-7 xl:col-span-7">

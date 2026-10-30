@@ -36,11 +36,7 @@
                         'bg-[#EF4444]' => ! $evaluation['available'] && ! $latestRun,
                     ])></span>
                     @if($evaluation['available'])
-                        Live · checked {{ $checkedAt->format('M j, g:i A') }}
-                    @elseif($latestRun)
-                        Offline (Saved data) · checked {{ $checkedAt->format('M j, g:i A') }}
-                    @else
-                        Unavailable · checked {{ $checkedAt->format('M j, g:i A') }}
+                        Last Updated: {{ $checkedAt->format('M j, g:i A') }}
                     @endif
                 </span>
                 <button
@@ -113,8 +109,8 @@
                 </div>
 
                 @if($actual || $predicted)
-                    <div class="mt-5 overflow-x-auto">
-                        <table class="min-w-full text-left text-xs">
+                    <div class="admin-mobile-table-scroll mt-5 overflow-x-auto">
+                        <table class="admin-mobile-table min-w-full text-left text-xs">
                             <thead class="border-b border-[#E2E8F0] text-[10px] font-semibold uppercase tracking-wide text-[#64748B]">
                                 <tr>
                                     <th class="px-3 py-2">Score distribution</th>
@@ -130,13 +126,13 @@
                                 @foreach([['Actual ratings', $actual], ['Predicted ratings', $predicted]] as [$label, $stats])
                                     @if($stats)
                                         <tr>
-                                            <th class="whitespace-nowrap px-3 py-3 font-semibold text-[#0F172A]">{{ $label }}</th>
-                                            <td class="px-3 py-3 text-right tabular-nums">{{ $formatCount($stats['count'] ?? null) }}</td>
-                                            <td class="px-3 py-3 text-right tabular-nums">{{ $formatDetail($stats['mean'] ?? null) }}</td>
-                                            <td class="px-3 py-3 text-right tabular-nums">{{ $formatDetail($stats['median'] ?? null) }}</td>
-                                            <td class="px-3 py-3 text-right tabular-nums">{{ $formatDetail($stats['min'] ?? null) }}</td>
-                                            <td class="px-3 py-3 text-right tabular-nums">{{ $formatDetail($stats['max'] ?? null) }}</td>
-                                            <td class="px-3 py-3 text-right tabular-nums">{{ $formatDetail($stats['standard_deviation'] ?? null) }}</td>
+                                            <th data-label="Score distribution" class="whitespace-nowrap px-3 py-3 font-semibold text-[#0F172A]">{{ $label }}</th>
+                                            <td data-label="Count" class="px-3 py-3 text-right tabular-nums">{{ $formatCount($stats['count'] ?? null) }}</td>
+                                            <td data-label="Mean" class="px-3 py-3 text-right tabular-nums">{{ $formatDetail($stats['mean'] ?? null) }}</td>
+                                            <td data-label="Median" class="px-3 py-3 text-right tabular-nums">{{ $formatDetail($stats['median'] ?? null) }}</td>
+                                            <td data-label="Minimum" class="px-3 py-3 text-right tabular-nums">{{ $formatDetail($stats['min'] ?? null) }}</td>
+                                            <td data-label="Maximum" class="px-3 py-3 text-right tabular-nums">{{ $formatDetail($stats['max'] ?? null) }}</td>
+                                            <td data-label="Std. deviation" class="px-3 py-3 text-right tabular-nums">{{ $formatDetail($stats['standard_deviation'] ?? null) }}</td>
                                         </tr>
                                     @endif
                                 @endforeach
@@ -246,8 +242,8 @@
                     <p class="mt-1 text-sm text-[#64748B]">The first result is saved as soon as the recommendation service responds.</p>
                 </div>
             @else
-                <div class="overflow-x-auto">
-                    <table class="min-w-full text-left text-sm">
+                <div class="admin-mobile-table-scroll overflow-x-auto">
+                    <table class="admin-mobile-table min-w-full text-left text-sm">
                         <thead class="bg-[#F8FAFC] text-[11px] font-semibold uppercase tracking-wide text-[#334155]">
                             <tr>
                                 <th scope="col" class="whitespace-nowrap px-5 py-3">Evaluated</th>
@@ -261,26 +257,26 @@
                         <tbody class="divide-y divide-[#E2E8F0]">
                             @foreach($history as $run)
                                 <tr wire:key="ml-run-{{ $run->id }}" class="hover:bg-[#F8FAFC]">
-                                    <td class="whitespace-nowrap px-5 py-3">
+                                    <td data-label="Evaluated" class="whitespace-nowrap px-5 py-3"><span>
                                         <span class="font-semibold text-[#0F172A]">{{ $run->evaluated_at->format('M j, Y') }}</span>
                                         <span class="ml-1 text-[#64748B]">{{ $run->evaluated_at->format('g:i A') }}</span>
                                         @if($latestRun && $run->is($latestRun))
                                             <span class="ml-2 rounded-full bg-[#FCC719]/20 px-2 py-0.5 text-[10px] font-bold uppercase text-[#0F172A]">Latest</span>
                                         @endif
-                                    </td>
+                                    </span></td>
                                     @php($runDetails = $run->evaluationDetails())
-                                    <td class="whitespace-nowrap px-4 py-3 text-right text-xs tabular-nums text-[#64748B]">
+                                    <td data-label="Data" class="whitespace-nowrap px-4 py-3 text-right text-xs tabular-nums text-[#64748B]"><span>
                                         {{ $formatCount($runDetails['training_interactions']) }} train
                                         <span class="text-[#CBD5E1]">·</span>
                                         {{ $formatCount($runDetails['test_interactions']) }} test
-                                    </td>
+                                    </span></td>
                                     @foreach($metricColumns as $label => $column)
-                                        <td class="whitespace-nowrap px-4 py-3 text-right tabular-nums text-[#334155]">{{ $formatMetric($run->{$column}) }}</td>
+                                        <td data-label="{{ $label }}" class="whitespace-nowrap px-4 py-3 text-right tabular-nums text-[#334155]">{{ $formatMetric($run->{$column}) }}</td>
                                     @endforeach
-                                    <td class="whitespace-nowrap px-5 py-3 text-right text-xs text-[#64748B]">
+                                    <td data-label="Last confirmed" class="whitespace-nowrap px-5 py-3 text-right text-xs text-[#64748B]"><span>
                                         {{ ($run->last_checked_at ?? $run->evaluated_at)->format('M j, g:i A') }}
                                         <span class="text-[#94A3B8]">· {{ $run->times_checked }} {{ \Illuminate\Support\Str::plural('check', $run->times_checked) }}</span>
-                                    </td>
+                                    </span></td>
                                 </tr>
                             @endforeach
                         </tbody>

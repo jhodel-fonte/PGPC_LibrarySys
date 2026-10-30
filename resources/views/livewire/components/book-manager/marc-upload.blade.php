@@ -114,9 +114,13 @@
             </div>
         </div>
 
+        <label class="md:hidden flex items-center gap-2 border-b border-slate-200 px-5 py-3 text-sm font-semibold text-slate-700">
+            <input type="checkbox" wire:click="toggleSelectAll" @checked($allFilteredSelected) class="h-4 w-4 rounded border-slate-300 text-[#102B70]">
+            Select all filtered records
+        </label>
         <!-- PREVIEW TABLE CONTAINER WITH ALWAYS-VISIBLE VERTICAL SCROLLBAR ON THE SIDE -->
-        <div class="overflow-x-auto overflow-y-scroll max-h-[480px] sm:max-h-[520px] marc-table-scroll visible-table-scrollbar relative border-b border-[#E2E8F0] min-h-[300px]">
-            <table class="w-full text-left border-collapse text-sm">
+        <div class="admin-mobile-table-scroll overflow-x-auto overflow-y-scroll max-h-[480px] sm:max-h-[520px] marc-table-scroll visible-table-scrollbar relative border-b border-[#E2E8F0] min-h-[300px]">
+            <table class="admin-mobile-table admin-marc-table w-full text-left border-collapse text-sm">
                 <thead class="sticky top-0 z-10 bg-slate-50/95 backdrop-blur-xs shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
                     <tr class="border-b border-[#E2E8F0] text-[#334155] font-bold uppercase tracking-wider text-xs">
                         <th class="py-4 pl-5 pr-2 w-12 text-center bg-slate-50/95">
@@ -142,7 +146,7 @@
                         @endphp
                         <tr class="hover:bg-slate-50/80 transition-colors {{ $isSelected ? 'bg-blue-50/40' : '' }}">
                             <!-- Checkbox -->
-                            <td class="py-4 pl-5 pr-2 text-center align-top pt-5">
+                            <td data-label="Select" class="py-4 pl-5 pr-2 text-center align-top pt-5">
                                 <input
                                     type="checkbox"
                                     value="{{ $rec['id'] }}"
@@ -152,7 +156,7 @@
                             </td>
 
                             <!-- Title & Info -->
-                            <td class="py-4 px-4 align-top">
+                            <td data-label="Title and details" class="py-4 px-4 align-top">
                                 <div class="text-sm font-bold text-[#102B70] leading-snug">
                                     {{ $rec['title'] }}
                                 </div>
@@ -185,7 +189,7 @@
                             </td>
 
                             <!-- Authors -->
-                            <td class="py-4 px-4 align-top">
+                            <td data-label="Authors" class="py-4 px-4 align-top">
                                 <div class="text-sm font-semibold text-slate-800 leading-snug">
                                     {{ $rec['primary_author'] }}
                                 </div>
@@ -195,7 +199,7 @@
                             </td>
 
                             <!-- ISBN -->
-                            <td class="py-4 px-4 align-top whitespace-nowrap">
+                            <td data-label="ISBN / identifiers" class="py-4 px-4 align-top whitespace-nowrap">
                                 <div class="text-sm font-semibold {{ !empty($rec['isbn']) ? 'text-slate-800' : 'text-slate-400 italic' }} leading-snug">
                                     {{ $rec['isbn'] ?: 'No ISBN' }}
                                 </div>
@@ -205,7 +209,7 @@
                             </td>
 
                             <!-- Call Number -->
-                            <td class="py-4 px-4 align-top whitespace-nowrap">
+                            <td data-label="Call number" class="py-4 px-4 align-top whitespace-nowrap">
                                 @if(!empty($rec['call_number']) && $rec['call_number'] !== 'UNASSIGNED')
                                     <div class="text-sm font-semibold text-slate-800 leading-snug">
                                         {{ $rec['call_number'] }}
@@ -223,7 +227,7 @@
                             </td>
 
                             <!-- Publisher & Year -->
-                            <td class="py-4 px-4 align-top">
+                            <td data-label="Publication" class="py-4 px-4 align-top">
                                 <div class="text-sm font-semibold text-slate-800 leading-snug">
                                     {{ $rec['publisher'] }}
                                 </div>
@@ -236,7 +240,7 @@
                             </td>
 
                             <!-- Actions -->
-                            <td class="py-4 pr-5 pl-2 align-top text-right whitespace-nowrap space-x-1.5 pt-4">
+                            <td data-label="Actions" class="py-4 pr-5 pl-2 align-top text-right whitespace-nowrap space-x-1.5 pt-4">
                                 <!-- View Raw Tags Button (Icon Only with Instant Loading State) -->
                                 <button
                                     type="button"

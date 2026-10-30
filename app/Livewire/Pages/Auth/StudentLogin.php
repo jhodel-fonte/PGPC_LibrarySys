@@ -48,6 +48,10 @@ class StudentLogin extends Component
             session()->forget('url.intended');
 
             $user = auth()->user();
+            if ($user && ($user->setup_email_required || $user->setup_password_prompt)) {
+                $this->redirect(route('student.setup'), navigate: false);
+                return;
+            }
             if ($user && ! $user->isApprovedStudent()) {
                 $this->redirect($user->getVerificationRedirectRoute(), navigate: false);
                 return;
@@ -84,4 +88,3 @@ class StudentLogin extends Component
         return view('livewire.pages.auth.student-login');
     }
 }
-

@@ -5,6 +5,7 @@ namespace App\Livewire\Components\Usermanager;
 use App\Models\Account;
 use App\Models\AccountStatus;
 use App\Services\EmployeeRoleService;
+use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -12,6 +13,8 @@ use Livewire\WithPagination;
 class LibrarianTable extends Component
 {
     use WithPagination;
+
+    private const SORTABLE_COLUMNS = ['id', 'staff', 'id_number', 'role', 'status', 'last_login'];
 
     public string $search = '';
     public string $activeTab = 'ALL'; // 'ALL', 'Head Librarian', 'Librarian', 'Deleted' (Superadmin only)
@@ -56,8 +59,15 @@ class LibrarianTable extends Component
 
     public function sortBy(string $column): void
     {
-        if ($this->sort['column'] === $column) {
-            $this->sort['direction'] = $this->sort['direction'] === 'asc' ? 'desc' : 'asc';
+        if (!in_array($column, self::SORTABLE_COLUMNS, true)) {
+            return;
+        }
+
+        $currentColumn = in_array($this->sort['column'] ?? null, self::SORTABLE_COLUMNS, true) ? $this->sort['column'] : 'id';
+        $currentDirection = in_array($this->sort['direction'] ?? null, ['asc', 'desc'], true) ? $this->sort['direction'] : 'desc';
+
+        if ($currentColumn === $column) {
+            $this->sort['direction'] = $currentDirection === 'asc' ? 'desc' : 'asc';
         } else {
             $this->sort['column'] = $column;
             $this->sort['direction'] = 'asc';
@@ -72,6 +82,10 @@ class LibrarianTable extends Component
 
     public function updatedPerPage(): void
     {
+        if (!in_array($this->perPage, [10, 25, 50, 100], true)) {
+            $this->perPage = 10;
+        }
+
         $this->resetPage();
         $this->clearSelection();
     }
@@ -104,6 +118,16 @@ class LibrarianTable extends Component
         $this->selectAll = false;
     }
 
+    private function librarianAccounts(bool $withTrashed = false)
+    {
+        $query = $withTrashed ? Account::withTrashed() : Account::query();
+
+        return $query->whereHas('role', fn ($q) => $q->whereIn('name', [
+            EmployeeRoleService::ROLE_LIBRARIAN,
+            EmployeeRoleService::ROLE_HEAD_LIBRARIAN,
+        ]));
+    }
+
     public function applyFilters(): void
     {
         $this->filterStatus = $this->tempFilterStatus;
@@ -132,7 +156,7 @@ class LibrarianTable extends Component
 
     public function confirmDisable(int $id): void
     {
-        $account = Account::with('librarian')->find($id);
+        $account = $this->librarianAccounts()->with('librarian')->find($id);
         if (!$account) return;
 
         $this->selectedLibrarianId = $id;
@@ -151,7 +175,7 @@ class LibrarianTable extends Component
     {
         if (!$this->selectedLibrarianId) return;
 
-        $user = Account::with('librarian')->find($this->selectedLibrarianId);
+        $user = $this->librarianAccounts()->with('librarian')->find($this->selectedLibrarianId);
         if (!$user) {
             $this->dispatch('toast', message: 'User account not found.', type: 'error');
             $this->closeDisableModal();
@@ -171,16 +195,15 @@ class LibrarianTable extends Component
             }
         }
 
-        if ($user->librarian) {
-            $user->librarian->delete();
-        }
+        DB::transaction(function () use ($user) {
+            $inactiveStatus = AccountStatus::where('status_name', 'Inactive')->first();
+            if ($inactiveStatus) {
+                $user->update(['status_id' => $inactiveStatus->id]);
+            }
 
-        $inactiveStatus = AccountStatus::where('status_name', 'Inactive')->first();
-        if ($inactiveStatus) {
-            $user->update(['status_id' => $inactiveStatus->id]);
-        }
-
-        $user->delete();
+            $user->librarian?->delete();
+            $user->delete();
+        });
 
         $name = $this->selectedLibrarianName;
         $userId = $user->id;
@@ -202,7 +225,7 @@ class LibrarianTable extends Component
         $targetId = is_array($id) ? ($id['id'] ?? $id['userId'] ?? null) : $id;
         if (!$targetId) return;
 
-        $user = Account::withTrashed()->with(['librarian' => fn($q) => $q->withTrashed()])->find($targetId);
+        $user = $this->librarianAccounts(true)->with(['librarian' => fn ($q) => $q->withTrashed()])->find($targetId);
         if (!$user) {
             $this->dispatch('toast', message: 'User account not found.', type: 'error');
             return;
@@ -215,15 +238,17 @@ class LibrarianTable extends Component
             }
         }
 
-        $user->restore();
-        if ($user->librarian && $user->librarian->trashed()) {
-            $user->librarian->restore();
-        }
+        DB::transaction(function () use ($user) {
+            $user->restore();
+            if ($user->librarian && $user->librarian->trashed()) {
+                $user->librarian->restore();
+            }
 
-        $activeStatus = AccountStatus::where('status_name', 'Active')->first();
-        if ($activeStatus) {
-            $user->update(['status_id' => $activeStatus->id]);
-        }
+            $activeStatus = AccountStatus::where('status_name', 'Active')->first();
+            if ($activeStatus) {
+                $user->update(['status_id' => $activeStatus->id]);
+            }
+        });
 
         $name = $user->librarian ? trim("{$user->librarian->first_name} {$user->librarian->last_name}") : $user->username;
         $this->dispatch('toast', message: "Librarian account for {$name} has been restored and set to Active.", type: 'success');
@@ -232,7 +257,7 @@ class LibrarianTable extends Component
 
     public function confirmDelete(int $id): void
     {
-        $account = Account::with('librarian')->find($id);
+        $account = $this->librarianAccounts()->with('librarian')->find($id);
         if (!$account) return;
 
         $this->selectedLibrarianId = $id;
@@ -256,7 +281,7 @@ class LibrarianTable extends Component
     {
         if (!$this->selectedLibrarianId) return;
 
-        $user = Account::with('librarian')->find($this->selectedLibrarianId);
+        $user = $this->librarianAccounts()->with('librarian')->find($this->selectedLibrarianId);
         if (!$user) {
             $this->dispatch('toast', message: 'User account not found.', type: 'error');
             $this->closeDeleteModal();
@@ -279,15 +304,15 @@ class LibrarianTable extends Component
         $name = $this->selectedLibrarianName ?: ($user->librarian ? trim("{$user->librarian->first_name} {$user->librarian->last_name}") : $user->username);
         $userId = $user->id;
 
-        $inactiveStatus = AccountStatus::where('status_name', 'Inactive')->first();
-        if ($inactiveStatus) {
-            $user->update(['status_id' => $inactiveStatus->id]);
-        }
+        DB::transaction(function () use ($user) {
+            $inactiveStatus = AccountStatus::where('status_name', 'Inactive')->first();
+            if ($inactiveStatus) {
+                $user->update(['status_id' => $inactiveStatus->id]);
+            }
 
-        if ($user->librarian) {
-            $user->librarian->delete();
-        }
-        $user->delete();
+            $user->librarian?->delete();
+            $user->delete();
+        });
 
         $this->closeDeleteModal();
         $this->clearSelection();
@@ -310,31 +335,30 @@ class LibrarianTable extends Component
             abort(403, 'Unauthorized action. You do not have permission to delete librarian accounts.');
         }
 
-        $accounts = Account::with('librarian')
+        $accounts = $this->librarianAccounts()->with('librarian')
             ->whereIn('id', $this->selectedLibrarians)
             ->get();
 
         $inactiveStatus = AccountStatus::where('status_name', 'Inactive')->first();
-        $deletedIds = [];
-        $deletedCount = 0;
+        $deletedIds = DB::transaction(function () use ($accounts, $inactiveStatus) {
+            $deletedIds = [];
+            foreach ($accounts as $account) {
+                if (auth()->check() && auth()->id() === $account->id) {
+                    continue;
+                }
 
-        foreach ($accounts as $account) {
-            if (auth()->check() && auth()->id() === $account->id) {
-                continue;
+                if ($inactiveStatus) {
+                    $account->update(['status_id' => $inactiveStatus->id]);
+                }
+
+                $account->librarian?->delete();
+                $account->delete();
+                $deletedIds[] = $account->id;
             }
 
-            if ($inactiveStatus) {
-                $account->update(['status_id' => $inactiveStatus->id]);
-            }
-
-            if ($account->librarian) {
-                $account->librarian->delete();
-            }
-            $account->delete();
-
-            $deletedIds[] = $account->id;
-            $deletedCount++;
-        }
+            return $deletedIds;
+        });
+        $deletedCount = count($deletedIds);
 
         $skipped = count($this->selectedLibrarians) - $deletedCount;
         if ($deletedCount > 0) {
@@ -385,26 +409,30 @@ class LibrarianTable extends Component
             return;
         }
 
-        $accounts = Account::withTrashed()
+        $accounts = $this->librarianAccounts(true)
             ->with(['librarian' => fn ($q) => $q->withTrashed()])
             ->whereIn('id', $targetIds)
             ->get();
 
-        $activeStatus = AccountStatus::where('status_name', 'Active')->first();
-        $restoredCount = 0;
+        $restoredCount = DB::transaction(function () use ($accounts) {
+            $activeStatus = AccountStatus::where('status_name', 'Active')->first();
+            $restoredCount = 0;
 
-        foreach ($accounts as $account) {
-            if ($account->trashed() || ($account->librarian && $account->librarian->trashed())) {
-                $account->restore();
-                if ($account->librarian && $account->librarian->trashed()) {
-                    $account->librarian->restore();
+            foreach ($accounts as $account) {
+                if ($account->trashed() || ($account->librarian && $account->librarian->trashed())) {
+                    $account->restore();
+                    if ($account->librarian && $account->librarian->trashed()) {
+                        $account->librarian->restore();
+                    }
+                    if ($activeStatus) {
+                        $account->update(['status_id' => $activeStatus->id]);
+                    }
+                    $restoredCount++;
                 }
-                if ($activeStatus) {
-                    $account->update(['status_id' => $activeStatus->id]);
-                }
-                $restoredCount++;
             }
-        }
+
+            return $restoredCount;
+        });
 
         if ($restoredCount > 0) {
             $this->dispatch('toast', message: "Restored {$restoredCount} librarian account(s) successfully.", type: 'success');
@@ -489,8 +517,12 @@ class LibrarianTable extends Component
         }
 
         // 4. Sorting
-        $sortColumn = $this->sort['column'];
-        $sortDirection = $this->sort['direction'];
+        $sortColumn = in_array($this->sort['column'] ?? null, self::SORTABLE_COLUMNS, true)
+            ? $this->sort['column']
+            : 'id';
+        $sortDirection = in_array($this->sort['direction'] ?? null, ['asc', 'desc'], true)
+            ? $this->sort['direction']
+            : 'desc';
 
         if ($sortColumn === 'staff') {
             $query->leftJoin('librarians', 'accounts.id', '=', 'librarians.account_id')

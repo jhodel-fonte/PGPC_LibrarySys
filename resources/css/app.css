@@ -14,6 +14,46 @@
 .student-loans-panel .student-record-table { display: none; }
 .student-loans-panel .student-record-cards { display: block; }
 
+/* Admin dashboard layouts follow the space left beside the sidebar. */
+.admin-dashboard-layout { container: admin-dashboard / inline-size; }
+.dashboard-kpis { grid-template-columns: minmax(0, 1fr); }
+.dashboard-charts,
+.dashboard-bottom { grid-template-columns: minmax(0, 1fr); }
+.dashboard-borrowers { container: dashboard-borrowers / inline-size; }
+
+@container dashboard-borrowers (max-width: 48rem) {
+    .dashboard-borrowers .admin-mobile-table,
+    .dashboard-borrowers .admin-mobile-table tbody,
+    .dashboard-borrowers .admin-mobile-table tr { display: block; width: 100%; }
+    .dashboard-borrowers .admin-mobile-table { min-width: 0; }
+    .dashboard-borrowers .admin-mobile-table thead { display: none; }
+    .dashboard-borrowers .admin-mobile-table tr { height: auto; padding: .75rem; }
+    .dashboard-borrowers .admin-mobile-table td[data-label] {
+        display: flex; align-items: baseline; justify-content: space-between; gap: .75rem;
+        width: 100%; min-width: 0; padding: .4rem 0; white-space: normal; text-align: left; overflow-wrap: anywhere;
+    }
+    .dashboard-borrowers .admin-mobile-table td[data-label]::before {
+        content: attr(data-label); flex: 0 0 34%; color: #64748b; font-size: .75rem; font-weight: 600;
+    }
+    .dashboard-borrowers .admin-mobile-table td[colspan] { display: block; padding: .75rem 0; text-align: center; }
+}
+
+@container admin-dashboard (min-width: 36rem) {
+    .dashboard-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@container admin-dashboard (min-width: 56rem) {
+    .dashboard-charts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .dashboard-attention { grid-column: 1 / -1; }
+}
+@container admin-dashboard (min-width: 76rem) {
+    .dashboard-kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@container admin-dashboard (min-width: 86rem) {
+    .dashboard-charts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .dashboard-attention { grid-column: auto; }
+    .dashboard-bottom { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+}
+
 @container student-loans (min-width: 48rem) {
     .student-loans-panel .student-record-table { display: block; }
     .student-loans-panel .student-record-cards { display: none; }

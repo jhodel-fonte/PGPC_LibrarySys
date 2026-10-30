@@ -22,7 +22,7 @@ class DeleteCatalogModal extends Component
     public function show(string $type, array $ids): void
     {
         abort_unless(auth()->user()?->can('delete', Book::class), 403);
-        abort_unless(in_array($type, ['copy', 'title'], true), 422);
+        abort_unless(in_array($type, ['copy', 'issue', 'title'], true), 422);
         $ids = array_values(array_unique(array_filter(array_map('intval', $ids), fn ($id) => $id > 0)));
         abort_if(! $ids, 422);
         $this->type = $type;
@@ -30,7 +30,7 @@ class DeleteCatalogModal extends Component
         $this->confirmation = '';
         $this->resetErrorBag();
         $this->impact = app(CatalogDeletionService::class)->inspect($type, $ids);
-        $this->label = $type === 'title'
+        $this->label = in_array($type, ['title', 'issue'], true)
             ? (BookDetail::with('bookData')->find($ids[0])?->bookData?->book_title ?? 'Selected title')
             : (Book::find($ids[0])?->accession_number ?? 'Selected copy');
         $this->open = true;

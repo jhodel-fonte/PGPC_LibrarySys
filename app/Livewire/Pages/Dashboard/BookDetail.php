@@ -114,12 +114,13 @@ class BookDetail extends Component
                 'bookData.language',
                 'publisher',
                 'bookType',
+                'periodicalIssue',
                 'books' => fn ($q) => $q->whereNull('deleted_at')->with('condition'),
             ])->find($this->bookDetailId)
             : null;
 
         $qrCodeSvg = null;
-        if ($bookDetail && $bookDetail->catalog_kind === 'book') {
+        if ($bookDetail && in_array($bookDetail->catalog_kind, ['book', 'magazine', 'journal'], true)) {
             try {
                 $payload = route('opac.book.detail', ['identifier' => $bookDetail->isbn ?: $bookDetail->id]);
                 $qrCodeSvg = (string) QrCode::size(200)

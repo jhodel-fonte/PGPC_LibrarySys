@@ -1,4 +1,4 @@
-<div class="bg-[#F8FAFC] flex flex-col min-h-0 flex-1 overflow-hidden font-sans text-slate-800 selection:bg-[#102B70] selection:text-white">
+<div class="admin-page-table bg-[#F8FAFC] flex flex-col min-h-0 flex-1 overflow-hidden font-sans text-slate-800 selection:bg-[#102B70] selection:text-white">
     <div class="mx-auto w-full max-w-[1600px] p-3 sm:p-4 lg:p-6 relative flex flex-col gap-3 sm:gap-4 min-h-0 flex-1">
 
         <!-- ======================================================== -->
@@ -197,6 +197,9 @@
                                             <div class="text-xs text-slate-500 mt-0.5 break-words">
                                                 Acc: {{ $book?->accession_number ?: 'N/A' }} | Call: {{ $bookDetail?->call_number ?: 'N/A' }}
                                             </div>
+                                            @if($book?->trashed() || $bookDetail?->trashed() || $bookData?->trashed())
+                                                <div class="text-xs font-semibold text-rose-700">Catalog item deleted</div>
+                                            @endif
                                         </div>
                                     </div>
                                 </td>
@@ -405,6 +408,9 @@
                                 <div><span class="font-semibold text-slate-700">ISBN:</span> {{ $resDetail?->isbn ?: 'N/A' }}</div>
                                 <div><span class="font-semibold text-slate-700">Shelf Location:</span> {{ $resBook?->location ?: 'Main Library' }}</div>
                             </div>
+                            @if($resBook?->trashed() || $resDetail?->trashed() || $resData?->trashed())
+                                <p class="text-sm font-semibold text-rose-700">This catalog item has been deleted.</p>
+                            @endif
                         </div>
                     </div>
 
@@ -468,7 +474,7 @@
                     @elseif($res->reservation_status_id === 2)
                         <button
                             type="button"
-                            wire:click="fulfillReservation({{ $res->id }}); closeDetailModal();"
+                            wire:click="fulfillReservation({{ $res->id }})"
                             class="h-10 px-5 rounded-xl bg-[#102B70] hover:bg-[#0B225E] text-white text-base font-semibold transition-all  cursor-pointer flex items-center gap-1.5"
                         >
                             <span>Fulfill Pickup</span>

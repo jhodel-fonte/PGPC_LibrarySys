@@ -78,8 +78,9 @@
             <h1 class="text-2xl font-bold tracking-tight text-[#102B70]">Student Management</h1>
             <p class="mt-1 text-sm text-slate-500 font-medium">Manage student members, course enrollments, and accounts.</p>
         </div>
-        <div class="flex items-center gap-3 shrink-0">
+        <div class="flex flex-wrap items-center gap-3 shrink-0">
             @if($canCreateStudent)
+                <a href="{{ route($routePrefix . 'user-management.import') }}" wire:navigate class="inline-flex items-center justify-center h-10 px-4 rounded-lg border border-slate-300 text-[#102B70] text-sm font-semibold">Import Students</a>
                 <a href="{{ route($routePrefix . 'user-management.add', ['type' => 'student']) }}" wire:navigate class="inline-flex items-center justify-center gap-2 h-10 px-5 rounded-lg bg-[#102B70] hover:bg-[#0B225E] text-white text-sm font-semibold transition-colors shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70] focus-visible:ring-offset-2 w-full sm:w-auto">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>
                     <span>Add Student</span>

@@ -1,9 +1,10 @@
-<div class="relative w-full min-w-0 flex flex-col items-center justify-start pt-4 px-3 md:px-6 xl:px-12 pb-5 font-sans bg-[#F8FAFC] check-out-workstation"
+<div class="relative w-full min-w-0 flex flex-col items-center justify-start p-3 sm:p-4 lg:p-6 font-sans bg-[#F8FAFC] check-out-workstation circulation-workstation"
      x-data="completedModalHandler()"
      @checkout-completed.window="triggerModal($event.detail)"
      @checkout-failed.window="triggerErrorModal($event.detail)">
 
-    <!-- Lock page layout scroll to prevent entire page scrolling on desktop when screen size permits -->
+    @include('livewire.components.circulation.workstation-styles')
+    <!-- Workstation loading indicators -->
     <style>
         @keyframes loading-pulse {
             0% { transform: translateX(-100%); }
@@ -25,16 +26,16 @@
         }
     </style>
 
-    <div class="w-full max-w-[1460px] min-w-0 flex flex-col">
+    <div class="workstation-content w-full min-w-0 flex flex-col">
         <!-- Header Area -->
-        <div class="w-full flex flex-col mb-4 md:mt-2 relative z-10 shrink-0">
+        <div class="workstation-header w-full flex flex-col mb-4 md:mt-2 relative z-10 shrink-0">
             <!-- Title Row -->
             <div class="flex flex-col md:flex-row pt-2 justify-between items-start md:items-center">
                 <div>
                     <h1 class="text-xl font-bold text-[#102B70] tracking-tight leading-tight">
                         Borrow Items
                     </h1>
-                    <p class="mt-0.5 text-base text-[#64748B] font-medium">
+                    <p class="mt-0.5 text-sm text-[#64748B] font-medium">
                         Scan or enter a member ID first, then scan item barcodes to process loans.
                     </p>
                 </div>
@@ -42,10 +43,10 @@
         </div>
 
         <!-- Main Content Grid -->
-        <div class="w-full grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(260px,320px)] gap-4 lg:gap-6 relative z-10 mb-2 items-start">
+        <div class="workstation-grid w-full grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(260px,320px)] gap-4 lg:gap-6 relative z-10 mb-2 items-start">
 
             <!-- Left Section: Column 1 + Column 2 (col-span-9) -->
-            <div class="min-w-0 flex flex-col gap-4">
+            <div class="workstation-main min-w-0 flex flex-col gap-4">
 
                 <!-- Switch Student Confirmation Banner -->
                 @if($showConfirmChangeMember)
@@ -60,7 +61,12 @@
                     />
                 @endif
 
-                <div class="relative overflow-hidden shrink-0 bg-white rounded-xl border border-[#E2E8F0] p-4 ">
+                <div class="workstation-search relative overflow-hidden shrink-0 bg-white rounded-xl border border-[#E2E8F0] p-4 ">
+                    <label for="loan-location" class="block mb-2 text-sm font-semibold text-[#334155]">Loan type</label>
+                    <select id="loan-location" wire:model.live="loanLocation" class="mb-4 w-full rounded-lg border border-slate-300 p-2 text-sm">
+                        <option value="take_home">Take home</option>
+                        <option value="inside_library">Inside library — return by 7:00 PM today</option>
+                    </select>
                     <!-- Indeterminate Top Progress Bar -->
                     <div wire:loading class="absolute top-0 left-0 right-0 h-1 bg-[#EFF6FF] overflow-hidden">
                         <div class="h-full w-1/3 bg-[#FCC719] animate-loading-pulse rounded-full"></div>
@@ -89,12 +95,12 @@
                 </div>
 
                 <!-- Sub Grid: Camera Scanner & Reusable Table side-by-side -->
-                <div class="grid grid-cols-1 md:grid-cols-[minmax(220px,1fr)_minmax(0,2fr)] gap-4 min-w-0">
+                <div class="workstation-details grid grid-cols-1 md:grid-cols-[minmax(220px,1fr)_minmax(0,2fr)] gap-4 min-w-0">
 
                     <!-- COLUMN 1: Scanner + Scanned Book Details (md:col-span-4) -->
-                    <div class="min-w-0 flex flex-col gap-4">
+                    <div class="workstation-scanner min-w-0 flex flex-col gap-4">
                         <!-- Scanner Card -->
-                        <div class="bg-white rounded-xl border border-[#E2E8F0] p-5  shrink-0">
+                        <div class="workstation-camera bg-white rounded-xl border border-[#E2E8F0] p-4 sm:p-5 shrink-0">
                             <livewire:components.circulation.live-camera />
                         </div>
 
@@ -114,20 +120,23 @@
                         :selected-accession="$lastScannedBook['accession'] ?? null"
                         mode="check-out"
                         title="Items to Borrow"
-                        class="min-w-0 min-h-[400px]"
+                        class="workstation-table min-w-0 min-h-[320px]"
                     />
 
                 </div>
             </div>
 
             <!-- Right Section: Column 3 (col-span-3 Student Card + Checkout Summary Panel) -->
-            <div class="min-w-0 w-full flex flex-col gap-4">
+            <div class="workstation-sidebar min-w-0 w-full flex flex-col gap-4">
                 <!-- Student Card -->
-                <div wire:loading.class="opacity-65 transition-opacity duration-300" class="bg-white rounded-xl border border-[#E2E8F0] p-5  shrink-0 min-h-[220px] flex flex-col">
+                <div wire:loading.class="opacity-65 transition-opacity duration-300" class="workstation-student bg-white rounded-xl border border-[#E2E8F0] p-5 shrink-0 min-h-[220px] flex flex-col">
                     <div class="flex flex-col gap-3 flex-1">
                         <span class="block text-base font-semibold text-[#64748B]">Student</span>
 
                         @if($scannedMember)
+                            @if($scannedMember['reservations_blocked'] ?? false)
+                                <div class="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">Reservation blacklist: this student cannot reserve items. Circulation remains available.</div>
+                            @endif
                             @php
                                 $initials = '';
                                 if (!empty($scannedMember['name'])) {

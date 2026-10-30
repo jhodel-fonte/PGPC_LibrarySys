@@ -1,4 +1,4 @@
-<div class="flex-1 lg:overflow-hidden">
+<div class="workstation-summary flex-1 lg:overflow-hidden">
     <!-- Return Summary Card (Flex-1) -->
     <div class="bg-white rounded-xl border border-[#E2E8F0] p-5 flex flex-col h-auto">
         <!-- Return Summary Panel Contents (Top Section - shrink-0) -->

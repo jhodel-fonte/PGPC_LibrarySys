@@ -237,7 +237,7 @@
     </div>
 
     <!-- Relative Positioning Wrapper for Input & Dropdown -->
-    <div class="relative">
+    <div wire:ignore class="relative">
         <!-- True Tokenized Tag-Input Container -->
         <div
             @click="$refs.catSearchInput?.focus()"

@@ -1,4 +1,4 @@
-<div class="bg-[#F8FAFC] flex flex-col min-h-0 flex-1 overflow-hidden font-sans text-[#0F172A]">
+<div class="admin-page-table bg-[#F8FAFC] flex flex-col min-h-0 flex-1 overflow-hidden font-sans text-[#0F172A]">
 <div
     x-data="{
         selected: @entangle('selectedIds').live,
@@ -153,8 +153,14 @@
                 $visibleIds = $filteredApplicants->pluck('id')->all();
                 $allVisibleSelected = count($visibleIds) > 0 && count(array_diff(array_map('strval', $visibleIds), array_map('strval', $selectedIds))) === 0;
             @endphp
-            <div class="w-full relative flex-1 min-h-0 overflow-auto">
-                <table class="min-w-full text-left text-sm sm:text-base border-collapse">
+            @if(count($visibleIds) > 0)
+                <label class="md:hidden flex items-center gap-2 border-b border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700">
+                    <input type="checkbox" wire:click="toggleSelectAll(@js($visibleIds))" @checked($allVisibleSelected) class="h-4 w-4 rounded border-slate-300 text-[#102B70]">
+                    Select all on this page
+                </label>
+            @endif
+            <div class="admin-table-scroll w-full relative flex-1 min-h-0 overflow-auto">
+                <table class="admin-approval-table min-w-full text-left text-sm sm:text-base border-collapse">
                     <thead class="sticky top-0 z-20 bg-[#F8FAFC] shadow-[inset_0_-1px_0_#E2E8F0] text-xs sm:text-sm font-bold uppercase tracking-wider text-[#334155]">
                         <tr>
                             <th class="sticky top-0 z-20 bg-[#F8FAFC] shadow-[inset_0_-1px_0_#E2E8F0] w-12 px-4 sm:px-5 py-3.5">
@@ -184,6 +190,14 @@
                                 :class="isSelected('{{ $applicant['id'] }}') ? 'bg-[#EFF6FF]/60' : 'hover:bg-[#F8FAFC]'"
                                 class="transition-colors"
                             >
+                                <td class="mobile-cell p-3" colspan="8">
+                                    <article class="rounded-xl border border-slate-200 bg-white p-4 text-sm shadow-sm">
+                                        <div class="flex items-start gap-3"><input type="checkbox" value="{{ (string) $applicant['id'] }}" wire:model.live="selectedIds" aria-label="Select {{ $applicant['name'] }}" class="mt-1 h-4 w-4 rounded border-slate-300 text-[#102B70]"><div class="min-w-0"><p class="font-bold text-[#102B70] break-words">{{ $applicant['name'] }}</p><p class="text-xs text-slate-500 break-all">{{ $applicant['email'] }}</p></div></div>
+                                        <dl class="mt-3 grid grid-cols-2 gap-3 text-xs"><div><dt class="text-slate-500">Student ID</dt><dd class="font-semibold break-words">{{ $applicant['student_id'] }}</dd></div><div><dt class="text-slate-500">Program and year</dt><dd class="font-semibold break-words">{{ $applicant['program'] }} · {{ $applicant['year_level'] }}</dd></div><div><dt class="text-slate-500">Submitted</dt><dd>{{ $applicant['submitted_at'] }}</dd></div><div><dt class="text-slate-500">Status</dt><dd class="font-semibold">{{ $applicant['status'] }}</dd></div></dl>
+                                        <p class="mt-3 text-xs text-slate-600 break-words">Document: {{ $applicant['document_type'] }} · {{ $applicant['document_file'] }}</p>
+                                        <button type="button" wire:click="openReview({{ $applicant['id'] }})" class="mt-3 min-h-11 rounded-lg border border-slate-300 px-4 text-xs font-semibold text-[#102B70]">Review Document</button>
+                                    </article>
+                                </td>
                                 <td class="px-4 sm:px-5 py-4 align-middle">
                                     <input
                                         type="checkbox"

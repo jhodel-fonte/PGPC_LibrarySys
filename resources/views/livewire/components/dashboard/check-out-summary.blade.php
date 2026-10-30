@@ -1,4 +1,4 @@
-<div class="bg-white rounded-3xl border border-[#E2E8F0] p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex-1 flex flex-col h-auto lg:h-full lg:overflow-hidden">
+<div class="workstation-summary bg-white rounded-3xl border border-[#E2E8F0] p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex-1 flex flex-col h-auto lg:h-full lg:overflow-hidden">
     <div class="flex flex-col gap-3 shrink-0">
         <h3 class="text-xs font-bold text-[#102B70] uppercase tracking-wider">Borrow Summary</h3>
 

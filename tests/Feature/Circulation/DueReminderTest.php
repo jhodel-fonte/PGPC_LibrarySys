@@ -31,8 +31,10 @@ class DueReminderTest extends TestCase
         Schema::create('books', function (Blueprint $table) {
             $table->id(); $table->unsignedBigInteger('book_detail_id'); $table->softDeletes();
         });
+        Schema::create('borrow_types', function (Blueprint $table) { $table->id(); $table->string('name'); });
         Schema::create('borrowing_transactions', function (Blueprint $table) {
             $table->id(); $table->unsignedBigInteger('book_id'); $table->unsignedBigInteger('school_id');
+            $table->unsignedBigInteger('borrow_type_id')->nullable();
             $table->dateTime('due_date'); $table->dateTime('return_date')->nullable();
             $table->dateTime('due_reminder_for')->nullable(); $table->timestamps();
         });
@@ -77,5 +79,22 @@ class DueReminderTest extends TestCase
         Queue::assertPushed(SendSmsJob::class, fn (SendSmsJob $job) =>
             $job->phoneNumber === '09171234567' && str_contains($job->message, 'Test Book') && str_contains($job->message, 'Nov 01, 2026')
         );
+    }
+
+    public function test_inside_library_reminder_is_sent_once_at_five_pm_manila(): void
+    {
+        Notification::fake();
+        DB::table('borrow_types')->insert(['id' => 2, 'name' => 'Room Use Only']);
+        $this->travelTo(\Carbon\Carbon::parse('2026-10-30 16:59', 'Asia/Manila'));
+        DB::table('borrowing_transactions')->insert([
+            'id' => 10, 'book_id' => 1, 'school_id' => 1, 'borrow_type_id' => 2,
+            'due_date' => now()->setTimezone('Asia/Manila')->setTime(19, 0)->setTimezone(config('app.timezone')),
+        ]);
+        $this->artisan('loans:send-due-reminders')->assertSuccessful();
+        Notification::assertNothingSent();
+        $this->travelTo(\Carbon\Carbon::parse('2026-10-30 17:00', 'Asia/Manila'));
+        $this->artisan('loans:send-due-reminders')->assertSuccessful();
+        $this->artisan('loans:send-due-reminders')->assertSuccessful();
+        Notification::assertSentToTimes(Account::findOrFail(1), Alerts::class, 1);
     }
 }

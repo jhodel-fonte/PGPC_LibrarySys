@@ -28,9 +28,10 @@
 @php
     $resolvedColspan = ($emptyColspan ?? count($headers)) + ($selectable ? 1 : 0);
     $initialCols = collect($headers)->pluck('index')->filter()->mapWithKeys(fn($k) => [$k => true])->toArray();
+    $tableIsEmpty = $paginator && $paginator->count() === 0;
 @endphp
 
-<div class="relative z-10 flex flex-col overflow-visible rounded-xl border border-[#DCE3EC] bg-white font-sans antialiased shadow-[0_8px_24px_rgba(15,43,112,0.045)] min-h-0 flex-1 {{ $textSize }}"
+<div class="admin-table-container relative z-10 flex flex-col overflow-visible rounded-xl border border-[#DCE3EC] bg-white font-sans antialiased shadow-[0_8px_24px_rgba(15,43,112,0.045)] min-h-0 flex-1 {{ $textSize }}" style="container: admin-table / inline-size"
      x-data="{
          localSearch: @entangle($searchModel).live,
          filterOpen: false,
@@ -282,7 +283,7 @@
     <div
         :class="hasError ? 'overflow-hidden' : 'overflow-auto'"
         x-effect="if (hasError) { $el.scrollTop = 0; $el.scrollLeft = 0; }"
-        class="w-full relative flex-1 min-h-0"
+        class="admin-table-scroll w-full relative flex-1 min-h-0"
     >
         
         <!-- Long Loading State Overlay (Shown only when request takes > 1.2s) -->
@@ -337,7 +338,7 @@
         <table
             x-show="!hasError"
             :class="isTableLoading ? 'opacity-40 pointer-events-none transition-opacity duration-300' : 'transition-opacity duration-200'"
-            class="table-responsive-cards w-full text-left border-collapse"
+            class="table-responsive-cards w-full text-left border-collapse {{ $tableIsEmpty ? 'is-empty h-full' : '' }}"
             style="--min-w: {{ $minWidth }}; min-width: {{ $minWidth }};"
         >
             <!-- Table Header -->
@@ -451,7 +452,19 @@
 </div>
 
 <style>
-@media (max-width: 768px) {
+.table-responsive-cards.is-empty,
+.table-responsive-cards.is-empty > tbody,
+.table-responsive-cards.is-empty > tbody > tr,
+.table-responsive-cards.is-empty > tbody > tr > td[colspan] {
+    height: 100%;
+}
+.table-responsive-cards.is-empty > tbody > tr > td[colspan] {
+    vertical-align: middle;
+}
+.table-responsive-cards.is-empty > thead {
+    display: none;
+}
+@container admin-table (max-width: 68rem) {
     .table-responsive-cards {
         min-width: 100% !important;
         display: block !important;
@@ -468,6 +481,25 @@
         background-color: #F8FAFC !important;
         width: 100% !important;
     }
+    .table-responsive-cards.is-empty > tbody {
+        box-sizing: border-box;
+    }
+    .table-responsive-cards.is-empty > tbody > tr {
+        display: flex !important;
+        flex: 1;
+        min-height: 0;
+    }
+    .table-responsive-cards.is-empty > tbody > tr > td[colspan] {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-height: 0;
+        height: 100%;
+        padding: 1.5rem;
+    }
     .table-responsive-cards > tbody > tr {
         display: block !important;
         width: 100% !important;
@@ -478,6 +510,9 @@
     .table-responsive-cards > tbody > tr > td.desktop-cell {
         display: none !important;
     }
+    .table-responsive-cards > tbody > tr:has(> td.mobile-cell) > td:not(.mobile-cell) {
+        display: none !important;
+    }
     .table-responsive-cards > tbody > tr > td.mobile-cell {
         display: block !important;
         width: 100% !important;
@@ -485,7 +520,7 @@
         border: none !important;
     }
 }
-@media (min-width: 769px) {
+@container admin-table (min-width: 68.0625rem) {
     .table-responsive-cards {
         min-width: var(--min-w, 1000px) !important;
     }

@@ -1,15 +1,14 @@
 <div
     @if($isImporting) wire:poll.2s @endif
     x-data="{
-        inspectModalOpen: @json(!empty($inspectRowData)),
-        reviewRequestError: '',
         removeImportHook: null,
         init() {
-            this.removeImportHook = Livewire.hook('commit', ({ component, commit, fail, succeed }) => {
+            this.removeImportHook = Livewire.hook('commit', ({ component, commit, fail }) => {
                 if (component.id !== this.$wire.$id || !commit.calls.some(call => call.method === 'review')) return;
-                this.reviewRequestError = '';
-                fail(() => { this.reviewRequestError = 'The server could not review the uploaded file. It may be too large or the connection was interrupted. Try a smaller file or contact an administrator.'; });
-                succeed(() => { this.reviewRequestError = ''; });
+                window.dispatchEvent(new CustomEvent('catalog-review-request-error', { detail: '' }));
+                fail(() => window.dispatchEvent(new CustomEvent('catalog-review-request-error', {
+                    detail: 'The server could not review the uploaded file. It may be too large or the connection was interrupted. Try a smaller file or contact an administrator.'
+                })));
             });
         },
         destroy() { if (this.removeImportHook) this.removeImportHook(); },
@@ -57,8 +56,15 @@
         </div>
     </div>
 
+    @if($isImporting)
+        <div role="status" aria-live="polite" class="fixed bottom-4 right-4 z-[130] flex w-[calc(100%-2rem)] max-w-sm items-center gap-3 rounded-xl border border-blue-200 bg-white p-4 text-sm text-slate-700 shadow-lg sm:bottom-auto sm:top-4">
+            <span aria-hidden="true" class="h-5 w-5 shrink-0 animate-spin rounded-full border-2 border-slate-200 border-t-[#102B70]"></span>
+            <span><strong class="block text-[#102B70]">Importing catalog records…</strong><span class="text-xs text-slate-500">{{ $importedRows + $issueRows }} of {{ $totalRows }} processed ({{ $progressPercent }}%)</span></span>
+        </div>
+    @endif
+
     <!-- Alert / Message Banner -->
-    <div x-show="reviewRequestError" x-cloak role="alert" class="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm font-medium text-rose-900" x-text="reviewRequestError"></div>
+    <div x-data="{ reviewRequestError: '' }" x-on:catalog-review-request-error.window="reviewRequestError = $event.detail" x-show="reviewRequestError" x-cloak role="alert" class="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm font-medium text-rose-900" x-text="reviewRequestError"></div>
     @if ($message)
         <div
             x-data="{ show: true }"
@@ -260,8 +266,8 @@
                 </div>
 
                 <!-- Table Content -->
-                <div class="overflow-x-auto">
-                    <table class="min-w-[960px] w-full text-left text-xs sm:text-sm">
+                <div class="admin-mobile-table-scroll overflow-x-auto">
+                    <table class="admin-mobile-table min-w-[960px] w-full text-left text-xs sm:text-sm">
                         <thead class="bg-[#F8FAFC] text-[11px] font-semibold uppercase tracking-wider text-slate-600 border-b border-[#E2E8F0]">
                             <tr>
                                 <th class="py-2.5 px-3.5 w-12 text-slate-500">#</th>
@@ -286,12 +292,12 @@
                                 @endphp
                                 <tr class="hover:bg-[#F8FAFC] transition-colors {{ $hasIssues ? 'bg-rose-50/20' : '' }}">
                                     <!-- Row # -->
-                                    <td class="py-2.5 px-3.5 font-mono text-xs text-slate-500">
+                                    <td data-label="Row" class="py-2.5 px-3.5 font-mono text-xs text-slate-500">
                                         {{ $row->row_number }}
                                     </td>
 
                                     <!-- Status -->
-                                    <td class="py-2.5 px-3.5 text-xs font-semibold whitespace-nowrap">
+                                    <td data-label="Status" class="py-2.5 px-3.5 text-xs font-semibold whitespace-nowrap">
                                         @if ($isImported)
                                             <span class="text-emerald-700">Imported</span>
                                         @elseif ($isReady)
@@ -302,17 +308,17 @@
                                     </td>
 
                                     <!-- Title & Author -->
-                                    <td class="py-2.5 px-3.5">
+                                    <td data-label="Title and author" class="py-2.5 px-3.5"><div>
                                         <div class="font-semibold text-[#0F172A] line-clamp-1" title="{{ $data['title'] ?? '' }}">
                                             {{ $data['title'] ?? 'Untitled Book' }}
                                         </div>
                                         <div class="text-xs text-slate-500 line-clamp-1 mt-0.5" title="{{ $data['author'] ?? '' }}">
                                             {{ !empty($data['author']) ? $data['author'] : 'Unknown Author' }}
                                         </div>
-                                    </td>
+                                    </div></td>
 
                                     <!-- Accession No -->
-                                    <td class="py-2.5 px-3.5 font-mono text-xs">
+                                    <td data-label="Accession" class="py-2.5 px-3.5 font-mono text-xs">
                                         @if (!empty($data['accession_no']))
                                             <span class="text-slate-800 font-semibold">{{ $data['accession_no'] }}</span>
                                         @else
@@ -321,27 +327,27 @@
                                     </td>
 
                                     <!-- Format & Shelf -->
-                                    <td class="py-2.5 px-3.5 text-xs text-slate-700">
+                                    <td data-label="Format and shelf" class="py-2.5 px-3.5 text-xs text-slate-700"><div>
                                         <div class="font-medium text-slate-800">{{ $data['material_type'] ?? 'Book' }}</div>
                                         <div class="text-[11px] text-slate-500 truncate" title="{{ $data['sublocation'] ?? '' }}">
                                             {{ ($data['sublocation'] ?? '') ?: $defaultCollection }}
                                         </div>
-                                    </td>
+                                    </div></td>
 
                                     <!-- ISBN & Call Number -->
-                                    <td class="py-2.5 px-3.5 text-xs font-mono text-slate-600">
+                                    <td data-label="ISBN / call number" class="py-2.5 px-3.5 text-xs font-mono text-slate-600"><div>
                                         <div>{{ ($data['call_number'] ?? '') ?: '—' }}</div>
                                         <div class="text-[11px] text-slate-400">{{ ($data['isbn'] ?? '') ?: 'No ISBN' }}</div>
-                                    </td>
+                                    </div></td>
 
                                     <!-- Publisher & Year -->
-                                    <td class="py-2.5 px-3.5 text-xs text-slate-600">
+                                    <td data-label="Publisher and year" class="py-2.5 px-3.5 text-xs text-slate-600"><div>
                                         <div class="truncate max-w-[140px]" title="{{ $data['publisher'] ?? '' }}">{{ ($data['publisher'] ?? '') ?: '—' }}</div>
                                         <div class="text-[11px] text-slate-500">{{ ($data['publication_year'] ?? '') ?: '—' }}</div>
-                                    </td>
+                                    </div></td>
 
                                     <!-- Validation Notes -->
-                                    <td class="py-2.5 px-3.5 text-xs">
+                                    <td data-label="Validation" class="py-2.5 px-3.5 text-xs">
                                         @if (!empty($errors))
                                             <ul class="space-y-0.5 text-rose-700 font-medium">
                                                 @foreach ($errors as $err)
@@ -356,10 +362,9 @@
                                     </td>
 
                                     <!-- Inspect Action -->
-                                    <td class="py-2.5 px-3.5 text-right whitespace-nowrap">
+                                    <td data-label="Action" class="py-2.5 px-3.5 text-right whitespace-nowrap">
                                         <button
                                             type="button"
-                                            @click="inspectModalOpen = true"
                                             wire:click="inspectRow({{ $row->id }})"
                                             class="text-xs font-semibold text-[#102B70] hover:text-[#0B225E] hover:underline cursor-pointer"
                                         >
@@ -599,6 +604,14 @@
                             <button type="button" @click.stop="$wire.$cancelUpload('spreadsheet'); clearTimeout(uploadTimer); uploading = false; uploadError = 'Upload cancelled. Choose a file to try again.'" class="mt-3 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">Cancel upload</button>
                         </div>
                     </div>
+                    <div x-show="uploading" x-cloak role="status" aria-live="polite" class="fixed bottom-4 right-4 z-[130] flex w-[calc(100%-2rem)] max-w-sm items-center gap-3 rounded-xl border border-blue-200 bg-white p-4 text-sm text-slate-700 shadow-lg sm:bottom-auto sm:top-4">
+                        <span aria-hidden="true" class="h-5 w-5 shrink-0 animate-spin rounded-full border-2 border-slate-200 border-t-[#102B70]"></span>
+                        <span class="min-w-0"><strong class="block text-[#102B70]">Uploading catalog file…</strong><span class="text-xs text-slate-500" x-text="progress + '%' "></span></span>
+                    </div>
+                    <div wire:loading.flex wire:target="review" role="status" aria-live="polite" class="fixed bottom-4 right-4 z-[130] w-[calc(100%-2rem)] max-w-sm items-center gap-3 rounded-xl border border-blue-200 bg-white p-4 text-sm text-slate-700 shadow-lg sm:bottom-auto sm:top-4">
+                        <span aria-hidden="true" class="h-5 w-5 shrink-0 animate-spin rounded-full border-2 border-slate-200 border-t-[#102B70]"></span>
+                        <span><strong class="block text-[#102B70]">Reviewing catalog file…</strong><span class="text-xs text-slate-500">Reading and validating records</span></span>
+                    </div>
                     <p x-show="uploadError" x-text="uploadError" role="alert" x-cloak class="mt-3 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800"></p>
                     <div wire:loading wire:target="review" role="status" class="mt-3 text-sm font-semibold text-[#102B70]">Upload complete. Reading and validating records…</div>
                     @error('spreadsheet') <p role="alert" class="mt-3 text-sm text-rose-700">{{ $message }}</p> @enderror
@@ -756,18 +769,16 @@
     <!-- ============================================== -->
     <!-- 5. ROW INSPECTION MODAL                        -->
     <!-- ============================================== -->
+    @if ($inspectRowData)
     <div
-        x-show="inspectModalOpen"
-        x-cloak
         class="fixed inset-0 z-50 overflow-y-auto"
         aria-labelledby="inspect-modal-title"
         role="dialog"
         aria-modal="true"
-        @keydown.escape.window="inspectModalOpen = false; $wire.closeInspectModal()"
+        @keydown.escape.window="$wire.closeInspectModal()"
     >
         <!-- Backdrop -->
         <div
-            x-show="inspectModalOpen"
             x-transition:enter="ease-out duration-200"
             x-transition:enter-start="opacity-0"
             x-transition:enter-end="opacity-100"
@@ -775,12 +786,11 @@
             x-transition:leave-start="opacity-100"
             x-transition:leave-end="opacity-0"
             class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs transition-opacity cursor-pointer"
-            @click="inspectModalOpen = false; $wire.closeInspectModal()"
+            @click="$wire.closeInspectModal()"
         ></div>
 
         <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-6">
             <div
-                x-show="inspectModalOpen"
                 x-transition:enter="ease-out duration-200"
                 x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                 x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
@@ -817,7 +827,7 @@
                     </div>
                     <button
                         type="button"
-                        @click="inspectModalOpen = false; $wire.closeInspectModal()"
+                        wire:click="closeInspectModal"
                         class="rounded-lg p-1 text-white/80 hover:text-white hover:bg-white/10 transition shrink-0 cursor-pointer text-sm"
                         title="Close modal (Esc)"
                     >
@@ -913,7 +923,7 @@
                 <div class="bg-[#F8FAFC] px-5 py-3 border-t border-[#E2E8F0] flex items-center justify-end">
                     <button
                         type="button"
-                        @click="inspectModalOpen = false; $wire.closeInspectModal()"
+                        wire:click="closeInspectModal"
                         class="h-10 px-4 rounded-lg border border-[#CBD5E1] bg-white hover:bg-slate-50 text-sm font-semibold text-slate-700 transition cursor-pointer"
                     >
                         Close
@@ -922,4 +932,5 @@
             </div>
         </div>
     </div>
+    @endif
 </div>

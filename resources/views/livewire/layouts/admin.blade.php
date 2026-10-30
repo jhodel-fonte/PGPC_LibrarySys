@@ -28,6 +28,8 @@
                 } catch(e) {}
             });
         </script>
+        @include('livewire.components.circulation.live-camera-script')
+        @include('livewire.layouts.admin-mobile-tables')
         @vite(['resources/css/app.css', 'resources/js/app.js'])
         <tallstackui:script />
         @livewireStyles
@@ -48,7 +50,7 @@
             <livewire:layouts.sidebar-nav />
 
             <!-- Page Content -->
-            <div :class="sidebarMinimized ? 'md:ml-[80px]' : 'md:ml-[280px]'" class="flex-1 flex flex-col min-w-0 h-dvh transition-all duration-300 ease-in-out w-0 bg-[#F8FAFC]">
+            <div :class="sidebarMinimized ? 'lg:ml-[80px]' : 'lg:ml-[280px]'" class="flex-1 flex flex-col min-w-0 h-dvh transition-all duration-300 ease-in-out w-0 bg-[#F8FAFC]">
                 <x-widget.top-navbar :activepage="$title ?? 'Dashboards'" :subpage="$subpage ?? null" :activepageRoute="$activepageRoute ?? null" />
 
                 <main class="flex-1 flex flex-col min-w-0 min-h-0 overflow-y-auto bg-[#F8FAFC]">

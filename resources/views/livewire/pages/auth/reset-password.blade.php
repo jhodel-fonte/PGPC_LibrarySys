@@ -56,6 +56,9 @@ new #[Layout('components.layouts.app')] class extends Component
                 $user->forceFill([
                     'password_hash' => Hash::make($this->password),
                     'remember_token' => Str::random(60),
+                    'password_changed_at' => now(),
+                    'is_email_verified' => true,
+                    'email_verified_at' => $user->email_verified_at ?? now(),
                 ])->save();
 
                 event(new PasswordReset($user));

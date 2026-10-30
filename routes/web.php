@@ -20,23 +20,44 @@ Route::redirect('/terms-and-conditions', '/terms');
 Route::redirect('/terms-of-service', '/terms');
 Route::redirect('/privacy-policy', '/privacy');
 
-// Online Resources Access Gateway (Validates Patron Authentication)
-Route::get('/online-resources/access', function (\Illuminate\Http\Request $request) {
-    $targetUrl = $request->query('url');
+// Public introduction pages for external library resources.
+$onlineResources = static function (): array {
+    $path = storage_path('app/public/online_resources/list.json');
+    $content = is_file($path) ? file_get_contents($path) : false;
+    $data = is_string($content) ? json_decode($content, true) : null;
 
-    if (!auth()->check()) {
-        if ($targetUrl && filter_var($targetUrl, FILTER_VALIDATE_URL)) {
-            session()->put('url.intended', $targetUrl);
-        }
-        return redirect()->route('login')->with('warning', 'Please sign in to access university online research resources.');
-    }
+    $resources = is_array($data['online_resources'] ?? null) ? $data['online_resources'] : [];
 
-    if (!$targetUrl || !filter_var($targetUrl, FILTER_VALIDATE_URL)) {
-        return redirect()->to(url('/#online-resources'));
-    }
+    return $resources ?: [
+        ['name' => 'ScienceDirect', 'external_url' => 'https://www.sciencedirect.com'],
+        ['name' => 'Emerald Insight', 'external_url' => 'https://www.emerald.com'],
+        ['name' => 'SpringerLink', 'external_url' => 'https://link.springer.com/'],
+        ['name' => 'JSTOR', 'external_url' => 'https://www.jstor.org/'],
+        ['name' => 'Wiley Online Library', 'external_url' => 'https://onlinelibrary.wiley.com/'],
+        ['name' => 'IEEEXplore', 'external_url' => 'https://ieeexplore.ieee.org/'],
+    ];
+};
 
-    return redirect()->away($targetUrl);
+Route::get('/online-resources/access', function (\Illuminate\Http\Request $request) use ($onlineResources) {
+    $url = $request->query('url');
+    $resource = collect($onlineResources())->first(fn ($item) => ($item['external_url'] ?? null) === $url);
+
+    return $resource
+        ? redirect()->route('online-resources.show', \Illuminate\Support\Str::slug($resource['name'] ?? ''))
+        : redirect()->to(url('/#online-resources'));
 })->name('online-resources.access');
+
+Route::get('/online-resources/{resource}', function (string $resource) use ($onlineResources) {
+    $item = collect($onlineResources())->first(fn ($item) => \Illuminate\Support\Str::slug($item['name'] ?? '') === $resource);
+    $url = $item['external_url'] ?? '';
+
+    abort_unless(
+        $item && filter_var($url, FILTER_VALIDATE_URL) && in_array(parse_url($url, PHP_URL_SCHEME), ['http', 'https'], true),
+        404
+    );
+
+    return view('main.online-resource', ['resource' => $item]);
+})->middleware('auth')->name('online-resources.show');
 
 
 Route::middleware(['auth', 'verified', 'role:Admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -49,6 +70,7 @@ Route::middleware(['auth', 'verified', 'role:Admin'])->prefix('admin')->name('ad
         Route::get('/user-management', \App\Livewire\Pages\Dashboard\UserManagement::class)->name('user-management');
         Route::get('/user-management/approvals', \App\Livewire\Pages\Dashboard\UserApprovals::class)->name('user-management.approvals');
         Route::get('/user-management/add', \App\Livewire\Pages\Dashboard\AddUser::class)->name('user-management.add');
+        Route::get('/user-management/import', \App\Livewire\Pages\Dashboard\ImportStudents::class)->name('user-management.import');
         Route::get('/user-management/edit/{id}', \App\Livewire\Pages\Dashboard\EditUserPage::class)->name('user-management.edit');
         Route::get('/user-management/{id}/edit', \App\Livewire\Pages\Dashboard\EditUserPage::class);
         Route::get('/user-management/{id}', \App\Livewire\Pages\Dashboard\UserDetails::class)->name('user-details');
@@ -93,6 +115,7 @@ Route::middleware(['auth', 'verified', 'role:Librarian,Head Librarian,Admin'])->
             Route::get('/user-management', \App\Livewire\Pages\Dashboard\UserManagement::class)->name('user-management');
             Route::get('/user-management/approvals', \App\Livewire\Pages\Dashboard\UserApprovals::class)->name('user-management.approvals')->middleware('permission:manage_users,view_students,edit_students');
             Route::get('/user-management/add', \App\Livewire\Pages\Dashboard\AddUser::class)->name('user-management.add')->middleware('permission:manage_users,create_students,manage_librarians');
+            Route::get('/user-management/import', \App\Livewire\Pages\Dashboard\ImportStudents::class)->name('user-management.import')->middleware('permission:manage_users,create_students');
             Route::get('/user-management/edit/{id}', \App\Livewire\Pages\Dashboard\EditUserPage::class)->name('user-management.edit')->middleware('permission:manage_users,edit_students,manage_librarians');
             Route::get('/user-management/{id}/edit', \App\Livewire\Pages\Dashboard\EditUserPage::class)->middleware('permission:manage_users,edit_students,manage_librarians');
             Route::get('/user-management/{id}', \App\Livewire\Pages\Dashboard\UserDetails::class)->name('user-details');
@@ -201,7 +224,7 @@ Route::get('/preview-reset-email', function () {
     return new \App\Mail\ResetEmail(url('/reset-password/sample-token?email=student@pgpc.edu.ph'));
 });
 
-Route::middleware(['auth', 'verified', 'role:Student', 'student.verified'])->prefix('student')->name('student.')->group(function () {
+Route::middleware(['auth', 'verified', 'role:Student', 'student.setup', 'student.verified'])->prefix('student')->name('student.')->group(function () {
     Route::get('/dashboard', \App\Livewire\Pages\Student\Dashboard::class)->name('dashboard');
     Route::get('/borrow', \App\Livewire\Pages\Student\Borrow::class)->name('borrow');
     Route::get('/profile', \App\Livewire\Pages\Student\Profile::class)->name('profile');

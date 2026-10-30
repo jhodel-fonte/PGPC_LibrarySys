@@ -117,7 +117,7 @@
 @elseif(session()->has('errorMessage'))
     x-init="addToast('{{ session('errorMessage') }}', 'error')"
 @endif
-class="fixed bottom-6 right-6 z-[120] flex flex-col gap-2.5 max-w-md w-full pointer-events-none px-4"
+class="fixed bottom-4 left-1/2 z-[120] flex -translate-x-1/2 flex-col gap-2.5 w-[calc(100%-2rem)] max-w-md pointer-events-none md:bottom-auto md:left-auto md:right-6 md:top-6 md:translate-x-0"
 style="display: none;"
 x-show="toasts.length > 0"
 >

@@ -230,16 +230,16 @@
                 <h2 class="text-lg font-bold text-[#102B70]">Fines and payments</h2>
                 <p class="text-sm text-slate-600">Unpaid balance: ₱{{ number_format($this->unpaidFinesTotal, 2) }}</p>
             </div>
-            <div tabindex="0" role="region" aria-label="Circulation history" class="max-w-full overflow-x-auto"><table class="w-full text-left text-sm">
+            <div tabindex="0" role="region" aria-label="Fines and payments" class="admin-mobile-table-scroll max-w-full overflow-x-auto"><table class="admin-mobile-table w-full text-left text-sm">
                 <thead class="bg-slate-50 text-slate-600"><tr><th class="p-4">Book / fine</th><th class="p-4">Amount</th><th class="p-4">Status</th><th class="p-4">Payment confirmed by</th><th class="p-4">Action</th></tr></thead>
                 <tbody class="divide-y divide-slate-100">
                     @forelse($this->student?->fines?->sortByDesc('created_at') ?? collect() as $fine)
                         <tr wire:key="fine-{{ $fine->id }}">
-                            <td class="p-4"><div class="font-semibold">{{ $fine->transaction?->book?->bookDetail?->bookData?->book_title ?? 'Book unavailable' }}</div><div class="text-slate-500">{{ $fine->fineType?->name ?? 'Fine' }} · {{ $fine->note }}</div></td>
-                            <td class="p-4">₱{{ number_format($fine->amount, 2) }}</td>
-                            <td class="p-4">{{ ucfirst($fine->fine_status) }} @if($fine->paid_at) · {{ $fine->paid_at->format('M d, Y') }} @endif</td>
-                            <td class="p-4">{{ $fine->payments->last()?->receivedBy?->first_name ?? '—' }} {{ $fine->payments->last()?->receivedBy?->last_name ?? '' }}</td>
-                            <td class="p-4">@if($fine->fine_status === 'unpaid')<button type="button" wire:click="openFinePayment({{ $fine->id }})" class="rounded-lg bg-[#102B70] px-3 py-2 font-semibold text-white">Confirm payment</button>@else — @endif</td>
+                            <td data-label="Book / fine" class="p-4"><div><div class="font-semibold">{{ $fine->transaction?->book?->bookDetail?->bookData?->book_title ?? 'Book unavailable' }}</div><div class="text-slate-500">{{ $fine->fineType?->name ?? 'Fine' }} · {{ $fine->note }}</div></div></td>
+                            <td data-label="Amount" class="p-4">₱{{ number_format($fine->amount, 2) }}</td>
+                            <td data-label="Status" class="p-4"><span>{{ ucfirst($fine->fine_status) }} @if($fine->paid_at) · {{ $fine->paid_at->format('M d, Y') }} @endif</span></td>
+                            <td data-label="Confirmed by" class="p-4"><span>{{ $fine->payments->last()?->receivedBy?->first_name ?? '—' }} {{ $fine->payments->last()?->receivedBy?->last_name ?? '' }}</span></td>
+                            <td data-label="Action" class="p-4">@if($fine->fine_status === 'unpaid')<button type="button" wire:click="openFinePayment({{ $fine->id }})" class="rounded-lg bg-[#102B70] px-3 py-2 font-semibold text-white">Confirm payment</button>@else — @endif</td>
                         </tr>
                     @empty
                         <tr><td colspan="5" class="p-6 text-center text-slate-500">No fines recorded.</td></tr>

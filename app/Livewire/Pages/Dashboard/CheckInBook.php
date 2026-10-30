@@ -36,6 +36,18 @@ class CheckInBook extends Component
         \App\Services\EmployeeRoleService::authorizeReturn('Unauthorized action. You do not have permission to process item returns.');
 
         $this->updateStats();
+
+        $loanId = request()->query('loan');
+        if ($loanId !== null) {
+            $loan = is_scalar($loanId) && ctype_digit((string) $loanId)
+                ? BorrowingTransaction::with(['student.libraryStatus', 'student.account'])->whereNull('return_date')->find((int) $loanId)
+                : null;
+            if ($loan?->student && $loan->student->account) {
+                $this->loadMember($loan->student);
+            } else {
+                $this->errorMessage = 'This active loan or its student could not be found. Search for the member to continue.';
+            }
+        }
     }
 
     public function getQrConfig()
@@ -317,7 +329,8 @@ class CheckInBook extends Component
             'name' => trim($student->first_name . ' ' . ($student->middle_name ? $student->middle_name . ' ' : '') . $student->last_name),
             'school_id' => $student->school_id_number,
             'course' => trim(($student->program ?? '') . ' - ' . ($student->year_level ?? '')),
-            'status' => $student->libraryStatus ? $student->libraryStatus->status : 'Active'
+            'status' => $student->libraryStatus ? $student->libraryStatus->status : 'Active',
+            'reservations_blocked' => (bool) $student->account?->reservations_blocked,
         ];
 
         // Fetch their currently borrowed books (not yet returned)
@@ -614,7 +627,7 @@ class CheckInBook extends Component
                 } else {
                     // For the books that ARE scanned, calculate their fine
                     $due = Carbon::parse($ot->due_date);
-                    if ($due->isPast()) {
+                    if ($due->isPast() && ! $ot->isInsideLibrary()) {
                         $totalFine += app(\App\Services\FineService::class)->overdueAmount($due, $ot->book?->bookDetail);
                     }
                 }

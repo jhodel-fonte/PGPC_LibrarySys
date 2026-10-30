@@ -5,93 +5,61 @@
     $borrowedBooksRoute = route($prefix . 'circulation-desk.borrowed-books');
     $canBorrow = \App\Services\EmployeeRoleService::canBorrow();
     $canReturn = \App\Services\EmployeeRoleService::canReturn();
-    $activeLoansCount = \App\Models\BorrowingTransaction::whereNull('return_date')->count();
 @endphp
 
-<section class="h-full min-h-0 overflow-hidden bg-[#F8FBFF] font-sans text-[#132657]" aria-labelledby="circulation-title">
-    <div class="mx-auto flex h-full min-h-0 w-full max-w-[46rem] flex-col gap-2 px-3 pt-6 pb-3 sm:gap-3 sm:px-5 sm:pt-8 sm:pb-4 lg:max-w-[76rem] lg:gap-5 lg:px-10 lg:pt-12 lg:pb-6">
-        <div class="flex shrink-0 flex-col items-center text-center">
-            <h1 id="circulation-title" class="mt-1 text-[clamp(1.55rem,4vw,2.65rem)] font-extrabold leading-none tracking-[-0.035em] text-[#102B70] lg:mt-2">Circulation Desk</h1>
-            <p class="mt-1.5 max-w-xl text-[11px] font-medium leading-snug text-[#52627F] sm:text-xs lg:mt-2 lg:text-base">Process book loans and returns quickly and efficiently.</p>
-        </div>
+<section class="min-h-full bg-[#F8FAFC] font-sans text-[#132657]" aria-labelledby="circulation-title">
+    <div class="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
+        <header class="mb-6 sm:mb-8">
+            <h1 id="circulation-title" class="text-2xl font-bold tracking-tight text-[#102B70] sm:text-3xl">Circulation Desk</h1>
+            <p class="mt-1 text-sm leading-relaxed text-[#52627F] sm:text-base">Choose an action to manage loans and returns.</p>
+        </header>
 
-        <div class="grid shrink-0 grid-cols-1 gap-2.5 sm:gap-3 {{ ($canBorrow && $canReturn) ? 'lg:grid-cols-2' : 'lg:grid-cols-1 max-w-xl mx-auto w-full' }} lg:gap-6">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-5">
             @if($canBorrow)
-            <a href="{{ $checkOutRoute }}" wire:navigate class="group flex items-center gap-3 overflow-hidden rounded-2xl border border-[#D5E2F0] bg-gradient-to-br from-white to-[#F2F8FF] p-3 shadow-[0_8px_24px_rgba(16,43,112,0.06)] outline-none transition duration-200 hover:-translate-y-0.5 hover:border-[#B8C8DC] hover:shadow-[0_18px_38px_rgba(16,43,112,0.12)] focus-visible:ring-4 focus-visible:ring-[#2563EB]/25 motion-reduce:transform-none motion-reduce:transition-none sm:gap-5 sm:p-4 lg:flex-col lg:items-stretch lg:p-8 lg:text-center" aria-label="Go to Borrow">
-                <div class="flex aspect-square h-[76px] shrink-0 items-center justify-center rounded-full bg-[#E8F2FF] sm:h-24 lg:mx-auto lg:h-32">
-                    <img src="{{ asset('images/checkout-book.webp') }}" alt="" class="h-[82%] w-[82%] object-contain drop-shadow-sm transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-1 motion-reduce:transform-none motion-reduce:transition-none">
-                </div>
-                <div class="min-w-0 flex-1 lg:mt-5 lg:flex-none">
-                    <h2 class="text-lg font-extrabold leading-tight tracking-[-0.025em] text-[#102B70] sm:text-xl lg:text-3xl">Borrow</h2>
-                    <p class="mt-1 max-w-md text-[10px] font-medium leading-[1.45] text-[#52627F] sm:text-xs lg:mx-auto lg:mt-3 lg:text-sm">Issue books to an eligible student member, review borrowing limits, and record due dates.</p>
-                </div>
-                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[#102B70] transition-transform duration-200 group-hover:translate-x-1 motion-reduce:transform-none motion-reduce:transition-none lg:hidden" aria-hidden="true">
-                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 12h14m-6-6 6 6-6 6" /></svg>
-                </span>
-                <span class="mt-3 hidden w-full items-center justify-center gap-3 rounded-xl bg-[#102B70] px-5 py-3.5 text-sm font-bold text-white shadow-[0_8px_18px_rgba(16,43,112,.18)] transition-colors group-hover:bg-[#0B225E] lg:flex lg:mt-8">
-                    Go to Borrow
-                    <svg class="h-5 w-5 transition-transform duration-200 group-hover:translate-x-1 motion-reduce:transform-none motion-reduce:transition-none" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 12h14m-6-6 6 6-6 6" /></svg>
-                </span>
-            </a>
+                <a href="{{ $checkOutRoute }}" wire:navigate class="group flex flex-col rounded-2xl border border-[#D5E2F0] bg-white p-5 shadow-sm transition hover:border-[#9CB2D4] hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#2563EB]/25 sm:min-h-[280px] sm:p-6 lg:min-h-[360px] lg:p-8">
+                    <span class="flex h-12 w-12 items-center justify-center rounded-xl bg-[#E8F2FF] sm:h-20 sm:w-20 lg:h-24 lg:w-24">
+                        <img src="{{ asset('images/checkout-book.webp') }}" alt="" class="h-4/5 w-4/5 object-contain">
+                    </span>
+                    <h2 class="mt-3 text-lg sm:mt-5 sm:text-xl lg:text-2xl font-bold text-[#102B70]">Borrow</h2>
+                    <p class="mt-2 flex-1 text-sm leading-relaxed text-[#52627F]">Issue items, check borrowing limits, and set due dates.</p>
+                    <span class="mt-3 sm:mt-5 inline-flex min-h-11 items-center justify-center rounded-xl bg-[#102B70] px-4 text-sm font-bold text-white group-hover:bg-[#0B225E]">Start borrowing</span>
+                </a>
             @endif
 
             @if($canReturn)
-            <a href="{{ $checkInRoute }}" wire:navigate class="group flex items-center gap-3 overflow-hidden rounded-2xl border border-[#D5E2F0] bg-gradient-to-br from-white to-[#F2F8FF] p-3 shadow-[0_8px_24px_rgba(16,43,112,0.06)] outline-none transition duration-200 hover:-translate-y-0.5 hover:border-[#B8C8DC] hover:shadow-[0_18px_38px_rgba(16,43,112,0.12)] focus-visible:ring-4 focus-visible:ring-[#2563EB]/25 motion-reduce:transform-none motion-reduce:transition-none sm:gap-5 sm:p-4 lg:flex-col lg:items-stretch lg:p-8 lg:text-center" aria-label="Go to Return">
-                <div class="flex aspect-square h-[76px] shrink-0 items-center justify-center rounded-full bg-[#E8F2FF] sm:h-24 lg:mx-auto lg:h-32">
-                    <img src="{{ asset('images/checkin-book.webp') }}" alt="" class="h-[82%] w-[82%] object-contain drop-shadow-sm transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-1 motion-reduce:transform-none motion-reduce:transition-none">
-                </div>
-                <div class="min-w-0 flex-1 lg:mt-5 lg:flex-none">
-                    <h2 class="text-lg font-extrabold leading-tight tracking-[-0.025em] text-[#102B70] sm:text-xl lg:text-3xl">Return</h2>
-                    <p class="mt-1 max-w-md text-[10px] font-medium leading-[1.45] text-[#52627F] sm:text-xs lg:mx-auto lg:mt-3 lg:text-sm">Accept returned books, verify condition, and update availability records.</p>
-                </div>
-                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[#102B70] transition-transform duration-200 group-hover:translate-x-1 motion-reduce:transform-none motion-reduce:transition-none lg:hidden" aria-hidden="true">
-                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 12h14m-6-6 6 6-6 6" /></svg>
-                </span>
-                <span class="mt-3 hidden w-full items-center justify-center gap-3 rounded-xl bg-[#102B70] px-5 py-3.5 text-sm font-bold text-white shadow-[0_8px_18px_rgba(16,43,112,.18)] transition-colors group-hover:bg-[#0B225E] lg:flex lg:mt-8">
-                    Go to Return
-                    <svg class="h-5 w-5 transition-transform duration-200 group-hover:translate-x-1 motion-reduce:transform-none motion-reduce:transition-none" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 12h14m-6-6 6 6-6 6" /></svg>
-                </span>
-            </a>
+                <a href="{{ $checkInRoute }}" wire:navigate class="group flex flex-col rounded-2xl border border-[#D5E2F0] bg-white p-5 shadow-sm transition hover:border-[#9CB2D4] hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#2563EB]/25 sm:min-h-[280px] sm:p-6 lg:min-h-[360px] lg:p-8">
+                    <span class="flex h-12 w-12 items-center justify-center rounded-xl bg-[#E8F2FF] sm:h-20 sm:w-20 lg:h-24 lg:w-24">
+                        <img src="{{ asset('images/checkin-book.webp') }}" alt="" class="h-4/5 w-4/5 object-contain">
+                    </span>
+                    <h2 class="mt-3 text-lg sm:mt-5 sm:text-xl lg:text-2xl font-bold text-[#102B70]">Return</h2>
+                    <p class="mt-2 flex-1 text-sm leading-relaxed text-[#52627F]">Check in returned items, review their condition, and update availability.</p>
+                    <span class="mt-3 sm:mt-5 inline-flex min-h-11 items-center justify-center rounded-xl bg-[#102B70] px-4 text-sm font-bold text-white group-hover:bg-[#0B225E]">Start a return</span>
+                </a>
             @endif
-        </div>
-        
-        <!-- Active Borrowers Full-Width Card (Same width as combined cards above) -->
-        <div class="w-full shrink-0 overflow-hidden rounded-2xl border border-[#D5E2F0] bg-white p-3.5 sm:p-4 lg:px-7 lg:py-4 shadow-[0_8px_24px_rgba(16,43,112,0.06)] flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-4">
 
-            <div class="flex items-center gap-3.5 sm:gap-5 min-w-0">
-                <div class="min-w-0">
-                    <h2 class="text-xs sm:text-sm lg:text-base font-extrabold tracking-[-0.02em] text-[#102B70] leading-tight">
-                        Active Borrowers
-                    </h2>
-                    <p class="mt-0.5 text-[10px] sm:text-xs lg:text-sm font-medium text-[#52627F] leading-snug">
-                        View students with books currently on loan and check their due dates.
-                    </p>
-                </div>
-            </div>
-
-            <!-- Action Button -->
-            <a href="{{ $borrowedBooksRoute }}" wire:navigate class="group inline-flex items-center justify-center gap-2 rounded-xl bg-[#102B70] px-5 py-2.5 sm:px-6 sm:py-3 text-xs sm:text-sm font-bold text-white shadow-[0_8px_18px_rgba(16,43,112,.18)] transition-all duration-200 hover:bg-[#0B225E] hover:shadow-[0_12px_24px_rgba(16,43,112,.25)] focus-visible:ring-4 focus-visible:ring-[#2563EB]/25 shrink-0">
-                <span>View Borrowers</span>
-                <svg class="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1 motion-reduce:transform-none motion-reduce:transition-none" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14m-6-6 6 6-6 6" />
-                </svg>
+            <a href="{{ $borrowedBooksRoute }}" wire:navigate class="group flex flex-col rounded-2xl border border-[#D5E2F0] bg-white p-5 shadow-sm transition hover:border-[#9CB2D4] hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#2563EB]/25 sm:min-h-[280px] sm:p-6 lg:min-h-[360px] lg:p-8">
+                <span class="flex h-12 w-12 items-center justify-center rounded-xl bg-[#E8F2FF] text-[#102B70] sm:h-20 sm:w-20 lg:h-24 lg:w-24" aria-hidden="true">
+                    <svg class="h-9 w-9" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2m6-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm10 10v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></svg>
+                </span>
+                <h2 class="mt-3 text-lg sm:mt-5 sm:text-xl lg:text-2xl font-bold text-[#102B70]">Active Borrowers</h2>
+                <p class="mt-2 flex-1 text-sm leading-relaxed text-[#52627F]">Find current loans and check their due dates.</p>
+                <span class="mt-3 sm:mt-5 inline-flex min-h-11 items-center justify-center rounded-xl border border-[#CBD5E1] bg-white px-4 text-sm font-bold text-[#102B70] group-hover:bg-[#F1F5F9]">View borrowers</span>
             </a>
         </div>
-        
-        <ol class="grid shrink-0 grid-cols-3 border-y border-[#DDE6F1] py-2 sm:py-3 lg:py-4" aria-label="Circulation workflow">
-            <li class="flex min-w-0 items-center justify-center gap-2 border-r border-[#DDE6F1] px-1.5 sm:gap-3 sm:px-3">
-                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#E6F1FF] text-xs font-extrabold tabular-nums text-[#1354C4] sm:h-10 sm:w-10">1</span>
-                <span class="min-w-0"><strong class="block text-[10px] font-extrabold text-[#132657] sm:text-xs lg:text-sm">Identify</strong><span class="hidden text-[10px] leading-tight text-[#52627F] sm:block lg:text-xs">Scan member ID or barcode</span></span>
-            </li>
-            <li class="flex min-w-0 items-center justify-center gap-2 border-r border-[#DDE6F1] px-1.5 sm:gap-3 sm:px-3">
-                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#E6F1FF] text-xs font-extrabold tabular-nums text-[#1354C4] sm:h-10 sm:w-10">2</span>
-                <span class="min-w-0"><strong class="block text-[10px] font-extrabold text-[#132657] sm:text-xs lg:text-sm">Process</strong><span class="hidden text-[10px] leading-tight text-[#52627F] sm:block lg:text-xs">Review queue and condition</span></span>
-            </li>
-            <li class="flex min-w-0 items-center justify-center gap-2 px-1.5 sm:gap-3 sm:px-3">
-                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#E6F1FF] text-xs font-extrabold tabular-nums text-[#1354C4] sm:h-10 sm:w-10">3</span>
-                <span class="min-w-0"><strong class="block text-[10px] font-extrabold text-[#132657] sm:text-xs lg:text-sm">Finalize</strong><span class="hidden text-[10px] leading-tight text-[#52627F] sm:block lg:text-xs">Confirm &amp; log records</span></span>
-            </li>
-        </ol>
 
+        <a href="{{ route($prefix . 'circulation-desk.reservations') }}" wire:navigate class="mt-4 flex min-h-16 items-center justify-between gap-4 rounded-2xl border border-[#D5E2F0] bg-white px-5 py-4 text-[#102B70] shadow-sm transition hover:border-[#9CB2D4] hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#2563EB]/25">
+            <span><strong class="block text-base">Reservations</strong><span class="block text-sm font-normal text-[#52627F]">Review requests and manage pickups.</span></span>
+            <span class="shrink-0 text-sm font-bold">View reservations <span aria-hidden="true">&rarr;</span></span>
+        </a>
+
+        <section class="mt-7" aria-labelledby="circulation-summary-title">
+            <h2 id="circulation-summary-title" class="mb-3 text-base font-bold text-[#102B70]">Circulation overview</h2>
+            <dl class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                <div class="rounded-xl border border-[#D5E2F0] bg-white p-4"><dt class="text-sm text-[#52627F]">Active reservations</dt><dd class="mt-1 text-2xl font-bold tabular-nums text-[#102B70]">{{ number_format($reservedCount) }}</dd><dd class="text-xs text-[#64748B]">Pending and ready for pickup</dd></div>
+                <div class="rounded-xl border border-[#D5E2F0] bg-white p-4"><dt class="text-sm text-[#52627F]">Borrowed items</dt><dd class="mt-1 text-2xl font-bold tabular-nums text-[#102B70]">{{ number_format($borrowedCount) }}</dd><dd class="text-xs text-[#64748B]">Currently on loan</dd></div>
+                <div class="rounded-xl border border-[#D5E2F0] bg-white p-4"><dt class="text-sm text-[#52627F]">Due today</dt><dd class="mt-1 text-2xl font-bold tabular-nums text-[#102B70]">{{ number_format($dueTodayCount) }}</dd><dd class="text-xs text-[#64748B]">Items still on loan</dd></div>
+                <div class="rounded-xl border border-[#D5E2F0] bg-white p-4"><dt class="text-sm text-[#52627F]">Unpaid fines</dt><dd class="mt-1 text-2xl font-bold tabular-nums text-[#102B70]">{{ number_format($unpaidFinesCount) }}</dd><dd class="text-xs text-[#64748B]">Fine records awaiting payment</dd></div>
+            </dl>
+        </section>
     </div>
 </section>

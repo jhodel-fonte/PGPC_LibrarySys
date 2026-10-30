@@ -1,5 +1,23 @@
+@php
+    $isPeriodical = in_array($catalogKind, ['magazine', 'journal'], true);
+    $itemLabel = match ($catalogKind) {
+        'book' => 'Book',
+        'magazine' => 'Magazine',
+        'journal' => 'Journal',
+        default => 'Physical Item',
+    };
+@endphp
 <!-- Form Grid Container -->
 <form wire:submit.prevent="save" class="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start font-sans">
+
+    <div class="col-span-1 lg:col-span-12 flex flex-wrap items-end justify-between gap-3">
+        <div>
+            <p class="text-xs font-bold uppercase tracking-widest text-slate-500">Catalog management</p>
+            <h1 class="mt-1 text-2xl font-bold text-[#102B70] sm:text-3xl">Add a catalog item</h1>
+            <p class="mt-1 text-sm text-slate-600">Choose an item type, then enter its catalog and copy details.</p>
+        </div>
+        <span class="rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-semibold text-[#102B70]">{{ $itemLabel }}</span>
+    </div>
 
     <!-- Global Form Error & Validation Banner -->
     @if($errorMessage || $errors->any())
@@ -8,7 +26,7 @@
                 <div class="flex items-start gap-3">
                     <div class="flex-1 min-w-0 pt-0.5">
                         <h4 class="text-sm font-bold text-[#B91C1C] uppercase tracking-wider">
-                            {{ $errorMessage ? 'Unable to Save Book' : 'Error Adding Book' }}
+                            {{ $errorMessage ? 'Unable to Save '.$itemLabel : 'Error Adding '.$itemLabel }}
                         </h4>
                         <p class="text-sm text-[#7F1D1D] font-medium mt-1 leading-relaxed">
                             {{ $errorMessage ?: 'Please review and correct the ' . $errors->count() . ' highlighted field(s) below before submitting.' }}
@@ -40,213 +58,6 @@
     @endif
 
     <!-- ============================================== -->
-    <!-- TOP TABS: Mode Switcher (Manual vs ISBN Auto)  -->
-    <!-- ============================================== -->
-    <div class="col-span-1 lg:col-span-12">
-        <div class="rounded-2xl border border-[#E2E8F0] bg-white p-3 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-            <div class="flex items-center gap-2 p-1 bg-[#F8FAFC] rounded-xl border border-[#E2E8F0]/80">
-                <!-- Tab 1: Manual Entry -->
-                <button
-                    type="button"
-                    wire:click="setTab('manual')"
-                    class="px-5 py-2.5 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 focus:outline-none {{ $activeTab === 'manual' ? 'bg-[#102B70] text-white shadow-sm' : 'text-[#334155] hover:text-[#102B70] hover:bg-white' }}"
-                >
-                    <svg class="w-4 h-4 {{ $activeTab === 'manual' ? 'text-[#FCC719]' : 'text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                    <span>Manual Entry</span>
-                </button>
-
-                @if($catalogKind === 'book')
-                <!-- Tab 2: Auto-Fill via ISBN -->
-                <button
-                    type="button"
-                    wire:click="setTab('isbn')"
-                    class="px-5 py-2.5 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 focus:outline-none {{ $activeTab === 'isbn' ? 'bg-[#102B70] text-white shadow-sm' : 'text-[#334155] hover:text-[#102B70] hover:bg-white' }}"
-                >
-                    <svg class="w-4 h-4 {{ $activeTab === 'isbn' ? 'text-[#FCC719]' : 'text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-                    </svg>
-                    <span>Auto-Fill Book via ISBN</span>
-                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider {{ $activeTab === 'isbn' ? 'bg-[#FCC719] text-[#071943]' : 'bg-[#EFF6FF] text-[#102B70]' }}">
-                        Open Library API
-                    </span>
-                </button>
-                @endif
-            </div>
-        </div>
-    </div>
-
-    <!-- ============================================== -->
-    <!-- ISBN AUTO-FILL CARD (Visible when tab is 'isbn') -->
-    <!-- ============================================== -->
-    @if($catalogKind === 'book' && $activeTab === 'isbn')
-        <div class="col-span-1 lg:col-span-12 rounded-2xl border border-[#102B70]/20 bg-gradient-to-r from-white via-[#F8FAFC] to-[#EFF6FF]/40 p-6 md:p-7 shadow-[0_4px_24px_rgba(16,43,112,0.06)] animate-fade-in space-y-5">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E2E8F0] pb-4">
-                <div class="space-y-1">
-                    <div class="flex items-center gap-2.5">
-                        <h3 class="text-lg font-bold text-[#102B70]">Auto-Retrieve Book Details & Cover</h3>
-                    </div>
-                    <p class="text-xs text-slate-600 font-medium">
-                        Enter any valid 10-digit or 13-digit ISBN (with or without hyphens). The system queries <a href="https://openlibrary.org/developers/api" target="_blank" rel="noopener noreferrer" class="text-[#102B70] font-semibold underline hover:text-[#0B225E]">Open Library</a>, populates bibliographic fields below, and downloads the cover image directly into the library catalog.
-                    </p>
-                </div>
-
-                @if($retrievedBookSummary || $isbnLookupQuery)
-                    <button
-                        type="button"
-                        wire:click="clearIsbnLookup"
-                        class="text-xs font-semibold text-slate-500 hover:text-[#EF4444] px-3 py-1.5 rounded-lg border border-[#E2E8F0] hover:border-[#FECACA] bg-white transition-colors self-start sm:self-auto shrink-0 flex items-center gap-1.5 focus:outline-none"
-                    >
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                        <span>Clear ISBN Search</span>
-                    </button>
-                @endif
-            </div>
-
-            <!-- ISBN Search Input Bar -->
-            <div class="space-y-2">
-                <label class="text-sm font-bold text-[#0F172A] flex items-center gap-2">
-                    <span>Book ISBN (10 or 13 digits)</span>
-                    <span class="text-xs font-normal text-slate-400">e.g., 9780140328721, 978-0-13-235088-4</span>
-                </label>
-
-                <div class="flex flex-col sm:flex-row items-stretch gap-3">
-                    <div class="relative flex-1">
-                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-                            </svg>
-                        </div>
-                        <input
-                            wire:model.defer="isbnLookupQuery"
-                            wire:keydown.enter.prevent="lookupIsbn"
-                            type="text"
-                            placeholder="Type or scan ISBN barcode..."
-                            class="w-full h-14 pl-12 pr-4 rounded-2xl border border-[#E2E8F0] bg-white text-base font-semibold text-[#0F172A] placeholder-slate-400 outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all"
-                        >
-                    </div>
-
-                    <button
-                        type="button"
-                        wire:click="lookupIsbn"
-                        wire:loading.attr="disabled"
-                        class="h-14 px-7 rounded-2xl bg-[#102B70] hover:bg-[#0B225E] text-white text-sm font-bold shadow-sm transition-all flex items-center justify-center gap-2.5 shrink-0 focus:outline-none disabled:opacity-60 cursor-pointer"
-                    >
-                        <span wire:loading.remove wire:target="lookupIsbn" class="flex items-center gap-2">
-                            <svg class="w-5 h-5 text-[#FCC719]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                            </svg>
-                            <span>Fetch & Auto-Fill</span>
-                        </span>
-                        <span wire:loading.flex wire:target="lookupIsbn" class="items-center gap-2">
-                            <svg class="animate-spin h-5 w-5 text-[#FCC719]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            <span>Querying Open Library...</span>
-                        </span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Quick sample ISBN buttons for easy testing -->
-            <div class="flex flex-wrap items-center gap-2 text-xs text-slate-500 pt-1">
-                <span class="font-semibold text-slate-700">Quick Try Samples:</span>
-                <button
-                    type="button"
-                    wire:click="lookupIsbn('9780140328721')"
-                    class="px-2.5 py-1 rounded-lg bg-white border border-[#E2E8F0] hover:border-[#102B70] hover:text-[#102B70] transition-colors font-medium focus:outline-none"
-                >
-                    9780140328721 <span class="text-slate-400 font-normal">(Fantastic Mr Fox)</span>
-                </button>
-                <button
-                    type="button"
-                    wire:click="lookupIsbn('9780132350884')"
-                    class="px-2.5 py-1 rounded-lg bg-white border border-[#E2E8F0] hover:border-[#102B70] hover:text-[#102B70] transition-colors font-medium focus:outline-none"
-                >
-                    9780132350884 <span class="text-slate-400 font-normal">(Clean Code)</span>
-                </button>
-                <button
-                    type="button"
-                    wire:click="lookupIsbn('9780451524935')"
-                    class="px-2.5 py-1 rounded-lg bg-white border border-[#E2E8F0] hover:border-[#102B70] hover:text-[#102B70] transition-colors font-medium focus:outline-none"
-                >
-                    9780451524935 <span class="text-slate-400 font-normal">(1984)</span>
-                </button>
-            </div>
-
-            <!-- Lookup Error Alert -->
-            @if($isbnLookupError)
-                <div class="rounded-xl border border-[#FECACA] bg-[#FEF2F2] p-4 flex items-start justify-between gap-3 animate-fade-in shadow-2xs">
-                    <div class="flex items-start gap-3">
-                        <svg class="w-5 h-5 text-[#EF4444] shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                        </svg>
-                        <div class="space-y-0.5">
-                            <h4 class="text-sm font-bold text-[#B91C1C]">Error connecting to Open Library</h4>
-                            <p class="text-xs text-[#7F1D1D] font-medium leading-relaxed">
-                                {{ $isbnLookupError }}
-                            </p>
-                        </div>
-                    </div>
-
-                    <button
-                        type="button"
-                        wire:click="$set('isbnLookupError', null)"
-                        class="text-[#EF4444] hover:text-[#B91C1C] p-1 rounded-lg transition-colors focus:outline-none shrink-0"
-                        title="Dismiss"
-                    >
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                    </button>
-                </div>
-            @endif
-
-            <!-- Lookup Success Summary Card -->
-            @if($retrievedBookSummary)
-                <div class="rounded-xl border border-[#DBEAFE] bg-[#EFF6FF]/60 p-4 md:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-fade-in">
-                    <div class="flex items-center gap-4">
-                        @if(!empty($retrievedBookSummary['cover_url']))
-                            <div class="w-16 h-22 rounded-lg overflow-hidden border border-slate-200 bg-white shrink-0 shadow-sm">
-                                <img src="{{ $retrievedBookSummary['cover_url'] }}" alt="Retrieved Cover" class="w-full h-full object-cover">
-                            </div>
-                        @else
-                            <div class="w-16 h-22 rounded-lg border border-dashed border-slate-300 bg-white/80 shrink-0 flex items-center justify-center text-slate-400 text-[10px] text-center p-1 font-medium">
-                                No Cover In API
-                            </div>
-                        @endif
-
-                        <div class="space-y-1">
-                            <div class="flex items-center gap-2">
-
-                                <span class="text-xs font-mono font-semibold text-slate-500">ISBN: {{ $retrievedBookSummary['isbn'] }}</span>
-                            </div>
-                            <h4 class="text-base font-bold text-[#102B70] leading-snug">{{ $retrievedBookSummary['title'] }}</h4>
-                            <p class="text-xs text-slate-600 font-medium">
-                                <span class="font-semibold text-slate-800">By:</span> {{ $retrievedBookSummary['author'] }} &bull;
-                                <span class="font-semibold text-slate-800">Publisher:</span> {{ $retrievedBookSummary['publisher'] }} &bull;
-                                <span class="font-semibold text-slate-800">Year:</span> {{ $retrievedBookSummary['year'] }} &bull;
-                                <span class="font-semibold text-slate-800">Pages:</span> {{ $retrievedBookSummary['pages'] }}
-                            </p>
-                        </div>
-                    </div>
-
-                    <div class="text-xs font-semibold text-[#102B70] bg-white px-3.5 py-2 rounded-xl border border-[#DBEAFE] shrink-0 flex items-center gap-1.5 shadow-sm">
-                        <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <span>Fields auto-filled below. Review and save when ready.</span>
-                    </div>
-                </div>
-            @endif
-        </div>
-    @endif
-
-    <!-- ============================================== -->
     <!-- LEFT COLUMN: Physical Copy & Visual Cover      -->
     <!-- ============================================== -->
     <div class="lg:col-span-4 xl:col-span-4 space-y-6">
@@ -256,8 +67,8 @@
         <div class="rounded-2xl border border-[#E2E8F0] bg-white p-6 space-y-5 shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
             <div class="flex items-center gap-3 border-b border-[#F1F5F9] pb-4">
                 <div>
-                    <h2 class="text-base font-bold text-[#102B70]">{{ $catalogKind === 'book' ? 'Book Copy' : 'Asset Copy' }}</h2>
-                    <p class="text-xs text-slate-500 font-medium">{{ $catalogKind === 'book' ? 'Track the accession, barcode, and location of this book copy.' : 'Track the asset tag, barcode, condition, and location of this physical item.' }}</p>
+                    <h2 class="text-base font-bold text-[#102B70]">{{ $isPeriodical ? $itemLabel.' Issue Copy' : $itemLabel.' Copy' }}</h2>
+                    <p class="text-xs text-slate-500 font-medium">{{ $isPeriodical ? 'Track the accession, barcode, and location of this issue copy.' : 'Track the accession, barcode, and location of this '.strtolower($itemLabel).'.' }}</p>
                 </div>
 
             </div>
@@ -411,8 +222,8 @@
             <!-- Header -->
             <div class="flex items-center gap-3 border-b border-[#F1F5F9] pb-4">
                 <div>
-                    <h2 class="text-base font-bold text-[#102B70]">{{ $catalogKind === 'book' ? 'Book Cover' : 'Item Image' }}</h2>
-                    <p class="text-xs text-slate-500 font-medium">{{ $catalogKind === 'book' ? 'Upload a book cover' : 'Upload an image of the physical item' }}</p>
+                    <h2 class="text-base font-bold text-[#102B70]">{{ $catalogKind === 'equipment' ? 'Item Image' : $itemLabel.' Cover' }}</h2>
+                    <p class="text-xs text-slate-500 font-medium">{{ $catalogKind === 'equipment' ? 'Upload an image of the physical item' : 'Upload a cover for this '.strtolower($itemLabel) }}</p>
                 </div>
             </div>
 
@@ -485,7 +296,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
                             </svg>
                         </div>
-                        <p class="text-sm font-semibold text-[#0F172A] group-hover:text-[#102B70]">Click to upload or drag & drop book cover</p>
+                        <p class="text-sm font-semibold text-[#0F172A] group-hover:text-[#102B70]">Click to upload or drag & drop {{ $catalogKind === 'equipment' ? 'an item image' : 'a cover' }}</p>
                         <p class="text-xs text-slate-500 font-medium mt-1">PNG, JPG, JPEG, WEBP up to 5MB (Auto-converted to WebP upon saving)</p>
                     </div>
                 </label>
@@ -502,12 +313,12 @@
     <!-- ============================================== -->
     <!-- RIGHT COLUMN: Catalog Information              -->
     <!-- ============================================== -->
-    <div class="lg:col-span-8 xl:col-span-8 rounded-2xl border border-[#E2E8F0] bg-white p-6 lg:p-8 space-y-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
+    <div wire:key="catalog-type-fields-{{ $catalogKind }}" x-data="{ visible: false }" x-init="$nextTick(() => visible = true)" x-show="visible" x-transition.opacity.duration.200ms class="lg:col-span-8 xl:col-span-8 rounded-2xl border border-[#E2E8F0] bg-white p-5 sm:p-6 lg:p-8 space-y-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
 
         <div class="flex items-center gap-3 border-b border-[#F1F5F9] pb-4">
             <div>
-                <h2 class="text-base font-bold text-[#102B70]">{{ $catalogKind === 'book' ? 'Bibliographic Information' : 'Physical Item Information' }}</h2>
-                <p class="text-xs text-slate-500 font-medium">{{ $catalogKind === 'book' ? 'Core title, authorship, identifiers, and classification' : 'Name, description, and inventory details for this physical item' }}</p>
+                <h2 class="text-base font-bold text-[#102B70]">{{ $catalogKind === 'equipment' ? 'Physical Item Information' : $itemLabel.' Information' }}</h2>
+                <p class="text-xs text-slate-500 font-medium">{{ $catalogKind === 'equipment' ? 'Name, description, and inventory details for this physical item' : ($isPeriodical ? 'Title, publisher, issue details, and classification' : 'Core title, authorship, identifiers, and classification') }}</p>
             </div>
         </div>
 
@@ -515,40 +326,18 @@
         <!-- ISBN & ISSN Row -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div class="space-y-1.5">
-                <div class="flex items-center justify-between">
-                    <label class="text-sm font-semibold text-[#334155]">ISBN</label>
-                    <button
-                        type="button"
-                        wire:click="lookupIsbn(isbn)"
-                        wire:loading.attr="disabled"
-                        class="text-xs font-bold text-[#102B70] hover:text-[#0B225E] hover:underline flex items-center gap-1 focus:outline-none cursor-pointer"
-                        title="Auto-fill details from Open Library using this ISBN"
-                    >
-                        <span wire:loading.remove wire:target="lookupIsbn" class="flex items-center gap-1">
-                            <svg class="w-3.5 h-3.5 text-[#102B70]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                            </svg>
-                            <span>Fetch via Open Library</span>
-                        </span>
-                        <span wire:loading wire:target="lookupIsbn" class="flex items-center gap-1 text-slate-500">
-                            <svg class="animate-spin h-3 w-3 text-[#102B70]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Fetching...
-                        </span>
-                    </button>
-                </div>
+                <label class="text-sm font-semibold text-[#334155]" for="catalog-isbn">ISBN</label>
                 <div class="flex rounded-2xl border border-[#E2E8F0] overflow-hidden focus-within:border-[#102B70] focus-within:ring-4 focus-within:ring-[#EFF6FF] transition-all bg-white">
                     <input
                         wire:model="isbn"
+                        id="catalog-isbn"
                         type="text"
                         placeholder="10 or 13-digit ISBN"
                         class="w-full h-14 px-4 bg-transparent text-sm font-medium text-[#0F172A] placeholder-slate-400 outline-none border-0"
                     >
                     <button
                         type="button"
-                        wire:click="lookupIsbn(isbn)"
+                        wire:click="lookupIsbn"
                         wire:loading.attr="disabled"
                         class="px-4 h-14 bg-[#EFF6FF] hover:bg-[#DBEAFE] text-[#102B70] text-xs uppercase tracking-wider font-bold border-l border-[#E2E8F0] transition-colors shrink-0 select-none flex items-center gap-1.5 focus:outline-none cursor-pointer"
                         title="Auto-fill details from Open Library"
@@ -561,6 +350,11 @@
                     </button>
                 </div>
                 @error('isbn') <span class="text-xs font-semibold text-[#EF4444]">{{ $message }}</span> @enderror
+                @if($isbnLookupError)
+                    <p role="alert" class="text-sm font-medium text-red-700">{{ $isbnLookupError }}</p>
+                @elseif($isbnLookupSuccess)
+                    <p role="status" class="text-sm font-medium text-emerald-700">{{ $isbnLookupSuccess }}</p>
+                @endif
             </div>
             <div class="space-y-1.5">
                 <label class="text-sm font-semibold text-[#334155]">ISSN</label>
@@ -579,12 +373,12 @@
         <!-- Title / Item Name -->
         <div class="space-y-1.5">
             <label class="text-sm font-semibold text-[#334155]">
-                {{ $catalogKind === 'book' ? 'Book Title' : 'Item Name' }} <span class="text-[#EF4444] font-bold">*</span>
+                {{ $catalogKind === 'equipment' ? 'Item Name' : $itemLabel.' Title' }} <span class="text-[#EF4444] font-bold">*</span>
             </label>
             <input
                 wire:model="bookTitle"
                 type="text"
-                placeholder="{{ $catalogKind === 'book' ? 'Enter the complete book title' : 'Enter the name of the physical item' }}"
+                placeholder="{{ $catalogKind === 'equipment' ? 'Enter the name of the physical item' : 'Enter the '.strtolower($itemLabel).' title' }}"
                 class="w-full h-14 px-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-400 outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all"
             >
             @error('bookTitle') <span class="text-xs font-semibold text-[#EF4444]">{{ $message }}</span> @enderror
@@ -602,7 +396,7 @@
             @error('subtitle') <span class="text-xs font-semibold text-[#EF4444]">{{ $message }}</span> @enderror
         </div>
 
-        @if($catalogKind !== 'book')
+        @if(!$isPeriodical && $catalogKind !== 'book')
             <div class="space-y-4 rounded-2xl">
                 <div>
                     <h3 class="text-sm font-bold text-[#102B70]">Asset metadata</h3>
@@ -781,7 +575,7 @@
                 </div>
 
                 <!-- Floating Dropdown Panel -->
-                <div
+                <div wire:ignore
                     x-show="isOpen"
                     x-cloak
                     x-transition:enter="transition ease-out duration-150"
@@ -893,12 +687,12 @@
 
         @endif
 
-        @if($catalogKind === 'book')
+        @if($catalogKind === 'book' || $isPeriodical)
         <!-- Call Number & Classification Row -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div class="space-y-1.5">
                 <label class="text-sm font-semibold text-[#334155]">
-                    Call Number <span class="text-[#EF4444] font-bold">*</span>
+                    Call Number @if($catalogKind === 'book')<span class="text-[#EF4444] font-bold">*</span>@endif
                 </label>
                 <input
                     wire:model.live.debounce.300ms="callNumber"
@@ -1004,11 +798,11 @@
 
         <!-- Book Description -->
         <div class="space-y-1.5">
-            <label class="text-sm font-semibold text-[#334155]">{{ $catalogKind === 'book' ? 'Book Description' : 'Item Description' }}</label>
+            <label class="text-sm font-semibold text-[#334155]">{{ $itemLabel }} Description</label>
             <textarea
                 wire:model="bookDescription"
                 rows="3"
-                placeholder="{{ $catalogKind === 'book' ? 'Write a brief summary...' : 'Describe the item and its intended use...' }}"
+                placeholder="{{ $catalogKind === 'equipment' ? 'Describe the item and its intended use...' : 'Write a brief summary...' }}"
                 class="w-full p-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-400 outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all"
             ></textarea>
             @error('bookDescription') <span class="text-xs font-semibold text-[#EF4444]">{{ $message }}</span> @enderror
@@ -1027,7 +821,7 @@
         </div>
 
         <!-- Bottom Action Buttons Bar -->
-        <div class="pt-6 border-t border-[#F1F5F9] flex items-center justify-end gap-3">
+        <div class="pt-6 border-t border-[#F1F5F9] flex flex-wrap items-center justify-end gap-3">
             <a
                 href="{{ route((request()->is('librarian*') ? 'librarian.' : 'admin.') . 'book-management.index') }}"
                 wire:navigate
@@ -1042,7 +836,7 @@
                 class="px-7 h-12 rounded-2xl bg-[#102B70] hover:bg-[#0B225E] text-white text-sm font-semibold transition-all shadow-sm flex items-center gap-2 focus:outline-none disabled:opacity-60"
             >
                 <span wire:loading.remove wire:target="save" class="flex items-center gap-2">
-                    <span>{{ $catalogKind === 'book' ? 'Save Book Details' : 'Save Physical Item' }}</span>
+                    <span>Save {{ $itemLabel }}</span>
                 </span>
                 <span wire:loading.flex wire:target="save" class="items-center gap-2">
                     <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

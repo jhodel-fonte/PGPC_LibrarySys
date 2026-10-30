@@ -2,10 +2,12 @@
     @if($open)
         <div class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 p-4" role="dialog" aria-modal="true" aria-labelledby="catalog-delete-title">
             <div class="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl">
-                <h2 id="catalog-delete-title" class="text-lg font-bold text-[#102B70]">Delete {{ $type === 'title' ? 'title' : 'copy' }}?</h2>
+                <h2 id="catalog-delete-title" class="text-lg font-bold text-[#102B70]">Delete {{ $type }}?</h2>
                 <p class="mt-3 text-sm text-slate-700">{{ $label }}{{ count($ids) > 1 ? ' and '.(count($ids) - 1).' other selected items' : '' }} will be moved to Deleted.</p>
-                @if($type === 'title')
-                    <p class="mt-2 text-sm text-slate-700">This title and its {{ $impact['copies'] }} active copies will be deleted. Copies deleted earlier remain deleted.</p>
+                @if($type === 'issue')
+                    <p class="mt-2 text-sm text-slate-700">This issue and its {{ $impact['copies'] }} active copies will be deleted. Other issues and the title remain.</p>
+                @elseif($type === 'title')
+                    <p class="mt-2 text-sm text-slate-700">This title, all its issues, and their {{ $impact['copies'] }} active copies will be deleted. Copies deleted earlier remain deleted.</p>
                 @else
                     <p class="mt-2 text-sm text-slate-700">Only the selected physical {{ count($ids) === 1 ? 'copy' : 'copies' }} will be deleted. The title stays available.</p>
                 @endif

@@ -16,7 +16,7 @@ class CatalogDeletionServiceTest extends TestCase
     {
         parent::setUp();
         config(['scout.driver' => 'null']);
-        Schema::create('book_details', function (Blueprint $t) { $t->id(); $t->timestamps(); $t->softDeletes(); });
+        Schema::create('book_details', function (Blueprint $t) { $t->id(); $t->unsignedBigInteger('book_data_id')->default(1); $t->string('catalog_kind')->default('book'); $t->timestamps(); $t->softDeletes(); });
         Schema::create('books', function (Blueprint $t) { $t->id(); $t->unsignedBigInteger('book_detail_id'); $t->string('status'); $t->timestamps(); $t->softDeletes(); });
         Schema::create('borrowing_transactions', function (Blueprint $t) { $t->id(); $t->unsignedBigInteger('book_id'); $t->dateTime('return_date')->nullable(); });
         Schema::create('book_reservations', function (Blueprint $t) { $t->id(); $t->unsignedBigInteger('book_id'); $t->integer('reservation_status_id'); $t->softDeletes(); });
@@ -57,5 +57,18 @@ class CatalogDeletionServiceTest extends TestCase
         $this->assertTrue($returnedCopy->bookDetail->trashed());
         $returnedCopy->update(['status' => 'available']);
         $this->assertTrue($returnedCopy->fresh()->trashed());
+    }
+    public function test_periodical_title_deletion_preserves_loans_and_fines_for_all_issues(): void
+    {
+        DB::table('book_details')->where('id', 1)->update(['catalog_kind' => 'journal']);
+        DB::table('book_details')->insert(['id' => 2, 'book_data_id' => 1, 'catalog_kind' => 'journal']);
+        DB::table('books')->insert(['id' => 3, 'book_detail_id' => 2, 'status' => 'available']);
+        $service = app(CatalogDeletionService::class);
+        $this->assertSame(3, $service->inspect('title', [1])['copies']);
+        $service->delete('title', [1], true);
+        $this->assertSame(2, BookDetail::onlyTrashed()->count());
+        $this->assertSame(3, Book::onlyTrashed()->count());
+        $this->assertDatabaseHas('borrowing_transactions', ['id' => 1, 'book_id' => 1]);
+        $this->assertDatabaseHas('fines', ['id' => 1, 'borrowing_transaction_id' => 1]);
     }
 }

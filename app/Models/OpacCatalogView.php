@@ -358,7 +358,7 @@ class OpacCatalogView extends Model
 
         $isPgsql = \Illuminate\Support\Facades\DB::connection()->getDriverName() === 'pgsql';
         $likeOp = $isPgsql ? 'ilike' : 'like';
-        $escaped = \App\Services\SanitizeInput::escapeLike(trim((string)$type));
+        $escaped = \App\Services\SanitizeInput::escapeLike(match (trim((string) $type)) { 'journals' => 'journal', 'magazines' => 'magazine', 'books' => 'book', default => trim((string) $type) });
 
         return $query->where(function (Builder $q) use ($escaped, $likeOp) {
             $q->where('resource_type', $likeOp, "%{$escaped}%")
