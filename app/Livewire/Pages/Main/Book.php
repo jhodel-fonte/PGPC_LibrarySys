@@ -411,9 +411,7 @@ class Book extends Component
     {
         $title = $this->book['title'] ?? 'Book Details';
 
-        return view('livewire.pages.main.book', [
-            'similarBooks' => $this->getSimilarBooks(),
-        ])->layout('components.layouts.home', [
+        return view('livewire.pages.main.book')->layout('components.layouts.home', [
             'title' => $title,
         ]);
     }

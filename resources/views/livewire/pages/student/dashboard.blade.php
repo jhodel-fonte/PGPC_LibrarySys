@@ -1,8 +1,8 @@
-<div class="min-h-full bg-[#eef3f7] text-base text-slate-800">
+<div class="student-page min-w-0 w-full min-h-full bg-[#eef3f7] text-base text-slate-800">
     <div class="mx-auto w-full max-w-[1600px] p-3 sm:p-4 lg:p-6 space-y-5">
         
         <!-- Top Row: Student Hero Banner & Status Notice -->
-        <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,2.15fr)_minmax(330px,1fr)] gap-5 items-stretch">
+        <div class="grid grid-cols-1 2xl:grid-cols-[minmax(0,2.15fr)_minmax(0,1fr)] gap-5 items-stretch">
             
             <!-- Student Greeting Banner -->
             <div class="bg-[#17357A] rounded-[16px] p-5 sm:p-6 lg:p-7 relative overflow-hidden shadow-sm flex flex-col justify-center">
@@ -25,21 +25,21 @@
                         
                         <div class="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-base text-blue-100/90 mt-2">
                             @if($student?->school_id_number)
-                                <div class="flex items-center gap-1.5">
+                                <div class="flex flex-wrap items-center gap-1.5">
                                     <span class="text-blue-200 text-sm font-medium">Student ID:</span>
                                     <span class="font-bold text-white font-mono text-base tracking-wider">{{ $student->school_id_number }}</span>
                                 </div>
                             @endif
                             @if($student?->program)
                                 <span class="text-blue-300/60 hidden sm:inline">•</span>
-                                <div class="flex items-center gap-1.5">
+                                <div class="flex flex-wrap items-center gap-1.5">
                                     <span class="text-blue-200 text-sm font-medium">Program:</span>
                                     <span class="font-semibold text-white text-base">{{ $student->program }}</span>
                                 </div>
                             @endif
                             @if($student?->year_level)
                                 <span class="text-blue-300/60 hidden sm:inline">•</span>
-                                <div class="flex items-center gap-1.5">
+                                <div class="flex flex-wrap items-center gap-1.5">
                                     <span class="text-blue-200 text-sm font-medium">Year:</span>
                                     <span class="font-semibold text-white text-base">{{ $student->year_level }}</span>
                                 </div>
@@ -55,11 +55,11 @@
                             <button
                                 type="button"
                                 @click="$dispatch('open-qr-modal', {
-                                    value: '{{ $studentIdValue ?? '' }}',
-                                    name: '{{ $student ? ($student->first_name . ' ' . $student->last_name) : (auth()->user()?->name ?? 'Student') }}',
+                                    value: {{ Js::from($studentIdValue ?? '') }},
+                                    name: {{ Js::from($student ? ($student->first_name . ' ' . $student->last_name) : (auth()->user()?->name ?? 'Student')) }},
                                     title: 'PGPC Student',
                                     subtitle: 'Digital Identification Pass',
-                                    secondaryInfo: '{{ $student?->program ?? 'Student' }}@if($student?->year_level) • {{ $student->year_level }}@endif',
+                                    secondaryInfo: {{ Js::from(($student?->program ?? 'Student') . ($student?->year_level ? ' • '.$student->year_level : '')) }},
                                     label: 'Student ID Number:',
                                     instruction: 'Present this QR code to the library circulation desk or scanner to borrow, return, or verify your library account.'
                                 })"
@@ -155,15 +155,15 @@
 
                         <!-- Patron Borrowing Allowance Details -->
                         <div class="pt-2 border-t border-slate-100 space-y-2.5 text-sm sm:text-base">
-                            <div class="flex justify-between items-center text-slate-600">
+                            <div class="flex flex-wrap gap-2 justify-between items-center text-slate-600">
                                 <span class="text-slate-500">Max Loan Limit:</span>
                                 <span class="font-bold text-slate-900">{{ config('settings.library_config.max_loan_limit', 3) }} Books</span>
                             </div>
-                            <div class="flex justify-between items-center text-slate-600">
+                            <div class="flex flex-wrap gap-2 justify-between items-center text-slate-600">
                                 <span class="text-slate-500">Loan Period:</span>
                                 <span class="font-bold text-slate-900">{{ config('settings.library_config.loan_period', 5) }} Calendar Days</span>
                             </div>
-                            <div class="flex justify-between items-center text-slate-600">
+                            <div class="flex flex-wrap gap-2 justify-between items-center text-slate-600">
                                 <span class="text-slate-500">Library Desk Hours:</span>
                                 <span class="font-medium text-slate-700">{{ config('settings.library_config.desk_hours', '8:00 AM – 5:00 PM') }}</span>
                             </div>
@@ -187,7 +187,7 @@
                 subtext="Books currently in your care" 
             />
             
-            <div class="bg-white rounded-2xl border {{ $overdueCount > 0 ? 'border-red-300 ring-2 ring-red-100' : 'border-slate-200' }} shadow-[0_1px_2px_rgba(15,23,42,0.04),0_1px_3px_rgba(15,23,42,0.03)] px-6 py-5 flex flex-col justify-center h-[120px]">
+            <div class="bg-white rounded-2xl border {{ $overdueCount > 0 ? 'border-red-300 ring-2 ring-red-100' : 'border-slate-200' }} shadow-[0_1px_2px_rgba(15,23,42,0.04),0_1px_3px_rgba(15,23,42,0.03)] px-6 py-5 flex flex-col justify-center min-h-[120px]">
                 <h3 class="text-xs font-bold tracking-wider uppercase mb-1 {{ $overdueCount > 0 ? 'text-red-600' : 'text-slate-500' }}">
                     Overdue Items
                 </h3>
@@ -205,7 +205,7 @@
                 subtext="All-time books borrowed" 
             />
 
-            <div class="bg-white rounded-2xl border {{ $unpaidFines > 0 ? 'border-amber-300' : 'border-slate-200' }} shadow-[0_1px_2px_rgba(15,23,42,0.04),0_1px_3px_rgba(15,23,42,0.03)] px-6 py-5 flex flex-col justify-center h-[120px]">
+            <div class="bg-white rounded-2xl border {{ $unpaidFines > 0 ? 'border-amber-300' : 'border-slate-200' }} shadow-[0_1px_2px_rgba(15,23,42,0.04),0_1px_3px_rgba(15,23,42,0.03)] px-6 py-5 flex flex-col justify-center min-h-[120px]">
                 <h3 class="text-xs font-bold tracking-wider uppercase mb-1 {{ $unpaidFines > 0 ? 'text-amber-600' : 'text-slate-500' }}">
                     Outstanding Fines
                 </h3>
@@ -219,13 +219,13 @@
         </div>
 
         <!-- Bottom Row: Currently Borrowed Books & Information Widgets -->
-        <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,2.15fr)_minmax(330px,1fr)] gap-5 items-start">
+        <div class="grid grid-cols-1 2xl:grid-cols-[minmax(0,2.15fr)_minmax(0,1fr)] gap-5 items-start">
             
             <!-- Left Main Column: Currently Borrowed Books -->
             <div class="space-y-5">
                 
                 <!-- Active Loans Table Card -->
-                <div class="bg-white rounded-2xl border border-[#E2E8F0] shadow-[0_1px_2px_rgba(15,23,42,0.04),0_1px_3px_rgba(15,23,42,0.03)] overflow-hidden">
+                <div class="student-loans-panel bg-white rounded-2xl border border-[#E2E8F0] shadow-[0_1px_2px_rgba(15,23,42,0.04),0_1px_3px_rgba(15,23,42,0.03)] overflow-hidden">
                     <div class="px-5 py-4 sm:px-7 sm:py-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E2E8F0]">
                         <div>
                             <div class="flex items-center gap-2">
@@ -242,7 +242,7 @@
                     </div>
 
                     <!-- Mobile Stacked Card View (Screens < 768px) -->
-                    <div class="block md:hidden divide-y divide-[#E2E8F0]">
+                    <div class="student-record-cards divide-y divide-[#E2E8F0]">
                         @forelse ($activeLoans as $loan)
                             @php
                                 $bookDetail = $loan->book?->bookDetail;
@@ -324,7 +324,7 @@
                     </div>
 
                     <!-- Desktop & Tablet Table View (768px+) -->
-                    <div tabindex="0" role="region" aria-label="My active loans" class="hidden md:block overflow-x-auto focus:outline-none focus:ring-2 focus:ring-[#102B70]/20">
+                    <div tabindex="0" role="region" aria-label="My active loans" class="student-record-table overflow-x-auto focus:outline-none focus:ring-2 focus:ring-[#102B70]/20">
                         <table class="w-full text-left border-collapse">
                             <thead>
                                 <tr class="bg-[#F8FAFC] border-b border-[#E2E8F0]">

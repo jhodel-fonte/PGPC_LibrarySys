@@ -21,17 +21,31 @@ class PersonalRecommendationsTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_catalog_recommendations_render_as_catalog_list_cards(): void
+    public function test_missing_viewed_isbn_does_not_use_stale_recommendations_or_call_api(): void
     {
         $user = Account::factory()->create(['role_id' => 4]);
-        $recommended = $this->catalogBook('1234567890', 'Recommended list book');
+        $viewed = $this->catalogBook('1111111111', 'Viewed');
+        $recommended = $this->catalogBook('1234567890', 'Old recommendation');
         \App\Models\UserRecommendation::storeRecommendations($user->id, [$recommended->isbn]);
+        $viewed->update(['isbn' => null, 'issn' => '1234-5678']);
+        Http::fake();
 
-        Livewire::actingAs($user)->test(PersonalRecommendations::class, ['catalogList' => true])
-            ->call('loadRecommendations')
-            ->assertSee('Recommended for you')
-            ->assertSee('Recommended list book')
-            ->assertSee('View Details');
+        Livewire::actingAs($user)->test(PersonalRecommendations::class, ['bookDetailId' => $viewed->id])
+            ->call('loadRecommendations')->assertSet('books', [])->assertDontSee('Picked for you');
+        Http::assertNothingSent();
+    }
+
+    public function test_only_exact_isbn_matches_are_shown_without_filler(): void
+    {
+        $user = Account::factory()->create(['role_id' => 4]);
+        $viewed = $this->catalogBook('1111111111', 'Viewed');
+        $match = $this->catalogBook('2222222222', 'Exact match');
+        $this->catalogBook('2222222223', 'Similar ISBN');
+        Http::fake(['*' => Http::response(['recommendations' => [['isbn' => $match->isbn], ['isbn' => '9999999999']]])]);
+
+        $component = Livewire::actingAs($user)->test(PersonalRecommendations::class, ['bookDetailId' => $viewed->id]);
+        $component->call('loadRecommendations')->assertSee('Exact match')->assertDontSee('Similar ISBN');
+        $this->assertSame([$match->id], array_column($component->get('books'), 'id'));
     }
 
     public function test_empty_and_unmatched_recommendations_are_distinguished_in_console(): void
@@ -41,10 +55,10 @@ class PersonalRecommendationsTest extends TestCase
         Http::fakeSequence()->push(['recommendations' => []])->push(['recommendations' => [['isbn' => '9999999999', 'predicted_score' => 1.7]]]);
 
         Livewire::actingAs($user)->test(PersonalRecommendations::class, ['bookDetailId' => $book->id])
-            ->call('loadRecommendations')->assertSet('books', [])
+            ->call('loadRecommendations')->assertSet('books', [])->assertDontSee('Picked for you')
             ->assertDispatched('ml-recommendation-response', fn ($name, $params) => $params['response']['result'] === 'empty_recommendations');
         Livewire::actingAs($user)->test(PersonalRecommendations::class, ['bookDetailId' => $book->id])
-            ->call('loadRecommendations')->assertSet('books', [])
+            ->call('loadRecommendations')->assertSet('books', [])->assertDontSee('Picked for you')
             ->assertDispatched('ml-recommendation-response', fn ($name, $params) => $params['response']['result'] === 'no_catalog_matches' && $params['response']['unmatched_isbns'] === ['9999999999']);
     }
 

@@ -191,7 +191,7 @@
                     <!-- Pagination Controls -->
                     <div
                         x-show="!isLoading && results && results.length > 0"
-                        class="mt-8 pt-6 border-t border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-4"
+                        class="mt-8 pt-6 border-t border-slate-200/80 flex flex-wrap items-center justify-center gap-4 lg:justify-between"
                     >
                         <!-- Results Range Note -->
                         <div class="text-[13px] text-slate-500 font-medium">
@@ -199,14 +199,14 @@
                         </div>
 
                         <!-- Page Navigation Buttons -->
-                        <nav class="inline-flex items-center gap-1.5 text-[13px] font-semibold" aria-label="Pagination">
+                        <nav class="flex max-w-full items-center justify-center gap-1.5 text-[13px] font-semibold" aria-label="Pagination">
                             <!-- Prev -->
                             <button
                                 type="button"
                                 :disabled="!pagination || pagination.currentPage <= 1"
                                 @click="goToPage(pagination ? pagination.prevUrl : null)"
-                                class="h-9 px-3 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300 flex items-center justify-center gap-1 transition shadow-2xs disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
-                                title="Previous page"
+                                class="h-11 min-w-11 px-3 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300 flex items-center justify-center gap-1 transition shadow-2xs disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                                title="Previous page" aria-label="Previous page"
                             >
                                 <svg width="15" height="15" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
@@ -216,14 +216,16 @@
 
                             <!-- Dynamic Numbers -->
                             <template x-if="pagination && pagination.links && pagination.links.length > 3">
-                                <div class="inline-flex items-center gap-1">
+                                <div class="hidden sm:inline-flex items-center gap-1">
                                     <template x-for="(link, idx) in pagination.links" :key="idx">
-                                        <template x-if="!isNaN(link.label)">
+                                        <template x-if="link.url && !isNaN(link.label) && (Number(link.label) === 1 || Number(link.label) === pagination.lastPage || Math.abs(Number(link.label) - pagination.currentPage) <= 1)">
                                             <button
                                                 type="button"
                                                 @click="goToPage(link.url)"
-                                                class="h-9 w-9 rounded-xl flex items-center justify-center text-xs font-bold transition shadow-2xs cursor-pointer"
-                                                :class="link.active ? 'bg-[#102B70] text-white shadow-xs' : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300'"
+                                                class="h-11 min-w-11 px-2 rounded-xl flex items-center justify-center text-xs font-bold transition shadow-2xs cursor-pointer"
+                                                :aria-current="link.active ? 'page' : null"
+                                            :aria-label="'Page ' + link.label"
+                                            :class="link.active ? 'bg-[#102B70] text-white shadow-xs' : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300'"
                                                 x-text="link.label"
                                             ></button>
                                         </template>
@@ -246,8 +248,8 @@
                                 type="button"
                                 :disabled="!pagination || !pagination.hasMorePages"
                                 @click="goToPage(pagination ? pagination.nextUrl : null)"
-                                class="h-9 px-3 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300 flex items-center justify-center gap-1 transition shadow-2xs disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
-                                title="Next page"
+                                class="h-11 min-w-11 px-3 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300 flex items-center justify-center gap-1 transition shadow-2xs disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                                title="Next page" aria-label="Next page"
                             >
                                 <span class="hidden sm:inline text-xs font-semibold">Next</span>
                                 <svg width="15" height="15" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
@@ -263,7 +265,7 @@
                                 <select
                                     :value="perPage"
                                     @change="changePerPage($event.target.value)"
-                                    class="appearance-none py-1.5 pl-3 pr-7 rounded-xl border border-slate-200 bg-white text-[12.5px] font-bold text-[#102B70] focus:outline-none focus:ring-1 focus:ring-[#102B70] shadow-2xs cursor-pointer"
+                                    aria-label="Results per page" class="appearance-none min-h-11 py-1.5 pl-3 pr-7 rounded-xl border border-slate-200 bg-white text-[12.5px] font-bold text-[#102B70] focus:outline-none focus:ring-1 focus:ring-[#102B70] shadow-2xs cursor-pointer"
                                 >
                                     <option value="5">5</option>
                                     <option value="10">10</option>

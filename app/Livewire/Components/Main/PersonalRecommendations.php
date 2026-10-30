@@ -14,16 +14,12 @@ class PersonalRecommendations extends Component
     #[Locked]
     public ?int $bookDetailId = null;
 
-    #[Locked]
-    public bool $catalogList = false;
-
     public bool $loaded = false;
     public array $books = [];
 
-    public function mount(?int $bookDetailId = null, bool $catalogList = false): void
+    public function mount(?int $bookDetailId = null): void
     {
         $this->bookDetailId = $bookDetailId;
-        $this->catalogList = $catalogList;
     }
 
     public function loadRecommendations(RecommendationService $service): void
@@ -34,23 +30,24 @@ class PersonalRecommendations extends Component
             return;
         }
 
+        $this->books = [];
         $failed = false;
         $outcome = null;
         $matchedCount = 0;
         $unmatched = [];
         try {
-            $stored = $account->recommendation;
+            $stored = null;
             if ($this->bookDetailId) {
                 $book = BookDetail::publicCatalog()->whereHas('bookData', fn ($query) => $query->whereNull('deleted_at'))->findOrFail($this->bookDetailId);
-                $isbn = trim((string) ($book->isbn ?: $book->issn));
+                $isbn = trim((string) $book->isbn);
                 if ($isbn !== '') {
                     UserHistory::upsertHighestRating((int) $account->id, $isbn, UserHistory::RATING_VIEW);
                     $stored = $service->refreshFor($account, $isbn, UserHistory::RATING_VIEW);
                 } else {
                     $outcome = 'missing_book_identifier';
                 }
-            } elseif ((! $stored || ! $stored->generated_at || $stored->generated_at->lt(now()->subHours(6))) && $account->userHistories()->exists()) {
-                $stored = $service->refreshFor($account);
+            } else {
+                $outcome = 'missing_book_identifier';
             }
 
             $matchedBooks = $stored?->getActiveBooks();
@@ -115,7 +112,7 @@ class PersonalRecommendations extends Component
                     'http_error' => 'The recommendation service returned an HTTP error.',
                     'connection_error' => 'The recommendation service could not be reached.',
                     'missing_user_identifier' => 'No encrypted user identifier is available.',
-                    'missing_book_identifier' => 'The viewed book has no ISBN or ISSN.',
+                    'missing_book_identifier' => 'The viewed book has no ISBN.',
                     'no_recommendation_history' => 'No recommendation history is available yet.',
                     'no_other_books' => 'The only matching recommendation is the book currently being viewed.',
                     'processing_error' => 'Recommendations could not be processed; check the server log.',

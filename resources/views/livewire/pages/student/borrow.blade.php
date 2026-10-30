@@ -1,9 +1,9 @@
-<div class="min-h-full bg-[#eef3f7] text-base text-slate-800">
+<div class="student-page min-w-0 w-full min-h-full bg-[#eef3f7] text-base text-slate-800">
     <div class="mx-auto w-full max-w-[1600px] p-3 sm:p-4 lg:p-6 space-y-5">
         
         <!-- Page Header -->
         <div class="bg-white rounded-2xl border border-[#E2E8F0] shadow-[0_1px_2px_rgba(15,23,42,0.04),0_1px_3px_rgba(15,23,42,0.03)] p-5 lg:p-6">
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="student-page-heading flex flex-col justify-between gap-4">
                 <div>
                     <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 leading-tight">My Circulation & Borrowing</h1>
                     <p class="text-base text-slate-500 mt-1.5">
@@ -22,7 +22,7 @@
             </div>
 
             <!-- Quick Metric Summary Strip -->
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-5 border-t border-slate-100">
+            <div class="grid grid-cols-2 xl:grid-cols-4 gap-3 mt-6 pt-5 border-t border-slate-100">
                 <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-100">
                     <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Currently Borrowed</p>
                     <p class="text-xl sm:text-2xl font-bold text-slate-900 mt-0.5">{{ $activeCount }} <span class="text-sm text-slate-500 font-normal">/ {{ config('settings.library_config.max_loan_limit', 3) }} books</span></p>
@@ -46,28 +46,28 @@
         </div>
 
         <!-- Controls: Tabs & Search -->
-        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+        <div class="student-borrow-controls flex flex-col items-stretch justify-between gap-4">
             
             <!-- Navigation Tabs -->
-            <div class="flex items-center gap-1.5 p-1 bg-white border border-[#E2E8F0] rounded-xl shadow-xs overflow-x-auto max-w-full">
+            <div class="flex flex-wrap items-center gap-1.5 p-1 bg-white border border-[#E2E8F0] rounded-xl shadow-xs min-w-0 max-w-full">
                 <button 
                     type="button" 
                     wire:click="setTab('active')" 
-                    class="min-h-[42px] px-3.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-colors whitespace-nowrap shrink-0 cursor-pointer {{ $activeTab === 'active' ? 'bg-[#102B70] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100' }}"
+                    class="min-h-11 px-3.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-colors whitespace-normal flex-1 cursor-pointer {{ $activeTab === 'active' ? 'bg-[#102B70] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100' }}"
                 >
                     Active Loans ({{ $activeCount }})
                 </button>
                 <button 
                     type="button" 
                     wire:click="setTab('history')" 
-                    class="min-h-[42px] px-3.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-colors whitespace-nowrap shrink-0 cursor-pointer {{ $activeTab === 'history' ? 'bg-[#102B70] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100' }}"
+                    class="min-h-11 px-3.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-colors whitespace-normal flex-1 cursor-pointer {{ $activeTab === 'history' ? 'bg-[#102B70] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100' }}"
                 >
                     Borrowing History ({{ $historyCount }})
                 </button>
                 <button 
                     type="button" 
                     wire:click="setTab('fines')" 
-                    class="min-h-[42px] px-3.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-colors whitespace-nowrap shrink-0 cursor-pointer {{ $activeTab === 'fines' ? 'bg-[#102B70] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100' }}"
+                    class="min-h-11 px-3.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-colors whitespace-normal flex-1 cursor-pointer {{ $activeTab === 'fines' ? 'bg-[#102B70] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100' }}"
                 >
                     Fines & Penalties ({{ $fines->count() }})
                 </button>
@@ -75,7 +75,7 @@
 
             <!-- Search Field -->
             @if($activeTab !== 'fines')
-                <div class="relative w-full sm:w-80">
+                <div class="relative w-full min-w-0">
                     <input 
                         type="text" 
                         wire:model.live.debounce.300ms="search" 
@@ -95,7 +95,7 @@
         @if($activeTab === 'active')
             <div class="bg-white rounded-2xl border border-[#E2E8F0] shadow-[0_1px_2px_rgba(15,23,42,0.04),0_1px_3px_rgba(15,23,42,0.03)] overflow-hidden">
                 <!-- Mobile Card Layout (< 768px) -->
-                <div class="block md:hidden divide-y divide-[#E2E8F0]">
+                <div class="student-record-cards divide-y divide-[#E2E8F0]">
                     @forelse ($activeLoans as $loan)
                         @php
                             $bookDetail = $loan->book?->bookDetail;
@@ -175,7 +175,7 @@
                 </div>
 
                 <!-- Desktop / Tablet Table View (768px+) -->
-                <div tabindex="0" role="region" aria-label="Active loans table" class="hidden md:block overflow-x-auto focus:outline-none focus:ring-2 focus:ring-[#102B70]/20">
+                <div tabindex="0" role="region" aria-label="Active loans table" class="student-record-table overflow-x-auto focus:outline-none focus:ring-2 focus:ring-[#102B70]/20">
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="bg-[#F8FAFC] border-b border-[#E2E8F0]">
@@ -269,7 +269,7 @@
         @if($activeTab === 'history')
             <div class="bg-white rounded-2xl border border-[#E2E8F0] shadow-[0_1px_2px_rgba(15,23,42,0.04),0_1px_3px_rgba(15,23,42,0.03)] overflow-hidden">
                 <!-- Mobile Card Layout (< 768px) -->
-                <div class="block md:hidden divide-y divide-[#E2E8F0]">
+                <div class="student-record-cards divide-y divide-[#E2E8F0]">
                     @forelse ($historyLoans as $record)
                         @php
                             $bookDetail = $record->book?->bookDetail;
@@ -331,7 +331,7 @@
                 </div>
 
                 <!-- Desktop / Tablet Table View (768px+) -->
-                <div tabindex="0" role="region" aria-label="Borrowing history table" class="hidden md:block overflow-x-auto focus:outline-none focus:ring-2 focus:ring-[#102B70]/20">
+                <div tabindex="0" role="region" aria-label="Borrowing history table" class="student-record-table overflow-x-auto focus:outline-none focus:ring-2 focus:ring-[#102B70]/20">
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="bg-[#F8FAFC] border-b border-[#E2E8F0]">
@@ -410,7 +410,7 @@
         @if($activeTab === 'fines')
             <div class="bg-white rounded-2xl border border-[#E2E8F0] shadow-[0_1px_2px_rgba(15,23,42,0.04),0_1px_3px_rgba(15,23,42,0.03)] overflow-hidden">
                 <!-- Mobile Card Layout (< 768px) -->
-                <div class="block md:hidden divide-y divide-[#E2E8F0]">
+                <div class="student-record-cards divide-y divide-[#E2E8F0]">
                     @forelse ($fines as $fine)
                         @php
                             $bookTitle = $fine->transaction?->book?->bookDetail?->bookData?->book_title ?? 'General Library Penalty';
@@ -470,7 +470,7 @@
                 </div>
 
                 <!-- Desktop / Tablet Table View (768px+) -->
-                <div tabindex="0" role="region" aria-label="Fines and penalties table" class="hidden md:block overflow-x-auto focus:outline-none focus:ring-2 focus:ring-[#102B70]/20">
+                <div tabindex="0" role="region" aria-label="Fines and penalties table" class="student-record-table overflow-x-auto focus:outline-none focus:ring-2 focus:ring-[#102B70]/20">
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="bg-[#F8FAFC] border-b border-[#E2E8F0]">

@@ -1,4 +1,4 @@
-<div class="min-h-full bg-[#F8FAFC] pb-16 font-sans text-base text-slate-800 selection:bg-[#102B70] selection:text-white">
+<div class="student-page min-w-0 w-full min-h-full bg-[#F8FAFC] pb-16 font-sans text-base text-slate-800 selection:bg-[#102B70] selection:text-white">
     <div class="mx-auto w-full max-w-[1360px] space-y-5 px-3 py-4 sm:px-6 lg:px-8 lg:py-6">
 
         <!-- ======================================================== -->
@@ -6,7 +6,7 @@
         <!-- ======================================================== -->
         <div class="rounded-xl border border-[#E2E8F0] bg-white p-5 sm:p-6 text-slate-800">
 
-            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div class="student-page-heading flex flex-col gap-4">
                 <div class="space-y-2 max-w-xl">
                     <h1 class="text-xl font-semibold tracking-tight text-[#102B70]">Reserve Books Online</h1>
                     <p class="text-base leading-relaxed text-slate-600">
@@ -37,9 +37,9 @@
                 <p class="mt-1 text-sm text-slate-600">We will notify you when a copy is reserved for you.</p>
                 <ul class="mt-3 divide-y divide-slate-100">
                     @foreach($waitingEntries as $entry)
-                        <li class="flex items-center justify-between gap-3 py-3">
+                        <li class="flex flex-wrap items-center justify-between gap-3 py-3">
                             <span>{{ $entry->book_title }}</span>
-                            <button type="button" wire:click="leaveWaitlist({{ $entry->id }})" class="text-sm font-semibold text-[#102B70] underline">Leave waitlist</button>
+                            <button type="button" wire:click="leaveWaitlist({{ $entry->id }})" class="min-h-11 px-2 text-sm font-semibold text-[#102B70] underline">Leave waitlist</button>
                         </li>
                     @endforeach
                 </ul>
@@ -48,13 +48,13 @@
         <!-- 2. SEARCH & CATEGORY FILTERS                             -->
         <!-- ======================================================== -->
         <div class="rounded-xl border border-[#E2E8F0] bg-white p-4 sm:p-5  space-y-4">
-            <div class="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+            <div class="student-catalog-filters grid min-w-0 grid-cols-1 gap-3">
                 <!-- Search bar: 56px height, 16px radius -->
-                <div class="relative flex-1 max-w-2xl">
+                <div class="relative min-w-0">
                     <input
                         type="text"
                         wire:model.live.debounce.300ms="search"
-                        placeholder="Search books by title, author name, ISBN, or subject..."
+                        aria-label="Search books" placeholder="Search title, author, ISBN..."
                         class="h-12 w-full rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] px-3 pr-16 text-base font-medium text-[#0F172A] placeholder-slate-400 transition-all focus:border-[#102B70] focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#EFF6FF]"
                     >
                     @if($search)
@@ -67,10 +67,10 @@
                     @endif
                 </div>
 
-                <div class="flex flex-col gap-2 sm:flex-row">
+                <div class="flex min-w-0 flex-col gap-2 sm:flex-row">
                     <select
                         wire:model.live="selectedCategory"
-                        class="h-12 rounded-xl border border-[#CBD5E1] bg-white px-4 text-base font-bold text-[#334155] transition-all hover:border-[#102B70] focus:border-[#102B70] focus:outline-none focus:ring-2 focus:ring-[#EFF6FF] cursor-pointer"
+                        aria-label="Filter books by category" class="h-12 w-full min-w-0 max-w-full rounded-xl border border-[#CBD5E1] bg-white px-4 text-base font-bold text-[#334155] transition-all hover:border-[#102B70] focus:border-[#102B70] focus:outline-none focus:ring-2 focus:ring-[#EFF6FF] cursor-pointer"
                     >
                         <option value="all">All Categories</option>
                         @foreach($categories as $category)
@@ -85,7 +85,7 @@
                 <button
                     type="button"
                     wire:click="$set('selectedCategory', 'all')"
-                    class="h-9 px-4 rounded-xl text-base font-bold transition-all cursor-pointer whitespace-nowrap {{ $selectedCategory === 'all' ? 'bg-[#102B70] text-white ' : 'bg-white text-slate-700 border border-[#CBD5E1] hover:bg-[#F8FAFC]' }}"
+                    class="min-h-11 shrink-0 px-4 rounded-xl text-base font-bold transition-all cursor-pointer whitespace-nowrap {{ $selectedCategory === 'all' ? 'bg-[#102B70] text-white ' : 'bg-white text-slate-700 border border-[#CBD5E1] hover:bg-[#F8FAFC]' }}"
                 >
                     All Disciplines
                 </button>
@@ -93,7 +93,7 @@
                     <button
                         type="button"
                         wire:click="$set('selectedCategory', '{{ $cat->id }}')"
-                        class="h-9 px-4 rounded-xl text-base font-bold transition-all cursor-pointer whitespace-nowrap {{ (string)$selectedCategory === (string)$cat->id ? 'bg-[#102B70] text-white ' : 'bg-white text-slate-700 border border-[#CBD5E1] hover:bg-[#F8FAFC]' }}"
+                        class="min-h-11 shrink-0 px-4 rounded-xl text-base font-bold transition-all cursor-pointer whitespace-nowrap {{ (string)$selectedCategory === (string)$cat->id ? 'bg-[#102B70] text-white ' : 'bg-white text-slate-700 border border-[#CBD5E1] hover:bg-[#F8FAFC]' }}"
                     >
                         {{ $cat->name }}
                     </button>
@@ -104,7 +104,7 @@
         <!-- ======================================================== -->
         <!-- 3. AVAILABLE BOOKS GRID                                 -->
         <!-- ======================================================== -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div class="student-catalog-grid grid grid-cols-1 gap-4">
             @forelse($books as $item)
                 @php
                     $bdata = $item->bookData;
@@ -116,35 +116,35 @@
                     $coverUrl = $item->cover_url ?: asset('images/' . config('settings.book_covers.default', 'book-cover.webp'));
                 @endphp
                     <div class="group rounded-xl border border-[#E2E8F0] bg-white p-4 transition-all flex flex-col justify-between">
-                    <div class="space-y-3">
+                    <div class="min-w-0 space-y-3">
                         <!-- Book Cover and Badges -->
-                        <div class="relative overflow-hidden rounded-xl bg-[#F8FAFC] aspect-[3/4] flex items-center justify-center border border-slate-100">
+                        <div class="relative rounded-xl bg-[#F8FAFC] flex items-center justify-center border border-slate-100 p-3">
                             <img
                                 src="{{ $coverUrl }}"
                                 alt="{{ $title }}"
-                                class="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                loading="lazy" width="96" height="144" class="h-36 w-24 object-contain"
                                 onerror="this.src='{{ asset('images/book-cover.webp') }}'"
                             >
-                            <span class="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full text-base font-bold bg-white text-[#102B70] border border-[#CBD5E1] ">
+                            <span class="absolute top-2 left-2 px-2 py-1 rounded-full text-xs font-bold bg-white text-[#102B70] border border-[#CBD5E1] ">
                                 {{ $availableCopiesCount }} Available
                             </span>
-                            <span class="absolute bottom-2.5 right-2.5 px-2.5 py-1 rounded text-base font-mono font-bold bg-white text-slate-600 border border-[#CBD5E1]">
+                            <span class="absolute bottom-2 right-2 max-w-[70%] break-all px-2 py-1 rounded text-xs font-mono font-bold bg-white text-slate-600 border border-[#CBD5E1]">
                                 {{ $firstCopy?->accession_number ?: 'N/A' }}
                             </span>
                         </div>
 
                         <!-- Book Details -->
                         <div class="space-y-1">
-                            <span class="text-base font-bold text-[#102B70] uppercase tracking-wider block">
+                            <span class="text-xs font-semibold text-[#102B70] uppercase tracking-wide block">
                                 {{ $categoryName }}
                             </span>
                             <h3 class="text-base font-bold text-[#0F172A] line-clamp-2 group-hover:text-[#102B70] transition-colors leading-snug" title="{{ $title }}">
                                 {{ $title }}
                             </h3>
-                            <p class="text-base text-slate-500 line-clamp-1 font-medium">By {{ $authors }}</p>
+                            <p class="text-sm text-slate-500 line-clamp-2 font-medium">By {{ $authors }}</p>
                         </div>
 
-                        <div class="pt-1.5 text-base text-slate-500 font-mono space-y-0.5 border-t border-slate-100">
+                        <div class="pt-2 text-sm text-slate-500 break-words space-y-0.5 border-t border-slate-100">
                             <div><span class="text-slate-500">Call No:</span> {{ $item->call_number ?: 'General Stack' }}</div>
                             <div><span class="text-slate-500">Location:</span> {{ $firstCopy?->location ?: 'Main Library' }}</div>
                         </div>
@@ -199,12 +199,12 @@
             $mCover = $mBook->cover_url ?: asset('images/' . config('settings.book_covers.default', 'book-cover.webp'));
         @endphp
         <div class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-[#071943]/60 backdrop-blur-xs overflow-y-auto" role="dialog" aria-modal="true">
-            <div class="my-auto w-full max-w-lg rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150 space-y-5 text-base">
-                <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div class="my-auto w-full max-w-lg rounded-xl border border-[#E2E8F0] bg-white p-4 sm:p-6 max-h-[calc(100dvh-2rem)] overflow-y-auto shadow-2xl animate-in fade-in zoom-in-95 duration-150 space-y-5 text-base">
+                <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-100">
                     <div class="flex items-center gap-2">
                         <h3 class="text-lg font-bold text-[#102B70]">{{ $selectedBookCopyId ? 'Confirm Book Reservation' : 'Join the Waitlist?' }}</h3>
                     </div>
-                    <button type="button" wire:click="closeModal" class="rounded-lg px-2 py-1 text-base font-medium text-slate-600 hover:bg-[#F8FAFC] hover:text-slate-700">
+                    <button type="button" wire:click="closeModal" class="min-h-11 rounded-lg px-3 py-2 text-base font-medium text-slate-600 hover:bg-[#F8FAFC] hover:text-slate-700">
                     Close</button>
                 </div>
 
@@ -248,7 +248,7 @@
 
                     <!-- Pickup Hold Duration -->
                     <div class="space-y-1.5">
-                        <div class="flex items-center justify-between">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
                             <label class="text-base font-bold text-[#334155]">Expected Pickup Window</label>
                             <span class="text-base font-bold text-[#102B70]">Pick up by {{ now()->addDays($pickupDays)->format('M d, Y') }}</span>
                         </div>

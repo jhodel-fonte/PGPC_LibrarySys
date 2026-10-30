@@ -94,7 +94,7 @@
                         </a>
 
                         <!-- Service 2: Check Availability -->
-                        <div class="flex items-start gap-3.5 rounded-xl p-2.5 transition hover:bg-white/10">
+                        <a href="{{ route('opac.index', ['availability' => ['available']]) }}" class="flex items-start gap-3.5 rounded-xl p-2.5 transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
                             <div class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/10 border border-white/15 text-[#FCC719]">
                                 <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -104,10 +104,10 @@
                                 <h3 class="text-[14.5px] font-bold text-white">Check Availability</h3>
                                 <p class="mt-0.5 text-[12.5px] text-slate-300">See which items are currently available.</p>
                             </div>
-                        </div>
+                        </a>
 
                         <!-- Service 3: Reserve Items -->
-                        <div class="flex items-start gap-3.5 rounded-xl p-2.5 transition hover:bg-white/10">
+                        <a href="{{ auth()->check() && !auth()->user()->isStudent() ? route(\App\Services\EmployeeRoleService::getRoutePrefix() . 'reservations') : route('student.reservations') }}" class="flex items-start gap-3.5 rounded-xl p-2.5 transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
                             <div class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/10 border border-white/15 text-[#FCC719]">
                                 <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
@@ -117,10 +117,10 @@
                                 <h3 class="text-[14.5px] font-bold text-white">Reserve Items</h3>
                                 <p class="mt-0.5 text-[12.5px] text-slate-300">Place holds on books and materials.</p>
                             </div>
-                        </div>
+                        </a>
 
                         <!-- Service 4: View Transactions -->
-                        <div class="flex items-start gap-3.5 rounded-xl p-2.5 transition hover:bg-white/10">
+                        <a href="{{ auth()->check() && !auth()->user()->isStudent() ? route(\App\Services\EmployeeRoleService::getRoutePrefix() . 'circulation-desk.borrowed-books') : route('student.borrow') }}" class="flex items-start gap-3.5 rounded-xl p-2.5 transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
                             <div class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/10 border border-white/15 text-[#FCC719]">
                                 <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
@@ -130,7 +130,7 @@
                                 <h3 class="text-[14.5px] font-bold text-white">View Transactions</h3>
                                 <p class="mt-0.5 text-[12.5px] text-slate-300">Track your borrowed and return history.</p>
                             </div>
-                        </div>
+                        </a>
 
                     </div>
 

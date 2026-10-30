@@ -1,8 +1,8 @@
 @props([
     'opacUrl' => Route::has('opac.index') ? route('opac.index') : url('/#opac'),
-    'eJournalsUrl' => url('/#online-resources'),
-    'reservationsUrl' => url('/#reservations'),
-    'myAccountUrl' => url('/#account'),
+    'eJournalsUrl' => route('opac.index', ['type' => 'journals']),
+    'reservationsUrl' => auth()->check() && !auth()->user()->isStudent() ? route(\App\Services\EmployeeRoleService::getRoutePrefix() . 'reservations') : route('student.reservations'),
+    'myAccountUrl' => auth()->check() && !auth()->user()->isStudent() ? route(\App\Services\EmployeeRoleService::getRoutePrefix() . 'profile') : route('student.borrow'),
 ])
 
 <section id="services" class="relative w-full py-14 sm:py-16 lg:py-20 select-none">
