@@ -29,13 +29,13 @@
 
 @if (!empty($faqs))
     <!-- FAQ Section (Soft Blue Rhythm: #F3F6FA) -->
-    <section id="faq" class="relative w-full bg-[#F3F6FA] py-10 lg:py-15 select-none border-t border-[#DCE5F0]/60">
+    <section id="faq" class="relative w-full bg-[#F3F6FA] py-12 sm:py-16 lg:py-20 select-none border-t border-[#DCE5F0]/60">
         <div class="mx-auto max-w-[1100px] px-4 sm:px-6 lg:px-8">
 
             <!-- Centered Section Header -->
             <div class="text-center max-w-xl mx-auto mb-10 sm:mb-12">
                 <!-- Main Heading -->
-                <h2 class="text-5xl sm:text-3xl font-extrabold tracking-tight text-[#0B1B3A]">
+                <h2 class="text-2xl sm:text-3xl lg:text-[34px] font-extrabold tracking-tight text-[#0B1B3A]">
                     {{ $title }}
                 </h2>
 

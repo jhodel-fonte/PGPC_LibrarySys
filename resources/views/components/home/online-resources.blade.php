@@ -24,7 +24,7 @@
 @endphp
 
 @if (!empty($resources))
-    <section id="online-resources" class="relative w-full bg-[#091b45] py-14 sm:py-16 lg:py-20 select-none">
+    <section id="online-resources" class="relative w-full bg-[#091b45] py-12 sm:py-16 lg:py-20 select-none">
         <div class="mx-auto max-w-[1380px] px-4 sm:px-6 lg:px-8">
 
             <!-- Section Header -->
