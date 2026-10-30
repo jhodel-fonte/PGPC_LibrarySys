@@ -12,7 +12,8 @@ class CatalogDeletionService
 {
     public function inspect(string $type, array $ids): array
     {
-        $copies = $type === 'title'
+        $ids = $this->expandPeriodicalTitles($type, $ids);
+        $copies = in_array($type, ['title', 'issue'], true)
             ? Book::whereIn('book_detail_id', $ids)->get()
             : Book::whereIn('id', $ids)->get();
         $copyIds = $copies->modelKeys();
@@ -20,7 +21,7 @@ class CatalogDeletionService
         $reservations = BookReservation::whereIn('book_id', $copyIds)->whereIn('reservation_status_id', [1, 2])->count();
         $loanRecords = BorrowingTransaction::whereIn('book_id', $copyIds)->count();
         $reservationRecords = BookReservation::withTrashed()->whereIn('book_id', $copyIds)->count();
-        $waitlist = $type === 'title' ? DB::table('reservation_waitlist')->whereIn('book_detail_id', $ids)->where('status', 'waiting')->count() : 0;
+        $waitlist = in_array($type, ['title', 'issue'], true) ? DB::table('reservation_waitlist')->whereIn('book_detail_id', $ids)->where('status', 'waiting')->count() : 0;
         $other = $copies->filter(fn ($copy) => $copy->status !== 'available')->count();
 
         return ['copies' => $copies->count(), 'loans' => $loans, 'reservations' => $reservations, 'other' => $other,
@@ -30,8 +31,9 @@ class CatalogDeletionService
 
     public function delete(string $type, array $ids, bool $confirmed): void
     {
+        $ids = $this->expandPeriodicalTitles($type, $ids);
         DB::transaction(function () use ($type, $ids, $confirmed) {
-            if ($type === 'title') {
+            if (in_array($type, ['title', 'issue'], true)) {
                 $details = BookDetail::whereIn('id', $ids)->lockForUpdate()->get();
                 if ($details->count() !== count($ids)) {
                     throw new \RuntimeException('A selected title is no longer available.');
@@ -49,11 +51,19 @@ class CatalogDeletionService
             foreach ($copies as $copy) {
                 $copy->delete();
             }
-            if ($type === 'title') {
+            if (in_array($type, ['title', 'issue'], true)) {
                 foreach ($details as $detail) {
                     $detail->delete();
                 }
             }
         }, 3);
+    }
+    private function expandPeriodicalTitles(string $type, array $ids): array
+    {
+        if ($type !== 'title') {
+            return $ids;
+        }
+        $titleIds = BookDetail::whereIn('id', $ids)->whereIn('catalog_kind', ['magazine', 'journal'])->pluck('book_data_id');
+        return array_values(array_unique(array_merge($ids, BookDetail::whereIn('book_data_id', $titleIds)->whereIn('catalog_kind', ['magazine', 'journal'])->pluck('id')->all())));
     }
 }

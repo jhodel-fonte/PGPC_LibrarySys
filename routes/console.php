@@ -155,9 +155,10 @@ Artisan::command(
 
 
 
-\Illuminate\Support\Facades\Schedule::command('loans:send-due-reminders')->daily()->withoutOverlapping();
+\Illuminate\Support\Facades\Schedule::command('loans:send-due-reminders')->everyMinute()->withoutOverlapping();
 
 Artisan::command('reservations:allocate-waitlist', function (\App\Services\ReservationWaitlistService $waitlist) {
+    $waitlist->expireReservations();
     \App\Models\ReservationWaitlist::where('status', 'waiting')->distinct()->pluck('book_detail_id')
         ->each(fn ($detailId) => $waitlist->allocate($detailId));
 })->purpose('Allocate available copies to reservation waitlists');

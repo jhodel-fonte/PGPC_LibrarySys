@@ -43,6 +43,12 @@ class EditBookForm extends Component
     // 3. Bibliographic Information
     public string $bookTitle = '';
     public string $catalogKind = 'book';
+    public string $issueVolume = '';
+    public string $issueNumber = '';
+    public string $issueLabel = '';
+    public string $issueDate = '';
+    public bool $issueBorrowable = true;
+    public $issueLoanDays = null;
     public $dailyFine = null;
     public string $manufacturer = '';
     public string $modelNumber = '';
@@ -60,6 +66,7 @@ class EditBookForm extends Component
     // Identifiers & Publication
     public string $isbn = '';
     public string $issn = '';
+    public string $resourceUrl = '';
     public string $callNumber = '';
     public string $classification = '';
     public ?int $publisherId = null;
@@ -180,10 +187,18 @@ class EditBookForm extends Component
         $this->isbn = $bookDetail->isbn ?? '';
         $this->catalogKind = $bookDetail->catalog_kind ?? 'book';
         $this->dailyFine = $bookDetail->daily_fine;
+        $issue = $bookDetail->periodicalIssue;
+        $this->issueVolume = $issue?->volume ?? '';
+        $this->issueNumber = $issue?->issue_number ?? '';
+        $this->issueLabel = $issue?->issue_label ?? '';
+        $this->issueDate = $issue?->publication_date?->format('Y-m-d') ?? '';
+        $this->issueBorrowable = $issue?->borrowable ?? true;
+        $this->issueLoanDays = $issue?->loan_days;
         $this->manufacturer = $bookDetail->manufacturer ?? '';
         $this->modelNumber = $bookDetail->model_number ?? '';
         $this->packageContents = $bookDetail->package_contents ?? '';
         $this->issn = $bookDetail->issn ?? '';
+        $this->resourceUrl = $bookDetail->url ?? '';
         $this->callNumber = $bookDetail->call_number ?? '';
         $this->classification = $bookDetail->classification ?? '';
         $this->publicationYear = $bookDetail->publication_year;
@@ -356,8 +371,14 @@ class EditBookForm extends Component
             'dateAcquired' => 'nullable|date',
 
             'bookTitle' => 'required|string|max:255',
-            'catalogKind' => 'required|in:book,equipment,multimedia,periodical,specimen',
+            'catalogKind' => 'required|in:book,magazine,journal,equipment,multimedia,periodical,specimen',
             'dailyFine' => 'nullable|numeric|min:0|max:999999.99',
+            'issueVolume' => 'nullable|string|max:50',
+            'issueNumber' => 'nullable|string|max:50',
+            'issueLabel' => 'nullable|string|max:255',
+            'issueDate' => 'nullable|date',
+            'issueBorrowable' => 'boolean',
+            'issueLoanDays' => 'nullable|integer|min:1|max:3650',
             'manufacturer' => 'nullable|string|max:255',
             'modelNumber' => 'nullable|string|max:255',
             'packageContents' => 'nullable|string|max:3000',
@@ -369,6 +390,7 @@ class EditBookForm extends Component
 
             'isbn' => 'nullable|string|max:15',
             'issn' => 'nullable|string|max:15',
+            'resourceUrl' => ['nullable', 'url:http,https', 'max:255'],
             'callNumber' => ($this->catalogKind === 'book' ? 'required' : 'nullable').'|string|max:30',
             'classification' => 'nullable|string|max:30',
             'publisherName' => 'nullable|string|max:150',
@@ -559,12 +581,15 @@ class EditBookForm extends Component
                 // 7. Update BookDetail
                 $bookDetail->update([
                     'catalog_kind' => $this->catalogKind,
+                    'book_type_id' => in_array($this->catalogKind, ['magazine', 'journal'], true) ? BookType::firstOrCreate(['type' => ucfirst($this->catalogKind)])->id : $bookDetail->book_type_id,
+                    'format' => in_array($this->catalogKind, ['magazine', 'journal'], true) ? ucfirst($this->catalogKind) : $bookDetail->format,
                     'daily_fine' => $this->dailyFine === '' ? null : $this->dailyFine,
                     'manufacturer' => trim($this->manufacturer) ?: null,
                     'model_number' => trim($this->modelNumber) ?: null,
                     'package_contents' => trim($this->packageContents) ?: null,
                     'isbn' => trim($this->isbn) ?: null,
                     'issn' => trim($this->issn) ?: null,
+                    'url' => trim($this->resourceUrl) ?: null,
                     'publication_year' => $this->publicationYear,
                     'copyright_year' => $this->copyrightYear ?: $this->publicationYear,
                     'edition' => trim($this->edition) ?: null,
@@ -574,6 +599,17 @@ class EditBookForm extends Component
                     'publisher_id' => $pub->id,
                     'cover_image' => $coverPath,
                 ]);
+
+                if (in_array($this->catalogKind, ['magazine', 'journal'], true)) {
+                    $bookDetail->periodicalIssue()->updateOrCreate([], [
+                        'volume' => trim($this->issueVolume) ?: null,
+                        'issue_number' => trim($this->issueNumber) ?: null,
+                        'issue_label' => trim($this->issueLabel) ?: null,
+                        'publication_date' => $this->issueDate ?: null,
+                        'borrowable' => $this->issueBorrowable,
+                        'loan_days' => $this->issueLoanDays ?: null,
+                    ]);
+                }
 
                 // 8. Update or Create Physical Book Copy
                 $book = $this->bookId ? Book::find($this->bookId) : $bookDetail->books->first();

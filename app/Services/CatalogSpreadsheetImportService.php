@@ -81,6 +81,11 @@ class CatalogSpreadsheetImportService
         'isbn_number' => 'isbn',
         'issn' => 'issn',
         'issn_no' => 'issn',
+        'volume' => 'issue_volume',
+        'issue' => 'issue_number',
+        'issue_number' => 'issue_number',
+        'issue_label' => 'issue_label',
+        'issue_date' => 'issue_date',
         'lccn' => 'lccn',
 
         // Call Number / Classification
@@ -717,12 +722,28 @@ class CatalogSpreadsheetImportService
 
         $callNum = !empty($data['call_number']) ? trim($data['call_number']) : 'Unclassified';
 
-        $bookDetail = BookDetail::firstOrCreate([
+        $isPeriodical = in_array($matKey, ['magazine', 'journal'], true);
+        if ($isPeriodical) {
+            $bookType = BookType::firstOrCreate(['type' => ucfirst($matKey)]);
+            $issueValues = [
+                'volume' => !empty($data['issue_volume']) ? mb_substr(trim((string) $data['issue_volume']), 0, 50) : null,
+                'issue_number' => !empty($data['issue_number']) ? mb_substr(trim((string) $data['issue_number']), 0, 50) : null,
+                'issue_label' => !empty($data['issue_label']) ? mb_substr(trim((string) $data['issue_label']), 0, 255) : null,
+                'publication_date' => !empty($data['issue_date']) ? \Carbon\Carbon::parse($data['issue_date'])->toDateString() : null,
+            ];
+            $existingIssue = BookDetail::where('book_data_id', $bookData->id)->where('catalog_kind', $matKey)
+                ->whereHas('periodicalIssue', function ($query) use ($issueValues) {
+                    foreach ($issueValues as $key => $value) { $query->where($key, $value); }
+                })->first();
+        }
+
+        $identity = [
             'book_data_id' => $bookData->id,
             'isbn' => !empty($data['isbn']) ? mb_substr(trim($data['isbn']), 0, 50) : null,
             'call_number' => mb_substr($callNum, 0, 255),
-            'catalog_kind' => in_array($matKey, ['equipment', 'multimedia', 'periodical', 'specimen'], true) ? $matKey : 'book',
-        ], [
+            'catalog_kind' => in_array($matKey, ['equipment', 'multimedia', 'periodical', 'specimen', 'magazine', 'journal'], true) ? $matKey : 'book',
+        ];
+        $defaults = [
             'issn' => !empty($data['issn']) ? mb_substr(trim($data['issn']), 0, 50) : null,
             'lccn' => !empty($data['lccn']) ? mb_substr(trim($data['lccn']), 0, 50) : null,
             'publication_year' => $pubYear,
@@ -734,7 +755,12 @@ class CatalogSpreadsheetImportService
             'book_type_id' => $bookType->id,
             'material_type_id' => $materialType->id,
             'publisher_id' => $publisher->id,
-        ]);
+        ];
+        $bookDetail = $isPeriodical ? (($existingIssue ?? null) ?: BookDetail::create(array_merge($identity, $defaults))) : BookDetail::firstOrCreate($identity, $defaults);
+
+        if ($isPeriodical) {
+            $bookDetail->periodicalIssue()->firstOrCreate([], $issueValues);
+        }
 
         // 7. Book (Physical copy)
         $condition = $context['condition'] ?? (BookCondition::whereRaw('LOWER(status) = ?', ['good'])->first() ?? BookCondition::first());

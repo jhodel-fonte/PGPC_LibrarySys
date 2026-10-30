@@ -285,7 +285,7 @@
                                         <div>
                                             <span class="text-slate-400 font-medium">Due Date:</span>
                                             <span class="font-bold ml-1 {{ $isOverdue ? 'text-red-600' : 'text-slate-900' }}">
-                                                {{ $loan->due_date ? $loan->due_date->format('M d, Y') : '—' }}
+                                                {{ $loan->due_date ? $loan->due_date->copy()->setTimezone('Asia/Manila')->format($loan->isInsideLibrary() ? 'M d, Y h:i A' : 'M d, Y') : '—' }}
                                             </span>
                                         </div>
                                         <div>
@@ -373,7 +373,7 @@
                                             {{ $loan->issued_date ? $loan->issued_date->format('M d, Y') : '—' }}
                                         </td>
                                         <td class="px-6 sm:px-7 py-4 text-sm font-bold whitespace-nowrap {{ $isOverdue ? 'text-red-600' : 'text-slate-900' }}">
-                                            {{ $loan->due_date ? $loan->due_date->format('M d, Y') : '—' }}
+                                            {{ $loan->due_date ? $loan->due_date->copy()->setTimezone('Asia/Manila')->format($loan->isInsideLibrary() ? 'M d, Y h:i A' : 'M d, Y') : '—' }}
                                         </td>
                                         <td class="px-6 sm:px-7 py-4 text-right whitespace-nowrap">
                                             @if ($isOverdue)

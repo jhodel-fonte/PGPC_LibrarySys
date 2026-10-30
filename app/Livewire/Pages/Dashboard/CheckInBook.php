@@ -317,7 +317,8 @@ class CheckInBook extends Component
             'name' => trim($student->first_name . ' ' . ($student->middle_name ? $student->middle_name . ' ' : '') . $student->last_name),
             'school_id' => $student->school_id_number,
             'course' => trim(($student->program ?? '') . ' - ' . ($student->year_level ?? '')),
-            'status' => $student->libraryStatus ? $student->libraryStatus->status : 'Active'
+            'status' => $student->libraryStatus ? $student->libraryStatus->status : 'Active',
+            'reservations_blocked' => (bool) $student->account?->reservations_blocked,
         ];
 
         // Fetch their currently borrowed books (not yet returned)
@@ -614,7 +615,7 @@ class CheckInBook extends Component
                 } else {
                     // For the books that ARE scanned, calculate their fine
                     $due = Carbon::parse($ot->due_date);
-                    if ($due->isPast()) {
+                    if ($due->isPast() && ! $ot->isInsideLibrary()) {
                         $totalFine += app(\App\Services\FineService::class)->overdueAmount($due, $ot->book?->bookDetail);
                     }
                 }

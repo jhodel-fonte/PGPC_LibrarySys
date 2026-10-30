@@ -9,6 +9,7 @@
                     <h1 class="text-2xl font-bold tracking-tight text-[#102B70]">Circulation Analytics & Intelligence</h1>
                 </div>
                 <p class="mt-1 text-sm text-slate-500 font-medium">Monitoring circulation velocity, book demand, academic program engagement, and return compliance.</p>
+                <p class="mt-1 text-sm text-slate-600">Inside-library loans in selected period: <strong>{{ number_format($insideLibraryCount) }}</strong></p>
             </div>
 
             <!-- Date Coverage Filter & Export / Quick Print Action -->
@@ -553,6 +554,7 @@
                                         <span class="text-sm font-bold text-slate-900 leading-tight truncate max-w-[340px]" title="{{ $bTitle }}">
                                             {{ $bTitle }}
                                         </span>
+                                        @if($item->isInsideLibrary())<span class="text-xs font-semibold text-blue-700">Inside library</span>@endif
                                         <div class="flex items-center gap-2 mt-1">
                                             <span class="font-mono text-xs font-semibold text-[#102B70] px-2 py-0.5 rounded-md bg-[#EFF6FF]">
                                                 {{ $bAccession }}

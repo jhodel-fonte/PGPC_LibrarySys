@@ -25,14 +25,10 @@ class AddBookForm extends Component
 {
     use WithFileUploads;
 
-    // Tabs: 'manual' (Manual Form Entry) or 'isbn' (Auto-Fill via ISBN)
-    public string $activeTab = 'manual';
-    public string $isbnLookupQuery = '';
     public bool $isLookingUpIsbn = false;
     public ?string $isbnLookupError = null;
     public ?string $isbnLookupSuccess = null;
     public ?string $retrievedCoverUrl = null;
-    public ?array $retrievedBookSummary = null;
 
     // 1. Initial Physical Copy
     public string $accessionNumber = '';
@@ -47,6 +43,13 @@ class AddBookForm extends Component
     // 3. Bibliographic Information
     public string $bookTitle = '';
     public string $catalogKind = 'book';
+    public ?int $periodicalTitleId = null;
+    public string $issueVolume = '';
+    public string $issueNumber = '';
+    public string $issueLabel = '';
+    public string $issueDate = '';
+    public bool $issueBorrowable = true;
+    public $issueLoanDays = null;
     public $dailyFine = null;
     public string $manufacturer = '';
     public string $modelNumber = '';
@@ -64,6 +67,7 @@ class AddBookForm extends Component
     // Identifiers & Publication
     public string $isbn = '';
     public string $issn = '';
+    public string $resourceUrl = '';
     public string $callNumber = '';
     public string $classification = '';
     public ?int $publisherId = null;
@@ -99,6 +103,20 @@ class AddBookForm extends Component
         }
     }
 
+    public function updatedPeriodicalTitleId($value): void
+    {
+        if (! $value || ! in_array($this->catalogKind, ['magazine', 'journal'], true)) {
+            return;
+        }
+        $detail = BookDetail::where('book_data_id', $value)->where('catalog_kind', $this->catalogKind)->with('bookData')->first();
+        if ($detail?->bookData) {
+            $this->bookTitle = $detail->bookData->book_title;
+            $this->issn = $detail->issn ?? '';
+            $this->resourceUrl = $detail->url ?? '';
+            $this->callNumber = $detail->call_number ?? '';
+        }
+    }
+
     public function generateBarcode()
     {
         $prefix = $this->catalogKind === 'book' ? 'BK' : 'AST';
@@ -108,12 +126,11 @@ class AddBookForm extends Component
 
     public function updatedCatalogKind(string $value): void
     {
+        $this->periodicalTitleId = null;
         if ($value === 'book') {
             return;
         }
 
-        $this->activeTab = 'manual';
-        $this->isbnLookupQuery = '';
         $this->isbn = '';
         $this->issn = '';
         $this->authorId = null;
@@ -339,25 +356,9 @@ class AddBookForm extends Component
         $this->dispatch('cover-image-removed');
     }
 
-    public function setTab(string $tab): void
-    {
-        if (in_array($tab, ['manual', 'isbn'])) {
-            $this->activeTab = $tab;
-            $this->isbnLookupError = null;
-        }
-    }
-
-    public function clearIsbnLookup(): void
-    {
-        $this->isbnLookupQuery = '';
-        $this->isbnLookupError = null;
-        $this->isbnLookupSuccess = null;
-        $this->retrievedBookSummary = null;
-    }
-
     public function lookupIsbn(?string $inputIsbn = null): void
     {
-        $rawIsbn = $inputIsbn ?? ($this->isbnLookupQuery ?: $this->isbn);
+        $rawIsbn = $inputIsbn ?? $this->isbn;
         $cleanIsbn = preg_replace('/[^0-9X]/i', '', strtoupper(trim((string)$rawIsbn)));
 
         if (empty($cleanIsbn)) {
@@ -414,7 +415,6 @@ class AddBookForm extends Component
 
             // Populate ISBN
             $this->isbn = $cleanIsbn;
-            $this->isbnLookupQuery = $cleanIsbn;
 
             // Title & Subtitle
             if (!empty($data['title'])) {
@@ -660,18 +660,6 @@ class AddBookForm extends Component
                 }
             }
 
-            // Summary for UI Banner
-            $this->retrievedBookSummary = [
-                'title' => $this->bookTitle,
-                'author' => !empty($authorNames) ? implode(', ', $authorNames) : 'N/A',
-                'publisher' => $pubName ?: 'N/A',
-                'year' => $this->publicationYear ?: 'N/A',
-                'pages' => $this->pages ?: 'N/A',
-                'isbn' => $cleanIsbn,
-                'cover_saved' => $coverSaved,
-                'cover_url' => $this->retrievedCoverUrl,
-            ];
-
             $this->isbnLookupSuccess = "Successfully retrieved details and " . ($coverSaved ? "cover image" : "metadata") . " for '{$this->bookTitle}'!";
             $this->isLookingUpIsbn = false;
             $this->dispatch('toast', message: 'Book details auto-filled from Open Library!', type: 'success');
@@ -699,9 +687,6 @@ class AddBookForm extends Component
         $hasAuthorSearch = !empty(trim($this->authorSearch));
         $hasNewNames = !empty(trim($this->newAuthorLastName)) || !empty(trim($this->newAuthorFirstName));
 
-        if ($this->catalogKind === 'book' && !$hasAuthorId && !$hasAuthorSearch && !$hasNewNames) {
-            $this->addError('authorSearch', 'The Author field is required.');
-        }
 
         // Validation
         $maxSetting = config('settings.book_covers.max_size', config('settings.coverFile_max_size', '5MB'));
@@ -715,8 +700,15 @@ class AddBookForm extends Component
             'dateAcquired' => 'nullable|date',
 
             'bookTitle' => 'required|string|max:255',
-            'catalogKind' => 'required|in:book,equipment,multimedia,periodical,specimen',
+            'catalogKind' => 'required|in:book,magazine,journal,equipment,multimedia,periodical,specimen',
             'dailyFine' => 'nullable|numeric|min:0|max:999999.99',
+            'periodicalTitleId' => 'nullable|integer|exists:book_datas,id',
+            'issueVolume' => 'nullable|string|max:50',
+            'issueNumber' => 'nullable|string|max:50',
+            'issueLabel' => 'nullable|string|max:255',
+            'issueDate' => 'nullable|date',
+            'issueBorrowable' => 'boolean',
+            'issueLoanDays' => 'nullable|integer|min:1|max:3650',
             'manufacturer' => 'nullable|string|max:255',
             'modelNumber' => 'nullable|string|max:255',
             'packageContents' => 'nullable|string|max:3000',
@@ -728,6 +720,7 @@ class AddBookForm extends Component
 
             'isbn' => 'nullable|string|max:15',
             'issn' => 'nullable|string|max:15',
+            'resourceUrl' => ['nullable', 'url:http,https', 'max:255'],
             'callNumber' => ($this->catalogKind === 'book' ? 'required' : 'nullable').'|string|max:30',
             'classification' => 'nullable|string|max:30',
             'publisherName' => 'nullable|string|max:150',
@@ -746,9 +739,13 @@ class AddBookForm extends Component
         ], [
             'accessionNumber.required' => 'The Accession Number is required.',
             'accessionNumber.unique' => 'This Accession Number is already in use.',
-            'bookTitle.required' => 'The Book Title is required.',
+            'bookTitle.required' => 'The title or item name is required.',
             'callNumber.required' => 'The Call Number is required.',
         ]);
+
+        if ($this->catalogKind === 'book' && !$hasAuthorId && !$hasAuthorSearch && !$hasNewNames) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['authorSearch' => 'The Author field is required.']);
+        }
 
         try {
             DB::transaction(function () {
@@ -778,7 +775,10 @@ class AddBookForm extends Component
                 $this->language = implode(', ', $languageNames);
 
                 // 2. Create BookData
-                $bookData = BookData::create([
+                $existingPeriodicalTitle = in_array($this->catalogKind, ['magazine', 'journal'], true) && $this->periodicalTitleId;
+                $bookData = $existingPeriodicalTitle
+                    ? BookData::whereHas('bookDetails', fn ($q) => $q->where('catalog_kind', $this->catalogKind))->findOrFail($this->periodicalTitleId)
+                    : BookData::create([
                     'book_title' => trim($this->bookTitle),
                     'subtitle' => trim($this->subtitle) ?: null,
                     'description' => trim($this->bookDescription) ?: null,
@@ -824,12 +824,12 @@ class AddBookForm extends Component
                     }
                 }
 
-                if (!empty($authorIds)) {
+                if (!$existingPeriodicalTitle && !empty($authorIds)) {
                     $bookData->authors()->sync(array_unique($authorIds));
                 }
 
                 // 4. Sync Categories
-                if (!empty($this->selectedCategories)) {
+                if (!$existingPeriodicalTitle && !empty($this->selectedCategories)) {
                     $bookData->categories()->sync($this->selectedCategories);
                 }
 
@@ -894,8 +894,21 @@ class AddBookForm extends Component
                 }
 
                 // 7. Resolve default Book Type
-                $defaultBookType = BookType::first() ?? BookType::firstOrCreate(['type' => 'Book']);
+                $defaultBookType = in_array($this->catalogKind, ['magazine', 'journal'], true)
+                    ? BookType::firstOrCreate(['type' => ucfirst($this->catalogKind)])
+                    : (BookType::first() ?? BookType::firstOrCreate(['type' => 'Book']));
                 $bookTypeId = $defaultBookType->id;
+
+                if ($existingPeriodicalTitle && ($this->issueVolume !== '' || $this->issueNumber !== '' || $this->issueDate !== '' || $this->issueLabel !== '')) {
+                    $duplicate = BookDetail::where('book_data_id', $bookData->id)->where('catalog_kind', $this->catalogKind)
+                        ->whereHas('periodicalIssue', fn ($q) => $q->where('volume', trim($this->issueVolume) ?: null)
+                            ->where('issue_number', trim($this->issueNumber) ?: null)
+                            ->where('issue_label', trim($this->issueLabel) ?: null)
+                            ->where('publication_date', $this->issueDate ?: null))->exists();
+                    if ($duplicate) {
+                        throw \Illuminate\Validation\ValidationException::withMessages(['issueNumber' => 'This issue already exists for the selected title. Add another copy to that issue instead.']);
+                    }
+                }
 
                 // 8. Create BookDetail
                 $bookDetail = BookDetail::create([
@@ -907,17 +920,29 @@ class AddBookForm extends Component
                     'package_contents' => trim($this->packageContents) ?: null,
                     'isbn' => trim($this->isbn) ?: null,
                     'issn' => trim($this->issn) ?: null,
+                    'url' => trim($this->resourceUrl) ?: null,
                     'publication_year' => $this->publicationYear,
                     'copyright_year' => $this->copyrightYear ?: $this->publicationYear,
                     'edition' => trim($this->edition) ?: null,
                     'pages' => $this->pages,
-                    'format' => 'Paperback',
+                    'format' => in_array($this->catalogKind, ['magazine', 'journal'], true) ? ucfirst($this->catalogKind) : 'Paperback',
                     'book_type_id' => $bookTypeId,
                     'call_number' => trim($this->callNumber),
                     'classification' => trim($this->classification) ?: null,
                     'publisher_id' => $pub->id,
                     'cover_image' => $coverPath,
                 ]);
+
+                if (in_array($this->catalogKind, ['magazine', 'journal'], true)) {
+                    $bookDetail->periodicalIssue()->updateOrCreate([], [
+                        'volume' => trim($this->issueVolume) ?: null,
+                        'issue_number' => trim($this->issueNumber) ?: null,
+                        'issue_label' => trim($this->issueLabel) ?: null,
+                        'publication_date' => $this->issueDate ?: null,
+                        'borrowable' => $this->issueBorrowable,
+                        'loan_days' => $this->issueLoanDays ?: null,
+                    ]);
+                }
 
                 // 9. Resolve default Book Condition
                 $condition = BookCondition::where('status', 'Good')->first()
@@ -942,7 +967,7 @@ class AddBookForm extends Component
                 }
             });
 
-            session()->flash('successMessage', 'Book "' . $this->bookTitle . '" registered successfully into library catalog.');
+            session()->flash('successMessage', 'Catalog item "' . $this->bookTitle . '" registered successfully.');
             $prefix = request()->is('librarian*') ? 'librarian.' : 'admin.';
             return $this->redirect(route($prefix . 'book-management.index'), navigate: true);
 
@@ -1035,7 +1060,12 @@ class AddBookForm extends Component
         $languages = Language::orderBy('lang')->get();
         $conditions = BookCondition::all();
 
+        $periodicalTitles = in_array($this->catalogKind, ['magazine', 'journal'], true)
+            ? BookData::whereHas('bookDetails', fn ($q) => $q->where('catalog_kind', $this->catalogKind))->orderBy('book_title')->limit(200)->get(['id', 'book_title'])
+            : collect();
+
         return view('livewire.forms.add-book-form', [
+            'periodicalTitles' => $periodicalTitles,
             'authors' => $authors,
             'categories' => $categories,
             'languages' => $languages,

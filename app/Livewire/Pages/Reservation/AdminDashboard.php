@@ -130,28 +130,9 @@ class AdminDashboard extends Component
     protected function checkAndExpireReservations(): void
     {
         try {
-            $expiredStatus = ReservationStatus::where('status', 'like', '%expired%')->first();
-            $expiredStatusId = $expiredStatus ? $expiredStatus->id : 5;
-
-            // Find reservations that are pending or approved but past due_date
-            $overdueReservations = BookReservation::whereIn('reservation_status_id', [1, 2])
-                ->where('due_date', '<', now())
-                ->get();
-
-            foreach ($overdueReservations as $res) {
-                $res->update([
-                    'reservation_status_id' => $expiredStatusId,
-                    'cancelled_date' => now(),
-                    'comment' => trim(($res->comment ?? '') . ' [Auto-expired: Pickup deadline passed]'),
-                ]);
-
-                // Release book copy if it was reserved
-                if ($res->book && $res->book->status === 'reserved') {
-                    $res->book->update(['status' => 'available']);
-                }
-            }
+            app(\App\Services\ReservationWaitlistService::class)->expireReservations();
         } catch (\Throwable $e) {
-            // Ignore in background
+            \Illuminate\Support\Facades\Log::error('Reservation expiration failed', ['exception' => $e]);
         }
     }
 
@@ -300,6 +281,13 @@ class AdminDashboard extends Component
             DB::transaction(function () use ($id) {
                 $reservation = BookReservation::findOrFail($id);
 
+                if ($reservation->student?->account?->reservations_blocked) {
+                    throw new \RuntimeException('This account cannot place reservations.');
+                }
+
+                if ($reservation->book?->bookDetail?->periodicalIssue && ! $reservation->book->bookDetail->periodicalIssue->borrowable) {
+                    throw new \RuntimeException('This issue is for library use only.');
+                }
                 if ($reservation->reservation_status_id !== 1) {
                     throw new \RuntimeException('Only pending reservations can be approved.');
                 }
@@ -350,7 +338,10 @@ class AdminDashboard extends Component
 
         try {
             DB::transaction(function () {
-                $reservation = BookReservation::findOrFail($this->cancelReservationId);
+                $reservation = BookReservation::lockForUpdate()->findOrFail($this->cancelReservationId);
+                if (! in_array((int) $reservation->reservation_status_id, [1, 2], true)) {
+                    throw new \RuntimeException('Only active reservations can be cancelled.');
+                }
 
                 $reasonText = trim($this->cancelReason) !== ''
                     ? 'Reason: ' . trim($this->cancelReason)
@@ -371,7 +362,7 @@ class AdminDashboard extends Component
                         ->whereIn('reservation_status_id', [1, 2])
                         ->exists();
 
-                    if (!$hasOtherActive) {
+                    if (!$hasOtherActive && $reservation->book->status === 'reserved') {
                         $reservation->book->update(['status' => 'available']);
                     }
                 }
@@ -391,12 +382,20 @@ class AdminDashboard extends Component
     {
         try {
             DB::transaction(function () use ($id) {
-                $reservation = BookReservation::with(['book', 'student'])->findOrFail($id);
+                $reservation = BookReservation::with(['book', 'student'])->lockForUpdate()->findOrFail($id);
 
-                if (in_array($reservation->reservation_status_id, [3, 4, 5])) {
-                    throw new \RuntimeException('This reservation has already been finalized or cancelled.');
+                if ((int) $reservation->reservation_status_id !== 2 || ! $reservation->book || ! $reservation->student) {
+                    throw new \RuntimeException('Only an approved reservation with a valid student and copy can be fulfilled.');
+                }
+                $copy = Book::lockForUpdate()->findOrFail($reservation->book_id);
+                if ($copy->status !== 'reserved' || BorrowingTransaction::where('book_id', $copy->id)->whereNull('return_date')->exists()) {
+                    throw new \RuntimeException('This copy is no longer available for pickup.');
                 }
 
+                $issue = $reservation->book?->bookDetail?->periodicalIssue;
+                if ($issue && ! $issue->borrowable) {
+                    throw new \RuntimeException('This issue is for library use only.');
+                }
                 // 1. Mark reservation fulfilled
                 $reservation->update([
                     'reservation_status_id' => 3, // Fulfilled
@@ -418,7 +417,7 @@ class AdminDashboard extends Component
                         'issued_condition_id' => $reservation->book->book_condition_id ?? 1,
                         'return_condition_id' => null,
                         'issued_date' => now(),
-                        'due_date' => now()->addDays(7), // Standard loan duration
+                        'due_date' => now()->addDays($issue?->loan_days ?? (int) config('settings.library_config.loan_period', config('settings.loan_period', 5))),
                         'return_date' => null,
                         'received_by_id' => null,
                     ]);
@@ -505,7 +504,7 @@ class AdminDashboard extends Component
             ->whereNull('deleted_at')
             ->where('status', 'available')
             ->whereNotIn(\Illuminate\Support\Facades\DB::raw('LOWER(status)'), ['disabled', 'archived'])
-            ->whereHas('bookDetail', fn($bd) => $bd->whereNull('deleted_at')->whereHas('bookData', fn($b) => $b->whereNull('deleted_at')))
+            ->whereHas('bookDetail', fn($bd) => $bd->whereNull('deleted_at')->whereDoesntHave('periodicalIssue', fn ($issue) => $issue->where('borrowable', false))->whereHas('bookData', fn($b) => $b->whereNull('deleted_at')))
             ->where(function ($q) use ($term) {
                 $q->where('accession_number', 'like', "%{$term}%")
                   ->orWhereHas('bookDetail.bookData', function ($b) use ($term) {
@@ -542,8 +541,11 @@ class AdminDashboard extends Component
             app(\App\Services\ReservationWaitlistService::class)->allocate($detailId);
             DB::transaction(function () {
                 $detailId = Book::whereKey($this->createSelectedBookId)->value('book_detail_id');
-                \App\Models\BookDetail::lockForUpdate()->findOrFail($detailId);
-                if (\App\Models\ReservationWaitlist::where('book_detail_id', $detailId)->where('status', 'waiting')->exists()) {
+                $detail = \App\Models\BookDetail::lockForUpdate()->findOrFail($detailId);
+                if ($detail->periodicalIssue && ! $detail->periodicalIssue->borrowable) {
+                    throw new \RuntimeException('This issue is for library use only.');
+                }
+                if (app(\App\Services\ReservationWaitlistService::class)->hasEligibleWaiter($detailId)) {
                     throw new \RuntimeException('Copies are reserved for people already on the waitlist.');
                 }
                 $book = Book::lockForUpdate()->findOrFail($this->createSelectedBookId);

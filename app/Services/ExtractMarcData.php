@@ -412,6 +412,13 @@ class ExtractMarcData
         // 3. ISBN & ISSN (020, 022)
         $isbn = $this->extractIsbn($record);
         $issn = $this->extractIssn($record);
+        // Leader/07 identifies continuing resources; 866 is a holdings statement.
+        $catalogKind = strlen($leader) > 7 && in_array(strtolower($leader[7]), ['s', 'i'], true) ? 'journal' : 'book';
+        $holdingsField = $record->getField('866');
+        $issueLabel = $holdingsField?->getSubfield('a')?->getData();
+        $linkField = $record->getField('856');
+        $resourceUrl = $linkField?->getSubfield('u')?->getData();
+        $resourceUrl = is_string($resourceUrl) && filter_var($resourceUrl, FILTER_VALIDATE_URL) && in_array(strtolower((string) parse_url($resourceUrl, PHP_URL_SCHEME)), ['http', 'https'], true) ? $resourceUrl : null;
 
         // 4. Dewey & Call Numbers (082, 050, 090)
         $dewey = $this->extractDewey($record);
@@ -469,6 +476,9 @@ class ExtractMarcData
             'author_list' => $authorInfo['author_list'] ?: [],
             'isbn' => $isbn,
             'issn' => $issn,
+            'catalog_kind' => $catalogKind,
+            'issue_label' => $issueLabel ? trim($issueLabel) : null,
+            'url' => $resourceUrl,
             'call_number' => $callNumber,
             'dewey' => $dewey,
             'publisher' => $imprint['publisher'] ?: 'Independent / Unknown',
@@ -520,16 +530,20 @@ class ExtractMarcData
                 $rawIsbn = !empty($record['isbn']) ? trim($record['isbn']) : null;
                 $isbn = $rawIsbn ? mb_substr($rawIsbn, 0, 255) : null;
 
-                // Duplicate Check
-                $existingBookDetail = null;
-                if (!empty($isbn)) {
-                    $existingBookDetail = BookDetail::where('isbn', $isbn)->first();
+                $kind = in_array($record['catalog_kind'] ?? null, ['journal', 'magazine'], true) ? $record['catalog_kind'] : 'book';
+                $issueLabel = !empty($record['issue_label']) ? mb_substr(trim($record['issue_label']), 0, 255) : null;
+                $sharedTitle = $kind !== 'book' ? BookData::where('book_title', $title)->whereHas('bookDetails', fn ($q) => $q->where('catalog_kind', $kind))->first() : null;
+                // Compare serial issues by title and holdings label, not by ISSN alone.
+                $existingBookDetail = $sharedTitle && $issueLabel ? $sharedTitle->bookDetails()->where('catalog_kind', $kind)
+                    ->whereHas('periodicalIssue', fn ($q) => $q->where('issue_label', $issueLabel))->first() : null;
+                if ($kind === 'book' && !empty($isbn)) {
+                    $existingBookDetail = BookDetail::where('isbn', $isbn)->where('catalog_kind', 'book')->first();
                 }
 
-                if (!$existingBookDetail && !empty($title)) {
+                if ($kind === 'book' && !$existingBookDetail && !empty($title)) {
                     $existingBookData = BookData::where('book_title', $title)->first();
                     if ($existingBookData) {
-                        $existingBookDetail = $existingBookData->bookDetails()->first();
+                        $existingBookDetail = $existingBookData->bookDetails()->where('catalog_kind', 'book')->first();
                     }
                 }
 
@@ -594,7 +608,7 @@ class ExtractMarcData
                 $marcContent = str_replace("\0", '', $marcContent);
 
                 try {
-                    $bookData = BookData::create([
+                    $bookData = $sharedTitle ?: BookData::create([
                         'book_title' => $title,
                         'subtitle' => $subtitle,
                         'description' => !empty($record['description']) ? trim($record['description']) : null,
@@ -624,13 +638,13 @@ class ExtractMarcData
 
                 // 3. Authors
                 $authorIds = $this->resolveAuthorIds($record);
-                if (!empty($authorIds)) {
+                if (!$sharedTitle && !empty($authorIds)) {
                     $bookData->authors()->sync(array_unique($authorIds));
                 }
 
                 // 4. Categories from subjects / dewey
                 $categoryIds = $this->resolveCategoryIds($record);
-                if (!empty($categoryIds)) {
+                if (!$sharedTitle && !empty($categoryIds)) {
                     $bookData->categories()->sync(array_unique($categoryIds));
                 }
 
@@ -640,7 +654,7 @@ class ExtractMarcData
                 $publisher = Publisher::firstOrCreate(['name' => $publisherName]);
 
                 // 6. BookType
-                $defaultBookType = BookType::first() ?? BookType::firstOrCreate(['type' => 'Book']);
+                $defaultBookType = $kind !== 'book' ? BookType::firstOrCreate(['type' => ucfirst($kind)]) : (BookType::first() ?? BookType::firstOrCreate(['type' => 'Book']));
 
                 // Parse pages integer
                 $pagesInt = null;
@@ -662,12 +676,14 @@ class ExtractMarcData
                 $bookDetail = BookDetail::create([
                     'book_data_id' => $bookData->id,
                     'isbn' => $isbn,
+                    'catalog_kind' => $kind,
+                    'url' => $record['url'] ?? null,
                     'issn' => $issn ? mb_substr($issn, 0, 255) : null,
                     'publication_year' => $pubYear,
                     'copyright_year' => $pubYear,
                     'edition' => $edition ? mb_substr($edition, 0, 255) : null,
                     'pages' => $pagesInt,
-                    'format' => 'Paperback',
+                    'format' => $kind === 'book' ? 'Paperback' : ucfirst($kind),
                     'book_type_id' => $defaultBookType->id,
                     'call_number' => mb_substr($callNum, 0, 255),
                     'classification' => $classification ? mb_substr($classification, 0, 255) : null,
@@ -678,6 +694,10 @@ class ExtractMarcData
                     'borrowed_copies' => 0,
                     'damaged_lost_copies' => 0,
                 ]);
+
+                if ($kind !== 'book') {
+                    $bookDetail->periodicalIssue()->create(['issue_label' => $issueLabel]);
+                }
 
                 // 8. Book Condition
                 $condition = BookCondition::whereRaw('LOWER(status) = ?', ['good'])->first()

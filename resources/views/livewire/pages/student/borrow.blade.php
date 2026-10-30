@@ -122,8 +122,9 @@
                                     <p class="text-xs text-slate-500 truncate mt-0.5">
                                         {{ $authors }}
                                     </p>
+                                    @if($record->isInsideLibrary())<p class="text-xs font-semibold text-blue-700">Inside library</p>@endif
                                     <p class="text-xs text-slate-400 mt-0.5">
-                                        {{ $loan->borrowType?->type ?? 'Regular Loan' }} &bull; {{ $loan->issuedCondition?->condition ?? 'Good' }}
+                                        {{ $loan->borrowType?->name ?? 'Regular Loan' }} &bull; {{ $loan->issuedCondition?->status ?? 'Good' }}
                                     </p>
                                 </div>
                             </div>
@@ -141,7 +142,7 @@
                                     <div>
                                         <span class="text-slate-400 font-medium">Due:</span>
                                         <span class="font-bold ml-1 {{ $isOverdue ? 'text-red-600' : 'text-slate-900' }}">
-                                            {{ $loan->due_date ? $loan->due_date->format('M d, Y') : '—' }}
+                                            {{ $loan->due_date ? $loan->due_date->copy()->setTimezone('Asia/Manila')->format($loan->isInsideLibrary() ? 'M d, Y h:i A' : 'M d, Y') : '—' }}
                                         </span>
                                     </div>
                                     <div>
@@ -210,8 +211,9 @@
                                                 <p class="text-sm text-slate-500 truncate mt-0.5">
                                                     {{ $authors }}
                                                 </p>
+                                                @if($record->isInsideLibrary())<p class="text-xs font-semibold text-blue-700">Inside library</p>@endif
                                                 <p class="text-xs text-slate-500 mt-1">
-                                                    Type: {{ $loan->borrowType?->type ?? 'Regular Loan' }} • Condition: {{ $loan->issuedCondition?->condition ?? 'Good' }}
+                                                    Type: {{ $loan->borrowType?->name ?? 'Regular Loan' }} • Condition: {{ $loan->issuedCondition?->status ?? 'Good' }}
                                                 </p>
                                             </div>
                                         </div>
@@ -223,7 +225,7 @@
                                         {{ $loan->issued_date ? $loan->issued_date->format('M d, Y') : '—' }}
                                     </td>
                                     <td class="px-6 sm:px-7 py-4 text-sm font-bold whitespace-nowrap {{ $isOverdue ? 'text-red-600' : 'text-slate-900' }}">
-                                        {{ $loan->due_date ? $loan->due_date->format('M d, Y') : '—' }}
+                                        {{ $loan->due_date ? $loan->due_date->copy()->setTimezone('Asia/Manila')->format($loan->isInsideLibrary() ? 'M d, Y h:i A' : 'M d, Y') : '—' }}
                                     </td>
                                     <td class="px-6 sm:px-7 py-4 text-right whitespace-nowrap">
                                         @if ($isOverdue)

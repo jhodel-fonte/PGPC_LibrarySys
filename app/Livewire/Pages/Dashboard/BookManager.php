@@ -20,7 +20,7 @@ class BookManager extends Component
     // Search & Tabs
     public $search = '';
     public $inventoryView = 'Titles'; // Titles, Copies
-    public string $catalogFilter = 'books';
+    public string $catalogFilter = 'all';
     public $activeTab = 'All Copies'; // All Copies, Available, Borrowed, Damaged/Lost
     public $perPage = 10;
 
@@ -97,8 +97,8 @@ class BookManager extends Component
 
     public function updatedCatalogFilter(): void
     {
-        if (!in_array($this->catalogFilter, ['books', 'physical'], true)) {
-            $this->catalogFilter = 'books';
+        if (!in_array($this->catalogFilter, ['all', 'books', 'physical', 'magazine', 'journal'], true)) {
+            $this->catalogFilter = 'all';
         }
 
         $this->resetPage();
@@ -298,6 +298,14 @@ class BookManager extends Component
         $type = $this->inventoryView === 'Titles' ? 'title' : 'copy';
         $this->dispatch('request-catalog-delete', type: $type, ids: [$type === 'title' ? $book->book_detail_id : $book->id]);
     }
+    public function deleteIssue(int $bookId): void
+    {
+        abort_unless(auth()->user()?->can('delete', Book::class), 403);
+        $book = Book::with('bookDetail')->findOrFail($bookId);
+        abort_unless(in_array($book->bookDetail?->catalog_kind, ['magazine', 'journal'], true), 422);
+        $this->dispatch('request-catalog-delete', type: 'issue', ids: [$book->book_detail_id]);
+    }
+
     #[On('restore-book-copy')]
     public function restoreBookCopy($copyId = null): void
     {
@@ -472,6 +480,7 @@ class BookManager extends Component
         $relations = [
             'condition',
             'bookDetail' => fn ($q) => $isDeletedTab ? $q->withTrashed() : $q->whereNull('deleted_at'),
+            'bookDetail.periodicalIssue',
             'bookDetail.bookData.authors',
             'bookDetail.bookData.categories',
             'bookDetail.publisher',
@@ -489,12 +498,10 @@ class BookManager extends Component
             $query->whereHas('bookDetail', fn ($detail) => $detail->whereHas('bookData'));
         }
 
-        if (in_array($this->catalogFilter, ['books', 'physical'], true)) {
-            $query->whereHas('bookDetail', function ($detail) use ($isDeletedTab) {
-                if ($isDeletedTab) $detail->withTrashed();
-                $detail->where('catalog_kind', $this->catalogFilter === 'books' ? '=' : '!=', 'book');
-            });
-        }
+        $query->whereHas('bookDetail', function ($detail) use ($isDeletedTab) {
+            if ($isDeletedTab) $detail->withTrashed();
+            $this->applyCatalogType($detail);
+        });
 
         if ($this->inventoryView === 'Titles') {
             $representativeCopies = ($isDeletedTab ? Book::onlyTrashed() : Book::whereNull('deleted_at'))
@@ -617,18 +624,29 @@ class BookManager extends Component
         return $query;
     }
 
+    private function applyCatalogType($query): void
+    {
+        match ($this->catalogFilter) {
+            'books' => $query->where('catalog_kind', 'book'),
+            'magazine' => $query->where('catalog_kind', 'magazine'),
+            'journal' => $query->where('catalog_kind', 'journal'),
+            'physical' => $query->whereNotIn('catalog_kind', ['book', 'magazine', 'journal']),
+            default => null,
+        };
+    }
+
     public function render()
     {
         $books = $this->buildQuery()->paginate($this->perPage);
 
         // Fetch counts for the selected catalog type, excluding soft-deleted records.
-        $catalogKindFilter = fn ($detail) => $detail
-            ->whereHas('bookData')
-            ->where('catalog_kind', $this->catalogFilter === 'books' ? 'book' : '!=', 'book');
-        $totalTitles = BookDetail::whereHas('bookData')
-            ->whereHas('books')
-            ->where('catalog_kind', $this->catalogFilter === 'books' ? 'book' : '!=', 'book')
-            ->count();
+        $catalogKindFilter = function ($detail) {
+            $detail->whereHas('bookData');
+            $this->applyCatalogType($detail);
+        };
+        $titleQuery = BookDetail::whereHas('bookData')->whereHas('books');
+        $this->applyCatalogType($titleQuery);
+        $totalTitles = $titleQuery->count();
         $activeCopies = Book::whereHas('bookDetail', $catalogKindFilter);
         $totalCopies = (clone $activeCopies)->count();
         $availableCopies = (clone $activeCopies)->where('status', 'available')->count();
@@ -638,7 +656,10 @@ class BookManager extends Component
                ->orWhereIn('status', ['damaged', 'lost']);
         })->count();
         $deletedCopies = \App\Services\EmployeeRoleService::isAdmin()
-            ? Book::onlyTrashed()->whereHas('bookDetail', $catalogKindFilter)->count()
+            ? Book::onlyTrashed()->whereHas('bookDetail', function ($detail) use ($catalogKindFilter) {
+                $detail->withTrashed();
+                $catalogKindFilter($detail);
+            })->count()
             : 0;
 
         // Conditions & Distinct Locations for Filter Dropdown

@@ -61,6 +61,11 @@
                 @endif
 
                 <div class="relative overflow-hidden shrink-0 bg-white rounded-xl border border-[#E2E8F0] p-4 ">
+                    <label for="loan-location" class="block mb-2 text-sm font-semibold text-[#334155]">Loan type</label>
+                    <select id="loan-location" wire:model.live="loanLocation" class="mb-4 w-full rounded-lg border border-slate-300 p-2 text-sm">
+                        <option value="take_home">Take home</option>
+                        <option value="inside_library">Inside library — return by 7:00 PM today</option>
+                    </select>
                     <!-- Indeterminate Top Progress Bar -->
                     <div wire:loading class="absolute top-0 left-0 right-0 h-1 bg-[#EFF6FF] overflow-hidden">
                         <div class="h-full w-1/3 bg-[#FCC719] animate-loading-pulse rounded-full"></div>
@@ -128,6 +133,9 @@
                         <span class="block text-base font-semibold text-[#64748B]">Student</span>
 
                         @if($scannedMember)
+                            @if($scannedMember['reservations_blocked'] ?? false)
+                                <div class="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">Reservation blacklist: this student cannot reserve items. Circulation remains available.</div>
+                            @endif
                             @php
                                 $initials = '';
                                 if (!empty($scannedMember['name'])) {

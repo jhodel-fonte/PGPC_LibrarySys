@@ -126,6 +126,10 @@ class OpacController extends Controller
         }
 
         $currentUser = Auth::user();
+        if (! $currentUser?->student) {
+            $message = 'A student account is required to place a reservation.';
+            return $request->expectsJson() ? response()->json(['success' => false, 'message' => $message], 403) : back()->with('error', $message);
+        }
         if ($currentUser?->reservations_blocked) {
             $message = 'Your account cannot place reservations. Please contact the library.';
             return $request->expectsJson() ? response()->json(['success' => false, 'message' => $message], 403) : back()->with('error', $message);
@@ -144,7 +148,7 @@ class OpacController extends Controller
 
         try {
             $detailId = BookDetail::whereKey($bookId)->value('id') ?? Book::whereKey($bookId)->value('book_detail_id');
-            if (! $detailId || ! BookDetail::publicCatalog()->whereKey($detailId)->exists()) {
+            if (! $detailId || ! BookDetail::publicCatalog()->whereDoesntHave('periodicalIssue', fn($q) => $q->where('borrowable', false))->whereKey($detailId)->exists()) {
                 $message = 'This item is for counter loan only and cannot be reserved online.';
                 return $request->expectsJson() ? response()->json(['success' => false, 'message' => $message], 422) : back()->with('error', $message);
             }
@@ -156,8 +160,8 @@ class OpacController extends Controller
                 $detail = BookDetail::find($bookId);
                 $detailId = $detail?->id ?? Book::whereKey($bookId)->value('book_detail_id');
                 if ($detailId) {
-                    BookDetail::publicCatalog()->lockForUpdate()->findOrFail($detailId);
-                    if (\App\Models\ReservationWaitlist::where('book_detail_id', $detailId)->where('status', 'waiting')->exists()) {
+                    BookDetail::publicCatalog()->whereDoesntHave('periodicalIssue', fn($q) => $q->where('borrowable', false))->lockForUpdate()->findOrFail($detailId);
+                    if (app(\App\Services\ReservationWaitlistService::class)->hasEligibleWaiter($detailId)) {
                         throw new \RuntimeException('not_available');
                     }
                 }
@@ -176,6 +180,13 @@ class OpacController extends Controller
 
                 $user = Auth::user();
                 $student = $user?->student;
+                if (BookReservation::where('student_id', $student->id)->whereIn('reservation_status_id', [1, 2])->count() >= 3) {
+                    throw new \RuntimeException('reservation_limit');
+                }
+                if (BookReservation::where('student_id', $student->id)->whereIn('reservation_status_id', [1, 2])
+                    ->whereHas('book', fn ($q) => $q->where('book_detail_id', $detailId))->exists()) {
+                    throw new \RuntimeException('duplicate_reservation');
+                }
 
                 $reservation = BookReservation::create([
                     'book_id'                => $book->id,
@@ -203,9 +214,12 @@ class OpacController extends Controller
             return back()->with('success', 'Book reservation submitted! Please pick up your item at the circulation desk within 3 days.');
 
         } catch (\RuntimeException $e) {
-            $message = $e->getMessage() === 'not_found'
-                ? 'The requested resource copy was not found.'
-                : 'This resource is currently not available for reservation.';
+            $message = match ($e->getMessage()) {
+                'not_found' => 'The requested resource copy was not found.',
+                'reservation_limit' => 'You have reached the limit of 3 active reservations.',
+                'duplicate_reservation' => 'You already have an active reservation for this item.',
+                default => 'This resource is currently not available for reservation.',
+            };
 
             if ($request->expectsJson()) {
                 return response()->json(['success' => false, 'message' => $message], 422);
@@ -258,7 +272,7 @@ class OpacController extends Controller
 
         // 3. Validate selectedType
         $rawType    = strtolower($this->inputString($request, 'type'));
-        $validTypes = ['all', 'books', 'theses', 'journals', 'reports', 'multimedia', 'book'];
+        $validTypes = ['all', 'books', 'theses', 'journals', 'magazines', 'reports', 'multimedia', 'book'];
         $selectedType = in_array($rawType, $validTypes, true) ? $rawType : 'all';
 
         // 4. Validate availability (handle both single string and array)

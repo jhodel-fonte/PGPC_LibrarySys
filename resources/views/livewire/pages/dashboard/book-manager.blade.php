@@ -62,7 +62,7 @@
             <div class="flex min-w-0 items-start gap-3.5">
                 <div class="min-w-0 pl-0 sm:pl-2">
                     <h1 class="text-xl font-bold tracking-[-0.02em] text-[#102B70] sm:text-2xl">Catalog Management</h1>
-                    <p class="mt-0.5 max-w-2xl text-xs sm:text-sm font-medium text-slate-600">Manage books, physical assets, copies, shelf locations, and availability.</p>
+                    <p class="mt-0.5 max-w-2xl text-xs sm:text-sm font-medium text-slate-600">Manage books, magazines, journals, physical items, and their copies.</p>
                 </div>
             </div>
 
@@ -129,7 +129,7 @@
                 }
             @endphp
             <div class="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0" aria-label="Inventory view and status filters">
-                <select wire:model.live="catalogFilter" aria-label="Catalog type" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-[#102B70]"><option value="books">Books</option><option value="physical">Items</option></select>
+                <select wire:model.live="catalogFilter" aria-label="Catalog type" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-[#102B70]"><option value="all">All types</option><option value="books">Books</option><option value="magazine">Magazines</option><option value="journal">Journals</option><option value="physical">Physical items</option></select>
                 @foreach(['Titles' => $totalTitles, 'Copies' => $totalCopies] as $viewName => $viewCount)
                     <button
                         type="button"
@@ -137,7 +137,7 @@
                         aria-pressed="{{ $inventoryView === $viewName ? 'true' : 'false' }}"
                         class="inline-flex shrink-0 items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70] {{ $inventoryView === $viewName ? 'border-[#102B70] bg-[#102B70] text-white shadow-sm' : 'border-[#DCE3EC] bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50' }}"
                     >
-                        <span>{{ $viewName }}</span>
+                        <span>{{ $viewName === 'Titles' ? 'Titles / Issues' : $viewName }}</span>
                         <span class="inline-flex min-w-[22px] items-center justify-center rounded px-1.5 py-0.5 text-[10px] font-bold tabular-nums {{ $inventoryView === $viewName ? 'bg-[#071943] text-white' : 'bg-slate-100 text-slate-600' }}">{{ number_format($viewCount) }}</span>
                     </button>
                 @endforeach
@@ -428,7 +428,7 @@
                                         {{ $data ? $data->book_title : 'Unknown Title' }}
                                     </button>
                                     <span class="text-xs text-slate-500 font-medium truncate mt-0.5">
-                                        {{ $detail?->catalog_kind === 'book' ? $authorName : ucfirst($detail?->catalog_kind ?? 'item') }} · Fine ₱{{ number_format($detail?->daily_fine ?? config('settings.library_config.penalty_fee', 50), 2) }}/day
+                                        {{ $detail?->catalog_kind === 'book' ? $authorName : (in_array($detail?->catalog_kind, ['magazine', 'journal'], true) ? ucfirst($detail->catalog_kind) : 'Physical Item') }}@if($detail?->periodicalIssue) · {{ collect([$detail->periodicalIssue->volume ? 'Vol. '.$detail->periodicalIssue->volume : null, $detail->periodicalIssue->issue_number ? 'Issue '.$detail->periodicalIssue->issue_number : null, $detail->periodicalIssue->issue_label])->filter()->join(' · ') }}@endif · Fine ₱{{ number_format($detail?->daily_fine ?? config('settings.library_config.penalty_fee', 50), 2) }}/day
                                     </span>
                                 </div>
                             </div>
@@ -496,6 +496,9 @@
                                         @if($canDeleteBook)
                                             <div class="border-t border-slate-100 my-1"></div>
 
+                                            @if($inventoryView === 'Titles' && in_array($detail?->catalog_kind, ['magazine', 'journal'], true))
+                                                <button type="button" wire:click="deleteIssue({{ $book->id }})" @click="open = false" class="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50">Delete Issue</button>
+                                            @endif
                                             <button
                                                 type="button"
                                                 wire:click="deleteCopy({{ $book->id }})"
@@ -585,7 +588,7 @@
                             >
                                 {{ $data ? $data->book_title : 'Unknown Title' }}
                             </button>
-                            <span class="text-xs text-slate-500 font-medium truncate mt-0.5">{{ $detail?->catalog_kind === 'book' ? $authorName : ucfirst($detail?->catalog_kind ?? 'item') }}</span>
+                            <span class="text-xs text-slate-500 font-medium truncate mt-0.5">{{ $detail?->catalog_kind === 'book' ? $authorName : (in_array($detail?->catalog_kind, ['magazine', 'journal'], true) ? ucfirst($detail->catalog_kind) : 'Physical Item') }}@if($detail?->periodicalIssue) · {{ collect([$detail->periodicalIssue->volume ? 'Vol. '.$detail->periodicalIssue->volume : null, $detail->periodicalIssue->issue_number ? 'Issue '.$detail->periodicalIssue->issue_number : null, $detail->periodicalIssue->issue_label])->filter()->join(' · ') }}@endif</span>
                         </div>
                     </div>
                 </td>
@@ -688,6 +691,9 @@
                                 @if($canDeleteBook)
                                     <div class="border-t border-slate-100 my-1"></div>
 
+                                    @if($inventoryView === 'Titles' && in_array($detail?->catalog_kind, ['magazine', 'journal'], true))
+                                        <button type="button" wire:click="deleteIssue({{ $book->id }})" @click="open = false" class="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50">Delete Issue</button>
+                                    @endif
                                     <button
                                         type="button"
                                         wire:click="deleteCopy({{ $book->id }})"

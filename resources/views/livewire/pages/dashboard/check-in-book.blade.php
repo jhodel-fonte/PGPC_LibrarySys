@@ -133,6 +133,9 @@
                     <div class="flex flex-col gap-3 flex-1">
                         <span class="block text-base font-semibold text-[#64748B]">Student</span>
                         @if($scannedMember)
+                            @if($scannedMember['reservations_blocked'] ?? false)
+                                <div class="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">Reservation blacklist: this student cannot reserve items. Circulation remains available.</div>
+                            @endif
                             @php
                                 if (!empty($scannedMember['name'])) {
                                     $words = explode(' ', $scannedMember['name']);

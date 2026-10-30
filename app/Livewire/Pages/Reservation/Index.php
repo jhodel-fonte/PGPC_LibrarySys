@@ -81,9 +81,10 @@ class Index extends Component
     #[Computed]
     public function catalogBooks()
     {
-        $query = BookDetail::publicCatalog()
+        $query = BookDetail::query()
             ->whereNull('deleted_at')
             ->whereHas('bookData', fn($q) => $q->whereNull('deleted_at'))
+            ->whereDoesntHave('periodicalIssue', fn($q) => $q->where('borrowable', false))
             ->with([
                 'bookData.authors',
                 'bookData.categories',
@@ -134,7 +135,7 @@ class Index extends Component
             return null;
         }
 
-        return BookDetail::publicCatalog()->with([
+        return BookDetail::with([
             'bookData.authors',
             'bookData.categories',
             'publisher',
@@ -144,16 +145,18 @@ class Index extends Component
         ])
         ->whereNull('deleted_at')
         ->whereHas('bookData', fn($q) => $q->whereNull('deleted_at'))
+            ->whereDoesntHave('periodicalIssue', fn($q) => $q->where('borrowable', false))
         ->find($this->selectedBookDetailId);
     }
 
     public function openReservationModal(int $bookDetailId): void
     {
-        $detail = BookDetail::publicCatalog()->with(['books' => fn($q) => $q->whereNull('deleted_at')
+        $detail = BookDetail::with(['books' => fn($q) => $q->whereNull('deleted_at')
             ->where('status', 'available')
             ->whereNotIn(DB::raw('LOWER(status)'), ['disabled', 'archived'])])
             ->whereNull('deleted_at')
             ->whereHas('bookData', fn($q) => $q->whereNull('deleted_at'))
+            ->whereDoesntHave('periodicalIssue', fn($q) => $q->where('borrowable', false))
             ->find($bookDetailId);
 
         if (!$detail) {
@@ -186,7 +189,7 @@ class Index extends Component
         }
 
         $detail = $this->selectedBookDetailId
-            ? BookDetail::publicCatalog()->whereKey($this->selectedBookDetailId)->first()
+            ? BookDetail::whereHas('bookData')->whereDoesntHave('periodicalIssue', fn($q) => $q->where('borrowable', false))->whereKey($this->selectedBookDetailId)->first()
             : null;
 
         if (!$detail) {
@@ -231,9 +234,17 @@ class Index extends Component
         $this->isSubmitting = true;
 
         try {
+            app(\App\Services\ReservationWaitlistService::class)->allocate($this->selectedBookDetailId);
             $reservation = DB::transaction(function () use ($student) {
-                $detail = BookDetail::publicCatalog()->lockForUpdate()->findOrFail($this->selectedBookDetailId);
-                if (\App\Models\ReservationWaitlist::where('book_detail_id', $this->selectedBookDetailId)->where('status', 'waiting')->exists()) {
+                $detail = BookDetail::whereHas('bookData')->lockForUpdate()->findOrFail($this->selectedBookDetailId);
+                if ($detail->periodicalIssue && ! $detail->periodicalIssue->borrowable) {
+                    throw new \RuntimeException('This issue is for library use only.');
+                }
+                if (BookReservation::where('student_id', $student->id)->whereIn('reservation_status_id', [1, 2])
+                    ->whereHas('book', fn ($q) => $q->where('book_detail_id', $detail->id))->exists()) {
+                    throw new \RuntimeException('You already have an active reservation for this item.');
+                }
+                if (app(\App\Services\ReservationWaitlistService::class)->hasEligibleWaiter($detail->id)) {
                     throw new \RuntimeException('Copies are reserved for people already on the waitlist.');
                 }
                 $book = Book::lockForUpdate()->findOrFail($this->selectedBookCopyId);

@@ -50,7 +50,12 @@ class BookDetail extends Model
 
     public function scopePublicCatalog($query)
     {
-        return $query->where('catalog_kind', 'book');
+        return $query->whereIn('catalog_kind', ['book', 'magazine', 'journal']);
+    }
+
+    public function periodicalIssue(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(PeriodicalIssue::class);
     }
 
     public function bookData(): BelongsTo

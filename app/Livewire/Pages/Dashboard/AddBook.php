@@ -6,7 +6,7 @@ use App\Models\Book;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
-#[Layout('livewire.layouts.admin', ['title' => 'Book Management', 'subpage' => 'Add New Book', 'activepageRoute' => 'admin.book-management.index'])]
+#[Layout('livewire.layouts.admin', ['title' => 'Book Management', 'subpage' => 'Add Catalog Item', 'activepageRoute' => 'admin.book-management.index'])]
 class AddBook extends Component
 {
     public function mount()

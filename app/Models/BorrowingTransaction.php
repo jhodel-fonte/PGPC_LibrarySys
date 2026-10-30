@@ -11,6 +11,11 @@ class BorrowingTransaction extends Model
 {
     use HasFactory;
 
+    public function isInsideLibrary(): bool
+    {
+        return $this->borrowType?->name === 'Room Use Only';
+    }
+
     protected $fillable = [
         'book_id',
         'school_id', // foreign key pointing to students table

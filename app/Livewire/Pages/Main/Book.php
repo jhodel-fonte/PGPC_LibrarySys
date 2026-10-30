@@ -152,7 +152,7 @@ class Book extends Component
         }
 
         // Abort 404: do not show soft-deleted or non-existent books
-        if (!$record || $record->trashed() || $record->catalog_kind !== 'book') {
+        if (!$record || $record->trashed() || !in_array($record->catalog_kind, ['book', 'magazine', 'journal'], true)) {
             abort(404, 'The requested book is unavailable or has been removed from the catalog.');
         }
 
@@ -275,6 +275,20 @@ class Book extends Component
                 'description' => $bdata->description ?: ($bdata->note ?: 'No detailed description cataloged for this resource.'),
                 'keywords' => $keywords,
                 'cover_url' => $record->cover_url ?: null,
+                'resource_url' => $record->url,
+                'issue' => $record->periodicalIssue?->toArray(),
+                'other_issues' => in_array($record->catalog_kind, ['magazine', 'journal'], true)
+                    ? BookDetailModel::publicCatalog()->where('book_data_id', $record->book_data_id)
+                        ->where('catalog_kind', $record->catalog_kind)->whereKeyNot($record->id)
+                        ->whereHas('books', fn ($q) => $q->whereNull('deleted_at')->whereNotIn(\Illuminate\Support\Facades\DB::raw('LOWER(status)'), ['disabled', 'archived']))
+                        ->with('periodicalIssue')->orderByDesc('id')->limit(50)->get()
+                        ->map(fn ($item) => ['id' => $item->id, 'label' => collect([
+                            $item->periodicalIssue?->volume ? 'Volume '.$item->periodicalIssue->volume : null,
+                            $item->periodicalIssue?->issue_number ? 'Issue '.$item->periodicalIssue->issue_number : null,
+                            $item->periodicalIssue?->issue_label,
+                            $item->periodicalIssue?->publication_date?->format('M j, Y'),
+                        ])->filter()->join(' · ') ?: 'Issue #'.$item->id])->all()
+                    : [],
                 'has_custom_cover' => !empty($record->cover_image),
                 'default_cover' => asset('images/' . config('settings.book_covers.default', config('settings.coverFile_default', 'book-cover.webp'))),
                 'publisher' => $record->publisher ? $record->publisher->name : 'N/A',
@@ -286,7 +300,7 @@ class Book extends Component
                 'status_label' => $statusLabel,
                 'status_color' => $statusColor,
                 'dot_color' => $dotColor,
-                'can_reserve' => $availableCopies > 0,
+                'can_reserve' => $availableCopies > 0 && ($record->periodicalIssue?->borrowable ?? true),
                 'holdings' => $holdings,
             ];
         } else {

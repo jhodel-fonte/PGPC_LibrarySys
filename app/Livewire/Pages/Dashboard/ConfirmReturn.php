@@ -70,10 +70,12 @@ class ConfirmReturn extends Component
             }
 
             $overdueDays = $this->getOverdueDays($t->due_date);
-            $fineAmount = $this->getFineAmount($t->due_date, $detail);
+            $fineAmount = $t->isInsideLibrary() ? 0 : $this->getFineAmount($t->due_date, $detail);
 
-            if ($fineAmount > 0) {
+            if ($t->due_date && $t->due_date->isPast()) {
                 $this->overdueCount++;
+            }
+            if ($fineAmount > 0) {
                 $this->totalFine += $fineAmount;
             }
 
@@ -85,7 +87,7 @@ class ConfirmReturn extends Component
                 'cover_image' => $detail ? $detail->cover_image : null,
                 'cover_url' => $detail ? $detail->cover_url : null,
                 'issued_date' => $t->issued_date?->format('M d, Y') ?? 'N/A',
-                'due_date' => $t->due_date?->format('M d, Y') ?? 'N/A',
+                'due_date' => $t->due_date?->copy()->setTimezone('Asia/Manila')->format('M d, Y h:i A') ?? 'N/A',
                 'overdue_days' => $overdueDays,
                 'fine_amount' => $fineAmount,
             ];
@@ -149,7 +151,7 @@ class ConfirmReturn extends Component
                     }
 
                     // Generate overdue fine record if applicable
-                    $fineAmount = $this->getFineAmount($transaction->due_date, $transaction->book?->bookDetail);
+                    $fineAmount = $transaction->isInsideLibrary() ? 0 : $this->getFineAmount($transaction->due_date, $transaction->book?->bookDetail);
                     if ($fineAmount > 0) {
                         DB::table('fines')->insert([
                             'borrowing_transaction_id' => $transaction->id,

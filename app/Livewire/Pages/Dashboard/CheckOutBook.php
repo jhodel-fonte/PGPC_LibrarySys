@@ -20,6 +20,7 @@ class CheckOutBook extends Component
 {
     public $scannedMember = null;
     public $checkoutBooks = [];
+    public string $loanLocation = 'take_home';
     public $lastScannedBook = null;
     public $errorMessage = '';
     public $noticeMessage = '';
@@ -51,7 +52,9 @@ class CheckOutBook extends Component
     {
         $loanPeriod = (int) config('settings.library_config.loan_period', config('settings.loan_period', 5));
         $this->stats['total'] = count($this->checkoutBooks);
-        $this->stats['due_date'] = Carbon::now()->addDays($loanPeriod)->format('M. d, Y');
+        $this->stats['due_date'] = $this->loanLocation === 'inside_library'
+            ? now('Asia/Manila')->setTime(19, 0)->format('M. d, Y h:i A')
+            : Carbon::now()->addDays($loanPeriod)->format('M. d, Y');
 
         if ($this->scannedMember) {
             $studentId = $this->scannedMember['id'];
@@ -85,6 +88,21 @@ class CheckOutBook extends Component
             $this->stats['unpaid_fines'] = 0.00;
             $this->stats['remaining_slots'] = 3;
             $this->stats['borrow_limit_reached'] = false;
+        }
+    }
+
+    public function updatedLoanLocation(): void
+    {
+        $this->updateStats();
+        foreach ($this->checkoutBooks as &$item) {
+            $issue = Book::find($item['book_id'])?->bookDetail?->periodicalIssue;
+            $item['due_date'] = $this->loanLocation === 'inside_library'
+                ? now('Asia/Manila')->setTime(19, 0)->format('M. d, Y h:i A')
+                : now()->addDays($issue?->loan_days ?? (int) config('settings.library_config.loan_period', 5))->format('M. d, Y');
+        }
+        unset($item);
+        if ($this->lastScannedBook) {
+            $this->lastScannedBook = collect($this->checkoutBooks)->firstWhere('book_id', $this->lastScannedBook['book_id']) ?? $this->lastScannedBook;
         }
     }
 
@@ -377,6 +395,7 @@ class CheckOutBook extends Component
             'school_id' => $student->school_id_number,
             'course' => trim(($student->program ?? '') . ' - ' . ($student->year_level ?? '')),
             'status' => $statusName,
+            'reservations_blocked' => (bool) $student->account?->reservations_blocked,
             'email' => $student->account ? $student->account->email : 'N/A',
             'contact' => $student->contact_num ?? 'N/A'
         ];
@@ -404,6 +423,10 @@ class CheckOutBook extends Component
         // Get book metadata relations
         $detail = $book->bookDetail;
         $data = $detail ? $detail->bookData : null;
+        if ($detail?->periodicalIssue && ! $detail->periodicalIssue->borrowable && $this->loanLocation !== 'inside_library') {
+            $this->errorMessage = 'This issue is for library use only. Select inside-library use.';
+            return;
+        }
         $authorName = 'Unknown Author';
         if ($data && $data->authors->isNotEmpty()) {
             $authorName = $data->authors->map(function($a) {
@@ -429,7 +452,9 @@ class CheckOutBook extends Component
             'call_number' => $detail ? $detail->call_number : 'N/A',
             'code' => $data ? ($data->subtitle ?: 'BOOK') : 'BOOK',
             'added_on' => Carbon::now()->format('M. d, Y'),
-            'due_date' => Carbon::now()->addDays((int) config('settings.library_config.loan_period', config('settings.loan_period', 5)))->format('M. d, Y'),
+            'due_date' => $this->loanLocation === 'inside_library'
+                ? now('Asia/Manila')->setTime(19, 0)->format('M. d, Y h:i A')
+                : Carbon::now()->addDays($detail?->periodicalIssue?->loan_days ?? (int) config('settings.library_config.loan_period', config('settings.loan_period', 5)))->format('M. d, Y'),
             'reservation_id' => $reservation?->id
         ];
 
@@ -562,6 +587,14 @@ class CheckOutBook extends Component
     public function confirmCheckout()
     {
         \App\Services\EmployeeRoleService::authorizeBorrow('Unauthorized action. You do not have permission to process item borrowings.');
+        if (! in_array($this->loanLocation, ['take_home', 'inside_library'], true)) {
+            $this->dispatch('checkout-failed', message: 'Please select a valid loan type.');
+            return;
+        }
+        if ($this->loanLocation === 'inside_library' && now('Asia/Manila')->hour >= 19) {
+            $this->dispatch('checkout-failed', message: 'Inside-library loans cannot be issued at or after 7:00 PM.');
+            return;
+        }
         if (!$this->scannedMember || empty($this->checkoutBooks)) {
             $this->errorMessage = 'No student loaded or checkout books queued.';
             return;
@@ -615,6 +648,8 @@ class CheckOutBook extends Component
             DB::transaction(function () use ($studentId, $bookIds) {
                 $loanPeriod = (int) config('settings.library_config.loan_period', config('settings.loan_period', 5));
                 $now = Carbon::now();
+                $insideLibrary = $this->loanLocation === 'inside_library';
+                $borrowType = \App\Models\BorrowType::firstOrCreate(['name' => $insideLibrary ? 'Room Use Only' : 'Regular Check-out']);
                 $dueDate = (clone $now)->addDays($loanPeriod);
                 $librarianId = auth()->user() && auth()->user()->librarian ? auth()->user()->librarian->id : 1;
 
@@ -622,6 +657,13 @@ class CheckOutBook extends Component
                     $bookId = $item['book_id'];
                     $book = Book::lockForUpdate()->findOrFail($bookId);
                     $reservationId = $item['reservation_id'] ?? null;
+                    $issue = $book->bookDetail?->periodicalIssue;
+                    if ($issue && ! $issue->borrowable && ! $insideLibrary) {
+                        throw new \DomainException('This issue is for library use only. Select inside-library use.');
+                    }
+                    $dueDate = $insideLibrary
+                        ? $now->copy()->setTimezone('Asia/Manila')->setTime(19, 0)->setTimezone(config('app.timezone'))
+                        : (clone $now)->addDays($issue?->loan_days ?? $loanPeriod);
 
                     if ($reservationId) {
                         $reservation = BookReservation::lockForUpdate()->findOrFail($reservationId);
@@ -638,12 +680,11 @@ class CheckOutBook extends Component
                     }
 
                     $exists = BorrowingTransaction::where('book_id', $bookId)
-                        ->where('school_id', $studentId)
                         ->whereNull('return_date')
                         ->exists();
 
                     if ($exists) {
-                        continue;
+                        throw new \DomainException('A queued copy already has an active loan. Check the copy’s loan record before trying again.');
                     }
 
                     BorrowingTransaction::create([
@@ -651,7 +692,7 @@ class CheckOutBook extends Component
                         'school_id' => $studentId,
                         'issued_by_id' => $librarianId,
                         'book_reservation_id' => $reservationId,
-                        'borrow_type_id' => 1,
+                        'borrow_type_id' => $borrowType->id,
                         'issued_condition_id' => 2,
                         'issued_date' => $now,
                         'due_date' => $dueDate,
@@ -668,6 +709,9 @@ class CheckOutBook extends Component
                     $book->update(['status' => 'borrowed']);
                 }
             });
+        } catch (\DomainException $e) {
+            $this->dispatch('checkout-failed', message: $e->getMessage());
+            return;
         } catch (\Throwable $e) {
             Log::error('Check-Out Transaction Failed: ' . $e->getMessage());
             $this->dispatch('checkout-failed', message: 'A database error occurred during checkout processing. Please try again.');

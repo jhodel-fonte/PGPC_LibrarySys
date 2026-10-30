@@ -376,6 +376,7 @@ class AnalyticsCirculation extends Component
             ->with([
                 'student.account',
                 'book.bookDetail.bookData',
+                'borrowType',
                 'issuedBy',
                 'receivedBy'
             ]);
@@ -463,6 +464,7 @@ class AnalyticsCirculation extends Component
         $overdueCount = $overdueBase->count();
         $returnedCount = $returnedBase->count();
         $totalHistoryCount = $totalBase->count();
+        $insideLibraryCount = (clone $totalBase)->whereHas('borrowType', fn ($q) => $q->where('name', 'Room Use Only'))->count();
 
         // On-Time Return Rate
         $onTimeReturnRate = '92.4%';
@@ -478,6 +480,7 @@ class AnalyticsCirculation extends Component
             'overdueCount' => $overdueCount,
             'returnedCount' => $returnedCount,
             'totalHistoryCount' => $totalHistoryCount,
+            'insideLibraryCount' => $insideLibraryCount,
             'uniqueBorrowersCount' => $uniqueBorrowersCount,
             'onTimeReturnRate' => $onTimeReturnRate,
             'dateCoverage' => $this->dateCoverage,
