@@ -438,7 +438,7 @@ class CatalogSpreadsheetImportService
     {
         @set_time_limit(0);
 
-        $import->update(['status' => 'importing', 'imported_rows' => 0, 'failed_rows' => 0]);
+        $import->update(['status' => 'importing']);
 
         $options = $import->summary['options'] ?? [];
         $prefix = $options['accession_prefix'] ?? ('PGPC-' . date('Y') . '-');
@@ -446,9 +446,8 @@ class CatalogSpreadsheetImportService
         $assignedInBatch = [];
         $context = $this->createCatalogContext($options);
 
-        $processedCount = 0;
-        $importedCount = 0;
-        $failedCount = 0;
+        $importedCount = $import->rows()->where('status', 'imported')->count();
+        $failedCount = $import->rows()->where('status', 'failed')->count();
 
         foreach ($import->rows()->where('status', 'pending')->cursor() as $row) {
             try {
@@ -481,13 +480,10 @@ class CatalogSpreadsheetImportService
                 $failedCount++;
             }
 
-            $processedCount++;
-            if ($processedCount % 25 === 0) {
-                $import->update([
-                    'imported_rows' => $importedCount,
-                    'failed_rows' => $failedCount,
-                ]);
-            }
+            $import->update([
+                'imported_rows' => $importedCount,
+                'failed_rows' => $failedCount,
+            ]);
         }
 
         $import->update([

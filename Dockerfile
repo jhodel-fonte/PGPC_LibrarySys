@@ -54,12 +54,12 @@ COPY docker/nginx.conf /etc/nginx/nginx.conf
 COPY docker/php.ini /usr/local/etc/php/conf.d/zz-upload.ini
 COPY docker/supervisord.conf /etc/supervisord.conf
 
-# Create Nginx FastCGI temporary directories
+# Create Nginx request-body and FastCGI temporary directories
 # and assign permissions to the Nginx worker user
-RUN mkdir -p /var/lib/nginx/tmp/fastcgi \
+RUN mkdir -p /var/lib/nginx/tmp/fastcgi /var/lib/nginx/tmp/client_body \
     && chown -R www-data:www-data /var/lib/nginx/tmp \
     && chmod 700 /var/lib/nginx/tmp \
-    && chmod 700 /var/lib/nginx/tmp/fastcgi
+    && chmod 700 /var/lib/nginx/tmp/fastcgi /var/lib/nginx/tmp/client_body
 
 # Set Laravel writable directory permissions
 RUN chown -R www-data:www-data \

@@ -34,7 +34,8 @@
                 <button
                     type="button"
                     wire:click="resetImport"
-                    class="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg border border-[#E2E8F0] bg-white px-4 text-xs sm:text-sm font-semibold text-slate-700 shadow-xs transition-colors hover:bg-slate-50 hover:text-rose-600 active:translate-y-px cursor-pointer"
+                    @disabled($isImporting)
+                    class="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg border border-[#E2E8F0] bg-white px-4 text-xs sm:text-sm font-semibold text-slate-700 shadow-xs transition-colors hover:bg-slate-50 hover:text-rose-600 active:translate-y-px disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
                     <span>Start Over</span>
                 </button>
@@ -80,10 +81,10 @@
 
             <!-- Post-Import Success Banner -->
             @if ($importCompleted)
-                <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 sm:p-5">
+                    <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 sm:p-5">
                     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                         <div>
-                            <h3 class="text-base font-bold text-emerald-950">Catalog Batch Successfully Imported</h3>
+                            <h3 class="text-base font-bold text-emerald-950">Catalog import finished</h3>
                             <p class="text-xs sm:text-sm font-medium text-emerald-800 mt-0.5">
                                 <strong class="font-bold">{{ $importedCount }}</strong> physical book copy record(s) cataloged into <strong class="font-bold">{{ $defaultCollection }}</strong>.
                                 @if ($failedCount > 0)
@@ -112,7 +113,7 @@
                         <div>
                             <h3 class="text-base font-bold text-white">Importing Records to Catalog...</h3>
                             <p class="text-xs text-blue-100 mt-0.5">
-                                Processed <strong class="text-white">{{ $importedRows }}</strong> of <strong class="text-white">{{ $totalRows }}</strong> records. This job runs independently on the server.
+                                Processed <strong class="text-white">{{ $importedRows + $issueRows }}</strong> of <strong class="text-white">{{ $totalRows }}</strong> rows: {{ $importedRows }} imported, {{ $issueRows }} with issues.
                             </p>
                         </div>
                         <div class="text-right shrink-0">
@@ -121,13 +122,13 @@
                     </div>
 
                     <!-- Progress Bar -->
-                    <div class="w-full bg-white/20 rounded-full h-2.5 overflow-hidden">
+                    <div class="w-full bg-white/20 rounded-full h-2.5 overflow-hidden" role="progressbar" aria-label="Import progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ $progressPercent }}">
                         <div class="bg-[#FCC719] h-2.5 rounded-full transition-all duration-300 ease-out"
                              style="width: {{ $progressPercent }}%"></div>
                     </div>
 
                     <p class="text-xs text-blue-200">
-                        Safe to leave: The process runs in the background. You can navigate freely or close this tab.
+                        If progress stays unchanged, check that the queue worker is running. You can return to this page to resume monitoring.
                     </p>
                 </div>
             @endif
@@ -308,20 +309,20 @@
                                     <td class="py-2.5 px-3.5 text-xs text-slate-700">
                                         <div class="font-medium text-slate-800">{{ $data['material_type'] ?? 'Book' }}</div>
                                         <div class="text-[11px] text-slate-500 truncate" title="{{ $data['sublocation'] ?? '' }}">
-                                            {{ $data['sublocation'] ?: $defaultCollection }}
+                                            {{ ($data['sublocation'] ?? '') ?: $defaultCollection }}
                                         </div>
                                     </td>
 
                                     <!-- ISBN & Call Number -->
                                     <td class="py-2.5 px-3.5 text-xs font-mono text-slate-600">
-                                        <div>{{ $data['call_number'] ?: '—' }}</div>
-                                        <div class="text-[11px] text-slate-400">{{ $data['isbn'] ?: 'No ISBN' }}</div>
+                                        <div>{{ ($data['call_number'] ?? '') ?: '—' }}</div>
+                                        <div class="text-[11px] text-slate-400">{{ ($data['isbn'] ?? '') ?: 'No ISBN' }}</div>
                                     </td>
 
                                     <!-- Publisher & Year -->
                                     <td class="py-2.5 px-3.5 text-xs text-slate-600">
-                                        <div class="truncate max-w-[140px]" title="{{ $data['publisher'] ?? '' }}">{{ $data['publisher'] ?: '—' }}</div>
-                                        <div class="text-[11px] text-slate-500">{{ $data['publication_year'] ?: '—' }}</div>
+                                        <div class="truncate max-w-[140px]" title="{{ $data['publisher'] ?? '' }}">{{ ($data['publisher'] ?? '') ?: '—' }}</div>
+                                        <div class="text-[11px] text-slate-500">{{ ($data['publication_year'] ?? '') ?: '—' }}</div>
                                     </td>
 
                                     <!-- Validation Notes -->
@@ -409,6 +410,7 @@
                     <button
                         type="button"
                         wire:click="resetImport"
+                        @disabled($isImporting)
                         class="h-10 px-4 rounded-lg border border-[#E2E8F0] bg-white hover:bg-slate-50 text-xs sm:text-sm font-semibold text-slate-700 shadow-xs transition cursor-pointer"
                     >
                         Start Over
@@ -469,11 +471,43 @@
                         isDragging: false,
                         uploading: false,
                         progress: 0,
+                        uploadError: '',
+                        uploadTimer: null,
+                        checkFile(file) {
+                            if (file.size > {{ $uploadLimitBytes }}) {
+                                this.uploadError = 'This file exceeds the server upload limit of {{ $uploadLimitLabel }}. Choose a smaller file or ask an administrator to raise the server limit.';
+                                return false;
+                            }
+                            return true;
+                        },
+                        beginUpload() {
+                            this.uploading = true; this.progress = 0; this.uploadError = '';
+                            this.armUploadTimer();
+                        },
+                        armUploadTimer() {
+                            clearTimeout(this.uploadTimer);
+                            this.uploadTimer = setTimeout(() => {
+                                if (this.uploading) {
+                                    this.uploading = false;
+                                    this.uploadError = 'The server did not finish the upload. Refresh this page and try again; if the problem continues, check the server logs and upload limits.';
+                                }
+                            }, 120000);
+                        },
+                        updateProgress(value) {
+                            this.progress = value;
+                            this.armUploadTimer();
+                        },
+                        finishUpload() {
+                            clearTimeout(this.uploadTimer);
+                            this.uploading = false; this.progress = 100;
+                            if (this.$wire.hasSelectedFile) this.$wire.review();
+                        },
                     }"
-                    x-on:livewire-upload-start="uploading = true; progress = 0"
-                    x-on:livewire-upload-finish="uploading = false; progress = 100"
-                    x-on:livewire-upload-error="uploading = false"
-                    x-on:livewire-upload-progress="progress = $event.detail.progress"
+                    x-on:livewire-upload-start="beginUpload()"
+                    x-on:livewire-upload-finish="finishUpload()"
+                    x-on:livewire-upload-error="clearTimeout(uploadTimer); uploading = false; uploadError = 'Upload failed. Check your connection and server upload limits, then try again.'"
+                    x-on:livewire-upload-cancel="clearTimeout(uploadTimer); uploading = false; uploadError = 'Upload cancelled. Choose a file to try again.'"
+                    x-on:livewire-upload-progress="updateProgress($event.detail.progress)"
                     class="relative"
                 >
                     <!-- Hidden File Input -->
@@ -482,6 +516,7 @@
                         x-ref="fileInput"
                         type="file"
                         wire:model="spreadsheet"
+                        @change.capture="if ($event.target.files.length && !checkFile($event.target.files[0])) { $event.stopImmediatePropagation(); $event.target.value = ''; }"
                         accept=".xlsx,.xls,.csv,.txt,.mrc,.marc,.dat,.xml"
                         class="sr-only"
                     />
@@ -492,12 +527,12 @@
                         @dragleave.prevent="isDragging = false"
                         @drop.prevent="
                             isDragging = false;
-                            if ($event.dataTransfer.files.length) {
-                                uploading = true; progress = 0;
+                            if ($event.dataTransfer.files.length && checkFile($event.dataTransfer.files[0])) {
+                                beginUpload();
                                 @this.upload('spreadsheet', $event.dataTransfer.files[0],
-                                    () => { uploading = false; progress = 100; },
-                                    () => { uploading = false; },
-                                    (e) => { progress = e.detail.progress; }
+                                    () => finishUpload(),
+                                    () => { clearTimeout(uploadTimer); uploading = false; uploadError = 'Upload failed. Check your connection and server upload limits, then try again.'; },
+                                    (e) => updateProgress(e.detail.progress)
                                 );
                             }
                         "
@@ -524,13 +559,13 @@
                         </div>
 
                         <p class="mt-1 text-xs text-slate-500">
-                            Accepts Excel (.xlsx, .xls), CSV (.csv, .txt), or MARC (.mrc, .xml) &bull; Maximum file size 50MB
+                            Accepts Excel (.xlsx, .xls), CSV (.csv, .txt), or MARC (.mrc, .xml) &bull; Server upload limit {{ $uploadLimitLabel }}. Set cataloging preferences before choosing a file.
                         </p>
 
                         <!-- Uploading Progress Bar -->
                         <div x-show="uploading" class="mt-4 max-w-sm mx-auto" x-cloak>
                             <div class="flex items-center justify-between text-xs font-semibold text-[#102B70] mb-1">
-                                <span>Uploading file...</span>
+                                <span x-text="progress >= 100 ? 'Finishing upload on the server…' : 'Uploading file…'"></span>
                                 <span x-text="progress + '%'"></span>
                             </div>
                             <div class="h-2 w-full rounded-full bg-slate-200 overflow-hidden">
@@ -538,6 +573,9 @@
                             </div>
                         </div>
                     </div>
+                    <p x-show="uploadError" x-text="uploadError" role="alert" x-cloak class="mt-3 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800"></p>
+                    <div wire:loading wire:target="review" role="status" class="mt-3 text-sm font-semibold text-[#102B70]">Upload complete. Reading and validating records…</div>
+                    @error('spreadsheet') <p role="alert" class="mt-3 text-sm text-rose-700">{{ $message }}</p> @enderror
                 </div>
 
                 <!-- Selected File Card (if file chosen) -->

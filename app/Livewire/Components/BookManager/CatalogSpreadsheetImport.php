@@ -150,7 +150,12 @@ class CatalogSpreadsheetImport extends Component
 
         // Handle MARC file review
         if ($this->isMarcFile($extension)) {
-            $this->reviewMarcFile($extension);
+            try {
+                $this->reviewMarcFile($extension);
+            } catch (Throwable $exception) {
+                Log::error('MARC review failed.', ['exception' => $exception]);
+                $this->fileValidationError = 'Could not read the MARC file. Check the file format and try again.';
+            }
             return;
         }
 
@@ -275,15 +280,37 @@ class CatalogSpreadsheetImport extends Component
             return;
         }
 
-        // Mark import as importing
-        $import->update(['status' => 'importing']);
+        if (! $import->rows()->where('status', 'pending')->exists()) {
+            $this->message = 'There are no valid rows left to import. Review the issues or upload a revised file.';
+            $this->messageType = 'warning';
+            return;
+        }
 
-        $actionUrl = request()->is('librarian*')
-            ? route('librarian.books.index')
-            : route('admin.books.index');
+        $prefix = \App\Services\EmployeeRoleService::getRoutePrefix();
+        $actionUrl = route($prefix . 'book-management.index');
+        $started = CatalogImport::whereKey($import->id)->whereIn('status', ['reviewing', 'failed'])->update(['status' => 'importing']);
+        if (! $started) {
+            $this->message = 'This import is already running or has completed.';
+            $this->messageType = 'warning';
+            return;
+        }
 
-        // Dispatch background job to database queue
-        \App\Jobs\ProcessCatalogImportJob::dispatch($import->id, auth()->id(), $actionUrl);
+        // Livewire caches computed properties for the request; reload the new status
+        // so the progress panel and polling start immediately.
+        unset($this->catalogImport);
+
+        try {
+            \App\Jobs\ProcessCatalogImportJob::dispatch($import->id, auth()->id(), $actionUrl);
+        } catch (Throwable $exception) {
+            Log::error('Could not start catalog import.', ['import_id' => $import->id, 'exception' => $exception]);
+            $import->refresh();
+            if ($import->status === 'importing') {
+                $import->update(['status' => 'failed', 'summary' => array_merge($import->summary ?? [], ['error' => 'Could not start the import. Check that the queue service is running, then try again.'])]);
+            }
+            $this->message = $import->summary['error'] ?? 'Could not start the import. Please try again.';
+            $this->messageType = 'error';
+            return;
+        }
 
         $this->message = "Import is running in the background. You can safely refresh, browse other pages, or close this tab.";
         $this->messageType = 'info';
@@ -330,6 +357,11 @@ class CatalogSpreadsheetImport extends Component
      */
     public function resetImport(): void
     {
+        if ($this->catalogImport?->status === 'importing') {
+            $this->message = 'The import is still running. Wait for it to finish before starting over.';
+            $this->messageType = 'warning';
+            return;
+        }
         if ($this->catalogImport && !empty($this->catalogImport->source_file_path)) {
             if (Storage::disk('local')->exists($this->catalogImport->source_file_path)) {
                 Storage::disk('local')->delete($this->catalogImport->source_file_path);
@@ -461,7 +493,7 @@ class CatalogSpreadsheetImport extends Component
 
     public function getCatalogImportProperty(): ?CatalogImport
     {
-        return $this->catalogImportId ? CatalogImport::find($this->catalogImportId) : null;
+        return $this->catalogImportId ? CatalogImport::where('uploaded_by', auth()->id())->find($this->catalogImportId) : null;
     }
 
     protected function formatBytes(int $bytes, int $precision = 1): string
@@ -472,6 +504,20 @@ class CatalogSpreadsheetImport extends Component
         $units = ['B', 'KB', 'MB', 'GB'];
         $power = $bytes > 0 ? (int) floor(log($bytes, 1024)) : 0;
         return round($bytes / pow(1024, $power), $precision) . ' ' . $units[$power];
+    }
+
+    private function effectiveUploadLimit(): int
+    {
+        $limits = [50 * 1024 * 1024];
+        foreach (['upload_max_filesize', 'post_max_size'] as $setting) {
+            $value = ini_get($setting);
+            $bytes = $value !== false && $value !== '' ? ini_parse_quantity($value) : 0;
+            if ($bytes > 0) {
+                $limits[] = $bytes;
+            }
+        }
+
+        return min($limits);
     }
 
     public function render()
@@ -497,7 +543,7 @@ class CatalogSpreadsheetImport extends Component
                 $this->messageType = $catalogImport->failed_rows > 0 ? 'warning' : 'success';
                 $this->activeTab = $this->importedCount > 0 ? 'imported' : 'issues';
             } elseif ($catalogImport->status === 'failed' && $this->messageType !== 'error') {
-                $this->message = 'Background import process encountered an error. Please inspect logs or retry.';
+                $this->message = $catalogImport->summary['error'] ?? 'The import stopped unexpectedly. Review the issues below and try again.';
                 $this->messageType = 'error';
             }
 
@@ -508,7 +554,7 @@ class CatalogSpreadsheetImport extends Component
 
             if ($isImporting && $totalRows > 0) {
                 $processed = $importedRows + $issueRows;
-                $progressPercent = min(100, max(5, (int) round(($processed / $totalRows) * 100)));
+                $progressPercent = min(100, (int) round(($processed / $totalRows) * 100));
             }
 
             $query = $catalogImport->rows()->orderBy('row_number')->orderBy('id');
@@ -545,7 +591,7 @@ class CatalogSpreadsheetImport extends Component
             $paginatedRows = $query->cursorPaginate($this->perPage, ['*'], 'page');
         }
 
-        $routePrefix = request()->is('librarian*') ? 'librarian.' : 'admin.';
+        $routePrefix = \App\Services\EmployeeRoleService::getRoutePrefix();
 
         return view('livewire.components.book-manager.catalog-spreadsheet-import', [
             'catalogImport' => $catalogImport,
@@ -557,6 +603,8 @@ class CatalogSpreadsheetImport extends Component
             'isImporting' => $isImporting,
             'progressPercent' => $progressPercent,
             'routePrefix' => $routePrefix,
+            'uploadLimitBytes' => $this->effectiveUploadLimit(),
+            'uploadLimitLabel' => $this->formatBytes($this->effectiveUploadLimit()),
         ]);
     }
 }
