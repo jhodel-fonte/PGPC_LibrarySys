@@ -226,30 +226,113 @@
                 
                 <!-- Active Loans Table Card -->
                 <div class="bg-white rounded-2xl border border-[#E2E8F0] shadow-[0_1px_2px_rgba(15,23,42,0.04),0_1px_3px_rgba(15,23,42,0.03)] overflow-hidden">
-                    <div class="px-6 py-5 sm:px-7 sm:py-6 flex justify-between items-center border-b border-[#E2E8F0]">
+                    <div class="px-5 py-4 sm:px-7 sm:py-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E2E8F0]">
                         <div>
                             <div class="flex items-center gap-2">
-                                <h2 class="text-xl font-bold text-slate-900">My Active Loans</h2>
-                                <span class="bg-[#EFF6FF] text-[#102B70] text-sm font-bold px-2.5 py-0.5 rounded-full">
-                                    {{ $activeCount }} / 3
+                                <h2 class="text-lg sm:text-xl font-bold text-slate-900">My Active Loans</h2>
+                                <span class="bg-[#EFF6FF] text-[#102B70] text-xs sm:text-sm font-bold px-2.5 py-0.5 rounded-full">
+                                    {{ $activeCount }} / {{ config('settings.library_config.max_loan_limit', 3) }}
                                 </span>
                             </div>
-                            <p class="text-slate-500 text-sm mt-1">Books currently in your possession and their due dates</p>
+                            <p class="text-slate-500 text-xs sm:text-sm mt-1">Books currently in your possession and their due dates</p>
                         </div>
-                        <a href="{{ route('student.borrow') }}" wire:navigate class="px-3.5 py-2 bg-blue-50 text-[#102B70] hover:bg-blue-100 transition-colors rounded-lg text-sm font-bold">
+                        <a href="{{ route('student.borrow') }}" wire:navigate class="w-full sm:w-auto text-center px-3.5 py-2 bg-blue-50 text-[#102B70] hover:bg-blue-100 transition-colors rounded-lg text-xs sm:text-sm font-bold shrink-0">
                             View All Records &rarr;
                         </a>
                     </div>
 
-                    <div class="overflow-x-auto">
+                    <!-- Mobile Stacked Card View (Screens < 768px) -->
+                    <div class="block md:hidden divide-y divide-[#E2E8F0]">
+                        @forelse ($activeLoans as $loan)
+                            @php
+                                $bookDetail = $loan->book?->bookDetail;
+                                $bookData = $bookDetail?->bookData;
+                                $authors = $bookData?->authors ? $bookData->authors->map(fn($a) => $a->first_name . ' ' . $a->last_name)->join(', ') : 'Unknown Author';
+                                $isOverdue = $loan->due_date && $loan->due_date->isPast();
+                                $daysRemaining = $loan->due_date ? (int) ceil(now()->diffInDays($loan->due_date, false)) : null;
+                                $coverUrl = $bookDetail?->cover_url ?: asset('images/' . config('settings.book_covers.default', 'book-cover.webp'));
+                            @endphp
+                            <div class="p-4 space-y-3 hover:bg-slate-50/60 transition-colors">
+                                <div class="flex items-start gap-3">
+                                    <div class="w-12 h-16 rounded-md bg-slate-100 border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center text-slate-400">
+                                        <img src="{{ $coverUrl }}" alt="Cover" class="w-full h-full object-cover" onerror="this.src='{{ asset('images/book-cover.webp') }}'">
+                                    </div>
+                                    <div class="min-w-0 flex-1">
+                                        <p class="text-sm font-bold text-slate-900 line-clamp-2" title="{{ $bookData->book_title ?? 'Untitled Book' }}">
+                                            {{ $bookData->book_title ?? 'Untitled Book' }}
+                                        </p>
+                                        @if($bookDetail?->catalog_kind && $bookDetail->catalog_kind !== 'book')
+                                            <span class="inline-block mt-0.5 text-xs font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                                                Physical item &bull; {{ ucfirst($bookDetail->catalog_kind) }}
+                                            </span>
+                                        @endif
+                                        <p class="text-xs text-slate-500 truncate mt-1">
+                                            {{ $authors }}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-2 text-xs bg-slate-50 rounded-xl p-2.5 border border-slate-100">
+                                    <div>
+                                        <span class="text-slate-400 font-medium block">Accession No.</span>
+                                        <span class="font-mono font-semibold text-slate-700">{{ $loan->book?->accession_number ?? '—' }}</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-slate-400 font-medium block">Issued Date</span>
+                                        <span class="font-medium text-slate-700">{{ $loan->issued_date ? $loan->issued_date->format('M d, Y') : '—' }}</span>
+                                    </div>
+                                    <div class="col-span-2 flex items-center justify-between pt-1 border-t border-slate-200/60">
+                                        <div>
+                                            <span class="text-slate-400 font-medium">Due Date:</span>
+                                            <span class="font-bold ml-1 {{ $isOverdue ? 'text-red-600' : 'text-slate-900' }}">
+                                                {{ $loan->due_date ? $loan->due_date->format('M d, Y') : '—' }}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            @if ($isOverdue)
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-red-100 text-red-700 border border-red-200">
+                                                    Overdue ({{ abs($daysRemaining) }}d)
+                                                </span>
+                                            @elseif ($daysRemaining === 0)
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                                                    Due Today
+                                                </span>
+                                            @elseif ($daysRemaining <= 2)
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                                    Due in {{ $daysRemaining }}d
+                                                </span>
+                                            @else
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                                    Due in {{ $daysRemaining }}d
+                                                </span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="px-5 py-10 text-center">
+                                <div class="max-w-xs mx-auto flex flex-col items-center">
+                                    <p class="text-base font-bold text-slate-800">No active book loans</p>
+                                    <p class="text-xs sm:text-sm text-slate-500 mt-1 mb-4">You currently don't have any books checked out from the library.</p>
+                                    <a href="{{ route('opac.index') }}" class="w-full sm:w-auto px-5 py-2.5 bg-[#102B70] hover:bg-[#0B225E] text-white text-sm font-bold rounded-xl transition-colors shadow-xs">
+                                        Browse Library Catalog
+                                    </a>
+                                </div>
+                            </div>
+                        @endforelse
+                    </div>
+
+                    <!-- Desktop & Tablet Table View (768px+) -->
+                    <div tabindex="0" role="region" aria-label="My active loans" class="hidden md:block overflow-x-auto focus:outline-none focus:ring-2 focus:ring-[#102B70]/20">
                         <table class="w-full text-left border-collapse">
                             <thead>
                                 <tr class="bg-[#F8FAFC] border-b border-[#E2E8F0]">
-                                    <th class="py-3.5 px-6 sm:px-7 text-xs font-bold text-slate-600 uppercase tracking-wider">Book Details</th>
-                                    <th class="py-3.5 px-6 sm:px-7 text-xs font-bold text-slate-600 uppercase tracking-wider">Accession</th>
-                                    <th class="py-3.5 px-6 sm:px-7 text-xs font-bold text-slate-600 uppercase tracking-wider">Date Issued</th>
-                                    <th class="py-3.5 px-6 sm:px-7 text-xs font-bold text-slate-600 uppercase tracking-wider">Due Date</th>
-                                    <th class="py-3.5 px-6 sm:px-7 text-xs font-bold text-slate-600 uppercase tracking-wider text-right">Status</th>
+                                    <th scope="col" class="py-3.5 px-6 sm:px-7 text-xs font-bold text-slate-600 uppercase tracking-wider">Book Details</th>
+                                    <th scope="col" class="py-3.5 px-6 sm:px-7 text-xs font-bold text-slate-600 uppercase tracking-wider">Accession</th>
+                                    <th scope="col" class="py-3.5 px-6 sm:px-7 text-xs font-bold text-slate-600 uppercase tracking-wider">Date Issued</th>
+                                    <th scope="col" class="py-3.5 px-6 sm:px-7 text-xs font-bold text-slate-600 uppercase tracking-wider">Due Date</th>
+                                    <th scope="col" class="py-3.5 px-6 sm:px-7 text-xs font-bold text-slate-600 uppercase tracking-wider text-right">Status</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-[#E2E8F0] bg-white">
@@ -272,6 +355,11 @@
                                                     <p class="text-base font-bold text-slate-900 line-clamp-1" title="{{ $bookData->book_title ?? 'Untitled Book' }}">
                                                         {{ $bookData->book_title ?? 'Untitled Book' }}
                                                     </p>
+                                                    @if($bookDetail?->catalog_kind && $bookDetail->catalog_kind !== 'book')
+                                                        <span class="inline-block mt-0.5 text-xs font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                                                            Physical item &bull; {{ ucfirst($bookDetail->catalog_kind) }}
+                                                        </span>
+                                                    @endif
                                                     <p class="text-sm text-slate-500 truncate mt-0.5">
                                                         {{ $authors }}
                                                     </p>
@@ -328,12 +416,12 @@
                 <!-- Recent Returned Books Table Card -->
                 @if($recentTransactions->isNotEmpty())
                     <div class="bg-white rounded-2xl border border-[#E2E8F0] shadow-[0_1px_2px_rgba(15,23,42,0.04),0_1px_3px_rgba(15,23,42,0.03)] overflow-hidden">
-                        <div class="px-6 py-4 sm:px-7 flex justify-between items-center border-b border-[#E2E8F0] bg-slate-50/50">
+                        <div class="px-5 py-4 sm:px-7 flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#E2E8F0] bg-slate-50/50">
                             <div>
                                 <h3 class="text-base font-bold text-slate-900">Recently Returned Books</h3>
                                 <p class="text-xs sm:text-sm text-slate-500">Your past circulation transactions</p>
                             </div>
-                            <a href="{{ route('student.borrow') }}" wire:navigate class="text-sm font-bold text-[#102B70] hover:underline">
+                            <a href="{{ route('student.borrow') }}" wire:navigate class="text-xs sm:text-sm font-bold text-[#102B70] hover:underline">
                                 View Full History &rarr;
                             </a>
                         </div>
@@ -342,9 +430,8 @@
                                 @php
                                     $bookData = $tx->book?->bookDetail?->bookData;
                                 @endphp
-                                <div class="px-6 py-3.5 sm:px-7 flex items-center justify-between gap-4 hover:bg-slate-50/50 transition-colors">
+                                <div class="px-5 py-3.5 sm:px-7 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 hover:bg-slate-50/50 transition-colors">
                                     <div class="flex items-center gap-3 min-w-0">
-
                                         <div class="min-w-0">
                                             <p class="text-sm sm:text-base font-bold text-slate-900 truncate" title="{{ $bookData->book_title ?? 'Book' }}">
                                                 {{ $bookData->book_title ?? 'Untitled Book' }}
@@ -354,7 +441,7 @@
                                             </p>
                                         </div>
                                     </div>
-                                    <span class="text-xs font-semibold text-slate-600 bg-slate-100 px-2.5 py-1 rounded shrink-0">
+                                    <span class="text-xs font-semibold text-slate-600 bg-slate-100 px-2.5 py-1 rounded shrink-0 self-start sm:self-auto">
                                         {{ $tx->returnCondition?->condition ?? 'Returned' }}
                                     </span>
                                 </div>

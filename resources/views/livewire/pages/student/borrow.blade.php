@@ -49,25 +49,25 @@
         <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
             
             <!-- Navigation Tabs -->
-            <div class="flex items-center gap-1.5 p-1 bg-white border border-[#E2E8F0] rounded-xl shadow-xs shrink-0 overflow-x-auto">
+            <div class="flex items-center gap-1.5 p-1 bg-white border border-[#E2E8F0] rounded-xl shadow-xs overflow-x-auto max-w-full">
                 <button 
                     type="button" 
                     wire:click="setTab('active')" 
-                    class="px-4 py-2 rounded-lg text-sm font-bold transition-colors whitespace-nowrap {{ $activeTab === 'active' ? 'bg-[#102B70] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100' }}"
+                    class="min-h-[42px] px-3.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-colors whitespace-nowrap shrink-0 cursor-pointer {{ $activeTab === 'active' ? 'bg-[#102B70] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100' }}"
                 >
                     Active Loans ({{ $activeCount }})
                 </button>
                 <button 
                     type="button" 
                     wire:click="setTab('history')" 
-                    class="px-4 py-2 rounded-lg text-sm font-bold transition-colors whitespace-nowrap {{ $activeTab === 'history' ? 'bg-[#102B70] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100' }}"
+                    class="min-h-[42px] px-3.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-colors whitespace-nowrap shrink-0 cursor-pointer {{ $activeTab === 'history' ? 'bg-[#102B70] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100' }}"
                 >
                     Borrowing History ({{ $historyCount }})
                 </button>
                 <button 
                     type="button" 
                     wire:click="setTab('fines')" 
-                    class="px-4 py-2 rounded-lg text-sm font-bold transition-colors whitespace-nowrap {{ $activeTab === 'fines' ? 'bg-[#102B70] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100' }}"
+                    class="min-h-[42px] px-3.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-colors whitespace-nowrap shrink-0 cursor-pointer {{ $activeTab === 'fines' ? 'bg-[#102B70] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100' }}"
                 >
                     Fines & Penalties ({{ $fines->count() }})
                 </button>
@@ -94,34 +94,113 @@
         <!-- Tab 1: Active Loans Content -->
         @if($activeTab === 'active')
             <div class="bg-white rounded-2xl border border-[#E2E8F0] shadow-[0_1px_2px_rgba(15,23,42,0.04),0_1px_3px_rgba(15,23,42,0.03)] overflow-hidden">
-                <div class="overflow-x-auto">
+                <!-- Mobile Card Layout (< 768px) -->
+                <div class="block md:hidden divide-y divide-[#E2E8F0]">
+                    @forelse ($activeLoans as $loan)
+                        @php
+                            $bookDetail = $loan->book?->bookDetail;
+                            $bookData = $bookDetail?->bookData;
+                            $authors = $bookData?->authors ? $bookData->authors->map(fn($a) => $a->first_name . ' ' . $a->last_name)->join(', ') : 'Unknown Author';
+                            $isOverdue = $loan->due_date && $loan->due_date->isPast();
+                            $daysRemaining = $loan->due_date ? (int) ceil(now()->diffInDays($loan->due_date, false)) : null;
+                            $coverUrl = $bookDetail?->cover_url ?: asset('images/' . config('settings.book_covers.default', 'book-cover.webp'));
+                        @endphp
+                        <div class="p-4 space-y-3 hover:bg-slate-50/60 transition-colors">
+                            <div class="flex items-start gap-3">
+                                <div class="w-12 h-16 rounded-md bg-slate-100 border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center text-slate-400">
+                                    <img src="{{ $coverUrl }}" alt="Cover" class="w-full h-full object-cover" onerror="this.src='{{ asset('images/book-cover.webp') }}'">
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-sm font-bold text-slate-900 line-clamp-2" title="{{ $bookData->book_title ?? 'Untitled Book' }}">
+                                        {{ $bookData->book_title ?? 'Untitled Book' }}
+                                    </p>
+                                    @if($loan->book?->bookDetail?->catalog_kind !== 'book')
+                                        <span class="inline-block mt-0.5 text-xs font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                                            Physical item &bull; {{ ucfirst($loan->book?->bookDetail?->catalog_kind ?? 'item') }}
+                                        </span>
+                                    @endif
+                                    <p class="text-xs text-slate-500 truncate mt-0.5">
+                                        {{ $authors }}
+                                    </p>
+                                    <p class="text-xs text-slate-400 mt-0.5">
+                                        {{ $loan->borrowType?->type ?? 'Regular Loan' }} &bull; {{ $loan->issuedCondition?->condition ?? 'Good' }}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-2 text-xs bg-slate-50 rounded-xl p-2.5 border border-slate-100">
+                                <div>
+                                    <span class="text-slate-400 font-medium block">Accession</span>
+                                    <span class="font-mono font-semibold text-slate-700">{{ $loan->book?->accession_number ?? '—' }}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-400 font-medium block">Borrowed</span>
+                                    <span class="font-medium text-slate-700">{{ $loan->issued_date ? $loan->issued_date->format('M d, Y') : '—' }}</span>
+                                </div>
+                                <div class="col-span-2 flex items-center justify-between pt-1 border-t border-slate-200/60">
+                                    <div>
+                                        <span class="text-slate-400 font-medium">Due:</span>
+                                        <span class="font-bold ml-1 {{ $isOverdue ? 'text-red-600' : 'text-slate-900' }}">
+                                            {{ $loan->due_date ? $loan->due_date->format('M d, Y') : '—' }}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        @if ($isOverdue)
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-red-100 text-red-700 border border-red-200">
+                                                Overdue ({{ abs($daysRemaining) }}d)
+                                            </span>
+                                        @elseif ($daysRemaining === 0)
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                                                Due Today
+                                            </span>
+                                        @elseif ($daysRemaining <= 2)
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                                Due in {{ $daysRemaining }}d
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                                Due in {{ $daysRemaining }}d
+                                            </span>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="px-5 py-12 text-center">
+                            <p class="text-base font-bold text-slate-700">No active book loans found.</p>
+                            <p class="text-xs sm:text-sm text-slate-500 mt-1">Visit the library or browse the OPAC catalog to check out books.</p>
+                        </div>
+                    @endforelse
+                </div>
+
+                <!-- Desktop / Tablet Table View (768px+) -->
+                <div tabindex="0" role="region" aria-label="Active loans table" class="hidden md:block overflow-x-auto focus:outline-none focus:ring-2 focus:ring-[#102B70]/20">
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="bg-[#F8FAFC] border-b border-[#E2E8F0]">
-                                <th class="py-3.5 px-6 sm:px-7 text-xs font-bold text-slate-600 uppercase tracking-wider">Book Details</th>
-                                <th class="py-3.5 px-6 sm:px-7 text-xs font-bold text-slate-600 uppercase tracking-wider">Accession</th>
-                                <th class="py-3.5 px-6 sm:px-7 text-xs font-bold text-slate-600 uppercase tracking-wider">Date Borrowed</th>
-                                <th class="py-3.5 px-6 sm:px-7 text-xs font-bold text-slate-600 uppercase tracking-wider">Due Date</th>
-                                <th class="py-3.5 px-6 sm:px-7 text-xs font-bold text-slate-600 uppercase tracking-wider text-right">Loan Status</th>
+                                <th scope="col" class="py-3.5 px-6 sm:px-7 text-xs font-bold text-slate-600 uppercase tracking-wider">Book Details</th>
+                                <th scope="col" class="py-3.5 px-6 sm:px-7 text-xs font-bold text-slate-600 uppercase tracking-wider">Accession</th>
+                                <th scope="col" class="py-3.5 px-6 sm:px-7 text-xs font-bold text-slate-600 uppercase tracking-wider">Date Borrowed</th>
+                                <th scope="col" class="py-3.5 px-6 sm:px-7 text-xs font-bold text-slate-600 uppercase tracking-wider">Due Date</th>
+                                <th scope="col" class="py-3.5 px-6 sm:px-7 text-xs font-bold text-slate-600 uppercase tracking-wider text-right">Loan Status</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-[#E2E8F0] bg-white">
                             @forelse ($activeLoans as $loan)
                                 @php
-                                    $bookData = $loan->book?->bookDetail?->bookData;
+                                    $bookDetail = $loan->book?->bookDetail;
+                                    $bookData = $bookDetail?->bookData;
                                     $authors = $bookData?->authors ? $bookData->authors->map(fn($a) => $a->first_name . ' ' . $a->last_name)->join(', ') : 'Unknown Author';
                                     $isOverdue = $loan->due_date && $loan->due_date->isPast();
                                     $daysRemaining = $loan->due_date ? (int) ceil(now()->diffInDays($loan->due_date, false)) : null;
+                                    $coverUrl = $bookDetail?->cover_url ?: asset('images/' . config('settings.book_covers.default', 'book-cover.webp'));
                                 @endphp
                                 <tr class="hover:bg-slate-50/80 transition-colors">
                                     <td class="px-6 sm:px-7 py-4">
                                         <div class="flex items-center gap-3.5">
                                             <div class="w-11 h-15 rounded-md bg-slate-100 border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center text-slate-400">
-                                                @if(!empty($loan->book?->bookDetail?->cover_image))
-                                                    <img src="{{ $loan->book->bookDetail->cover_url }}" alt="Cover" class="w-full h-full object-cover">
-                                                @else
-                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
-                                                @endif
+                                                <img src="{{ $coverUrl }}" alt="Cover" class="w-full h-full object-cover" onerror="this.src='{{ asset('images/book-cover.webp') }}'">
                                             </div>
                                             <div class="min-w-0">
                                                 <p class="text-base font-bold text-slate-900 line-clamp-1" title="{{ $bookData->book_title ?? 'Untitled Book' }}">
@@ -179,7 +258,7 @@
                 </div>
 
                 @if($activeLoans->hasPages())
-                    <div class="px-6 py-4 border-t border-[#E2E8F0] bg-[#F8FAFC]">
+                    <div class="px-4 sm:px-6 py-3 sm:py-4 border-t border-[#E2E8F0] bg-[#F8FAFC]">
                         {{ $activeLoans->links('components.widget.cursor-pagination') }}
                     </div>
                 @endif
@@ -189,33 +268,94 @@
         <!-- Tab 2: Borrowing History Content -->
         @if($activeTab === 'history')
             <div class="bg-white rounded-2xl border border-[#E2E8F0] shadow-[0_1px_2px_rgba(15,23,42,0.04),0_1px_3px_rgba(15,23,42,0.03)] overflow-hidden">
-                <div class="overflow-x-auto">
+                <!-- Mobile Card Layout (< 768px) -->
+                <div class="block md:hidden divide-y divide-[#E2E8F0]">
+                    @forelse ($historyLoans as $record)
+                        @php
+                            $bookDetail = $record->book?->bookDetail;
+                            $bookData = $bookDetail?->bookData;
+                            $authors = $bookData?->authors ? $bookData->authors->map(fn($a) => $a->first_name . ' ' . $a->last_name)->join(', ') : 'Unknown Author';
+                            $wasLate = $record->due_date && $record->return_date && $record->return_date->gt($record->due_date);
+                            $coverUrl = $bookDetail?->cover_url ?: asset('images/' . config('settings.book_covers.default', 'book-cover.webp'));
+                        @endphp
+                        <div class="p-4 space-y-3 hover:bg-slate-50/60 transition-colors">
+                            <div class="flex items-start gap-3">
+                                <div class="w-12 h-16 rounded-md bg-slate-100 border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center text-slate-400">
+                                    <img src="{{ $coverUrl }}" alt="Cover" class="w-full h-full object-cover" onerror="this.src='{{ asset('images/book-cover.webp') }}'">
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-sm font-bold text-slate-900 line-clamp-2" title="{{ $bookData->book_title ?? 'Untitled Book' }}">
+                                        {{ $bookData->book_title ?? 'Untitled Book' }}
+                                    </p>
+                                    @if($record->book?->bookDetail?->catalog_kind !== 'book')
+                                        <span class="inline-block mt-0.5 text-xs font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                                            Physical item &bull; {{ ucfirst($record->book?->bookDetail?->catalog_kind ?? 'item') }}
+                                        </span>
+                                    @endif
+                                    <p class="text-xs text-slate-500 truncate mt-0.5">
+                                        {{ $authors }}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-2 text-xs bg-slate-50 rounded-xl p-2.5 border border-slate-100">
+                                <div>
+                                    <span class="text-slate-400 font-medium block">Accession</span>
+                                    <span class="font-mono font-semibold text-slate-700">{{ $record->book?->accession_number ?? '—' }}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-400 font-medium block">Borrowed</span>
+                                    <span class="font-medium text-slate-700">{{ $record->issued_date ? $record->issued_date->format('M d, Y') : '—' }}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-400 font-medium block">Returned On</span>
+                                    <span class="font-bold text-slate-800">{{ $record->return_date ? $record->return_date->format('M d, Y') : '—' }}</span>
+                                    @if($wasLate)
+                                        <span class="text-xs text-amber-700 block font-semibold">Late Return</span>
+                                    @endif
+                                </div>
+                                <div>
+                                    <span class="text-slate-400 font-medium block">Condition</span>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-slate-200/80 text-slate-700 mt-0.5">
+                                        {{ $record->returnCondition?->condition ?? 'Good' }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="px-5 py-12 text-center">
+                            <p class="text-base font-bold text-slate-700">No borrowing history found.</p>
+                            <p class="text-xs sm:text-sm text-slate-500 mt-1">Returned books will appear here in your circulation archive.</p>
+                        </div>
+                    @endforelse
+                </div>
+
+                <!-- Desktop / Tablet Table View (768px+) -->
+                <div tabindex="0" role="region" aria-label="Borrowing history table" class="hidden md:block overflow-x-auto focus:outline-none focus:ring-2 focus:ring-[#102B70]/20">
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="bg-[#F8FAFC] border-b border-[#E2E8F0]">
-                                <th class="py-3.5 px-6 sm:px-7 text-xs font-bold text-slate-600 uppercase tracking-wider">Book Details</th>
-                                <th class="py-3.5 px-6 sm:px-7 text-xs font-bold text-slate-600 uppercase tracking-wider">Accession</th>
-                                <th class="py-3.5 px-6 sm:px-7 text-xs font-bold text-slate-600 uppercase tracking-wider">Borrowed</th>
-                                <th class="py-3.5 px-6 sm:px-7 text-xs font-bold text-slate-600 uppercase tracking-wider">Returned On</th>
-                                <th class="py-3.5 px-6 sm:px-7 text-xs font-bold text-slate-600 uppercase tracking-wider text-right">Condition</th>
+                                <th scope="col" class="py-3.5 px-6 sm:px-7 text-xs font-bold text-slate-600 uppercase tracking-wider">Book Details</th>
+                                <th scope="col" class="py-3.5 px-6 sm:px-7 text-xs font-bold text-slate-600 uppercase tracking-wider">Accession</th>
+                                <th scope="col" class="py-3.5 px-6 sm:px-7 text-xs font-bold text-slate-600 uppercase tracking-wider">Borrowed</th>
+                                <th scope="col" class="py-3.5 px-6 sm:px-7 text-xs font-bold text-slate-600 uppercase tracking-wider">Returned On</th>
+                                <th scope="col" class="py-3.5 px-6 sm:px-7 text-xs font-bold text-slate-600 uppercase tracking-wider text-right">Condition</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-[#E2E8F0] bg-white">
                             @forelse ($historyLoans as $record)
                                 @php
-                                    $bookData = $record->book?->bookDetail?->bookData;
+                                    $bookDetail = $record->book?->bookDetail;
+                                    $bookData = $bookDetail?->bookData;
                                     $authors = $bookData?->authors ? $bookData->authors->map(fn($a) => $a->first_name . ' ' . $a->last_name)->join(', ') : 'Unknown Author';
                                     $wasLate = $record->due_date && $record->return_date && $record->return_date->gt($record->due_date);
+                                    $coverUrl = $bookDetail?->cover_url ?: asset('images/' . config('settings.book_covers.default', 'book-cover.webp'));
                                 @endphp
                                 <tr class="hover:bg-slate-50/80 transition-colors">
                                     <td class="px-6 sm:px-7 py-4">
                                         <div class="flex items-center gap-3.5">
                                             <div class="w-11 h-15 rounded-md bg-slate-100 border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center text-slate-400">
-                                                @if(!empty($record->book?->bookDetail?->cover_image))
-                                                    <img src="{{ $record->book->bookDetail->cover_url }}" alt="Cover" class="w-full h-full object-cover">
-                                                @else
-                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
-                                                @endif
+                                                <img src="{{ $coverUrl }}" alt="Cover" class="w-full h-full object-cover" onerror="this.src='{{ asset('images/book-cover.webp') }}'">
                                             </div>
                                             <div class="min-w-0">
                                                 <p class="text-base font-bold text-slate-900 line-clamp-1" title="{{ $bookData->book_title ?? 'Untitled Book' }}">
@@ -259,7 +399,7 @@
                 </div>
 
                 @if($historyLoans->hasPages())
-                    <div class="px-6 py-4 border-t border-[#E2E8F0] bg-[#F8FAFC]">
+                    <div class="px-4 sm:px-6 py-3 sm:py-4 border-t border-[#E2E8F0] bg-[#F8FAFC]">
                         {{ $historyLoans->links('components.widget.cursor-pagination') }}
                     </div>
                 @endif
@@ -269,15 +409,76 @@
         <!-- Tab 3: Fines Content -->
         @if($activeTab === 'fines')
             <div class="bg-white rounded-2xl border border-[#E2E8F0] shadow-[0_1px_2px_rgba(15,23,42,0.04),0_1px_3px_rgba(15,23,42,0.03)] overflow-hidden">
-                <div class="overflow-x-auto">
+                <!-- Mobile Card Layout (< 768px) -->
+                <div class="block md:hidden divide-y divide-[#E2E8F0]">
+                    @forelse ($fines as $fine)
+                        @php
+                            $bookTitle = $fine->transaction?->book?->bookDetail?->bookData?->book_title ?? 'General Library Penalty';
+                            $isPaid = $fine->fine_status === 'paid';
+                        @endphp
+                        <div class="p-4 space-y-3 hover:bg-slate-50/60 transition-colors">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-sm font-bold text-slate-900 line-clamp-2">{{ $bookTitle }}</p>
+                                    @if($fine->note)
+                                        <p class="text-xs text-slate-500 mt-0.5">{{ $fine->note }}</p>
+                                    @endif
+                                </div>
+                                <div class="text-right shrink-0">
+                                    <span class="text-base font-extrabold text-slate-900">₱{{ number_format($fine->amount, 2) }}</span>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-between text-xs bg-slate-50 rounded-xl p-2.5 border border-slate-100">
+                                <div>
+                                    <span class="text-slate-400 font-medium block">Penalty Type</span>
+                                    <span class="font-semibold text-slate-700">{{ $fine->fineType?->name ?? 'Overdue Fine' }}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-400 font-medium block">Due Date</span>
+                                    <span class="font-medium text-slate-700">{{ $fine->fine_due_date ? $fine->fine_due_date->format('M d, Y') : '—' }}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-400 font-medium block">Status</span>
+                                    @if($isPaid)
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                            Paid
+                                        </span>
+                                    @elseif($fine->fine_status === 'waived')
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-slate-100 text-slate-700">
+                                            Waived
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                                            Unpaid
+                                        </span>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="px-5 py-12 text-center">
+                            <div class="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-3">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <p class="text-base font-bold text-slate-800">No library fines or penalties</p>
+                            <p class="text-xs sm:text-sm text-slate-500 mt-1">Your library account is in excellent standing with zero fees.</p>
+                        </div>
+                    @endforelse
+                </div>
+
+                <!-- Desktop / Tablet Table View (768px+) -->
+                <div tabindex="0" role="region" aria-label="Fines and penalties table" class="hidden md:block overflow-x-auto focus:outline-none focus:ring-2 focus:ring-[#102B70]/20">
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="bg-[#F8FAFC] border-b border-[#E2E8F0]">
-                                <th class="py-3.5 px-6 sm:px-7 text-xs font-bold text-slate-600 uppercase tracking-wider">Related Item / Note</th>
-                                <th class="py-3.5 px-6 sm:px-7 text-xs font-bold text-slate-600 uppercase tracking-wider">Penalty Type</th>
-                                <th class="py-3.5 px-6 sm:px-7 text-xs font-bold text-slate-600 uppercase tracking-wider">Amount</th>
-                                <th class="py-3.5 px-6 sm:px-7 text-xs font-bold text-slate-600 uppercase tracking-wider">Fine Due Date</th>
-                                <th class="py-3.5 px-6 sm:px-7 text-xs font-bold text-slate-600 uppercase tracking-wider text-right">Payment Status</th>
+                                <th scope="col" class="py-3.5 px-6 sm:px-7 text-xs font-bold text-slate-600 uppercase tracking-wider">Related Item / Note</th>
+                                <th scope="col" class="py-3.5 px-6 sm:px-7 text-xs font-bold text-slate-600 uppercase tracking-wider">Penalty Type</th>
+                                <th scope="col" class="py-3.5 px-6 sm:px-7 text-xs font-bold text-slate-600 uppercase tracking-wider">Amount</th>
+                                <th scope="col" class="py-3.5 px-6 sm:px-7 text-xs font-bold text-slate-600 uppercase tracking-wider">Fine Due Date</th>
+                                <th scope="col" class="py-3.5 px-6 sm:px-7 text-xs font-bold text-slate-600 uppercase tracking-wider text-right">Payment Status</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-[#E2E8F0] bg-white">
