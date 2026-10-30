@@ -66,26 +66,109 @@
     </div>
 
     <!-- Card: Current Loan Table -->
-    <div class="rounded-2xl md:rounded-3xl border border-[#E2E8F0] bg-white p-5 sm:p-6 lg:p-7 shadow-[0_4px_20px_rgba(16,43,112,0.03)] space-y-5">
+    <div class="rounded-2xl md:rounded-3xl border border-[#E2E8F0] bg-white p-4 sm:p-6 lg:p-7 shadow-[0_4px_20px_rgba(16,43,112,0.03)] space-y-5">
         <div class="flex items-center justify-between pb-3 border-b border-slate-100">
             <div class="flex items-center gap-2.5">
                 <h3 class="text-lg sm:text-xl font-bold text-[#102B70]">Current Borrowed Books</h3>
             </div>
         </div>
 
-        <!-- Table Container -->
-        <div class="overflow-x-auto -mx-5 sm:-mx-6 lg:-mx-7 px-5 sm:px-6 lg:px-7">
+        <!-- Mobile Stacked Card View (< 768px) -->
+        <div class="block md:hidden divide-y divide-slate-100">
+            @forelse($activeLoans as $index => $loan)
+                @php
+                    $book = $loan->book;
+                    $bookDetail = $book?->bookDetail;
+                    $bookData = $bookDetail?->bookData;
+                    $bookTitle = $bookData?->book_title ?? 'The Alchemist';
+                    $authors = $bookData?->authors;
+                    $authorStr = ($authors && $authors->count() > 0)
+                        ? $authors->map(fn($a) => trim($a->first_name . ' ' . $a->last_name))->filter()->join(', ')
+                        : 'Paulo Coelho';
+                    $accessionNo = $book?->accession_number ?? ('ACC-' . date('Y') . '-' . str_pad($loan->id, 4, '0', STR_PAD_LEFT));
+                    $borrowedDateStr = $loan->issued_date ? $loan->issued_date->format('M d, Y') : now()->subDays(config('settings.library_config.loan_period', 5))->format('M d, Y');
+                    $dueDateStr = $loan->due_date ? $loan->due_date->format('M d, Y') : now()->addDays(config('settings.library_config.loan_period', 5))->format('M d, Y');
+                    $isOverdue = $loan->due_date && $loan->due_date->isPast();
+                    $coverUrl = $bookDetail?->cover_url ?? asset('images/book-cover.webp');
+                @endphp
+                <div class="py-4 space-y-3">
+                    <div class="flex items-start gap-3">
+                        <div class="h-14 w-10 rounded-md overflow-hidden border border-slate-200 bg-slate-100 shrink-0 shadow-2xs">
+                            <img
+                                src="{{ $coverUrl }}"
+                                alt="{{ $bookTitle }}"
+                                class="h-full w-full object-cover"
+                                onerror="this.onerror=null;this.src='{{ asset('images/book-cover.webp') }}';"
+                            >
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-start justify-between gap-2">
+                                <p class="font-bold text-[#0F172A] text-sm leading-snug line-clamp-2">
+                                    {{ $bookTitle }}
+                                </p>
+                                <span class="text-xs font-semibold text-slate-400 shrink-0">#{{ $index + 1 }}</span>
+                            </div>
+                            <p class="text-xs text-slate-500 font-medium truncate mt-0.5">
+                                {{ $authorStr }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 text-xs bg-slate-50 rounded-xl p-2.5 border border-slate-100">
+                        <div>
+                            <span class="text-slate-400 font-medium block">Accession No.</span>
+                            <span class="font-mono font-semibold text-slate-700">{{ $accessionNo }}</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 font-medium block">Borrowed Date</span>
+                            <span class="font-medium text-slate-700">{{ $borrowedDateStr }}</span>
+                        </div>
+                        <div class="col-span-2 flex items-center justify-between pt-1 border-t border-slate-200/60">
+                            <div>
+                                <span class="text-slate-400 font-medium">Due Date:</span>
+                                <span class="font-bold ml-1 {{ $isOverdue ? 'text-red-600' : 'text-slate-700' }}">{{ $dueDateStr }}</span>
+                            </div>
+                            <div>
+                                @if($isOverdue)
+                                    <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-bold text-red-700 bg-red-50 border border-red-200">
+                                        <span class="h-1.5 w-1.5 rounded-full bg-red-500"></span>
+                                        Overdue
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200">
+                                        <span class="h-1.5 w-1.5 rounded-full bg-blue-500"></span>
+                                        Borrowed
+                                    </span>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @empty
+                <div class="py-8 text-center text-slate-400">
+                    <div class="flex flex-col items-center justify-center gap-2">
+                        <svg class="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                        </svg>
+                        <p class="text-sm font-semibold text-slate-500">No books currently borrowed by this student.</p>
+                    </div>
+                </div>
+            @endforelse
+        </div>
+
+        <!-- Desktop / Tablet Table View (768px+) -->
+        <div tabindex="0" role="region" aria-label="Current borrowed books table" class="hidden md:block overflow-x-auto -mx-4 sm:-mx-6 lg:-mx-7 px-4 sm:px-6 lg:px-7 focus:outline-none focus:ring-2 focus:ring-[#102B70]/20">
             <table class="w-full text-left border-collapse text-sm sm:text-base">
                 <thead>
                     <tr class="border-b border-[#F1F5F9] text-xs font-bold text-slate-600 uppercase tracking-wider">
-                        <th class="py-3 px-3 text-center w-10">#</th>
-                        <th class="py-3 px-3">Book Cover</th>
-                        <th class="py-3 px-4">Title & Author</th>
-                        <th class="py-3 px-4">Accession No.</th>
-                        <th class="py-3 px-4">Borrowed Date</th>
-                        <th class="py-3 px-4">Due Date</th>
-                        <th class="py-3 px-4">Status</th>
-                        <th class="py-3 px-4 text-right">Actions</th>
+                        <th scope="col" class="py-3 px-3 text-center w-10">#</th>
+                        <th scope="col" class="py-3 px-3">Book Cover</th>
+                        <th scope="col" class="py-3 px-4">Title & Author</th>
+                        <th scope="col" class="py-3 px-4">Accession No.</th>
+                        <th scope="col" class="py-3 px-4">Borrowed Date</th>
+                        <th scope="col" class="py-3 px-4">Due Date</th>
+                        <th scope="col" class="py-3 px-4">Status</th>
+                        <th scope="col" class="py-3 px-4 text-right">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">

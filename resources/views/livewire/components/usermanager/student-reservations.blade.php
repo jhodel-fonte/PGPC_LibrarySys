@@ -148,15 +148,77 @@
         </div>
 
         @if($pastReservations->isNotEmpty())
-            <div class="overflow-x-auto -mx-5 sm:-mx-6 lg:-mx-7 px-5 sm:px-6 lg:px-7">
+            <!-- Mobile Stacked Card View (< 768px) -->
+            <div class="block md:hidden divide-y divide-slate-100">
+                @foreach($pastReservations as $past)
+                    @php
+                        $pBook = $past->book;
+                        $pDetail = $pBook?->bookDetail;
+                        $pData = $pDetail?->bookData;
+                        $pStatusId = (int) $past->reservation_status_id;
+                        $pStatusName = $past->reservationStatus?->status ?? 'Closed';
+                    @endphp
+                    <div class="py-3.5 space-y-2.5">
+                        <div class="flex items-start justify-between gap-2">
+                            <span class="font-mono text-xs font-bold text-[#102B70]">
+                                #RES-{{ str_pad($past->id, 5, '0', STR_PAD_LEFT) }}
+                            </span>
+                            @if($pStatusId === 3)
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+                                    Fulfilled
+                                </span>
+                            @elseif($pStatusId === 4)
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200 shrink-0">
+                                    Cancelled
+                                </span>
+                            @elseif($pStatusId === 5)
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200 shrink-0">
+                                    Expired
+                                </span>
+                            @else
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-700 shrink-0">
+                                    {{ $pStatusName }}
+                                </span>
+                            @endif
+                        </div>
+
+                        <div>
+                            <p class="font-bold text-[#0F172A] text-sm leading-snug line-clamp-2">
+                                {{ $pData?->book_title ?? 'Untitled Book' }}
+                            </p>
+                            <p class="font-mono text-xs text-slate-500 mt-0.5">
+                                Acc: {{ $pBook?->accession_number ?: 'N/A' }}
+                            </p>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2 text-xs bg-slate-50 rounded-xl p-2.5 border border-slate-100">
+                            <div>
+                                <span class="text-slate-400 font-medium block">Reserved Date</span>
+                                <span class="font-medium text-slate-700">
+                                    {{ $past->reservation_date ? \Carbon\Carbon::parse($past->reservation_date)->format('M d, Y') : '—' }}
+                                </span>
+                            </div>
+                            <div>
+                                <span class="text-slate-400 font-medium block">Closed Date</span>
+                                <span class="font-medium text-slate-700">
+                                    {{ $past->fulfilled_date ? \Carbon\Carbon::parse($past->fulfilled_date)->format('M d, Y') : ($past->cancelled_date ? \Carbon\Carbon::parse($past->cancelled_date)->format('M d, Y') : '—') }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+
+            <!-- Desktop / Tablet Table View (768px+) -->
+            <div tabindex="0" role="region" aria-label="Reservation history table" class="hidden md:block overflow-x-auto -mx-4 sm:-mx-6 lg:-mx-7 px-4 sm:px-6 lg:px-7 focus:outline-none focus:ring-2 focus:ring-[#102B70]/20">
                 <table class="w-full text-left border-collapse text-sm sm:text-base">
                     <thead>
                         <tr class="border-b border-[#F1F5F9] text-xs font-bold text-slate-600 uppercase tracking-wider">
-                            <th class="py-3.5 px-3">Slip ID</th>
-                            <th class="py-3.5 px-4">Book Title</th>
-                            <th class="py-3.5 px-4">Reserved Date</th>
-                            <th class="py-3.5 px-4">Closed Date</th>
-                            <th class="py-3.5 px-4 text-right">Final Status</th>
+                            <th scope="col" class="py-3.5 px-3">Slip ID</th>
+                            <th scope="col" class="py-3.5 px-4">Book Title</th>
+                            <th scope="col" class="py-3.5 px-4">Reserved Date</th>
+                            <th scope="col" class="py-3.5 px-4">Closed Date</th>
+                            <th scope="col" class="py-3.5 px-4 text-right">Final Status</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
