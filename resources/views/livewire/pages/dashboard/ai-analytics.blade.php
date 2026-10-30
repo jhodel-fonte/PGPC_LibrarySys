@@ -36,11 +36,7 @@
                         'bg-[#EF4444]' => ! $evaluation['available'] && ! $latestRun,
                     ])></span>
                     @if($evaluation['available'])
-                        Live · checked {{ $checkedAt->format('M j, g:i A') }}
-                    @elseif($latestRun)
-                        Offline (Saved data) · checked {{ $checkedAt->format('M j, g:i A') }}
-                    @else
-                        Unavailable · checked {{ $checkedAt->format('M j, g:i A') }}
+                        Last Updated: {{ $checkedAt->format('M j, g:i A') }}
                     @endif
                 </span>
                 <button

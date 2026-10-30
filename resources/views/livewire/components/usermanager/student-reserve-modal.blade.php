@@ -1,6 +1,6 @@
 @if($showReserveModal)
-    <div class="fixed inset-0 z-50 flex items-center justify-center p-3.5 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto" role="dialog" aria-modal="true">
-        <div class="my-auto w-full max-w-lg rounded-2xl border border-[#E2E8F0] bg-white p-5 sm:p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150 space-y-4 text-base">
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-3.5 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="reserve-modal-title">
+        <div class="my-auto w-full max-w-2xl rounded-2xl border border-[#E2E8F0] bg-white p-5 sm:p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150 space-y-4 text-base">
             <!-- Modal Header -->
             <div class="flex items-center justify-between pb-3 border-b border-slate-100">
                 <div class="flex items-center gap-2.5">
@@ -10,7 +10,7 @@
                         </svg>
                     </div>
                     <div>
-                        <h3 class="text-lg font-bold text-[#102B70]">Reserve a Library Book</h3>
+                        <h3 id="reserve-modal-title" class="text-lg font-bold text-[#102B70]">Reserve a Library Book</h3>
                         <p class="text-sm text-slate-500 font-medium">Search available books and hold a copy for pickup.</p>
                     </div>
                 </div>

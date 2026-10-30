@@ -716,7 +716,7 @@
                         <div class="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-500" aria-hidden="true">
                             <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
                         </div>
-                        <p class="text-sm font-semibold text-slate-700">No matching book copies</p>
+                        <p class="text-sm font-semibold text-slate-700">No matching catalog items</p>
                         <p class="mt-1 text-xs font-medium text-slate-500">Try a different search term or clear the active filters.</p>
                         @if($this->activeFilterCount > 0)
                             <button type="button" wire:click="clearFilters" class="mt-4 text-xs font-semibold text-[#102B70] underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70]">Clear filters</button>

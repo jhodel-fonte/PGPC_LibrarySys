@@ -1,7 +1,7 @@
 @php
     $active = match(true) {
         request()->routeIs('opac.*') || request()->is('opac*') => 'opac',
-        request()->is('online-resources*') || request()->is('e-resources*') => 'online-resources',
+        request()->routeIs('online-resources.show') || request()->is('online-resources*') || request()->is('e-resources*') => 'online-resources',
         request()->is('services*')    => 'services',
         request()->is('about*')       => 'about',
         request()->is('contact*')     => 'contact',

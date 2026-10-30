@@ -20,23 +20,44 @@ Route::redirect('/terms-and-conditions', '/terms');
 Route::redirect('/terms-of-service', '/terms');
 Route::redirect('/privacy-policy', '/privacy');
 
-// Online Resources Access Gateway (Validates Patron Authentication)
-Route::get('/online-resources/access', function (\Illuminate\Http\Request $request) {
-    $targetUrl = $request->query('url');
+// Public introduction pages for external library resources.
+$onlineResources = static function (): array {
+    $path = storage_path('app/public/online_resources/list.json');
+    $content = is_file($path) ? file_get_contents($path) : false;
+    $data = is_string($content) ? json_decode($content, true) : null;
 
-    if (!auth()->check()) {
-        if ($targetUrl && filter_var($targetUrl, FILTER_VALIDATE_URL)) {
-            session()->put('url.intended', $targetUrl);
-        }
-        return redirect()->route('login')->with('warning', 'Please sign in to access university online research resources.');
-    }
+    $resources = is_array($data['online_resources'] ?? null) ? $data['online_resources'] : [];
 
-    if (!$targetUrl || !filter_var($targetUrl, FILTER_VALIDATE_URL)) {
-        return redirect()->to(url('/#online-resources'));
-    }
+    return $resources ?: [
+        ['name' => 'ScienceDirect', 'external_url' => 'https://www.sciencedirect.com'],
+        ['name' => 'Emerald Insight', 'external_url' => 'https://www.emerald.com'],
+        ['name' => 'SpringerLink', 'external_url' => 'https://link.springer.com/'],
+        ['name' => 'JSTOR', 'external_url' => 'https://www.jstor.org/'],
+        ['name' => 'Wiley Online Library', 'external_url' => 'https://onlinelibrary.wiley.com/'],
+        ['name' => 'IEEEXplore', 'external_url' => 'https://ieeexplore.ieee.org/'],
+    ];
+};
 
-    return redirect()->away($targetUrl);
+Route::get('/online-resources/access', function (\Illuminate\Http\Request $request) use ($onlineResources) {
+    $url = $request->query('url');
+    $resource = collect($onlineResources())->first(fn ($item) => ($item['external_url'] ?? null) === $url);
+
+    return $resource
+        ? redirect()->route('online-resources.show', \Illuminate\Support\Str::slug($resource['name'] ?? ''))
+        : redirect()->to(url('/#online-resources'));
 })->name('online-resources.access');
+
+Route::get('/online-resources/{resource}', function (string $resource) use ($onlineResources) {
+    $item = collect($onlineResources())->first(fn ($item) => \Illuminate\Support\Str::slug($item['name'] ?? '') === $resource);
+    $url = $item['external_url'] ?? '';
+
+    abort_unless(
+        $item && filter_var($url, FILTER_VALIDATE_URL) && in_array(parse_url($url, PHP_URL_SCHEME), ['http', 'https'], true),
+        404
+    );
+
+    return view('main.online-resource', ['resource' => $item]);
+})->middleware('auth')->name('online-resources.show');
 
 
 Route::middleware(['auth', 'verified', 'role:Admin'])->prefix('admin')->name('admin.')->group(function () {

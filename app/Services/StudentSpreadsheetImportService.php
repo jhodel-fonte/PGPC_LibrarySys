@@ -55,6 +55,7 @@ class StudentSpreadsheetImportService
                     if ($field !== '') $data[$field] = trim((string) ($row[$column] ?? ''));
                 }
                 $data['email'] = mb_strtolower($data['email'] ?? '');
+                $data['gender'] = $this->normalizeGender($data['gender'] ?? null);
                 $validator = Validator::make($data, [
                     'school_id_number' => 'required|string|max:50|unique:students,school_id_number',
                     'first_name' => 'required|string|max:100', 'last_name' => 'required|string|max:100',
@@ -65,8 +66,10 @@ class StudentSpreadsheetImportService
                 ]);
                 $errors = $validator->errors()->all();
                 $id = mb_strtolower($data['school_id_number'] ?? ''); $email = $data['email'];
+                $username = UserService::generateDefaultUsername($data, 'student');
                 if ($id !== '' && ! $validator->errors()->has('school_id_number') && DB::table('students')->whereRaw('LOWER(school_id_number) = ?', [$id])->exists()) $errors[] = 'Student ID is already registered.';
                 if ($email !== '' && ! $validator->errors()->has('email') && DB::table('accounts')->whereRaw('LOWER(email) = ?', [$email])->exists()) $errors[] = 'Email is already registered.';
+                if ($username !== '' && DB::table('accounts')->whereRaw('LOWER(username) = ?', [mb_strtolower($username)])->exists()) $errors[] = 'Generated username is already in use.';
                 if ($id !== '' && isset($seenIds[$id])) $errors[] = 'Duplicate student ID in this file.';
                 if ($email !== '' && isset($seenEmails[$email])) $errors[] = 'Duplicate email in this file.';
                 $seenIds[$id] = true; $seenEmails[$email] = true;
@@ -78,5 +81,15 @@ class StudentSpreadsheetImportService
             if ($batch) DB::table('student_import_rows')->insert($batch);
             $import->update(['mapping' => $mapping, 'status' => 'reviewed']);
         });
+    }
+
+    private function normalizeGender(?string $gender): ?string
+    {
+        return match (mb_strtolower(trim($gender ?? ''))) {
+            '' => null,
+            'm', 'male', 'lalaki' => 'Male',
+            'f', 'female', 'babae' => 'Female',
+            default => trim($gender),
+        };
     }
 }

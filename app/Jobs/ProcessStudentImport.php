@@ -11,7 +11,6 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 use Throwable;
 
 class ProcessStudentImport implements ShouldQueue
@@ -40,10 +39,14 @@ class ProcessStudentImport implements ShouldQueue
                     if ($row->status !== 'pending') return null;
                     $data = $row->data;
                     $email = $data['email'] ?: null;
-                    $username = $email ? $data['school_id_number'] : UserService::generateDefaultUsername($data, 'student');
-                    if (Account::withTrashed()->where('username', $username)->exists()) $username = Str::uuid()->toString();
+                    $credentials = UserService::generateCredentials($data, 'student');
+                    $username = $credentials['username'];
+                    if (Account::withTrashed()->whereRaw('LOWER(username) = ?', [mb_strtolower($username)])->exists()) {
+                        throw new \RuntimeException('Generated username is already in use.');
+                    }
                     $account = Account::create(['role_id' => $role, 'status_id' => $status, 'username' => $username,
-                        'email' => $email, 'password_hash' => Hash::make($email ? Str::random(64) : UserService::generateDefaultPassword($data, 'student')), 'is_email_verified' => false]);
+                        'email' => $email, 'password_hash' => Hash::make($credentials['password']),
+                        'password_changed_at' => $credentials['force_change'] ? null : now(), 'is_email_verified' => false]);
                     if (! $email) {
                         $account->forceFill(['setup_email_required' => true, 'setup_password_prompt' => true])->save();
                     }
@@ -60,7 +63,7 @@ class ProcessStudentImport implements ShouldQueue
                     }
                 }
             } catch (Throwable $exception) {
-                StudentImportRow::whereKey($id)->where('status', 'pending')->update(['status' => 'failed', 'error' => 'Could not create student. Check for duplicate ID or email.']);
+                StudentImportRow::whereKey($id)->where('status', 'pending')->update(['status' => 'failed', 'error' => 'Could not create student. Check for a duplicate ID, username, or email.']);
                 report($exception);
             }
         }

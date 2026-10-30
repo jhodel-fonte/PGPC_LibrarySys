@@ -75,6 +75,7 @@ class Index extends Component
 
         return BookReservation::where('student_id', $student->id)
             ->whereIn('reservation_status_id', [1, 2])
+            ->whereHas('book.bookDetail.bookData')
             ->count();
     }
 

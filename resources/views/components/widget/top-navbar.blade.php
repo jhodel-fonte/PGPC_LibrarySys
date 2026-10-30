@@ -29,9 +29,9 @@
     <!-- Left: Hamburger Menu, Global Back Button, Logo & Title on Mobile, Breadcrumbs on Desktop -->
     <div class="flex items-center gap-2 sm:gap-2.5 md:gap-3 text-sm font-medium text-white/70 md:text-[#475569] min-w-0">
 
-        <!-- Hamburger Button (Mobile: toggles sidebarOpen, Desktop: toggles sidebarMinimized) -->
+        <!-- Hamburger Button (Mobile and tablet: opens sidebar; desktop: minimizes it) -->
         <button
-            @click="window.innerWidth < 768 ? (sidebarOpen = !sidebarOpen) : (sidebarMinimized = !sidebarMinimized)"
+            @click="window.innerWidth < 1024 ? (sidebarOpen = !sidebarOpen) : (sidebarMinimized = !sidebarMinimized)"
             class="min-h-11 min-w-11 shrink-0 p-2 -ml-2 rounded-xl text-white/90 md:text-[#475569] hover:text-white hover:bg-white/10 md:hover:bg-[#F8FAFC] md:hover:text-[#102B70] transition-colors focus:outline-none focus:ring-2 focus:ring-[#102B70]/20"
             aria-label="Toggle Sidebar">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">

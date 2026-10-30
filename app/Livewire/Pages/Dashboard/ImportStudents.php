@@ -8,6 +8,7 @@ use App\Models\StudentImport;
 use App\Services\EmployeeRoleService;
 use App\Services\StudentImportColumns;
 use App\Services\StudentSpreadsheetImportService;
+use App\Services\UserService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Layout;
@@ -118,11 +119,13 @@ class ImportStudents extends Component
     public function render()
     {
         $import = $this->import();
+        $rows = $import ? $import->rows()->orderBy('id')->limit(25)->get() : collect();
+        $rows->each(fn ($row) => $row->generated_username = UserService::generateDefaultUsername($row->data, 'student'));
         return view('livewire.pages.dashboard.import-students', [
             'import' => $import, 'fields' => StudentImportColumns::FIELDS,
             'counts' => $import ? $import->rows()->select('status', DB::raw('count(*) as total'))->groupBy('status')->pluck('total', 'status') : collect(),
             'emailCounts' => $import ? $import->rows()->whereNotNull('email_status')->select('email_status', DB::raw('count(*) as total'))->groupBy('email_status')->pluck('total', 'email_status') : collect(),
-            'rows' => $import ? $import->rows()->orderBy('id')->limit(25)->get() : collect(),
+            'rows' => $rows,
             'failedEmails' => $import ? $import->rows()->where('email_status', 'failed')->limit(25)->get() : collect(),
         ]);
     }

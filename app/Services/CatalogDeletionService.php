@@ -6,6 +6,7 @@ use App\Models\Book;
 use App\Models\BookDetail;
 use App\Models\BookReservation;
 use App\Models\BorrowingTransaction;
+use App\Models\ReservationWaitlist;
 use Illuminate\Support\Facades\DB;
 
 class CatalogDeletionService
@@ -48,12 +49,33 @@ class CatalogDeletionService
             if ($this->inspect($type, $ids)['requires_confirmation'] && ! $confirmed) {
                 throw new \RuntimeException('The records have changed. Type DELETE to confirm.');
             }
+
+            $copyIds = $copies->modelKeys();
+            BookReservation::whereIn('book_id', $copyIds)->whereIn('reservation_status_id', [1, 2])
+                ->get()->each(function (BookReservation $reservation) {
+                    $reservation->update([
+                        'reservation_status_id' => 4,
+                        'cancelled_date' => now(),
+                        'comment' => trim(($reservation->comment ?? '') . ' [Auto-cancelled: Copy deleted]'),
+                    ]);
+                });
+
             foreach ($copies as $copy) {
                 $copy->delete();
             }
             if (in_array($type, ['title', 'issue'], true)) {
                 foreach ($details as $detail) {
                     $detail->delete();
+                }
+            }
+
+            $deletedDetailIds = in_array($type, ['title', 'issue'], true)
+                ? $ids
+                : $copies->pluck('book_detail_id')->unique()->all();
+            foreach ($deletedDetailIds as $detailId) {
+                if (! Book::where('book_detail_id', $detailId)->exists()) {
+                    ReservationWaitlist::where('book_detail_id', $detailId)->where('status', 'waiting')
+                        ->update(['status' => 'unavailable']);
                 }
             }
         }, 3);

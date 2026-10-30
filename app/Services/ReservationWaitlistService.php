@@ -14,6 +14,28 @@ class ReservationWaitlistService
 {
     public function expireReservations(): void
     {
+        $orphanedReservations = BookReservation::whereIn('reservation_status_id', [1, 2])
+            ->where(function ($query) {
+                $query->whereDoesntHave('book')
+                    ->orWhereHas('book', fn ($book) => $book->whereHas('bookDetail', fn ($detail) => $detail->onlyTrashed()))
+                    ->orWhereHas('book', fn ($book) => $book->whereHas('bookDetail.bookData', fn ($data) => $data->onlyTrashed()));
+            })->get();
+        foreach ($orphanedReservations as $reservation) {
+            $reservation->update([
+                'reservation_status_id' => 4,
+                'cancelled_date' => now(),
+                'comment' => trim(($reservation->comment ?? '') . ' [Auto-cancelled: Catalog item deleted]'),
+            ]);
+        }
+
+        ReservationWaitlist::where('status', 'waiting')
+            ->where(function ($query) {
+                $query->whereDoesntHave('bookDetail')
+                    ->orWhereHas('bookDetail', fn ($detail) => $detail->onlyTrashed())
+                    ->orWhereHas('bookDetail', fn ($detail) => $detail->whereDoesntHave('bookData'))
+                    ->orWhereDoesntHave('bookDetail.books');
+            })->update(['status' => 'unavailable']);
+
         BookReservation::whereIn('reservation_status_id', [1, 2])->where('due_date', '<', now())
             ->orderBy('id')->chunkById(100, function ($reservations) {
                 foreach ($reservations as $reservation) {

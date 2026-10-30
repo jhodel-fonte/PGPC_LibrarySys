@@ -63,7 +63,6 @@
                     @endphp
                     <x-home.online-resources-card
                         :name="$resource['name'] ?? ''"
-                        :url="$resource['external_url'] ?? '#'"
                         :logo="$logoUrl"
                     />
                 @endforeach

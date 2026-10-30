@@ -125,7 +125,7 @@ class UserService
         }
 
         if ($stripSpaces) {
-            $generated = str_replace(' ', '', $generated);
+            $generated = preg_replace('/\s+/u', '', $generated) ?? str_replace(' ', '', $generated);
         }
 
         $generated = match ($case) {

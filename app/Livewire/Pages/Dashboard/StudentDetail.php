@@ -268,7 +268,7 @@ class StudentDetail extends Component
     #[Computed]
     public function activeReservationsCount(): int
     {
-        return $this->activeReservations->count();
+        return $this->activeReservations->filter(fn ($reservation) => $reservation->book?->bookDetail?->bookData !== null)->count();
     }
 
     #[Computed]

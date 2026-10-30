@@ -139,13 +139,6 @@ class AdminDashboard extends Component
     protected function activeReservationsBaseQuery()
     {
         return BookReservation::query()
-            ->whereHas('book', function ($q) {
-                $q->whereNull('deleted_at')
-                    ->whereHas('bookDetail', function ($bd) {
-                        $bd->whereNull('deleted_at')
-                            ->whereHas('bookData', fn ($b) => $b->whereNull('deleted_at'));
-                    });
-            })
             ->whereHas('student', function ($q) {
                 $q->whereNull('deleted_at')
                     ->whereHas('account', fn ($aq) => $aq->whereNull('deleted_at'));
@@ -176,6 +169,9 @@ class AdminDashboard extends Component
     {
         $query = $this->activeReservationsBaseQuery()
             ->with([
+                'book' => fn ($q) => $q->withTrashed(),
+                'book.bookDetail' => fn ($q) => $q->withTrashed(),
+                'book.bookDetail.bookData' => fn ($q) => $q->withTrashed(),
                 'book.bookDetail.bookData.authors',
                 'book.condition',
                 'student.account',
@@ -186,12 +182,18 @@ class AdminDashboard extends Component
         $term = trim($this->search);
         if ($term !== '') {
             $query->where(function ($q) use ($term) {
-                $q->whereHas('book.bookDetail.bookData', function ($b) use ($term) {
-                    $b->where('book_title', 'like', "%{$term}%")
-                      ->orWhere('isbn', 'like', "%{$term}%")
-                      ->orWhere('call_number', 'like', "%{$term}%");
+                $q->whereHas('book', function ($book) use ($term) {
+                    $book->withTrashed()->whereHas('bookDetail', function ($detail) use ($term) {
+                        $detail->withTrashed()->whereHas('bookData', function ($b) use ($term) {
+                            $b->withTrashed()
+                                ->where('book_title', 'like', "%{$term}%")
+                                ->orWhere('isbn', 'like', "%{$term}%")
+                                ->orWhere('call_number', 'like', "%{$term}%");
+                        });
+                    });
                 })
                 ->orWhereHas('book', function ($b) use ($term) {
+                    $b->withTrashed();
                     $b->where('accession_number', 'like', "%{$term}%")
                       ->orWhere('code', 'like', "%{$term}%");
                 })
@@ -250,6 +252,9 @@ class AdminDashboard extends Component
         }
 
         return BookReservation::with([
+            'book' => fn ($q) => $q->withTrashed(),
+            'book.bookDetail' => fn ($q) => $q->withTrashed(),
+            'book.bookDetail.bookData' => fn ($q) => $q->withTrashed(),
             'book.bookDetail.bookData.authors',
             'book.bookDetail.publisher',
             'book.condition',
@@ -281,11 +286,21 @@ class AdminDashboard extends Component
             DB::transaction(function () use ($id) {
                 $reservation = BookReservation::findOrFail($id);
 
+                $book = \App\Models\Book::withTrashed()
+                    ->with([
+                        'bookDetail' => fn ($q) => $q->withTrashed(),
+                        'bookDetail.bookData' => fn ($q) => $q->withTrashed(),
+                    ])
+                    ->lockForUpdate()->find($reservation->book_id);
+                if (! $book || $book->trashed() || $book->bookDetail?->trashed() || $book->bookDetail?->bookData?->trashed()) {
+                    throw new \RuntimeException('This copy has been deleted and cannot be approved. Cancel the reservation instead.');
+                }
+
                 if ($reservation->student?->account?->reservations_blocked) {
                     throw new \RuntimeException('This account cannot place reservations.');
                 }
 
-                if ($reservation->book?->bookDetail?->periodicalIssue && ! $reservation->book->bookDetail->periodicalIssue->borrowable) {
+                if ($book->bookDetail?->periodicalIssue && ! $book->bookDetail->periodicalIssue->borrowable) {
                     throw new \RuntimeException('This issue is for library use only.');
                 }
                 if ($reservation->reservation_status_id !== 1) {
@@ -299,9 +314,7 @@ class AdminDashboard extends Component
                 ]);
 
                 // Ensure copy is marked as reserved
-                if ($reservation->book) {
-                    $reservation->book->update(['status' => 'reserved']);
-                }
+                $book->update(['status' => 'reserved']);
             });
 
             $this->dispatch('toast', message: 'Reservation #' . $id . ' approved successfully. The copy is reserved for student pickup.', type: 'success');
@@ -382,6 +395,12 @@ class AdminDashboard extends Component
     {
         \App\Services\EmployeeRoleService::authorizeBorrow('Unauthorized action. You do not have permission to process item borrowings.');
 
+        $reservation = BookReservation::with('book.bookDetail.bookData')->findOrFail($id);
+        if ((int) $reservation->reservation_status_id !== 2 || ! $reservation->book?->bookDetail?->bookData) {
+            $this->dispatch('toast', message: 'This reservation is no longer available for pickup.', type: 'error');
+            return;
+        }
+
         $this->redirect(route(\App\Services\EmployeeRoleService::getRoutePrefix() . 'circulation-desk.borrow', ['reservation' => $id]), navigate: true);
     }
 
@@ -391,7 +410,10 @@ class AdminDashboard extends Component
     public function extendPickup(int $id): void
     {
         try {
-            $reservation = BookReservation::findOrFail($id);
+            $reservation = BookReservation::with('book.bookDetail.bookData')->findOrFail($id);
+            if ((int) $reservation->reservation_status_id !== 2 || ! $reservation->book?->bookDetail?->bookData) {
+                throw new \RuntimeException('This reservation is no longer available to extend.');
+            }
             $newDue = Carbon::parse($reservation->due_date)->addDays(3);
             $reservation->update([
                 'due_date' => $newDue,

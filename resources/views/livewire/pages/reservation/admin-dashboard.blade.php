@@ -197,6 +197,9 @@
                                             <div class="text-xs text-slate-500 mt-0.5 break-words">
                                                 Acc: {{ $book?->accession_number ?: 'N/A' }} | Call: {{ $bookDetail?->call_number ?: 'N/A' }}
                                             </div>
+                                            @if($book?->trashed() || $bookDetail?->trashed() || $bookData?->trashed())
+                                                <div class="text-xs font-semibold text-rose-700">Catalog item deleted</div>
+                                            @endif
                                         </div>
                                     </div>
                                 </td>
@@ -405,6 +408,9 @@
                                 <div><span class="font-semibold text-slate-700">ISBN:</span> {{ $resDetail?->isbn ?: 'N/A' }}</div>
                                 <div><span class="font-semibold text-slate-700">Shelf Location:</span> {{ $resBook?->location ?: 'Main Library' }}</div>
                             </div>
+                            @if($resBook?->trashed() || $resDetail?->trashed() || $resData?->trashed())
+                                <p class="text-sm font-semibold text-rose-700">This catalog item has been deleted.</p>
+                            @endif
                         </div>
                     </div>
 

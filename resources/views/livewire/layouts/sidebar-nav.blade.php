@@ -8,12 +8,12 @@
 
 <!-- Single Root Element for Livewire -->
 <div class="relative z-50">
-    <!-- Sidebar Overlay (Click to close sidebar on mobile) -->
+    <!-- Sidebar Overlay (Click to close sidebar on mobile and tablet) -->
     <div
         x-show="sidebarOpen"
         @click="sidebarOpen = false"
         x-transition.opacity.duration.300ms
-        class="fixed inset-0 bg-black/60 backdrop-blur-sm md:hidden z-40"
+        class="fixed inset-0 bg-black/60 backdrop-blur-sm lg:hidden z-40"
         style="display: none;"
     ></div>
 
@@ -21,17 +21,17 @@
     <aside
         :class="[
             sidebarOpen ? 'translate-x-0' : '-translate-x-full',
-            sidebarMinimized ? 'md:w-[80px]' : 'md:w-[280px]'
+            sidebarMinimized ? 'lg:w-[80px]' : 'lg:w-[280px]'
         ]"
-        class="fixed inset-y-0 left-0 w-[280px] bg-navy-primary text-white flex flex-col transition-all duration-300 ease-in-out md:translate-x-0 z-50 shadow-[4px_0_24px_rgba(7,25,67,0.18)] overflow-hidden h-dvh"
+        class="fixed inset-y-0 left-0 w-[280px] bg-navy-primary text-white flex flex-col transition-all duration-300 ease-in-out lg:translate-x-0 z-50 shadow-[4px_0_24px_rgba(7,25,67,0.18)] overflow-hidden h-dvh"
     >
 
         <!-- Header / Logo Area -->
         <div class="min-h-[60px] pt-6 px-4 flex items-center justify-between shrink-0" :class="sidebarMinimized ? 'justify-center' : ''">
             <x-widget.brand-title href="{{ route('index') }}" />
 
-            <!-- Close Button for Mobile -->
-            <button @click="sidebarOpen = false" class="md:hidden p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-white/30 shrink-0" aria-label="Close Sidebar">
+            <!-- Close Button for Mobile and Tablet -->
+            <button @click="sidebarOpen = false" class="lg:hidden p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-white/30 shrink-0" aria-label="Close Sidebar">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>

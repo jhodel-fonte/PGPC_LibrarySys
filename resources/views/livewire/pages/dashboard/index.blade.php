@@ -6,13 +6,13 @@
     <div class="absolute inset-0 pointer-events-none overflow-hidden flex items-end justify-center opacity-[0.018] z-0 pb-10">
     </div>
 
-    <div class="mx-auto w-full max-w-[1600px] max-h-auto p-4 lg:p-6 space-y-5">
+    <div class="admin-dashboard-layout mx-auto w-full max-w-[1600px] max-h-auto p-4 lg:p-6 space-y-5">
         <div>
             <x-widget.greeting-banner staffName="{{ Auth::user()->librarian ? trim(Auth::user()->librarian->first_name . ' ' . Auth::user()->librarian->last_name) : (Auth::user()->name ?? (Auth::user()->username ?? 'User')) }}" />
         </div>
 
         {{-- KPI Summary Cards --}}
-        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div class="dashboard-kpis grid gap-4">
             {{-- KPI 1: Total Number of Students --}}
             <x-widget.data-card 
                 title="Total Students" 
@@ -47,7 +47,7 @@
         </div>
 
         <!-- Middle Row: 3 Diagram Cards (Multiple Series, Donut, Grouped Bars) -->
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 items-stretch">
+        <div class="dashboard-charts grid gap-5 items-stretch">
             
             <!-- 1. Multiple Series Line Chart: Borrowing and Returning Trends -->
             <div class="bg-white rounded-2xl border border-slate-200 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_1px_3px_rgba(15,23,42,0.03)] p-4 flex flex-col justify-between min-h-[210px] min-w-0">
@@ -112,7 +112,7 @@
             </div>
 
             <!-- 3. Requires Attention (Replaces Monthly Library Activity) -->
-            <div class="h-full min-w-0 md:col-span-2 xl:col-span-1">
+            <div class="dashboard-attention h-full min-w-0">
                 <x-dashboard.requires-attention 
                     :overdueCount="$overdueItems" 
                     :pendingCount="$pendingReservations" 
@@ -122,14 +122,16 @@
         </div>
 
         <!-- Bottom Row: Current Borrowers and Most Borrowed -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        <div class="dashboard-bottom grid gap-5 items-start">
             <!-- Current Borrowers -->
-            <div class="lg:col-span-8 min-w-0">
-                <x-dashboard.current-borrowers :borrowers="$currentBorrowers" />
+            <div class="min-w-0">
+                <div class="dashboard-borrowers">
+                    <x-dashboard.current-borrowers :borrowers="$currentBorrowers" />
+                </div>
             </div>
 
             <!-- Most Borrowed Titles -->
-            <div class="lg:col-span-4 min-w-0">
+            <div class="min-w-0">
                 <x-dashboard.most-borrowed-titles :titles="$mostBorrowedTitles" />
             </div>
         </div>
