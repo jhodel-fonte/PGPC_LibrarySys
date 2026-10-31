@@ -136,10 +136,10 @@ class Account extends Authenticatable
      */
     public function sendPasswordResetNotification($token): void
     {
-        $url = url(route('password.reset', [
+        $url = \App\Support\EmailUrl::route('password.reset', [
             'token' => $token,
             'email' => $this->getEmailForPasswordReset(),
-        ], false));
+        ]);
 
         \Illuminate\Support\Facades\Mail::to($this->email)->send(new \App\Mail\ResetEmail($url, $this));
     }

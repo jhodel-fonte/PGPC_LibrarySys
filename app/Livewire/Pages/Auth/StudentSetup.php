@@ -7,7 +7,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\Rules\Password;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -44,7 +43,7 @@ class StudentSetup extends Component
         RateLimiter::hit($key, 600);
         try {
             $user->forceFill(['email' => $this->email, 'is_email_verified' => false, 'email_verified_at' => null])->save();
-            $url = URL::temporarySignedRoute('student.setup.verify', now()->addMinutes(60), ['id' => $user->id, 'hash' => sha1($user->email)]);
+            $url = \App\Support\EmailUrl::temporarySignedRoute('student.setup.verify', now()->addMinutes(60), ['id' => $user->id, 'hash' => sha1($user->email)]);
             Mail::to($user->email)->send(new StudentSetupEmail($user, $url));
             $this->notice = 'Verification email sent. Open the link while signed in to continue.';
         } catch (\Throwable $exception) {

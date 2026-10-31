@@ -20,7 +20,7 @@
 
             <div class="flex flex-col items-start gap-3">
                 @if (!empty($resource['logo']))
-                    <img src="{{ asset('storage/online_resources/files/' . $resource['logo']) }}" alt="{{ $resource['name'] }} logo" class="max-h-16 max-w-52 object-contain object-left">
+                    <img src="{{ asset('online_resources/files/' . $resource['logo']) }}" alt="{{ $resource['name'] }} logo" class="max-h-16 max-w-52 object-contain object-left">
                 @endif
                 <a href="{{ $providerUrl }}" target="_blank" rel="noopener noreferrer" class="inline-flex min-h-11 items-center justify-center rounded-lg bg-[#102B70] px-5 py-2.5 text-sm font-semibold text-white underline-offset-4 hover:bg-[#0B225E] focus:outline-none focus:ring-2 focus:ring-[#102B70] focus:ring-offset-2">
                     Continue to {{ $resource['name'] }}

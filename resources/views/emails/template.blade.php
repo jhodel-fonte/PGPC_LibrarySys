@@ -72,6 +72,22 @@
             </p>
         @endif
 
+        @if(!empty($details) && is_iterable($details))
+            <div style="margin: 0 0 18px 0; padding: 14px 16px; border: 1px solid #dbe3ef; border-radius: 8px; background: #f8fafc;">
+                <p style="margin: 0 0 8px 0; color: #102b70; font-weight: bold;">Details</p>
+                <table role="presentation" style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                    @foreach($details as $label => $value)
+                        @if($value !== null && $value !== '')
+                            <tr>
+                                <td style="padding: 4px 12px 4px 0; color: #64748b; vertical-align: top;">{{ is_string($label) ? $label : 'Detail' }}</td>
+                                <td style="padding: 4px 0; color: #0f172a; font-weight: 600; vertical-align: top;">{{ $value }}</td>
+                            </tr>
+                        @endif
+                    @endforeach
+                </table>
+            </div>
+        @endif
+
         {{-- Multiple message lines if array passed --}}
         @if(!empty($lines) && is_iterable($lines))
             @foreach($lines as $line)

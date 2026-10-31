@@ -7,7 +7,6 @@ use App\Models\Book;
 use App\Models\BookDetail;
 use App\Models\BookReservation;
 use App\Models\ReservationWaitlist;
-use App\Notifications\Alerts;
 use Illuminate\Support\Facades\DB;
 
 class ReservationWaitlistService
@@ -26,6 +25,7 @@ class ReservationWaitlistService
                 'cancelled_date' => now(),
                 'comment' => trim(($reservation->comment ?? '') . ' [Auto-cancelled: Catalog item deleted]'),
             ]);
+            app(ReservationNotificationService::class)->statusChanged($reservation);
         }
 
         ReservationWaitlist::where('status', 'waiting')
@@ -39,10 +39,10 @@ class ReservationWaitlistService
         BookReservation::whereIn('reservation_status_id', [1, 2])->where('due_date', '<', now())
             ->orderBy('id')->chunkById(100, function ($reservations) {
                 foreach ($reservations as $reservation) {
-                    DB::transaction(function () use ($reservation) {
+                    $expired = DB::transaction(function () use ($reservation) {
                         $reservation = BookReservation::lockForUpdate()->find($reservation->id);
                         if (! $reservation || ! in_array((int) $reservation->reservation_status_id, [1, 2], true) || ! $reservation->due_date || ! $reservation->due_date->isPast()) {
-                            return;
+                            return null;
                         }
                         $reservation->update(['reservation_status_id' => 5, 'cancelled_date' => now(),
                             'comment' => trim(($reservation->comment ?? '') . ' [Auto-expired: Pickup deadline passed]')]);
@@ -50,7 +50,11 @@ class ReservationWaitlistService
                         if ($book && $book->status === 'reserved' && ! BookReservation::where('book_id', $book->id)->whereIn('reservation_status_id', [1, 2])->exists()) {
                             $book->update(['status' => 'available']);
                         }
+                        return $reservation;
                     });
+                    if ($expired) {
+                        app(ReservationNotificationService::class)->statusChanged($expired);
+                    }
                 }
             });
     }
@@ -127,8 +131,7 @@ class ReservationWaitlistService
             ]);
             $book->update(['status' => 'reserved']);
             $entry->update(['status' => 'allocated', 'book_reservation_id' => $reservation->id]);
-            $notification = new Alerts(title: 'Waitlisted book reserved', message: 'A copy is now reserved for you. Please collect it by '.$reservation->due_date->format('M d, Y').'.', bookTitle: $detail->bookData?->book_title, dueDate: $reservation->due_date->format('M d, Y'), sendSms: true);
-            $account->notify($notification->afterCommit());
+            app(ReservationNotificationService::class)->created($reservation);
         }
     }
 }

@@ -357,7 +357,7 @@ class StudentDetail extends Component
         try {
             $detailId = \App\Models\Book::whereKey($this->selectedBookId)->value('book_detail_id');
             app(\App\Services\ReservationWaitlistService::class)->allocate($detailId);
-            \Illuminate\Support\Facades\DB::transaction(function () use ($student) {
+            $reservation = \Illuminate\Support\Facades\DB::transaction(function () use ($student) {
                 $detailId = \App\Models\Book::whereKey($this->selectedBookId)->value('book_detail_id');
                 $detail = \App\Models\BookDetail::whereHas('bookData')->lockForUpdate()->findOrFail($detailId);
                 if ($detail->periodicalIssue && ! $detail->periodicalIssue->borrowable) {
@@ -375,7 +375,7 @@ class StudentDetail extends Component
                 $pendingStatus = \App\Models\ReservationStatus::where('status', 'like', '%pending%')->first();
                 $pendingStatusId = $pendingStatus ? $pendingStatus->id : 1;
 
-                \App\Models\BookReservation::create([
+                $reservation = \App\Models\BookReservation::create([
                     'book_id' => $book->id,
                     'student_id' => $student->id,
                     'account_id' => $student->account_id ?? auth()->id(),
@@ -386,7 +386,11 @@ class StudentDetail extends Component
                 ]);
 
                 $book->update(['status' => 'reserved']);
+
+                return $reservation;
             });
+
+            app(\App\Services\ReservationNotificationService::class)->created($reservation);
 
             $this->closeReserveModal();
             $this->activeTab = 'reservations';
@@ -411,7 +415,7 @@ class StudentDetail extends Component
     public function cancelReservation(int $id): void
     {
         try {
-            \Illuminate\Support\Facades\DB::transaction(function () use ($id) {
+            $reservation = \Illuminate\Support\Facades\DB::transaction(function () use ($id) {
                 $reservation = \App\Models\BookReservation::findOrFail($id);
 
                 if (!in_array((int)$reservation->reservation_status_id, [1, 2])) {
@@ -427,7 +431,9 @@ class StudentDetail extends Component
                 if ($reservation->book && $reservation->book->status === 'reserved') {
                     $reservation->book->update(['status' => 'available']);
                 }
+                return $reservation;
             });
+            app(\App\Services\ReservationNotificationService::class)->statusChanged($reservation);
 
             unset($this->reservations);
             unset($this->user);

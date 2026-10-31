@@ -122,7 +122,7 @@
                                     <p class="text-xs text-slate-500 truncate mt-0.5">
                                         {{ $authors }}
                                     </p>
-                                    @if($record->isInsideLibrary())<p class="text-xs font-semibold text-blue-700">Inside library</p>@endif
+                                    @if($loan->isInsideLibrary())<p class="text-xs font-semibold text-blue-700">Inside library</p>@endif
                                     <p class="text-xs text-slate-400 mt-0.5">
                                         {{ $loan->borrowType?->name ?? 'Regular Loan' }} &bull; {{ $loan->issuedCondition?->status ?? 'Good' }}
                                     </p>
@@ -211,7 +211,7 @@
                                                 <p class="text-sm text-slate-500 truncate mt-0.5">
                                                     {{ $authors }}
                                                 </p>
-                                                @if($record->isInsideLibrary())<p class="text-xs font-semibold text-blue-700">Inside library</p>@endif
+                                                @if($loan->isInsideLibrary())<p class="text-xs font-semibold text-blue-700">Inside library</p>@endif
                                                 <p class="text-xs text-slate-500 mt-1">
                                                     Type: {{ $loan->borrowType?->name ?? 'Regular Loan' }} • Condition: {{ $loan->issuedCondition?->status ?? 'Good' }}
                                                 </p>

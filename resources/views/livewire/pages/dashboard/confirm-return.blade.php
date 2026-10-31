@@ -1,9 +1,9 @@
-<div class="admin-page-table relative w-full h-auto lg:h-[calc(100vh-70px)] flex flex-col items-center justify-start pt-4 px-3 md:px-6 xl:px-12 pb-5 font-sans bg-[#F8FAFC] overflow-y-auto lg:overflow-hidden check-in-workstation"
+<div class="admin-page-table relative w-full h-auto xl:h-[calc(100vh-70px)] flex flex-col items-center justify-start pt-4 px-3 md:px-6 xl:px-12 pb-5 font-sans bg-[#F8FAFC] overflow-y-auto xl:overflow-hidden check-in-workstation"
      x-data="completedModalHandler()"
      @return-completed.window="triggerModal($event.detail)"
      @return-failed.window="triggerErrorModal($event.detail)">
     <style>
-        @media (min-width: 1024px) {
+        @media (min-width: 1280px) {
             @media (min-height: 800px) {
                 main {
                     overflow: hidden !important;
@@ -17,10 +17,7 @@
         /* Zoom and Low Height Viewport Overrides */
         @media (max-height: 799px) {
             .check-in-workstation,
-            .check-in-workstation .lg\:overflow-hidden,
-            .check-in-workstation .lg\:h-full,
-            .check-in-workstation .lg\:h-\[calc\(100vh-70px\)\],
-            .check-in-workstation .lg\:h-\[calc\(100\%-80px\)\] {
+            .check-in-workstation > div {
                 height: auto !important;
                 overflow: visible !important;
             }
@@ -44,7 +41,7 @@
         }
     </style>
 
-    <div class="w-full max-w-[1460px] flex flex-col h-auto lg:h-full lg:overflow-hidden">
+    <div class="w-full max-w-[1460px] flex flex-col h-auto xl:h-full xl:overflow-hidden">
 
         <!-- Header -->
         <div class="w-full flex flex-col mb-4 md:mt-2 relative z-10 shrink-0">
@@ -84,194 +81,61 @@
             </div>
         @endif
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 overflow-hidden mb-2 items-stretch">
+        <div class="grid grid-cols-1 xl:grid-cols-12 gap-4 xl:gap-6 flex-1 min-h-0 xl:overflow-hidden mb-2 items-stretch">
 
             <!-- Left Column: Return Items -->
-            <div class="lg:col-span-7 flex flex-col gap-4 overflow-hidden h-full">
-                <div class="flex-1 flex flex-col overflow-hidden bg-white border border-[#E2E8F0] rounded-2xl p-4 sm:p-6 shadow-sm">
-                    <span class="block text-base font-bold text-[#102B70] uppercase tracking-wider mb-4 shrink-0">Items to be Returned ({{ count($transactionsData) }})</span>
+            <section class="xl:col-span-7 flex min-w-0 flex-col xl:h-full xl:overflow-hidden">
+                <div class="xl:flex-1 xl:min-h-0 flex flex-col bg-white border border-[#E2E8F0] rounded-2xl p-4 sm:p-6 shadow-sm xl:overflow-hidden">
+                    <h2 class="mb-4 shrink-0 text-base font-bold uppercase tracking-wider text-[#102B70]">Items to be Returned ({{ count($transactionsData) }})</h2>
 
-                    <!-- Table Container -->
-                    <div class="admin-table-scroll overflow-x-auto flex-1 overflow-y-auto border border-[#E2E8F0] rounded-2xl bg-white shadow-inner mb-4 custom-scrollbar">
-                        <table class="w-full text-left border-collapse md:min-w-[600px]">
-                            <!-- Table Header: visible on md and up, hidden on mobile -->
-                            <thead class="hidden md:table-header-group sticky top-0 bg-white z-10 border-b border-[#E2E8F0]">
-                                <tr class="text-xs md:text-sm font-bold text-[#64748B] uppercase tracking-wider">
-                                    <th class="py-3 px-5 w-[40%] bg-white">Book Details</th>
-                                    <th class="py-3 px-5 w-[20%] bg-white">Borrowed Date</th>
-                                    <th class="py-3 px-5 w-[20%] bg-white">Due Date</th>
-                                    <th class="py-3 px-5 w-[20%] text-right bg-white">Fine Status</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-[#F1F5F9] text-sm text-[#0F172A]">
-                                @foreach($transactionsData as $item)
-                                    <tr class="align-middle hover:bg-slate-50 transition-colors">
-                                        <!-- Mobile Card Cell (visible on mobile < 768px, hidden on md+) -->
-                                        <td colspan="4" class="block md:hidden p-3.5 border-b border-[#F1F5F9] last:border-b-0">
-                                            <div class="flex flex-col gap-3">
-                                                <!-- Top Row: Cover, Info & Fine Status -->
-                                                <div class="flex items-start justify-between gap-3">
-                                                    <div class="flex items-start gap-3 min-w-0 flex-1">
-                                                        @php
-                                                            $coverUrl = $item['cover_url'] ?? null;
-                                                            if (!$coverUrl && !empty($item['cover_image'])) {
-                                                                $coverUrl = asset('storage/book_cover/' . basename($item['cover_image']));
-                                                            }
-                                                        @endphp
-                                                        <div class="relative w-10 h-14 rounded-md shadow-xs overflow-hidden bg-slate-100 border border-slate-200/80 flex items-center justify-center shrink-0"
-                                                             x-data="{ imgError: false, imgLoaded: false }">
-                                                            @if(!empty($coverUrl))
-                                                                <img
-                                                                    src="{{ $coverUrl }}"
-                                                                    alt="{{ $item['title'] }}"
-                                                                    loading="lazy"
-                                                                    decoding="async"
-                                                                    x-on:load="imgLoaded = true"
-                                                                    x-on:error="imgError = true; imgLoaded = true"
-                                                                    x-show="!imgError"
-                                                                    :class="imgLoaded ? 'opacity-100' : 'opacity-0'"
-                                                                    class="w-full h-full object-cover transition-opacity duration-200"
-                                                                >
-                                                            @endif
+                    <div class="divide-y divide-[#E2E8F0] rounded-xl border border-[#E2E8F0] bg-white xl:flex-1 xl:overflow-y-auto">
+                        @foreach($transactionsData as $item)
+                            <article class="p-4 sm:p-5">
+                                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                    <div class="min-w-0">
+                                        <h3 class="font-bold leading-snug text-[#0F172A]">{{ $item['title'] }}</h3>
+                                        <p class="mt-1 text-sm text-[#64748B]">{{ $item['author'] }}</p>
+                                        <p class="mt-0.5 text-xs text-[#94A3B8]">Accession No. {{ $item['accession'] }}</p>
+                                    </div>
 
-                                                            <div
-                                                                x-show="imgError || !'{{ $coverUrl ?? '' }}'"
-                                                                style="{{ !empty($coverUrl) ? 'display: none;' : '' }}"
-                                                                class="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#102B70] to-[#3B82F6]"
-                                                            >
-                                                                <svg class="w-5 h-5 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
-                                                                </svg>
-                                                            </div>
-                                                        </div>
-
-                                                        <div class="flex flex-col min-w-0 flex-1">
-                                                            <span class="font-bold text-sm leading-snug text-[#0F172A] line-clamp-2">{{ $item['title'] }}</span>
-                                                            <span class="text-xs text-[#64748B] mt-0.5 truncate">{{ $item['author'] }}</span>
-                                                            <span class="text-[11px] text-[#94A3B8] mt-0.5">Acc. {{ $item['accession'] }}</span>
-                                                        </div>
-                                                    </div>
-
-                                                    <!-- Fine Status Badge -->
-                                                    <div class="shrink-0 pt-0.5">
-                                                        @if($item['fine_amount'] > 0)
-                                                            <div class="flex flex-col items-end gap-0.5">
-                                                                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#FEF2F2] text-[#B91C1C] border border-[#FECACA]">
-                                                                    {{ round($item['overdue_days']) }}d overdue
-                                                                </span>
-                                                                <span class="font-bold text-sm text-[#EF4444]">₱{{ number_format($item['fine_amount'], 2) }}</span>
-                                                            </div>
-                                                        @else
-                                                            <span class="inline-flex items-center gap-1 text-xs font-bold text-[#10B981]">
-                                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
-                                                                </svg>
-                                                                On Time
-                                                            </span>
-                                                        @endif
-                                                    </div>
-                                                </div>
-
-                                                <!-- Dates bar -->
-                                                <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-[11px] text-[#64748B]">
-                                                    <div class="flex items-center gap-1">
-                                                        <span class="font-medium text-slate-500">Borrowed:</span>
-                                                        <span class="font-semibold text-slate-700">{{ $item['issued_date'] }}</span>
-                                                    </div>
-                                                    <div class="flex items-center gap-1">
-                                                        <span class="font-medium text-slate-500">Due:</span>
-                                                        <span class="font-semibold text-slate-700">{{ $item['due_date'] }}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </td>
-
-                                        <!-- Desktop Cells (visible on md+, hidden on mobile < 768px) -->
-                                        <td class="hidden md:table-cell py-4 px-5">
-                                            <div class="flex items-center gap-3.5">
-                                                <!-- Miniature Cover with Image & Fallback -->
-                                                @php
-                                                    $coverUrl = $item['cover_url'] ?? null;
-                                                    if (!$coverUrl && !empty($item['cover_image'])) {
-                                                        $coverUrl = asset('storage/book_cover/' . basename($item['cover_image']));
-                                                    }
-                                                @endphp
-                                                <div class="relative w-10 h-14 rounded-md shadow-xs overflow-hidden bg-slate-100 border border-slate-200/80 flex items-center justify-center shrink-0"
-                                                     x-data="{ imgError: false, imgLoaded: false }">
-                                                    @if(!empty($coverUrl))
-                                                        <img
-                                                            src="{{ $coverUrl }}"
-                                                            alt="{{ $item['title'] }}"
-                                                            loading="lazy"
-                                                            decoding="async"
-                                                            x-on:load="imgLoaded = true"
-                                                            x-on:error="imgError = true; imgLoaded = true"
-                                                            x-show="!imgError"
-                                                            :class="imgLoaded ? 'opacity-100' : 'opacity-0'"
-                                                            class="w-full h-full object-cover transition-opacity duration-200"
-                                                        >
-                                                    @endif
-
-                                                    <!-- Fallback when image fails to load or no cover is available -->
-                                                    <div
-                                                        x-show="imgError || !'{{ $coverUrl ?? '' }}'"
-                                                        style="{{ !empty($coverUrl) ? 'display: none;' : '' }}"
-                                                        class="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#102B70] to-[#3B82F6]"
-                                                    >
-                                                        <svg class="w-5 h-5 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
-                                                        </svg>
-                                                    </div>
-                                                </div>
-                                                <div class="flex flex-col min-w-0">
-                                                    <span class="font-bold text-base leading-tight text-[#0F172A] truncate">{{ $item['title'] }}</span>
-                                                    <span class="text-sm text-[#64748B] mt-0.5 truncate">{{ $item['author'] }}</span>
-                                                    <span class="text-xs text-[#94A3B8] mt-0.5">Accession No. {{ $item['accession'] }}</span>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="hidden md:table-cell py-4 px-5 font-semibold text-sm text-[#64748B]">
-                                            {{ $item['issued_date'] }}
-                                        </td>
-                                        <td class="hidden md:table-cell py-4 px-5 font-semibold text-sm text-[#64748B]">
-                                            {{ $item['due_date'] }}
-                                        </td>
-                                        <td class="hidden md:table-cell py-4 px-5 text-right">
+                                    <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-xs sm:min-w-[230px] sm:text-right">
+                                        <div>
+                                            <p class="text-[#64748B]">Borrowed</p>
+                                            <p class="mt-0.5 font-semibold text-[#334155]">{{ $item['issued_date'] }}</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-[#64748B]">Due</p>
+                                            <p class="mt-0.5 font-semibold text-[#334155]">{{ $item['due_date'] }}</p>
+                                            @if($item['due_time'])<p class="text-[#64748B]">{{ $item['due_time'] }}</p>@endif
+                                        </div>
+                                        <div class="col-span-2 sm:justify-self-end">
                                             @if($item['fine_amount'] > 0)
-                                                <div class="flex flex-col items-end gap-1">
-                                                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-[#FEF2F2] text-[#B91C1C] border border-[#FECACA]">
-                                                        {{ round($item['overdue_days']) }} {{ Str::plural('day', round($item['overdue_days'])) }} overdue
-                                                    </span>
-                                                    <span class="font-bold text-base text-[#EF4444]">₱{{ number_format($item['fine_amount'], 2) }}</span>
-                                                </div>
-                                            @else
-                                                <span class="inline-flex items-center gap-1.5 text-sm font-bold text-[#10B981]">
-                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
-                                                    </svg>
-                                                    On Time
+                                                <span class="inline-flex flex-wrap items-center gap-x-2 rounded-md border border-[#FECACA] bg-[#FEF2F2] px-2 py-1 font-bold text-[#B91C1C]">
+                                                    {{ round($item['overdue_days']) }} {{ Str::plural('day', round($item['overdue_days'])) }} overdue
+                                                    <span>₱{{ number_format($item['fine_amount'], 2) }}</span>
                                                 </span>
+                                            @else
+                                                <span class="font-semibold text-[#15803D]">On time</span>
                                             @endif
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </article>
+                        @endforeach
                     </div>
 
-                    <!-- Confirmation alert -->
-                    <div class="bg-[#F0FDF4] rounded-xl p-4 flex gap-2.5 items-center shrink-0">
-                        <svg class="w-5 h-5 text-[#10B981] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="mt-4 flex shrink-0 items-center gap-2.5 rounded-xl bg-[#F0FDF4] p-4 text-[#15803D]">
+                        <svg class="h-5 w-5 shrink-0 text-[#10B981]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
-                        <span class="text-sm font-semibold text-[#15803D]">All items are ready to be returned.</span>
+                        <span class="text-sm font-semibold">All items are ready to be returned.</span>
                     </div>
                 </div>
-            </div>
+            </section>
 
             <!-- Right Column: Student Info, Return Summary & Actions -->
-            <div class="lg:col-span-5 flex flex-col h-full overflow-hidden shrink-0">
-                <div class="flex-1 flex flex-col justify-between overflow-y-auto bg-white border border-[#E2E8F0] rounded-3xl p-6 shadow-sm custom-scrollbar">
+            <div class="xl:col-span-5 flex flex-col min-w-0 xl:h-full xl:overflow-hidden">
+                <div class="xl:flex-1 flex flex-col xl:justify-between xl:overflow-y-auto bg-white border border-[#E2E8F0] rounded-3xl p-4 sm:p-6 shadow-sm custom-scrollbar">
                     <div class="flex flex-col gap-6">
 
                         <!-- Student Information Section -->

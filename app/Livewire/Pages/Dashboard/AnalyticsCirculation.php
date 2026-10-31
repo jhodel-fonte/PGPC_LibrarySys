@@ -42,6 +42,11 @@ class AnalyticsCirculation extends Component
 
     public int $perPage = 10;
 
+    public function mount(): void
+    {
+        abort_unless(\App\Services\EmployeeRoleService::canViewReports(), 403);
+    }
+
     public function getHeadersProperty(): array
     {
         return [

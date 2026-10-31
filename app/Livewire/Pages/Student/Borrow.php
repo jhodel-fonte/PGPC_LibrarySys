@@ -4,7 +4,6 @@ namespace App\Livewire\Pages\Student;
 
 use App\Models\BorrowingTransaction;
 use App\Models\Fine;
-use App\Models\Student;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -32,7 +31,7 @@ class Borrow extends Component
     public function render()
     {
         $user = Auth::user();
-        $student = $user?->student ?? Student::with(['libraryStatus', 'account'])->first();
+        $student = $user?->student;
         $studentId = $student?->id;
 
         $searchTerm = trim($this->search);
@@ -44,7 +43,7 @@ class Borrow extends Component
                 'issuedCondition',
                 'borrowType',
             ])
-            ->where('school_id', $studentId)
+            ->where('school_id', $studentId ?? 0)
             ->whereNull('return_date');
 
         if ($searchTerm !== '') {
@@ -66,7 +65,7 @@ class Borrow extends Component
                 'returnCondition',
                 'borrowType',
             ])
-            ->where('school_id', $studentId)
+            ->where('school_id', $studentId ?? 0)
             ->whereNotNull('return_date');
 
         if ($searchTerm !== '') {

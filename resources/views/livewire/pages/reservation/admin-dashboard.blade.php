@@ -376,21 +376,22 @@
             $resAuthors = $resData?->authors?->map(fn($a) => $a->first_name . ' ' . $a->last_name)->join(', ') ?? 'Unknown Author';
             $resCover = $resDetail?->cover_url ?: asset('images/' . config('settings.book_covers.default', 'book-cover.webp'));
         @endphp
-        <div class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto" role="dialog" aria-modal="true">
-            <div class="my-auto w-full max-w-2xl rounded-xl border border-[#E2E8F0] bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-150 overflow-hidden">
+        <div class="fixed inset-0 z-50 flex items-start sm:items-center justify-center overflow-y-auto overscroll-contain p-3 sm:p-4 bg-black/60 backdrop-blur-xs" role="dialog" aria-modal="true">
+            <div class="my-auto flex max-h-[calc(100dvh-1.5rem)] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-[#E2E8F0] bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-150">
                 <!-- Modal Header -->
-                <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-[#F8FAFC]">
+                <div class="flex shrink-0 items-center justify-between px-4 py-4 sm:px-6 border-b border-slate-100 bg-[#F8FAFC]">
                     <div>
                         <div>
                             <h3 class="text-base font-bold text-[#102B70]">Reservation Details</h3>
                             <p class="text-base text-slate-500 font-mono">Reference #RES-{{ str_pad($res->id, 5, '0', STR_PAD_LEFT) }}</p>
                         </div>
                     </div>
-                    <button type="button" wire:click="closeDetailModal" class="rounded-lg p-1.5 text-slate-500 hover:bg-slate-200 hover:text-slate-700 cursor-pointer">
+                    <button type="button" wire:click="closeDetailModal" aria-label="Close reservation details" class="rounded-lg p-1.5 text-slate-500 hover:bg-slate-200 hover:text-slate-700 cursor-pointer">
+                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" stroke-width="2" stroke-linecap="round"/></svg>
                     </button>
                 </div>
 
-                <div class="p-6 space-y-6">
+                <div class="min-h-0 overflow-y-auto overscroll-contain p-4 sm:p-6 space-y-6">
                     <!-- Book Information Card -->
                     <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/50 flex gap-4">
                         <img
@@ -454,7 +455,7 @@
                 </div>
 
                 <!-- Modal Actions -->
-                <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-[#F8FAFC]">
+                <div class="flex shrink-0 items-center justify-end gap-3 px-4 py-4 sm:px-6 border-t border-slate-100 bg-[#F8FAFC]">
                     <button
                         type="button"
                         wire:click="closeDetailModal"

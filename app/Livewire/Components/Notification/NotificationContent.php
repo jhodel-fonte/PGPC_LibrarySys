@@ -40,7 +40,8 @@ class NotificationContent extends Component
         $notification = Auth::user()->notifications()->where('id', $id)->first();
         if ($notification) {
             $notification->markAsRead();
-            $this->dispatch('notification-read');
+            unset($this->notifications, $this->unreadCount);
+            $this->dispatch('notifications-updated', unreadCount: Auth::user()->unreadNotifications()->count());
         }
 
         if ($redirectUrl && filter_var($redirectUrl, FILTER_VALIDATE_URL)) {
@@ -57,8 +58,9 @@ class NotificationContent extends Component
             return;
         }
 
-        Auth::user()->unreadNotifications->markAsRead();
-        $this->dispatch('notifications-updated');
+        Auth::user()->unreadNotifications()->update(['read_at' => now()]);
+        unset($this->notifications, $this->unreadCount);
+        $this->dispatch('notifications-updated', unreadCount: 0);
     }
 
     public function deleteNotification(string $id): void
@@ -68,7 +70,8 @@ class NotificationContent extends Component
         }
 
         Auth::user()->notifications()->where('id', $id)->delete();
-        $this->dispatch('notifications-updated');
+        unset($this->notifications, $this->unreadCount);
+        $this->dispatch('notifications-updated', unreadCount: Auth::user()->unreadNotifications()->count());
     }
 
     public function render()

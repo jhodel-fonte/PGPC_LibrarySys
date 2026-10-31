@@ -42,7 +42,8 @@ class Alerts extends Notification implements ShouldQueue
         public ?string $dueDate = null,
         public array $channels = ['database', 'mail'],
         public bool $sendSms = false,
-        public ?string $smsMessage = null
+        public ?string $smsMessage = null,
+        public array $details = []
     ) {
     }
 
@@ -80,9 +81,10 @@ class Alerts extends Notification implements ShouldQueue
                 'message'    => $this->message,
                 'bookTitle'  => $this->bookTitle,
                 'dueDate'    => $this->dueDate,
+                'details'    => $this->details,
                 'actionUrl'  => $this->actionUrl,
                 'actionText' => $this->actionText ?? 'View in Library System',
-                'user'       => $notifiable,
+                'user'       => $notifiable->student ?? $notifiable,
             ]);
     }
 
@@ -112,6 +114,7 @@ class Alerts extends Notification implements ShouldQueue
             'book_title'  => $this->bookTitle,
             'book_cover'  => $this->bookCover,
             'due_date'    => $this->dueDate,
+            'details'     => $this->details,
             'icon'        => $this->resolveIcon(),
             'created_at'  => now()->toISOString(),
         ];

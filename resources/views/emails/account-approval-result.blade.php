@@ -18,6 +18,20 @@
 
         <p style="margin: 0 0 16px 0;">Hello {{ $name }},</p>
 
+        @if(!empty($studentDetails))
+            <div style="margin: 0 0 18px 0; padding: 14px 16px; border: 1px solid #dbe3ef; border-radius: 8px; background: #f8fafc;">
+                <p style="margin: 0 0 8px 0; color: #102b70; font-weight: bold;">Student account details</p>
+                <table role="presentation" style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                    @foreach($studentDetails as $label => $value)
+                        <tr>
+                            <td style="padding: 4px 12px 4px 0; color: #64748b;">{{ $label }}</td>
+                            <td style="padding: 4px 0; color: #0f172a; font-weight: 600;">{{ $value }}</td>
+                        </tr>
+                    @endforeach
+                </table>
+            </div>
+        @endif
+
         @if($result === 'approved')
             <p style="margin: 0 0 16px 0;">
                 Your student account has been approved. You can now sign in and use the library system's student services.

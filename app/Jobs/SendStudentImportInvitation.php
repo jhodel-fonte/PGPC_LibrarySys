@@ -26,7 +26,7 @@ class SendStudentImportInvitation implements ShouldQueue
         if ($row->email_status === 'sent' || ! $row->account_id) return;
         $account = Account::findOrFail($row->account_id);
         $token = Password::broker()->createToken($account);
-        $url = route('password.reset', ['token' => $token, 'email' => $account->email]);
+        $url = \App\Support\EmailUrl::route('password.reset', ['token' => $token, 'email' => $account->email]);
         Mail::to($account->email)->send(new StudentImportInvitation($account, $url));
         $row->update(['email_status' => 'sent', 'email_error' => null]);
     }

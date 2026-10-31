@@ -24,6 +24,11 @@ class Analytics extends Component
     public string $circulationMetric = 'all'; // 'all', 'borrowed', 'returned'
     public string $genderFilter = 'all'; // 'all', 'female', 'male'
 
+    public function mount(): void
+    {
+        abort_unless(\App\Services\EmployeeRoleService::canViewReports(), 403);
+    }
+
     public function setViewMode(string $mode): void
     {
         $this->viewMode = $mode;

@@ -273,6 +273,8 @@ class Index extends Component
                 return $newReservation;
             });
 
+            app(\App\Services\ReservationNotificationService::class)->created($reservation);
+
             $this->closeModal();
             $this->isSubmitting = false;
 

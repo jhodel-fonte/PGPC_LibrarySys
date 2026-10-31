@@ -282,6 +282,8 @@ class AdminDashboard extends Component
      */
     public function approveReservation(int $id): void
     {
+        abort_unless(\App\Services\EmployeeRoleService::can('manage_circulation'), 403);
+
         try {
             DB::transaction(function () use ($id) {
                 $reservation = BookReservation::findOrFail($id);
@@ -317,6 +319,8 @@ class AdminDashboard extends Component
                 $book->update(['status' => 'reserved']);
             });
 
+            app(\App\Services\ReservationNotificationService::class)->statusChanged(BookReservation::findOrFail($id));
+
             $this->dispatch('toast', message: 'Reservation #' . $id . ' approved successfully. The copy is reserved for student pickup.', type: 'success');
         } catch (\Throwable $e) {
             $this->dispatch('toast', message: 'Failed to approve reservation: ' . $e->getMessage(), type: 'error');
@@ -345,6 +349,8 @@ class AdminDashboard extends Component
      */
     public function confirmCancelReservation(): void
     {
+        abort_unless(\App\Services\EmployeeRoleService::can('manage_circulation'), 403);
+
         if (!$this->cancelReservationId) {
             return;
         }
@@ -381,6 +387,10 @@ class AdminDashboard extends Component
                 }
             });
 
+            app(\App\Services\ReservationNotificationService::class)->statusChanged(
+                BookReservation::findOrFail($this->cancelReservationId)
+            );
+
             $this->closeCancelModal();
             $this->dispatch('toast', message: 'Reservation has been cancelled and the book copy released.', type: 'info');
         } catch (\Throwable $e) {
@@ -409,6 +419,8 @@ class AdminDashboard extends Component
      */
     public function extendPickup(int $id): void
     {
+        abort_unless(\App\Services\EmployeeRoleService::can('manage_circulation'), 403);
+
         try {
             $reservation = BookReservation::with('book.bookDetail.bookData')->findOrFail($id);
             if ((int) $reservation->reservation_status_id !== 2 || ! $reservation->book?->bookDetail?->bookData) {
@@ -419,6 +431,8 @@ class AdminDashboard extends Component
                 'due_date' => $newDue,
                 'comment' => trim(($reservation->comment ?? '') . ' [Pickup deadline extended by staff]'),
             ]);
+
+            app(\App\Services\ReservationNotificationService::class)->pickupDeadlineExtended($reservation);
 
             $this->dispatch('toast', message: 'Pickup deadline extended to ' . $newDue->format('M d, Y') . '.', type: 'success');
         } catch (\Throwable $e) {
@@ -497,6 +511,8 @@ class AdminDashboard extends Component
 
     public function submitManualReservation(): void
     {
+        abort_unless(\App\Services\EmployeeRoleService::can('manage_circulation'), 403);
+
         $this->validate([
             'createSelectedStudentId' => 'required|exists:students,id',
             'createSelectedBookId' => 'required|exists:books,id',
@@ -509,7 +525,7 @@ class AdminDashboard extends Component
         try {
             $detailId = Book::whereKey($this->createSelectedBookId)->value('book_detail_id');
             app(\App\Services\ReservationWaitlistService::class)->allocate($detailId);
-            DB::transaction(function () {
+            $reservation = DB::transaction(function () {
                 $detailId = Book::whereKey($this->createSelectedBookId)->value('book_detail_id');
                 $detail = \App\Models\BookDetail::lockForUpdate()->findOrFail($detailId);
                 if ($detail->periodicalIssue && ! $detail->periodicalIssue->borrowable) {
@@ -540,7 +556,11 @@ class AdminDashboard extends Component
                 ]);
 
                 $book->update(['status' => 'reserved']);
+
+                return $reservation;
             });
+
+            app(\App\Services\ReservationNotificationService::class)->created($reservation);
 
             $this->closeCreateModal();
             $this->dispatch('toast', message: 'Manual reservation placed and pre-approved successfully!', type: 'success');

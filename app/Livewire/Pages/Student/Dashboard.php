@@ -4,9 +4,7 @@ namespace App\Livewire\Pages\Student;
 
 use App\Models\BorrowingTransaction;
 use App\Models\Fine;
-use App\Models\Student;
 use Illuminate\Support\Facades\Auth;
-use Linkxtr\QrCode\Facades\QrCode;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -17,8 +15,7 @@ class Dashboard extends Component
     {
         $user = Auth::user();
 
-        // Find student profile for authenticated user, with fallback for admin/staff preview
-        $student = $user?->student ?? Student::with(['libraryStatus', 'account'])->first();
+        $student = $user?->student;
         $studentId = $student?->id;
         $studentIdValue = $student?->school_id_number ?: ($student?->id ? (string) $student->id : null);
 

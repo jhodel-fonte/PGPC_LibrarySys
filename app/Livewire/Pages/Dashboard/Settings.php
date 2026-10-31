@@ -17,6 +17,8 @@ class Settings extends Component
 
     public function mount(): void
     {
+        abort_unless(\App\Services\EmployeeRoleService::canManageSettings(), 403);
+
         $this->loadDefaultSettings();
     }
 
@@ -147,6 +149,8 @@ class Settings extends Component
 
     public function saveChanges(): void
     {
+        abort_unless(\App\Services\EmployeeRoleService::canManageSettings(), 403);
+
         $this->originalSettings = $this->settings;
         $this->dispatch('toast', message: 'Settings saved successfully (Design Preview Mode).', type: 'success');
         $this->dispatch('settings-saved');
@@ -154,6 +158,8 @@ class Settings extends Component
 
     public function updatePolicy(string $policyType, bool $isImmediate = true, bool $requireAcknowledgement = false, ?string $scheduledDate = null): void
     {
+        abort_unless(\App\Services\EmployeeRoleService::canManageSettings(), 403);
+
         $this->originalSettings = $this->settings;
         $this->dispatch('toast', message: ucfirst($policyType) . ' policy updated (Design Preview Mode).', type: 'success');
     }

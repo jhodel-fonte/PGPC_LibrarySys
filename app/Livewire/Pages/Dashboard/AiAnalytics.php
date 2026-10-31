@@ -30,8 +30,15 @@ class AiAnalytics extends Component
         'NDCG@10' => ['better' => 'higher', 'description' => 'Ranking quality of the top 10 recommendations (0 to 1).'],
     ];
 
+    public function mount(): void
+    {
+        abort_unless(\App\Services\EmployeeRoleService::canViewReports(), 403);
+    }
+
     public function refreshEvaluation(): void
     {
+        abort_unless(\App\Services\EmployeeRoleService::canViewReports(), 403);
+
         $service = app(RecommendationService::class);
         $service->clearEvaluationCache();
         $evaluation = $service->evaluation();

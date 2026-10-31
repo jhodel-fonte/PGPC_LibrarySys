@@ -207,6 +207,8 @@ class OpacController extends Controller
                 return $reservation;
             });
 
+            app(\App\Services\ReservationNotificationService::class)->created($reservation);
+
             if (request()->expectsJson()) {
                 return response()->json([
                     'success'        => true,

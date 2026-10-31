@@ -16,7 +16,7 @@
     $onlineResourceSublinks = [];
 
     try {
-        $resourcesPath = storage_path('app/public/online_resources/list.json');
+        $resourcesPath = public_path('online_resources/list.json');
         if (file_exists($resourcesPath)) {
             $content = file_get_contents($resourcesPath);
             if ($content !== false) {
