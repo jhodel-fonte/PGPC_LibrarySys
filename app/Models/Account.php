@@ -18,6 +18,13 @@ class Account extends Authenticatable
 {
     use HasFactory, SoftDeletes, Notifiable, Searchable, HasApiTokens;
 
+    protected static function booted(): void
+    {
+        static::creating(function (self $account) {
+            $account->ml_user_token ??= bin2hex(random_bytes(32));
+        });
+    }
+
     /**
      * Get the indexable data array for Scout.
      */
@@ -55,6 +62,7 @@ class Account extends Authenticatable
         'remember_token',
         'failed_attempts',
         'provider_id',
+        'ml_user_token',
     ];
 
     protected $casts = [

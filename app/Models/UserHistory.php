@@ -43,7 +43,7 @@ class UserHistory extends Model
     public static function upsertHighestRating(int $userId, string $isbn, int $newRating, ?string $encrypterId = null): self
     {
         $isbn = trim($isbn);
-        $encrypterId = $encrypterId ?? static::where('user_id', $userId)->whereNotNull('encrypter_id')->where('encrypter_id', '!=', '')->oldest('id')->value('encrypter_id') ?? Account::encodeId($userId);
+        $encrypterId = $encrypterId ?? Account::whereKey($userId)->value('ml_user_token');
 
         $history = static::firstOrNew([
             'user_id' => $userId,

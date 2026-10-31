@@ -78,6 +78,38 @@ Follow these steps to set up the PGPC Library System in your local development e
    ```
    The application will be accessible at `http://localhost:8000`.
 
+## Start the application on the Ubuntu VM
+
+For the native Ubuntu deployment, place the repository at `/opt/pgpc-lib` and
+copy the existing production `.env` there from a secure backup. Do not commit
+that file. Use Ubuntu 24.04, set `APP_ENV=production` and `APP_DEBUG=false`,
+and configure the PostgreSQL connection and ML API credentials. Laravel should
+use `ML_RECOMMENDER_URL=http://127.0.0.1:8005` and the same `ML_API_KEY` as the
+ML service's `API_KEY`.
+
+The installer builds the frontend, installs Composer dependencies, configures
+Nginx/PHP-FPM, and registers the queue and scheduler services:
+
+```bash
+cd /opt/pgpc-lib
+sudo bash deploy/install-ubuntu.sh
+```
+
+The installer requires Node.js 20.19+ or 22.12+ and npm for the Vite build. It
+starts and enables the application stack. To start it later with one command:
+
+```bash
+sudo systemctl start pgpc-lib.target
+```
+
+The target starts Nginx, PHP-FPM, the Laravel queue worker, and the Laravel
+scheduler. Check them with `sudo systemctl status pgpc-lib.target` and view
+application logs with `sudo journalctl -u pgpc-lib-queue -n 100 --no-pager`.
+The Nginx configuration serves `library.pgpc.online` and `pgpc.online` on HTTP
+port 80; configure a TLS certificate before serving production traffic over
+the public internet. Open only the web ports needed in the Azure Network
+Security Group, and keep database port 5432 private.
+
 ## Directory Structure Highlights
 
 - `app/Livewire/Pages/Admin/Settings.php`: Core logic for the unified system settings module, featuring deep-comparison unsaved changes tracking.
@@ -103,3 +135,12 @@ Catalog spreadsheet imports are processed on the database queue. Run `php artisa
 Students can join the waitlist from the reservation catalog when all copies of a title are borrowed or reserved. Copies are assigned in queue order when released, and the student receives a notification with the pickup deadline. Students can leave their waitlist from the same page. Accounts at the three-reservation limit or with reservations blocked are skipped until eligible; their waitlist entry remains active. Staff can block or restore reservation access on the student's account tab without disabling login or returns.
 
 Run `php artisan migrate` to add the waitlist and reservation access flag. The scheduler and queue worker described above must be running for allocation retries and notifications. `php artisan reservations:allocate-waitlist` runs an allocation check manually.
+
+### Machine-learning identity
+
+Run `php artisan migrate` after updating to add a unique, random ML token to
+each account. Recommendation requests send this token with the student's
+program/year and borrowing history; the numeric account ID and legacy
+`encrypter_id` are not sent. Rebuild the ML interaction snapshot and model
+after this migration before switching traffic to the updated services; see
+the ML repository README for the order of operations.

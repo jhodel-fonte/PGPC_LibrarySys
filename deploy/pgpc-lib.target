@@ -1,0 +1,8 @@
+[Unit]
+Description=PGPC Library application stack
+Requires=nginx.service php8.3-fpm.service pgpc-lib-queue.service pgpc-lib-scheduler.service
+After=network-online.target nginx.service php8.3-fpm.service pgpc-lib-queue.service pgpc-lib-scheduler.service
+Wants=network-online.target
+
+[Install]
+WantedBy=multi-user.target

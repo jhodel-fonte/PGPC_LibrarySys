@@ -3,7 +3,7 @@
         <section class="mt-8 rounded-2xl border border-[#DDE5EF] bg-white p-5 sm:p-7 shadow-sm" aria-labelledby="personal-recommendations-heading">
             <div class="mb-5">
                 <h2 id="personal-recommendations-heading" class="text-xl font-bold text-[#0B2454]">Picked for you</h2>
-                <p class="mt-1 text-sm text-slate-600">Books recommended based on this title and your library activity.</p>
+                <p class="mt-1 text-sm text-slate-600">Books recommended using your program, year level, this title, and your library activity.</p>
             </div>
             <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                 @foreach ($books as $recommendedBook)

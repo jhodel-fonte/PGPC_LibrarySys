@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Pagination\LengthAwarePaginator;
 use App\Services\DataNormalizationService;
+use App\Services\RecommendationService;
 use App\Traits\SanitizesRequestInput;
 
 class OpacController extends Controller
@@ -383,10 +384,16 @@ class OpacController extends Controller
     private function runViewQuery(Request $request, array $f): array
     {
         $query = OpacCatalogView::query();
+        $semanticIsbns = [];
 
         // 1. Simple search bar if present
         if (!empty($f['search'])) {
-            $query->search($f['search']);
+            $semanticIsbns = app(RecommendationService::class)->searchBookIsbns($f['search']);
+            if ($semanticIsbns) {
+                $query->whereIn('isbn', $semanticIsbns);
+            } else {
+                $query->search($f['search']);
+            }
         }
 
         // 2. If this is an Advanced Search request, pass all criteria into advancedSearch scope
@@ -421,7 +428,13 @@ class OpacController extends Controller
             }
         }
 
-        match ($f['sortBy']) {
+        if ($f['sortBy'] === 'relevance' && $semanticIsbns) {
+            $case = 'CASE isbn ';
+            foreach ($semanticIsbns as $index => $_isbn) {
+                $case .= 'WHEN ? THEN '.$index.' ';
+            }
+            $query->orderByRaw($case.'ELSE '.count($semanticIsbns).' END', $semanticIsbns);
+        } else match ($f['sortBy']) {
             'newest', 'year_desc' => $query->orderBy('publication_year', 'desc'),
             'title_asc'           => $query->orderBy('book_title', 'asc'),
             default               => $query->orderBy('book_detail_id', 'desc'),
