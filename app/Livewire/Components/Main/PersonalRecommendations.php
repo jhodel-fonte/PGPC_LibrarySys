@@ -5,6 +5,7 @@ namespace App\Livewire\Components\Main;
 use App\Models\BookDetail;
 use App\Models\UserHistory;
 use App\Services\RecommendationService;
+use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
 use Throwable;
@@ -51,8 +52,18 @@ class PersonalRecommendations extends Component
             }
 
             $matchedBooks = $stored?->getActiveBooks();
+            $normalize = fn ($isbn) => strtoupper(str_replace(['-', ' '], '', trim((string) $isbn)));
+            $availability = $matchedBooks?->isNotEmpty()
+                ? BookDetail::publicCatalog()
+                    ->whereIn(DB::raw("UPPER(REPLACE(REPLACE(isbn, '-', ''), ' ', ''))"), $matchedBooks->pluck('isbn')->map($normalize))
+                    ->with(['books' => fn ($query) => $query->whereNull('deleted_at')
+                        ->whereNotIn(DB::raw('LOWER(status)'), ['disabled', 'archived'])])
+                    ->get(['id', 'isbn'])
+                    ->groupBy(fn ($book) => $normalize($book->isbn))
+                    ->map(fn ($editions) => $editions->sum(fn ($edition) => $edition->books
+                        ->filter(fn ($copy) => strtolower($copy->status ?? '') === 'available')->count()))
+                : collect();
             if ($stored) {
-                $normalize = fn ($isbn) => strtoupper(str_replace(['-', ' '], '', trim((string) $isbn)));
                 $matchedIsbns = $matchedBooks->map(fn ($book) => $normalize($book->isbn))->all();
                 $unmatched = array_values(array_filter($stored->isbns ?? [], fn ($isbn) => ! in_array($normalize($isbn), $matchedIsbns, true)));
                 $matchedCount = $matchedBooks->count();
@@ -64,10 +75,11 @@ class PersonalRecommendations extends Component
             $this->books = $matchedBooks
                 ?->where('id', '!=', $this->bookDetailId)
                 ->take(10)
-                ->map(function ($item) {
+                ->map(function ($item) use ($availability, $normalize) {
                     $data = $item->bookData;
                     $copies = $item->books;
-                    $available = $copies->contains(fn ($copy) => strtolower($copy->status ?? '') === 'available');
+                    $availableCount = (int) ($availability[$normalize($item->isbn)] ?? 0);
+                    $available = $availableCount > 0;
                     return [
                         'id' => $item->id,
                         'accession_no' => $copies->first()?->accession_number,
@@ -84,7 +96,8 @@ class PersonalRecommendations extends Component
                         'pages' => $item->pages ? $item->pages.' p.' : 'N/A',
                         'location' => $copies->first()?->location ?: 'Main Library',
                         'status' => $available ? 'available' : 'unavailable',
-                        'status_label' => $available ? 'Available' : 'Unavailable',
+                        'available_copies' => $availableCount,
+                        'status_label' => $available ? "{$availableCount} available" : 'No copies available',
                         'status_color' => $available ? 'text-emerald-700' : 'text-rose-700',
                         'dot_color' => $available ? 'bg-emerald-500' : 'bg-rose-500',
                     ];

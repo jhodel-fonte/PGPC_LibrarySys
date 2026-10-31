@@ -19,6 +19,8 @@ class BorrowingTransaction extends Model
     protected $fillable = [
         'book_id',
         'school_id', // foreign key pointing to students table
+        'program_at_issue',
+        'year_level_at_issue',
         'issued_by_id',
         'book_reservation_id',
         'borrow_type_id',

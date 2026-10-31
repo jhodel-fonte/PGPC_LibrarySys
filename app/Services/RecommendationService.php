@@ -26,6 +26,7 @@ class RecommendationService
     {
         $this->lastRecommendDebug = null;
         $histories = $account->userHistories()
+            ->where('is_seeded', false)
             ->select(['isbn', 'rating'])
             ->get();
         $userKey = $account->ml_user_token;

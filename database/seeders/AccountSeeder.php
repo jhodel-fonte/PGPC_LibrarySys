@@ -17,8 +17,8 @@ class AccountSeeder extends Seeder
         $now = Carbon::now();
         $accounts = [];
 
-        // Seed 20 Student accounts so recommendation seed data has enough unique user-book interactions.
-        for ($i = 1; $i <= 20; $i++) {
+        // Seed enough students for up to 1,000 unique recommender interactions.
+        for ($i = 1; $i <= 100; $i++) {
             $accounts[] = [
                 'role_id' => 4, // Patron / Student
                 'status_id' => 1, // Active
@@ -34,7 +34,7 @@ class AccountSeeder extends Seeder
             ];
         }
 
-        // Seed 3 Librarian / Staff accounts (starting IDs from 11)
+        // Seed 3 Librarian / Staff accounts after the student accounts.
         $staffRoles = [2, 2, 3]; // 2 Librarians (ID 2), 1 Assistant Librarian (ID 3)
         foreach ($staffRoles as $idx => $roleId) {
             $num = $idx + 1;

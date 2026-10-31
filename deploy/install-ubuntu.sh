@@ -25,25 +25,25 @@ if ! grep -Eq '^APP_ENV=production$' .env || ! grep -Eq '^APP_DEBUG=false$' .env
 fi
 
 apt-get update
-DEBIAN_FRONTEND=noninteractive apt-get install -y nginx composer php8.3-fpm \
-  php8.3-bcmath php8.3-curl php8.3-gd php8.3-intl php8.3-mbstring \
-  php8.3-pgsql php8.3-xml php8.3-zip
+DEBIAN_FRONTEND=noninteractive apt-get install -y nginx composer php8.4-cli php8.4-fpm \
+  php8.4-bcmath php8.4-curl php8.4-gd php8.4-intl php8.4-mbstring \
+  php8.4-pgsql php8.4-xml php8.4-zip
 
-composer install --no-interaction --no-dev --optimize-autoloader
+php8.4 /usr/bin/composer install --no-interaction --no-dev --optimize-autoloader
 npm ci
 npm run build
 if [[ ! -L public/storage ]]; then
-  php artisan storage:link
+  php8.4 artisan storage:link
 fi
-php artisan config:cache
-php artisan view:cache
+php8.4 artisan config:cache
+php8.4 artisan view:cache
 
 chown root:www-data "$APP_DIR"
 chmod 750 "$APP_DIR"
 chown -R www-data:www-data storage bootstrap/cache
 chown root:www-data .env
 chmod 640 .env
-cat >/etc/php/8.3/fpm/conf.d/99-pgpc-lib.ini <<'PHPINI'
+cat >/etc/php/8.4/fpm/conf.d/99-pgpc-lib.ini <<'PHPINI'
 upload_max_filesize = 70M
 post_max_size = 70M
 max_execution_time = 300

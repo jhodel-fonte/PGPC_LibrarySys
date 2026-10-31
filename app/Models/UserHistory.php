@@ -21,11 +21,13 @@ class UserHistory extends Model
         'encrypter_id',
         'isbn',
         'rating',
+        'is_seeded',
     ];
 
     protected $casts = [
         'rating' => 'integer',
         'user_id' => 'integer',
+        'is_seeded' => 'boolean',
     ];
 
     /**
@@ -57,8 +59,11 @@ class UserHistory extends Model
         } else {
             $needsSave = false;
 
-            // Only upgrade to higher rating
-            if ($newRating > (int) $history->rating) {
+            if ($history->is_seeded) {
+                $history->rating = $newRating;
+                $history->is_seeded = false;
+                $needsSave = true;
+            } elseif ($newRating > (int) $history->rating) {
                 $history->rating = $newRating;
                 $needsSave = true;
             }
