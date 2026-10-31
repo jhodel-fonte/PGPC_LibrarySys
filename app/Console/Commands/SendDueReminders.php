@@ -46,15 +46,31 @@ class SendDueReminders extends Command
                         }
 
                         $title = $loan->book?->bookDetail?->bookData?->book_title ?? 'Borrowed book';
+                        $detail = $loan->book?->bookDetail;
+                        $accession = $loan->book?->accession_number;
                         $dueDate = $loan->due_date->copy()->setTimezone('Asia/Manila')->format($insideLibrary ? 'M d, Y h:i A' : 'M d, Y');
-                        $account->notify(new Alerts(
+                        $account->notify((new Alerts(
                             title: 'Book return reminder',
                             message: "Please return your borrowed book by {$dueDate}.",
                             type: 'warning',
+                            actionUrl: \App\Support\EmailUrl::route('student.borrow'),
+                            actionText: 'View my loans',
                             bookTitle: $title,
                             dueDate: $dueDate,
+                            channels: ['database', 'mail'],
                             sendSms: true,
-                        ));
+                            smsMessage: "PGPC Library: {$title}" . ($accession ? " (Accession {$accession})" : '') . " is due {$dueDate}. Please return it on time.",
+                            details: [
+                                'Loan reference' => 'LOAN-' . str_pad((string) $loan->id, 6, '0', STR_PAD_LEFT),
+                                'Accession number' => $accession,
+                                'Call number' => $detail?->call_number,
+                                'ISBN' => $detail?->isbn,
+                                'Borrowed on' => $loan->issued_date?->format('M d, Y'),
+                                'Loan type' => $loan->borrowType?->name,
+                                'Due date' => $dueDate,
+                                'Reminder window' => 'Due within ' . $days . ' days',
+                            ],
+                        ))->onConnection('database')->afterCommit());
                         $loan->due_reminder_for = $loan->due_date;
                         $loan->save();
                     });

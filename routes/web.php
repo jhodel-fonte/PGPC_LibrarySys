@@ -22,7 +22,7 @@ Route::redirect('/privacy-policy', '/privacy');
 
 // Public introduction pages for external library resources.
 $onlineResources = static function (): array {
-    $path = storage_path('app/public/online_resources/list.json');
+    $path = public_path('online_resources/list.json');
     $content = is_file($path) ? file_get_contents($path) : false;
     $data = is_string($content) ? json_decode($content, true) : null;
 
@@ -111,13 +111,13 @@ Route::middleware(['auth', 'verified', 'role:Librarian,Head Librarian,Admin'])->
 
         Route::get('/dashboard', \App\Livewire\Pages\Dashboard\Dashboard::class)->name('dashboard');
 
-        Route::middleware('permission:manage_users,view_students,manage_librarians')->group(function () {
+        Route::middleware('permission:manage_users,view_students,manage_librarian')->group(function () {
             Route::get('/user-management', \App\Livewire\Pages\Dashboard\UserManagement::class)->name('user-management');
             Route::get('/user-management/approvals', \App\Livewire\Pages\Dashboard\UserApprovals::class)->name('user-management.approvals')->middleware('permission:manage_users,view_students,edit_students');
-            Route::get('/user-management/add', \App\Livewire\Pages\Dashboard\AddUser::class)->name('user-management.add')->middleware('permission:manage_users,create_students,manage_librarians');
+            Route::get('/user-management/add', \App\Livewire\Pages\Dashboard\AddUser::class)->name('user-management.add')->middleware('permission:manage_users,create_students,manage_librarian');
             Route::get('/user-management/import', \App\Livewire\Pages\Dashboard\ImportStudents::class)->name('user-management.import')->middleware('permission:manage_users,create_students');
-            Route::get('/user-management/edit/{id}', \App\Livewire\Pages\Dashboard\EditUserPage::class)->name('user-management.edit')->middleware('permission:manage_users,edit_students,manage_librarians');
-            Route::get('/user-management/{id}/edit', \App\Livewire\Pages\Dashboard\EditUserPage::class)->middleware('permission:manage_users,edit_students,manage_librarians');
+            Route::get('/user-management/edit/{id}', \App\Livewire\Pages\Dashboard\EditUserPage::class)->name('user-management.edit')->middleware('permission:manage_users,edit_students,manage_librarian');
+            Route::get('/user-management/{id}/edit', \App\Livewire\Pages\Dashboard\EditUserPage::class)->middleware('permission:manage_users,edit_students,manage_librarian');
             Route::get('/user-management/{id}', \App\Livewire\Pages\Dashboard\UserDetails::class)->name('user-details');
         });
 
@@ -130,7 +130,7 @@ Route::middleware(['auth', 'verified', 'role:Librarian,Head Librarian,Admin'])->
             Route::get('/reservations', \App\Livewire\Pages\Reservation\AdminDashboard::class)->name('reservations');
         });
 
-        Route::get('/reservations', \App\Livewire\Pages\Reservation\AdminDashboard::class)->name('reservations');
+        Route::get('/reservations', \App\Livewire\Pages\Reservation\AdminDashboard::class)->name('reservations')->middleware('permission:manage_circulation,view_circulation');
 
         Route::middleware('permission:manage_catalog,view_catalog')->prefix('book-management')->name('book-management.')->group(function () {
             Route::get('/', \App\Livewire\Pages\Dashboard\BookManager::class)->name('index');
@@ -142,10 +142,10 @@ Route::middleware(['auth', 'verified', 'role:Librarian,Head Librarian,Admin'])->
         Route::get('/authors/search', [\App\Http\Controllers\AuthorController::class, 'search'])->name('authors.search');
         Route::get('/publishers/search', [\App\Http\Controllers\PublisherController::class, 'search'])->name('publishers.search');
 
-        Route::get('/settings', \App\Livewire\Pages\Dashboard\Settings::class)->name('settings')->middleware('permission:manage_settings');
-        Route::get('/analytics', \App\Livewire\Pages\Dashboard\Analytics::class)->name('analytics');
-        Route::get('/analytics/ai', \App\Livewire\Pages\Dashboard\AiAnalytics::class)->name('analytics.ai');
-        Route::get('/analytics/circulation', \App\Livewire\Pages\Dashboard\AnalyticsCirculation::class)->name('analytics.circulation');
+        Route::get('/settings', \App\Livewire\Pages\Dashboard\Settings::class)->name('settings')->middleware('permission:manage_system,manage_settings');
+        Route::get('/analytics', \App\Livewire\Pages\Dashboard\Analytics::class)->name('analytics')->middleware('permission:view_reports,manage_system');
+        Route::get('/analytics/ai', \App\Livewire\Pages\Dashboard\AiAnalytics::class)->name('analytics.ai')->middleware('permission:view_reports,manage_system');
+        Route::get('/analytics/circulation', \App\Livewire\Pages\Dashboard\AnalyticsCirculation::class)->name('analytics.circulation')->middleware('permission:view_reports,manage_system');
         Route::get('/profile', \App\Livewire\Pages\Student\Profile::class)->name('profile');
 });
 

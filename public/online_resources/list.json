@@ -1,0 +1,34 @@
+{
+    "online_resources": [
+        {
+            "name": "ScienceDirect",
+            "external_url": "https://www.sciencedirect.com",
+            "logo": "sciencedirect-logo.webp"
+        },
+        {
+            "name": "Emerald Insight",
+            "external_url": "https://www.emerald.com",
+            "logo": "emerald-insight-logo.webp"
+        },
+        {
+            "name": "SpringerLink",
+            "external_url": "https://link.springer.com/",
+            "logo": "springer-logo.webp"
+        },
+        {
+            "name": "JSTOR",
+            "external_url": "https://www.jstor.org/",
+            "logo": "jstor-logo.webp"
+        },
+        {
+            "name": "Wiley Online Library",
+            "external_url": "https://onlinelibrary.wiley.com/",
+            "logo": "wiley-logo.webp"
+        },
+        {
+            "name": "IEEEXplore",
+            "external_url": "https://ieeexplore.ieee.org/",
+            "logo": "ieeexplore-logo.webp"
+        }
+    ]
+}

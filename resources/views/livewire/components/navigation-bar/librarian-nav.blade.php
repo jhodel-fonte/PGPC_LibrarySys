@@ -114,6 +114,7 @@
 @endif
 
 <!-- Analytics Accordion with Subitems -->
+@if($signedInUser && $signedInUser->canViewReports())
 <x-widget.sidebar-button :active="request()->routeIs($routePrefix . 'analytics*')" :textSize="$textClass">
     <x-slot:icon>
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -139,6 +140,7 @@
         {{-- Circulation analytics subitem is hidden while its route is preserved --}}
     </x-slot:subitems>
 </x-widget.sidebar-button>
+@endif
 
 <!-- SYSTEM SECTION -->
 {{-- @if($signedInUser && $signedInUser->canManageSettings())

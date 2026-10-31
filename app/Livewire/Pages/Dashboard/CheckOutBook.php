@@ -6,6 +6,7 @@ use Livewire\Component;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
 use App\Models\Student;
+use App\Notifications\Alerts;
 use App\Models\Book;
 use App\Models\BookDetail;
 use App\Models\BookReservation;
@@ -616,7 +617,7 @@ class CheckOutBook extends Component
         $studentId = $this->scannedMember['id'];
 
         // Backend validation safeguard: Check status again
-        $student = Student::with('libraryStatus')->find($studentId);
+        $student = Student::with(['libraryStatus', 'account'])->find($studentId);
         if (!$student) {
             $this->dispatch('checkout-failed', message: 'Student profile not found in database.');
             return;
@@ -658,7 +659,8 @@ class CheckOutBook extends Component
             }
         }
         try {
-            DB::transaction(function () use ($studentId, $bookIds) {
+            $borrowedItems = [];
+            DB::transaction(function () use ($studentId, $bookIds, &$borrowedItems) {
                 $loanPeriod = (int) config('settings.library_config.loan_period', config('settings.loan_period', 5));
                 $now = Carbon::now();
                 $insideLibrary = $this->loanLocation === 'inside_library';
@@ -700,7 +702,7 @@ class CheckOutBook extends Component
                         throw new \DomainException('A queued copy already has an active loan. Check the copy’s loan record before trying again.');
                     }
 
-                    BorrowingTransaction::create([
+                    $transaction = BorrowingTransaction::create([
                         'book_id' => $bookId,
                         'school_id' => $studentId,
                         'issued_by_id' => $librarianId,
@@ -711,6 +713,22 @@ class CheckOutBook extends Component
                         'due_date' => $dueDate,
                         'return_date' => null,
                     ]);
+                    $borrowedItems[] = [
+                        'title' => $item['title'] ?? $item['book'] ?? 'Borrowed book',
+                        'was_reserved' => (bool) $reservationId,
+                        'due_date' => $dueDate->copy()->setTimezone('Asia/Manila')->format($insideLibrary ? 'M d, Y h:i A' : 'M d, Y'),
+                        'details' => [
+                            'Loan reference' => 'LOAN-' . str_pad((string) $transaction->id, 6, '0', STR_PAD_LEFT),
+                            'Accession number' => $item['accession'] ?? null,
+                            'Call number' => $item['call_number'] ?? null,
+                            'ISBN' => $item['isbn'] ?? null,
+                            'Author' => $item['author'] ?? null,
+                            'Borrowed on' => $now->copy()->setTimezone('Asia/Manila')->format('M d, Y'),
+                            'Loan type' => $borrowType->name,
+                            'Due date' => $dueDate->copy()->setTimezone('Asia/Manila')->format($insideLibrary ? 'M d, Y h:i A' : 'M d, Y'),
+                            'Reservation status' => $reservationId ? 'Fulfilled (book borrowed)' : null,
+                        ],
+                    ];
 
                     if ($reservationId) {
                         BookReservation::whereKey($reservationId)->update([
@@ -729,6 +747,28 @@ class CheckOutBook extends Component
             Log::error('Check-Out Transaction Failed: ' . $e->getMessage());
             $this->dispatch('checkout-failed', message: 'A database error occurred during checkout processing. Please try again.');
             return;
+        }
+
+        if ($account = $student->account) {
+            foreach ($borrowedItems as $item) {
+                try {
+                    $account->notify((new Alerts(
+                        title: 'Book borrowed',
+                        message: $item['was_reserved'] ? 'Your reserved book has been borrowed and the reservation is fulfilled. Please return it by ' . $item['due_date'] . '.' : 'Your book has been checked out. Please return it by ' . $item['due_date'] . '.',
+                        type: 'success',
+                        actionUrl: \App\Support\EmailUrl::route('student.borrow'),
+                        actionText: 'View loans',
+                        bookTitle: $item['title'],
+                        dueDate: $item['due_date'],
+                        channels: ['database', 'mail'],
+                        sendSms: true,
+                        smsMessage: 'PGPC Library: ' . ($item['was_reserved'] ? 'Your reservation is fulfilled; ' : '') . $item['title'] . ' was borrowed. Return by ' . $item['due_date'] . '.',
+                        details: $item['details'],
+                    ))->onConnection('database')->afterCommit());
+                } catch (\Throwable $e) {
+                    Log::warning('Could not queue checkout notification: ' . $e->getMessage());
+                }
+            }
         }
 
         // Clear workstation queue state

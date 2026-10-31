@@ -33,7 +33,7 @@ class CatalogDeletionService
     public function delete(string $type, array $ids, bool $confirmed): void
     {
         $ids = $this->expandPeriodicalTitles($type, $ids);
-        DB::transaction(function () use ($type, $ids, $confirmed) {
+        $cancelledReservations = DB::transaction(function () use ($type, $ids, $confirmed) {
             if (in_array($type, ['title', 'issue'], true)) {
                 $details = BookDetail::whereIn('id', $ids)->lockForUpdate()->get();
                 if ($details->count() !== count($ids)) {
@@ -51,14 +51,14 @@ class CatalogDeletionService
             }
 
             $copyIds = $copies->modelKeys();
-            BookReservation::whereIn('book_id', $copyIds)->whereIn('reservation_status_id', [1, 2])
-                ->get()->each(function (BookReservation $reservation) {
-                    $reservation->update([
-                        'reservation_status_id' => 4,
-                        'cancelled_date' => now(),
-                        'comment' => trim(($reservation->comment ?? '') . ' [Auto-cancelled: Copy deleted]'),
-                    ]);
-                });
+            $reservations = BookReservation::whereIn('book_id', $copyIds)->whereIn('reservation_status_id', [1, 2])->get();
+            $reservations->each(function (BookReservation $reservation) {
+                $reservation->update([
+                    'reservation_status_id' => 4,
+                    'cancelled_date' => now(),
+                    'comment' => trim(($reservation->comment ?? '') . ' [Auto-cancelled: Copy deleted]'),
+                ]);
+            });
 
             foreach ($copies as $copy) {
                 $copy->delete();
@@ -78,7 +78,11 @@ class CatalogDeletionService
                         ->update(['status' => 'unavailable']);
                 }
             }
+            return $reservations;
         }, 3);
+        foreach ($cancelledReservations as $reservation) {
+            app(ReservationNotificationService::class)->statusChanged($reservation);
+        }
     }
     private function expandPeriodicalTitles(string $type, array $ids): array
     {

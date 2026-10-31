@@ -6,6 +6,7 @@ use Livewire\Component;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
 use App\Models\Student;
+use App\Notifications\Alerts;
 use App\Models\BorrowingTransaction;
 use App\Models\Librarian;
 use Illuminate\Support\Facades\DB;
@@ -87,7 +88,8 @@ class ConfirmReturn extends Component
                 'cover_image' => $detail ? $detail->cover_image : null,
                 'cover_url' => $detail ? $detail->cover_url : null,
                 'issued_date' => $t->issued_date?->format('M d, Y') ?? 'N/A',
-                'due_date' => $t->due_date?->copy()->setTimezone('Asia/Manila')->format('M d, Y h:i A') ?? 'N/A',
+                'due_date' => $t->due_date?->copy()->setTimezone('Asia/Manila')->format('M d, Y') ?? 'N/A',
+                'due_time' => $t->due_date?->copy()->setTimezone('Asia/Manila')->format('h:i A'),
                 'overdue_days' => $overdueDays,
                 'fine_amount' => $fineAmount,
             ];
@@ -116,7 +118,8 @@ class ConfirmReturn extends Component
         }
 
         try {
-            DB::transaction(function () {
+            $returnedItems = [];
+            DB::transaction(function () use (&$returnedItems) {
                 $now = Carbon::now();
                 $librarianId = auth()->user()?->librarian?->id ?? Librarian::first()?->id ?? null;
 
@@ -166,6 +169,21 @@ class ConfirmReturn extends Component
                             'updated_at' => $now,
                         ]);
                     }
+
+                    $detail = $transaction->book?->bookDetail;
+                    $returnedItems[] = [
+                        'title' => $detail?->bookData?->book_title ?? 'Returned book',
+                        'details' => [
+                            'Loan reference' => 'LOAN-' . str_pad((string) $transaction->id, 6, '0', STR_PAD_LEFT),
+                            'Accession number' => $transaction->book?->accession_number,
+                            'Call number' => $detail?->call_number,
+                            'ISBN' => $detail?->isbn,
+                            'Borrowed on' => $transaction->issued_date?->format('M d, Y'),
+                            'Returned on' => $now->copy()->setTimezone('Asia/Manila')->format('M d, Y h:i A'),
+                            'Loan type' => $transaction->borrowType?->name,
+                            'Fine assessed' => $fineAmount > 0 ? '₱' . number_format($fineAmount, 2) : 'None',
+                        ],
+                    ];
                 }
             });
         } catch (\Throwable $e) {
@@ -173,6 +191,27 @@ class ConfirmReturn extends Component
             $this->errorMessage = 'A database error occurred during return processing: ' . $e->getMessage();
             $this->dispatch('return-failed', message: $this->errorMessage);
             return;
+        }
+
+        if ($account = Student::with('account')->find($this->studentId)?->account) {
+            foreach ($returnedItems as $item) {
+                try {
+                    $account->notify((new Alerts(
+                        title: 'Book returned',
+                        message: 'Your return has been recorded by the library.',
+                        type: 'success',
+                        actionUrl: \App\Support\EmailUrl::route('student.borrow'),
+                        actionText: 'View loans',
+                        bookTitle: $item['title'],
+                        channels: ['database', 'mail'],
+                        sendSms: true,
+                        smsMessage: 'PGPC Library: ' . $item['title'] . ' return has been recorded by the library.',
+                        details: $item['details'],
+                    ))->onConnection('database')->afterCommit());
+                } catch (\Throwable $e) {
+                    Log::warning('Could not queue return notification: ' . $e->getMessage());
+                }
+            }
         }
 
         // Clean up temporary session data

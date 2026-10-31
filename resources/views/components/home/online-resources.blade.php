@@ -8,7 +8,7 @@
     $resources = [];
 
     try {
-        $jsonPath = storage_path('app/public/online_resources/list.json');
+        $jsonPath = public_path('online_resources/list.json');
 
         if (file_exists($jsonPath)) {
             $content = file_get_contents($jsonPath);
@@ -20,6 +20,17 @@
         }
     } catch (\Throwable $e) {
         $resources = [];
+    }
+
+    if (! is_array($resources) || empty($resources)) {
+        $resources = [
+            ['name' => 'ScienceDirect', 'external_url' => 'https://www.sciencedirect.com'],
+            ['name' => 'Emerald Insight', 'external_url' => 'https://www.emerald.com'],
+            ['name' => 'SpringerLink', 'external_url' => 'https://link.springer.com/'],
+            ['name' => 'JSTOR', 'external_url' => 'https://www.jstor.org/'],
+            ['name' => 'Wiley Online Library', 'external_url' => 'https://onlinelibrary.wiley.com/'],
+            ['name' => 'IEEEXplore', 'external_url' => 'https://ieeexplore.ieee.org/'],
+        ];
     }
 @endphp
 
@@ -59,7 +70,7 @@
                 @foreach ($resources as $resource)
                     @php
                         $logoFile = $resource['logo'] ?? '';
-                        $logoUrl = $logoFile ? asset('storage/online_resources/files/' . $logoFile) : null;
+                        $logoUrl = $logoFile ? asset('online_resources/files/' . $logoFile) : null;
                     @endphp
                     <x-home.online-resources-card
                         :name="$resource['name'] ?? ''"

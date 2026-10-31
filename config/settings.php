@@ -124,7 +124,7 @@ return [
     | Path to JSON repository index for external digital library resources.
     |
     */
-    'online_resources' => 'storage/public/online_resources/list.json',
+    'online_resources' => 'public/online_resources/list.json',
 
     /*
     |--------------------------------------------------------------------------

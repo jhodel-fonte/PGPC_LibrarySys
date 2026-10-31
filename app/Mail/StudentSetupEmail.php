@@ -21,6 +21,11 @@ class StudentSetupEmail extends Mailable
         return new Content(view: 'emails.template', with: [
             'title' => 'Verify your email address',
             'lines' => ['Please confirm this email address to complete your library account setup.'],
+            'details' => array_filter([
+                'Username' => $this->user->username,
+                'Email address' => $this->user->email,
+                'Student ID' => $this->user->student?->school_id_number,
+            ], fn ($value) => $value !== null && $value !== ''),
             'actionUrl' => $this->url, 'actionText' => 'Verify email', 'user' => $this->user,
         ]);
     }
