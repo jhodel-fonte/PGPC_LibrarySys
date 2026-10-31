@@ -8,7 +8,7 @@ Type=simple
 User=www-data
 Group=www-data
 WorkingDirectory=/opt/pgpc-lib
-ExecStart=/usr/bin/php /opt/pgpc-lib/artisan queue:work database --tries=3 --timeout=1800
+ExecStart=/usr/bin/php8.4 /opt/pgpc-lib/artisan queue:work database --tries=3 --timeout=1800
 Restart=always
 RestartSec=5
 TimeoutStopSec=1810

@@ -95,7 +95,9 @@ cd /opt/pgpc-lib
 sudo bash deploy/install-ubuntu.sh
 ```
 
-The installer requires Node.js 20.19+ or 22.12+ and npm for the Vite build. It
+The installer requires PHP 8.4 packages to be available in APT (on Ubuntu 24.04,
+configure a PHP 8.4 package repository first), plus Node.js 20.19+ or 22.12+
+and npm for the Vite build. It
 starts and enables the application stack. To start it later with one command:
 
 ```bash

@@ -11,6 +11,7 @@ use App\Models\Book;
 use App\Models\BookDetail;
 use App\Models\BookReservation;
 use App\Models\BorrowingTransaction;
+use App\Models\UserHistory;
 use App\Models\Fine;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -661,6 +662,7 @@ class CheckOutBook extends Component
         try {
             $borrowedItems = [];
             DB::transaction(function () use ($studentId, $bookIds, &$borrowedItems) {
+                $checkoutStudent = Student::lockForUpdate()->findOrFail($studentId);
                 $loanPeriod = (int) config('settings.library_config.loan_period', config('settings.loan_period', 5));
                 $now = Carbon::now();
                 $insideLibrary = $this->loanLocation === 'inside_library';
@@ -705,6 +707,8 @@ class CheckOutBook extends Component
                     $transaction = BorrowingTransaction::create([
                         'book_id' => $bookId,
                         'school_id' => $studentId,
+                        'program_at_issue' => $checkoutStudent->program,
+                        'year_level_at_issue' => $checkoutStudent->year_level,
                         'issued_by_id' => $librarianId,
                         'book_reservation_id' => $reservationId,
                         'borrow_type_id' => $borrowType->id,
@@ -713,6 +717,14 @@ class CheckOutBook extends Component
                         'due_date' => $dueDate,
                         'return_date' => null,
                     ]);
+                    $isbn = trim((string) $book->bookDetail?->isbn);
+                    if (! $insideLibrary && $isbn !== '') {
+                        UserHistory::upsertHighestRating(
+                            (int) $checkoutStudent->account_id,
+                            $isbn,
+                            UserHistory::RATING_BORROWED
+                        );
+                    }
                     $borrowedItems[] = [
                         'title' => $item['title'] ?? $item['book'] ?? 'Borrowed book',
                         'was_reserved' => (bool) $reservationId,
