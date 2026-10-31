@@ -96,9 +96,10 @@ class PersonalRecommendationsTest extends TestCase
         $this->assertSame([$second->id, $first->id], array_column($component->get('books'), 'id'));
         $history = UserHistory::where('user_id', $user->id)->firstOrFail();
         $this->assertSame(UserHistory::RATING_VIEW, $history->rating);
-        Http::assertSent(fn ($request) => $request['encrypter_id'] === $history->encrypter_id
+        Http::assertSent(fn ($request) => $request['user_key'] === $user->ml_user_token
             && $request['interaction']['isbn'] === $viewed->isbn
             && $request['interaction']['rating'] === UserHistory::RATING_VIEW
+            && ! isset($request['encrypter_id'])
             && ! isset($request['encrypted_book_id']));
     }
 

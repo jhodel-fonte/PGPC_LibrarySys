@@ -10,7 +10,7 @@
             $searchPlaceholder = 'No search permissions available...';
         }
     } else {
-        $searchPlaceholder = 'Search books, authors, call numbers, subjects...';
+        $searchPlaceholder = 'Describe a topic or search books, authors, subjects...';
     }
 @endphp
 

@@ -26,15 +26,16 @@ class RecommendationService
     {
         $this->lastRecommendDebug = null;
         $histories = $account->userHistories()
-            ->select(['encrypter_id', 'isbn', 'rating'])
+            ->select(['isbn', 'rating'])
             ->get();
-        $encrypterId = $histories->pluck('encrypter_id')->filter()->first();
+        $userKey = $account->ml_user_token;
         $borrowedIsbns = $histories->where('rating', 2)->pluck('isbn')
             ->map(fn ($isbn) => trim((string) $isbn))->filter()->unique()->values()->all();
+        $student = $account->student;
 
         $endpointUrl = $this->endpoint('/api/recommend');
 
-        if (! $encrypterId) {
+        if (! $userKey) {
             $this->lastRecommendDebug = [
                 'endpoint' => $endpointUrl,
                 'available' => false,
@@ -50,10 +51,14 @@ class RecommendationService
                 ->connectTimeout(1)
                 ->timeout(min((int) config('services.recommender.timeout', 30), 5))
                 ->post($endpointUrl, array_filter([
-                    'encrypter_id' => (string) $encrypterId,
+                    'user_key' => (string) $userKey,
                     'borrowed_books' => $borrowedIsbns,
+                    'student_context' => $student ? array_filter([
+                        'program' => $student->program,
+                        'year_level' => $student->year_level,
+                    ], fn ($value) => filled($value)) : null,
                     'interaction' => $viewedIsbn ? ['isbn' => $viewedIsbn, 'rating' => $rating] : null,
-                    'data' => $viewedIsbn ? ['student_id' => (string) $encrypterId, 'book_id' => $viewedIsbn, 'rating' => $rating] : null,
+                    'data' => $viewedIsbn ? ['student_id' => (string) $userKey, 'book_id' => $viewedIsbn, 'rating' => $rating] : null,
                 ], fn ($value) => $value !== null));
         } catch (ConnectionException|RequestException $exception) {
             report($exception);
@@ -150,6 +155,27 @@ class RecommendationService
         ];
 
         return UserRecommendation::storeRecommendations($account->id, $isbns);
+    }
+
+    /** Return semantically ranked catalog ISBNs; an empty list lets OPAC use its local search. */
+    public function searchBookIsbns(string $query): array
+    {
+        try {
+            $response = $this->client()->connectTimeout(1)->timeout(5)
+                ->post($this->endpoint('/api/search'), ['query' => $query, 'top_n' => 100]);
+            if (! $response->successful()) {
+                return [];
+            }
+            $results = $response->json('results');
+            if (! is_array($results)) {
+                return [];
+            }
+            return collect($results)->pluck('isbn')->filter(fn ($isbn) => is_string($isbn) && $isbn !== '')
+                ->unique()->take(100)->values()->all();
+        } catch (Throwable $exception) {
+            report($exception);
+            return [];
+        }
     }
 
     /**
