@@ -161,6 +161,16 @@ class RecommendationService
     /** Return semantically ranked catalog ISBNs; an empty list lets OPAC use its local search. */
     public function searchBookIsbns(string $query): array
     {
+        $cacheKey = 'opac:semantic-search:'.hash('sha256', $query);
+        try {
+            $cached = Cache::get($cacheKey);
+            if (is_array($cached) && $cached !== []) {
+                return $cached;
+            }
+        } catch (Throwable $exception) {
+            report($exception);
+        }
+
         try {
             $response = $this->client()->connectTimeout(1)->timeout(5)
                 ->post($this->endpoint('/api/search'), ['query' => $query, 'top_n' => 100]);
@@ -171,12 +181,23 @@ class RecommendationService
             if (! is_array($results)) {
                 return [];
             }
-            return collect($results)->pluck('isbn')->filter(fn ($isbn) => is_string($isbn) && $isbn !== '')
+            $isbns = collect($results)->pluck('isbn')->filter(fn ($isbn) => is_string($isbn) && $isbn !== '')
                 ->unique()->take(100)->values()->all();
         } catch (Throwable $exception) {
             report($exception);
             return [];
         }
+
+        if ($isbns) {
+            try {
+                // shortcut: rankings can be stale for one hour, invalidate on index refresh if needed.
+                Cache::put($cacheKey, $isbns, now()->addHour());
+            } catch (Throwable $exception) {
+                report($exception);
+            }
+        }
+
+        return $isbns;
     }
 
     /**
