@@ -8,99 +8,80 @@
     };
 @endphp
 <!-- Form Grid Container -->
-<form wire:submit.prevent="save" class="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start font-sans">
+<form wire:submit.prevent="submit" class="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start font-sans">
 
     <div class="col-span-1 lg:col-span-12 flex flex-wrap items-end justify-between gap-3">
         <div>
-            <p class="text-xs font-bold uppercase tracking-widest text-slate-500">Catalog management</p>
-            <h1 class="mt-1 text-2xl font-bold text-[#102B70] sm:text-3xl">Add a catalog item</h1>
-            <p class="mt-1 text-sm text-slate-600">Choose an item type, then enter its catalog and copy details.</p>
+            <h1 class=" text-2xl font-bold text-[#102B70] sm:text-3xl">Add a catalog item</h1>
+            <p class="mt-1 text-sm text-slate-700">Choose an item type, then enter its catalog and copy details.</p>
         </div>
         <span class="rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-semibold text-[#102B70]">{{ $itemLabel }}</span>
     </div>
 
-    <!-- Global Form Error & Validation Banner -->
-    @if($errorMessage || $errors->any())
-        <div class="col-span-1 lg:col-span-12 rounded-2xl border border-[#FECACA] bg-[#FEF2F2] p-4 md:p-5 shadow-[0_4px_20px_rgba(239,68,68,0.06)] animate-fade-in transition-all">
-            <div class="flex items-start justify-between gap-3">
-                <div class="flex items-start gap-3">
-                    <div class="flex-1 min-w-0 pt-0.5">
-                        <h4 class="text-sm font-bold text-[#B91C1C] uppercase tracking-wider">
-                            {{ $errorMessage ? 'Unable to Save '.$itemLabel : 'Error Adding '.$itemLabel }}
-                        </h4>
-                        <p class="text-sm text-[#7F1D1D] font-medium mt-1 leading-relaxed">
-                            {{ $errorMessage ?: 'Please review and correct the ' . $errors->count() . ' highlighted field(s) below before submitting.' }}
-                        </p>
-                        @if($errors->any() && !$errorMessage)
-                            <ul class="mt-2 list-disc list-inside text-sm text-[#B91C1C] font-medium space-y-0.5">
-                                @foreach($errors->all() as $err)
-                                    <li>{{ $err }}</li>
-                                @endforeach
-                            </ul>
-                        @endif
-                    </div>
-                </div>
-
-                @if($errorMessage)
-                    <button
-                        type="button"
-                        wire:click="$set('errorMessage', '')"
-                        class="text-[#EF4444] hover:text-[#B91C1C] p-1 rounded-lg transition-colors focus:outline-none shrink-0"
-                        title="Dismiss"
-                    >
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                    </button>
-                @endif
+    <fieldset class="lg:col-span-12 rounded-xl border border-slate-200 bg-white px-5 py-4 sm:px-6">
+        <legend class="sr-only">Item type</legend>
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">
+            <span class="shrink-0 text-sm font-bold text-slate-900">Item type</span>
+            <div class="grid flex-1 grid-cols-2 gap-2 sm:grid-cols-4">
+                @foreach(['book' => 'Book', 'equipment' => 'Physical Item', 'magazine' => 'Magazine', 'journal' => 'Journal'] as $kind => $label)
+                    <label class="cursor-pointer">
+                        <input type="radio" wire:model.live="catalogKind" value="{{ $kind }}" class="peer sr-only">
+                        <span class="flex min-h-11 items-center justify-center rounded-lg border border-slate-300 px-3 py-2 text-center text-sm font-semibold text-slate-900 hover:border-[#102B70] peer-checked:border-[#102B70] peer-checked:bg-[#102B70] peer-checked:text-white peer-focus-visible:ring-2 peer-focus-visible:ring-blue-500 peer-focus-visible:ring-offset-2">{{ $label }}</span>
+                    </label>
+                @endforeach
             </div>
         </div>
-    @endif
+    </fieldset>
 
     <!-- ============================================== -->
     <!-- LEFT COLUMN: Physical Copy & Visual Cover      -->
     <!-- ============================================== -->
-    <div class="lg:col-span-4 xl:col-span-4 space-y-6">
-        @include('livewire.forms.catalog-item-fields')
+    <div class="order-2 lg:col-span-4 space-y-6">
 
         <!-- 1. INITIAL PHYSICAL COPY CARD -->
-        <div class="rounded-2xl border border-[#E2E8F0] bg-white p-6 space-y-5 shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
+        <div class="rounded-2xl border border-[#E2E8F0] bg-white p-5 sm:p-6 space-y-4 shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
             <div class="flex items-center gap-3 border-b border-[#F1F5F9] pb-4">
                 <div>
                     <h2 class="text-base font-bold text-[#102B70]">{{ $isPeriodical ? $itemLabel.' Issue Copy' : $itemLabel.' Copy' }}</h2>
-                    <p class="text-xs text-slate-500 font-medium">{{ $isPeriodical ? 'Track the accession, barcode, and location of this issue copy.' : 'Track the accession, barcode, and location of this '.strtolower($itemLabel).'.' }}</p>
+                    <p class="text-xs text-slate-700 font-medium">{{ $isPeriodical ? 'Track the accession, barcode, and location of this issue copy.' : 'Track the accession, barcode, and location of this '.strtolower($itemLabel).'.' }}</p>
                 </div>
 
             </div>
 
+            <div class="space-y-1.5">
+                <label for="daily-fine" class="text-[0.9375rem] font-semibold text-slate-900">Overdue fine per calendar day (₱)</label>
+                <input id="daily-fine" type="number" min="0" step="0.01" wire:model="dailyFine" placeholder="Use library default" class="w-full h-12 rounded-lg border-slate-300 px-4 text-sm text-slate-900 placeholder-slate-600 focus:border-[#102B70] focus:ring-[#102B70]">
+                @error('dailyFine') <span class="text-xs font-semibold text-red-700">{{ $message }}</span> @enderror
+            </div>
+
             <!-- Accession Number -->
             <div class="space-y-1.5">
-                <label class="text-sm font-semibold text-[#334155]">
+                <label class="text-[0.9375rem] font-semibold text-slate-900">
                     Accession Number
                 </label>
                 <input
                     wire:model="accessionNumber"
                     type="text"
                     placeholder="Required"
-                    class="w-full h-14 px-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-400 outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all"
+                    class="w-full h-12 px-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-600 outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all"
                 >
                 @error('accessionNumber') <span class="text-xs font-semibold text-[#EF4444]">{{ $message }}</span> @enderror
             </div>
 
             <!-- Barcode with inline Generate button -->
             <div class="space-y-1.5">
-                <label class="text-sm font-semibold text-[#334155]">Barcode</label>
+                <label class="text-[0.9375rem] font-semibold text-slate-900">Barcode</label>
                 <div class="flex rounded-2xl border border-[#E2E8F0] overflow-hidden focus-within:border-[#102B70] focus-within:ring-4 focus-within:ring-[#EFF6FF] transition-all bg-white">
                     <input
                         wire:model="barcode"
                         type="text"
                         placeholder="Optional"
-                        class="w-full h-14 px-4 bg-transparent text-sm font-medium text-[#0F172A] placeholder-slate-400 outline-none border-0"
+                        class="w-full h-12 px-4 bg-transparent text-sm font-medium text-[#0F172A] placeholder-slate-600 outline-none border-0"
                     >
                     <button
                         type="button"
                         wire:click="generateBarcode"
-                        class="px-4 h-14 bg-slate-50 hover:bg-slate-100 text-[#102B70] hover:text-[#0B225E] text-xs uppercase tracking-wider font-bold border-l border-[#E2E8F0] transition-colors shrink-0 select-none flex items-center gap-1.5"
+                        class="px-4 h-12 bg-slate-50 hover:bg-slate-100 text-[#102B70] hover:text-[#0B225E] text-xs uppercase tracking-wider font-bold border-l border-[#E2E8F0] transition-colors shrink-0 select-none flex items-center gap-1.5"
                     >
                         <span>Generate</span>
                     </button>
@@ -110,11 +91,11 @@
 
             <!-- Status -->
             <div class="space-y-1.5">
-                <label class="text-sm font-semibold text-[#334155]">Status</label>
+                <label class="text-[0.9375rem] font-semibold text-slate-900">Status</label>
                 <div class="relative">
                     <select
                         wire:model="status"
-                        class="w-full h-14 px-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all appearance-none cursor-pointer"
+                        class="w-full h-12 px-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all appearance-none cursor-pointer"
                     >
                         <option value="Available">Available</option>
                         <option value="Maintenance">Maintenance</option>
@@ -127,23 +108,23 @@
 
             <!-- Location / Shelf -->
             <div class="space-y-1.5">
-                <label class="text-sm font-semibold text-[#334155]">Location / Shelf</label>
+                <label class="text-[0.9375rem] font-semibold text-slate-900">Location / Shelf</label>
                 <input
                     wire:model="location"
                     type="text"
                     placeholder="e.g. Shelf A1"
-                    class="w-full h-14 px-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-400 outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all"
+                    class="w-full h-12 px-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-600 outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all"
                 >
                 @error('location') <span class="text-xs font-semibold text-[#EF4444]">{{ $message }}</span> @enderror
             </div>
 
             <!-- Date Acquired -->
             <div class="space-y-1.5">
-                <label class="text-sm font-semibold text-[#334155]">Date Acquired</label>
+                <label class="text-[0.9375rem] font-semibold text-slate-900">Date Acquired</label>
                 <input
                     wire:model="dateAcquired"
                     type="date"
-                    class="w-full h-14 px-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all cursor-pointer"
+                    class="w-full h-12 px-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all cursor-pointer"
                 >
                 @error('dateAcquired') <span class="text-xs font-semibold text-[#EF4444]">{{ $message }}</span> @enderror
             </div>
@@ -223,7 +204,7 @@
             <div class="flex items-center gap-3 border-b border-[#F1F5F9] pb-4">
                 <div>
                     <h2 class="text-base font-bold text-[#102B70]">{{ $catalogKind === 'equipment' ? 'Item Image' : $itemLabel.' Cover' }}</h2>
-                    <p class="text-xs text-slate-500 font-medium">{{ $catalogKind === 'equipment' ? 'Upload an image of the physical item' : 'Upload a cover for this '.strtolower($itemLabel) }}</p>
+                    <p class="text-xs text-slate-700 font-medium">{{ $catalogKind === 'equipment' ? 'Upload an image of the physical item' : 'Upload a cover for this '.strtolower($itemLabel) }}</p>
                 </div>
             </div>
 
@@ -251,7 +232,7 @@
                         <div class="relative w-full rounded-2xl bg-white border border-slate-200/80 shadow-md overflow-hidden flex items-center justify-center p-2 group/preview">
                             <img
                                 :src="previewUrl"
-                                class="w-full max-h-[500px] h-auto object-contain rounded-xl transition-transform duration-300 group-hover/preview:scale-[1.01]"
+                                class="w-full max-h-[260px] h-auto object-contain rounded-xl transition-transform duration-300 group-hover/preview:scale-[1.01]"
                                 alt="Book Cover Preview"
                             >
 
@@ -285,19 +266,19 @@
 
                         <!-- Action Info Below Full Image -->
                         <div class="mt-3 flex items-center justify-between w-full px-1">
-                            <span class="text-xs font-medium text-slate-400 truncate max-w-[200px]" x-text="fileName"></span>
+                            <span class="text-xs font-medium text-slate-700 truncate max-w-[200px]" x-text="fileName"></span>
                         </div>
                     </div>
 
                     <!-- Empty Dropzone State (x-show prevents morph DOM teardown) -->
                     <div x-show="!previewUrl" class="flex flex-col items-center justify-center py-6 w-full">
-                        <div class="w-14 h-14 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm flex items-center justify-center text-slate-400 group-hover:text-[#102B70] group-hover:border-[#102B70]/30 transition-all mb-3">
+                        <div class="w-14 h-12 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm flex items-center justify-center text-slate-700 group-hover:text-[#102B70] group-hover:border-[#102B70]/30 transition-all mb-3">
                             <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
                             </svg>
                         </div>
                         <p class="text-sm font-semibold text-[#0F172A] group-hover:text-[#102B70]">Click to upload or drag & drop {{ $catalogKind === 'equipment' ? 'an item image' : 'a cover' }}</p>
-                        <p class="text-xs text-slate-500 font-medium mt-1">PNG, JPG, JPEG, WEBP up to 5MB (Auto-converted to WebP upon saving)</p>
+                        <p class="text-xs text-slate-700 font-medium mt-1">PNG, JPG, JPEG, WEBP up to 5MB (Auto-converted to WebP upon saving)</p>
                     </div>
                 </label>
             </div>
@@ -313,36 +294,43 @@
     <!-- ============================================== -->
     <!-- RIGHT COLUMN: Catalog Information              -->
     <!-- ============================================== -->
-    <div wire:key="catalog-type-fields-{{ $catalogKind }}" x-data="{ visible: false }" x-init="$nextTick(() => visible = true)" x-show="visible" x-transition.opacity.duration.200ms class="lg:col-span-8 xl:col-span-8 rounded-2xl border border-[#E2E8F0] bg-white p-5 sm:p-6 lg:p-8 space-y-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
+    <div wire:key="catalog-type-fields-{{ $catalogKind }}" x-data="{ visible: false }" x-init="$nextTick(() => visible = true)" x-show="visible" x-transition.opacity.duration.200ms class="order-1 lg:col-span-8 rounded-2xl border border-[#E2E8F0] bg-white p-5 sm:p-6 space-y-4 shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
 
         <div class="flex items-center gap-3 border-b border-[#F1F5F9] pb-4">
             <div>
                 <h2 class="text-base font-bold text-[#102B70]">{{ $catalogKind === 'equipment' ? 'Physical Item Information' : $itemLabel.' Information' }}</h2>
-                <p class="text-xs text-slate-500 font-medium">{{ $catalogKind === 'equipment' ? 'Name, description, and inventory details for this physical item' : ($isPeriodical ? 'Title, publisher, issue details, and classification' : 'Core title, authorship, identifiers, and classification') }}</p>
+                <p class="text-xs text-slate-700 font-medium">{{ $catalogKind === 'equipment' ? 'Name, description, and inventory details for this physical item' : ($isPeriodical ? 'Title, publisher, issue details, and classification' : 'Core title, authorship, identifiers, and classification') }}</p>
             </div>
         </div>
+
+        @if($isPeriodical)
+            <div class="space-y-4 border-b border-slate-200 pb-6 [&_label]:text-[0.9375rem]">
+                <h3 class="text-sm font-bold text-slate-900">Issue details</h3>
+                @include('livewire.forms.catalog-item-fields', ['onlyIssueFields' => true])
+            </div>
+        @endif
 
         @if($catalogKind === 'book')
         <!-- ISBN & ISSN Row -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div class="space-y-1.5">
-                <label class="text-sm font-semibold text-[#334155]" for="catalog-isbn">ISBN</label>
+                <label class="text-[0.9375rem] font-semibold text-slate-900" for="catalog-isbn">ISBN</label>
                 <div class="flex rounded-2xl border border-[#E2E8F0] overflow-hidden focus-within:border-[#102B70] focus-within:ring-4 focus-within:ring-[#EFF6FF] transition-all bg-white">
                     <input
                         wire:model="isbn"
                         id="catalog-isbn"
                         type="text"
                         placeholder="10 or 13-digit ISBN"
-                        class="w-full h-14 px-4 bg-transparent text-sm font-medium text-[#0F172A] placeholder-slate-400 outline-none border-0"
+                        class="w-full h-12 px-4 bg-transparent text-sm font-medium text-[#0F172A] placeholder-slate-600 outline-none border-0"
                     >
                     <button
                         type="button"
                         wire:click="lookupIsbn"
                         wire:loading.attr="disabled"
-                        class="px-4 h-14 bg-[#EFF6FF] hover:bg-[#DBEAFE] text-[#102B70] text-xs uppercase tracking-wider font-bold border-l border-[#E2E8F0] transition-colors shrink-0 select-none flex items-center gap-1.5 focus:outline-none cursor-pointer"
+                        class="px-4 h-12 bg-[#102B70] hover:bg-[#0B225E] text-white text-sm font-semibold transition-colors shrink-0 select-none flex items-center gap-1.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#102B70] cursor-pointer disabled:opacity-60"
                         title="Auto-fill details from Open Library"
                     >
-                        <svg wire:loading.remove wire:target="lookupIsbn" class="w-4 h-4 text-[#102B70]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg wire:loading.remove wire:target="lookupIsbn" class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                         </svg>
                         <span wire:loading.remove wire:target="lookupIsbn">Auto-Fill</span>
@@ -357,12 +345,12 @@
                 @endif
             </div>
             <div class="space-y-1.5">
-                <label class="text-sm font-semibold text-[#334155]">ISSN</label>
+                <label class="text-[0.9375rem] font-semibold text-slate-900">ISSN</label>
                 <input
                     wire:model="issn"
                     type="text"
                     placeholder="Optional"
-                    class="w-full h-14 px-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-400 outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all"
+                    class="w-full h-12 px-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-600 outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all"
                 >
                 @error('issn') <span class="text-xs font-semibold text-[#EF4444]">{{ $message }}</span> @enderror
             </div>
@@ -372,29 +360,32 @@
 
         <!-- Title / Item Name -->
         <div class="space-y-1.5">
-            <label class="text-sm font-semibold text-[#334155]">
+            <label class="text-[0.9375rem] font-semibold text-slate-900">
                 {{ $catalogKind === 'equipment' ? 'Item Name' : $itemLabel.' Title' }} <span class="text-[#EF4444] font-bold">*</span>
             </label>
             <input
                 wire:model="bookTitle"
                 type="text"
+                @readonly($isPeriodical && $periodicalTitleId)
                 placeholder="{{ $catalogKind === 'equipment' ? 'Enter the name of the physical item' : 'Enter the '.strtolower($itemLabel).' title' }}"
-                class="w-full h-14 px-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-400 outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all"
+                class="w-full h-12 px-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-600 outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all"
             >
             @error('bookTitle') <span class="text-xs font-semibold text-[#EF4444]">{{ $message }}</span> @enderror
         </div>
 
+        @if(!$isPeriodical || !$periodicalTitleId)
         <!-- Subtitle -->
         <div class="space-y-1.5">
-            <label class="text-sm font-semibold text-[#334155]">Subtitle</label>
+            <label class="text-[0.9375rem] font-semibold text-slate-900">Subtitle</label>
             <input
                 wire:model="subtitle"
                 type="text"
                 placeholder="Optional"
-                class="w-full h-14 px-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-400 outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all"
+                class="w-full h-12 px-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-600 outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all"
             >
             @error('subtitle') <span class="text-xs font-semibold text-[#EF4444]">{{ $message }}</span> @enderror
         </div>
+        @endif
 
         @if(!$isPeriodical && $catalogKind !== 'book')
             <div class="space-y-4 rounded-2xl">
@@ -403,19 +394,19 @@
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div class="space-y-1.5">
-                        <label class="text-sm font-semibold text-[#334155]">Manufacturer / brand</label>
-                        <input type="text" wire:model="manufacturer" placeholder="e.g. Casio" class="w-full h-14 px-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-400 outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all">
+                        <label class="text-[0.9375rem] font-semibold text-slate-900">Manufacturer / brand</label>
+                        <input type="text" wire:model="manufacturer" placeholder="e.g. Casio" class="w-full h-12 px-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-600 outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all">
                         @error('manufacturer') <span class="text-xs font-semibold text-[#EF4444]">{{ $message }}</span> @enderror
                     </div>
                     <div class="space-y-1.5">
-                        <label class="text-sm font-semibold text-[#334155]">Model number</label>
-                        <input type="text" wire:model="modelNumber" placeholder="e.g. fx-991EX" class="w-full h-14 px-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-400 outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all">
+                        <label class="text-[0.9375rem] font-semibold text-slate-900">Model number</label>
+                        <input type="text" wire:model="modelNumber" placeholder="e.g. fx-991EX" class="w-full h-12 px-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-600 outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all">
                         @error('modelNumber') <span class="text-xs font-semibold text-[#EF4444]">{{ $message }}</span> @enderror
                     </div>
                 </div>
                 <div class="space-y-1.5">
-                    <label class="text-sm font-semibold text-[#334155]">Package contents</label>
-                    <textarea wire:model="packageContents" rows="3" placeholder="List included parts, accessories, or components" class="w-full p-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-400 outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all"></textarea>
+                    <label class="text-[0.9375rem] font-semibold text-slate-900">Package contents</label>
+                    <textarea wire:model="packageContents" rows="3" placeholder="List included parts, accessories, or components" class="w-full p-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-600 outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all"></textarea>
                     @error('packageContents') <span class="text-xs font-semibold text-[#EF4444]">{{ $message }}</span> @enderror
                 </div>
             </div>
@@ -514,7 +505,7 @@
              @click.outside="isOpen = false"
         >
             <div class="flex items-center justify-between">
-                <label class="text-sm font-semibold text-[#334155]">
+                <label class="text-[0.9375rem] font-semibold text-slate-900">
                     Author <span class="text-[#EF4444] font-bold">*</span>
                 </label>
                 <button
@@ -529,7 +520,7 @@
             <!-- Author Search Input Container -->
             <div class="relative">
                 <div class="relative flex items-center">
-                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-700">
                         <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                         </svg>
@@ -545,7 +536,7 @@
                         @keydown.enter.prevent="selectHighlighted()"
                         @keydown.escape="isOpen = false"
                         placeholder="Type to search existing authors or enter a new author name..."
-                        class="w-full h-14 pl-10 pr-20 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-400 outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all"
+                        class="w-full h-12 pl-10 pr-20 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-600 outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all"
                         :class="{ 'border-[#102B70] ring-2 ring-[#EFF6FF]': selectedAuthorId }"
                     >
 
@@ -564,7 +555,7 @@
                             x-show="query && query.length > 0"
                             x-cloak
                             @click="clearSelection()"
-                            class="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                            class="p-1 rounded-lg text-slate-700 hover:text-slate-700 hover:bg-slate-100 transition-colors"
                             title="Clear input"
                         >
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -589,7 +580,7 @@
                     <!-- Matching Existing Authors -->
                     <template x-if="results.length > 0">
                         <div class="py-1">
-                            <div class="px-3.5 py-1.5 text-xs font-semibold text-slate-400 bg-slate-50 border-b border-[#F1F5F9]">
+                            <div class="px-3.5 py-1.5 text-xs font-semibold text-slate-700 bg-slate-50 border-b border-[#F1F5F9]">
                                 Existing Authors in Catalog
                             </div>
                             <template x-for="(author, index) in results" :key="typeof author.id === 'object' ? index : (author.id || ('auth-' + index))">
@@ -609,7 +600,7 @@
                                         <span x-text="author.name"></span>
                                     </div>
                                     <div class="flex items-center gap-2">
-                                        <span class="text-xs font-semibold text-slate-400 px-2 py-0.5 rounded-md bg-slate-100">Existing</span>
+                                        <span class="text-xs font-semibold text-slate-700 px-2 py-0.5 rounded-md bg-slate-100">Existing</span>
                                         <template x-if="selectedAuthorId === author.id">
                                             <svg class="w-4 h-4 text-[#102B70]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
@@ -665,21 +656,21 @@
             <!-- Optional Split First Name & Last Name (collapsible) -->
             <div x-show="showSplitFields" x-cloak class="pt-2 grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in bg-[#F8FAFC] p-4 rounded-2xl border border-[#E2E8F0]">
                 <div class="space-y-1">
-                    <label class="text-xs font-semibold text-[#334155]">Author First Name</label>
+                    <label class="text-xs font-semibold text-slate-900">Author First Name</label>
                     <input
                         wire:model="newAuthorFirstName"
                         type="text"
                         placeholder="e.g. Robert"
-                        class="w-full h-12 px-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-400 outline-none focus:border-[#102B70] focus:ring-2 focus:ring-[#EFF6FF]"
+                        class="w-full h-12 px-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-600 outline-none focus:border-[#102B70] focus:ring-2 focus:ring-[#EFF6FF]"
                     >
                 </div>
                 <div class="space-y-1">
-                    <label class="text-xs font-semibold text-[#334155]">Author Last Name</label>
+                    <label class="text-xs font-semibold text-slate-900">Author Last Name</label>
                     <input
                         wire:model="newAuthorLastName"
                         type="text"
                         placeholder="e.g. Martin"
-                        class="w-full h-12 px-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-400 outline-none focus:border-[#102B70] focus:ring-2 focus:ring-[#EFF6FF]"
+                        class="w-full h-12 px-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-600 outline-none focus:border-[#102B70] focus:ring-2 focus:ring-[#EFF6FF]"
                     >
                 </div>
             </div>
@@ -691,7 +682,7 @@
         <!-- Call Number & Classification Row -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div class="space-y-1.5">
-                <label class="text-sm font-semibold text-[#334155]">
+                <label class="text-[0.9375rem] font-semibold text-slate-900">
                     Call Number @if($catalogKind === 'book')<span class="text-[#EF4444] font-bold">*</span>@endif
                 </label>
                 <input
@@ -703,12 +694,12 @@
                     "
                     type="text"
                     placeholder="e.g. QA76.73.J38"
-                    class="w-full h-14 px-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-400 outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all"
+                    class="w-full h-12 px-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-600 outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all"
                 >
                 @error('callNumber') <span class="text-xs font-semibold text-[#EF4444]">{{ $message }}</span> @enderror
             </div>
             <div class="space-y-1.5">
-                <label class="text-sm font-semibold text-[#334155]">Classification</label>
+                <label class="text-[0.9375rem] font-semibold text-slate-900">Classification</label>
                 <input
                     wire:model.live.debounce.300ms="classification"
                     @input="
@@ -718,7 +709,7 @@
                     "
                     type="text"
                     placeholder="e.g. QA76.76 or PZ7.D153"
-                    class="w-full h-14 px-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-400 outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all"
+                    class="w-full h-12 px-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-600 outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all"
                 >
                 @error('classification') <span class="text-xs font-semibold text-[#EF4444]">{{ $message }}</span> @enderror
             </div>
@@ -737,42 +728,42 @@
         <!-- Publication Year, Copyright Year, Edition, Pages Row -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             <div class="space-y-1.5">
-                <label class="text-sm font-semibold text-[#334155]">Publication Year</label>
+                <label class="text-[0.9375rem] font-semibold text-slate-900">Publication Year</label>
                 <input
                     wire:model="publicationYear"
                     type="number"
                     placeholder="YYYY"
-                    class="w-full h-14 px-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-400 outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all"
+                    class="w-full h-12 px-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-600 outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all"
                 >
                 @error('publicationYear') <span class="text-xs font-semibold text-[#EF4444]">{{ $message }}</span> @enderror
             </div>
             <div class="space-y-1.5">
-                <label class="text-sm font-semibold text-[#334155]">Copyright Year</label>
+                <label class="text-[0.9375rem] font-semibold text-slate-900">Copyright Year</label>
                 <input
                     wire:model="copyrightYear"
                     type="number"
                     placeholder="YYYY"
-                    class="w-full h-14 px-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-400 outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all"
+                    class="w-full h-12 px-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-600 outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all"
                 >
                 @error('copyrightYear') <span class="text-xs font-semibold text-[#EF4444]">{{ $message }}</span> @enderror
             </div>
             <div class="space-y-1.5">
-                <label class="text-sm font-semibold text-[#334155]">Edition</label>
+                <label class="text-[0.9375rem] font-semibold text-slate-900">Edition</label>
                 <input
                     wire:model="edition"
                     type="text"
                     placeholder="e.g. 1st Edition"
-                    class="w-full h-14 px-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-400 outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all"
+                    class="w-full h-12 px-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-600 outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all"
                 >
                 @error('edition') <span class="text-xs font-semibold text-[#EF4444]">{{ $message }}</span> @enderror
             </div>
             <div class="space-y-1.5">
-                <label class="text-sm font-semibold text-[#334155]">Pages</label>
+                <label class="text-[0.9375rem] font-semibold text-slate-900">Pages</label>
                 <input
                     wire:model="pages"
                     type="number"
                     placeholder="e.g. 350"
-                    class="w-full h-14 px-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-400 outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all"
+                    class="w-full h-12 px-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-600 outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all"
                 >
                 @error('pages') <span class="text-xs font-semibold text-[#EF4444]">{{ $message }}</span> @enderror
             </div>
@@ -781,10 +772,12 @@
         <!-- Categories & Language Multi-Select Comboboxes Row -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <!-- Categories Searchable Multi-Select Component -->
+            @if(!$isPeriodical || !$periodicalTitleId)
             <div>
                 <livewire:components.book-manager.add-category-multi-select wire:model="selectedCategories" wire:key="book-add-categories-select" />
                 @error('selectedCategories') <span class="text-xs font-semibold text-[#EF4444] block mt-1">{{ $message }}</span> @enderror
             </div>
+            @endif
 
             <!-- Language Searchable Multi-Select Component -->
             <div>
@@ -796,34 +789,44 @@
 
         @endif
 
+        <div class="space-y-1.5">
+            <label for="resource-url" class="text-[0.9375rem] font-semibold text-slate-900">Online resource link (optional)</label>
+            <input id="resource-url" type="url" wire:model="resourceUrl" maxlength="255" placeholder="https://example.org/resource" class="w-full h-12 rounded-lg border-slate-300 px-4 text-sm text-slate-900 placeholder-slate-600 focus:border-[#102B70] focus:ring-[#102B70]">
+            @error('resourceUrl') <span class="text-xs font-semibold text-red-700">{{ $message }}</span> @enderror
+        </div>
+
+        @if(!$isPeriodical || !$periodicalTitleId)
         <!-- Book Description -->
         <div class="space-y-1.5">
-            <label class="text-sm font-semibold text-[#334155]">{{ $itemLabel }} Description</label>
+            <label class="text-[0.9375rem] font-semibold text-slate-900">{{ $itemLabel }} Description</label>
             <textarea
                 wire:model="bookDescription"
                 rows="3"
                 placeholder="{{ $catalogKind === 'equipment' ? 'Describe the item and its intended use...' : 'Write a brief summary...' }}"
-                class="w-full p-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-400 outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all"
+                class="w-full p-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-600 outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all"
             ></textarea>
             @error('bookDescription') <span class="text-xs font-semibold text-[#EF4444]">{{ $message }}</span> @enderror
         </div>
 
         <!-- Notes -->
         <div class="space-y-1.5">
-            <label class="text-sm font-semibold text-[#334155]">Notes</label>
+            <label class="text-[0.9375rem] font-semibold text-slate-900">Notes</label>
             <textarea
                 wire:model="notes"
                 rows="2"
                 placeholder="Additional notes..."
-                class="w-full p-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-400 outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all"
+                class="w-full p-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-600 outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all"
             ></textarea>
             @error('notes') <span class="text-xs font-semibold text-[#EF4444]">{{ $message }}</span> @enderror
         </div>
 
+        @endif
+    </div>
+
         <!-- Bottom Action Buttons Bar -->
-        <div class="pt-6 border-t border-[#F1F5F9] flex flex-wrap items-center justify-end gap-3">
+        <div class="order-3 col-span-1 lg:col-span-12 flex flex-wrap items-center justify-end gap-3">
             <a
-                href="{{ route((request()->is('librarian*') ? 'librarian.' : 'admin.') . 'book-management.index') }}"
+                href="{{ route(\App\Services\EmployeeRoleService::getRoutePrefix() . 'book-management.index') }}"
                 wire:navigate
                 class="px-6 h-12 rounded-2xl border border-[#E2E8F0] bg-white hover:bg-slate-50 text-slate-700 text-sm font-semibold transition-colors flex items-center justify-center focus:outline-none"
             >
@@ -835,10 +838,10 @@
                 wire:loading.attr="disabled"
                 class="px-7 h-12 rounded-2xl bg-[#102B70] hover:bg-[#0B225E] text-white text-sm font-semibold transition-all shadow-sm flex items-center gap-2 focus:outline-none disabled:opacity-60"
             >
-                <span wire:loading.remove wire:target="save" class="flex items-center gap-2">
+                <span wire:loading.remove wire:target="submit" class="flex items-center gap-2">
                     <span>Save {{ $itemLabel }}</span>
                 </span>
-                <span wire:loading.flex wire:target="save" class="items-center gap-2">
+                <span wire:loading.flex wire:target="submit" class="items-center gap-2">
                     <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -848,5 +851,27 @@
             </button>
         </div>
 
-    </div>
+
+    @if($showFeedback)
+        <div class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/60 p-4" role="dialog" aria-modal="true" aria-labelledby="catalog-feedback-title" x-data x-trap.inert.noscroll="true" x-init="$nextTick(() => $refs.feedbackAction.focus())" @if(!$successMessage) x-on:keydown.escape.window="$wire.set('showFeedback', false)" @endif>
+            <div class="my-auto w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+                @if($successMessage)
+                    <h2 id="catalog-feedback-title" class="text-xl font-bold text-[#102B70]">{{ $itemLabel }} added</h2>
+                    <p class="mt-3 text-sm leading-relaxed text-slate-700">{{ $successMessage }}</p>
+                    <div class="mt-6 flex flex-wrap justify-end gap-3">
+                        <a href="{{ route(\App\Services\EmployeeRoleService::getRoutePrefix() . 'book-management.add') }}" class="inline-flex min-h-11 items-center rounded-lg border border-slate-300 px-4 text-sm font-semibold text-[#102B70]">Add another</a>
+                        <a x-ref="feedbackAction" href="{{ route(\App\Services\EmployeeRoleService::getRoutePrefix() . 'book-management.index') }}" wire:navigate class="inline-flex min-h-11 items-center rounded-lg bg-[#102B70] px-4 text-sm font-bold text-white hover:bg-[#0B225E]">View catalog</a>
+                    </div>
+                @else
+                    <h2 id="catalog-feedback-title" class="text-xl font-bold text-[#102B70]">Unable to save {{ strtolower($itemLabel) }}</h2>
+                    <p class="mt-3 text-sm leading-relaxed text-slate-700">{{ $errorMessage ?: 'Please correct the highlighted fields and try again.' }}</p>
+                    @if($errors->any())
+                        <ul class="mt-4 max-h-48 list-disc space-y-1 overflow-y-auto pl-5 text-sm text-red-700">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>
+                    @endif
+                    <div class="mt-6 flex justify-end"><button x-ref="feedbackAction" type="button" wire:click="$set('showFeedback', false)" class="min-h-11 rounded-lg bg-[#102B70] px-4 text-sm font-bold text-white hover:bg-[#0B225E]">Return to form</button></div>
+                @endif
+            </div>
+        </div>
+    @endif
 </form>
+

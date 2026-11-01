@@ -1,3 +1,4 @@
+@unless($onlyIssueFields ?? false)
 <div class="rounded-2xl border border-slate-200 bg-white p-6 space-y-4">
     <div>
         <h2 class="text-base font-bold text-[#102B70]">Catalog item setup</h2>
@@ -24,6 +25,8 @@
         </label>
     @endif
 
+@endunless
+
     @if(in_array($catalogKind, ['magazine', 'journal'], true))
         @if(isset($periodicalTitles))
             <label class="block text-sm font-semibold">Existing title (optional)
@@ -38,7 +41,7 @@
             @error('periodicalTitleId') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
         @endif
         <label class="block text-sm font-semibold">ISSN (optional)
-            <input wire:model="issn" maxlength="15" class="mt-1 w-full rounded-lg border-slate-300">
+            <input wire:model="issn" maxlength="9" placeholder="1234-567X" class="mt-1 w-full rounded-lg border-slate-300">
         </label>
         @error('issn') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
         <div class="grid gap-3 sm:grid-cols-2">
@@ -49,10 +52,12 @@
             <label class="text-sm font-semibold">Loan period in days (optional) <input type="number" min="1" max="3650" wire:model="issueLoanDays" class="mt-1 w-full rounded-lg border-slate-300"></label>
             <label class="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" wire:model="issueBorrowable"> Allow borrowing and reservations</label>
         </div>
+        <p class="text-xs text-slate-500">Enter at least one issue identifier. Use the issue label for a month or season if the exact date is unknown.</p>
         @foreach(['issueVolume', 'issueNumber', 'issueLabel', 'issueDate', 'issueLoanDays'] as $issueField)
             @error($issueField) <p class="text-sm text-red-600">{{ $message }}</p> @enderror
         @endforeach
     @endif
+@unless($onlyIssueFields ?? false)
     <label class="block text-sm font-semibold text-slate-700">Overdue fine per calendar day (₱)
         <input type="number" min="0" step="0.01" wire:model="dailyFine" placeholder="Use library default" class="mt-1 w-full rounded-lg border-slate-300">
     </label>
@@ -63,3 +68,4 @@
     <p class="text-xs text-slate-500">Add a link to the publisher or online version of this title.</p>
     @error('resourceUrl') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
 </div>
+@endunless

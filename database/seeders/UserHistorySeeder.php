@@ -6,14 +6,28 @@ use App\Models\Account;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class UserHistorySeeder extends Seeder
 {
     public function run(): void
     {
         $accounts = Account::query()->whereHas('student')->orderBy('id')->get(['id']);
-        $isbns = DB::table('book_details')->whereNotNull('isbn')->whereRaw("TRIM(isbn) <> ''")
-            ->orderBy('id')->pluck('isbn')->map(fn ($isbn) => trim((string) $isbn))->unique()->values();
+        $sheet = IOFactory::load(resource_path('files/seeder_book_dataset.xlsx'))->getActiveSheet();
+        $pairs = [];
+        for ($row = 2; $row <= min(1001, $sheet->getHighestDataRow()); $row++) {
+            $accession = trim((string) $sheet->getCell("D{$row}")->getFormattedValue());
+            $isbn = trim((string) $sheet->getCell("C{$row}")->getFormattedValue());
+            if ($accession !== '' && $isbn !== '') {
+                $pairs[$accession][$isbn] = true;
+            }
+        }
+        $isbns = DB::table('book_details')->join('books', 'books.book_detail_id', '=', 'book_details.id')
+            ->whereIn('books.accession_number', array_keys($pairs))->whereNull('books.deleted_at')
+            ->whereNull('book_details.deleted_at')->select('books.accession_number', 'book_details.isbn')
+            ->orderBy('book_details.id')->get()
+            ->filter(fn ($book) => isset($pairs[$book->accession_number][trim((string) $book->isbn)]))
+            ->map(fn ($book) => trim($book->isbn))->unique()->values();
 
         if ($accounts->isEmpty() || $isbns->isEmpty()) {
             $this->command->warn('User history seeder skipped: accounts or catalog ISBNs are unavailable.');

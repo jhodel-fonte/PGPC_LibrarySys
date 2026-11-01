@@ -1,9 +1,10 @@
 <script>
     (function () {
-        function liveCameraScanner(wire) {
+        function liveCameraScanner(wire, autoStart = true) {
             return {
                 scanner: null,
-                isPaused: false,
+                isPaused: !autoStart,
+                enabled: autoStart,
                 isCollapsed: false,
                 hasPermission: true,
                 permissionError: false,
@@ -24,6 +25,7 @@
                 detail: wire ? wire.entangle('detail') : null,
 
                 async init() {
+                    if (!autoStart) return;
                     // Use active polling to reliably detect Html5Qrcode module regardless of SPA navigation/load timings
                     if (window.Html5Qrcode) {
                         this.startScanner();
@@ -66,6 +68,7 @@
                     } catch (_) {}
                 },
                 async startScanner() {
+                    if (!autoStart && !this.enabled) return;
                     if (this.isRequesting) return;
                     if (this.scanner && this.scanner.isScanning) {
                         this.hasPermission = true;
@@ -102,7 +105,7 @@
                             }, 1500);
 
                             this.resetTimeout = setTimeout(() => {
-                                if (!this.isPaused && !this.permissionError && wire) {
+                                if (!this.isPaused && !this.permissionError && wire && autoStart) {
                                     wire.setScanState('scanning', 'Searching for barcode or QR code...');
                                 }
                             }, 2500);
@@ -161,11 +164,16 @@
                             started = true;
                         }
 
+                        if (!autoStart && !this.enabled) {
+                            await this.cleanScannerInstance();
+                            this.isRequesting = false;
+                            return;
+                        }
                         this.hasPermission = true;
                         this.permissionError = false;
                         this.isPaused = false;
                         this.isRequesting = false;
-                        if (wire) wire.setScanState('scanning', 'Searching for barcode or QR code...');
+                        if (wire && autoStart) wire.setScanState('scanning', 'Searching for barcode or QR code...');
                         this.startInactivityTimer();
                     } catch (err) {
                         console.warn('Failed to start html5-qrcode feed:', err);
@@ -188,7 +196,7 @@
                             this.cameraErrorMsg = err.message || err.toString();
                         }
 
-                        if (wire) wire.setScanState('error', this.cameraErrorTitle);
+                        if (wire && autoStart) wire.setScanState('error', this.cameraErrorTitle);
                     }
                 },
                 toggleScanner() {
@@ -198,14 +206,14 @@
                         this.scanner.stop().then(() => {
                             this.isPaused = true;
                             this.clearInactivityTimer();
-                            if (wire) wire.setScanState('ready', 'Camera is currently paused');
+                            if (wire && autoStart) wire.setScanState('ready', 'Camera is currently paused');
                         }).catch(err => {
                             console.warn('Failed to stop html5-qrcode scanner:', err);
                         });
                     } else {
                         this.isPaused = true;
                         this.clearInactivityTimer();
-                        if (wire) wire.setScanState('ready', 'Camera is currently paused');
+                        if (wire && autoStart) wire.setScanState('ready', 'Camera is currently paused');
                     }
                 },
                 destroy() {
@@ -232,7 +240,7 @@
                     if (this.scanner && this.scanner.isScanning && !this.isPaused) {
                         this.scanner.stop().then(() => {
                             this.isPaused = true;
-                            if (wire) wire.setScanState('ready', 'Camera paused due to inactivity');
+                            if (wire && autoStart) wire.setScanState('ready', 'Camera paused due to inactivity');
                         }).catch(err => {
                             console.warn('Failed to stop scanner on inactivity:', err);
                         });

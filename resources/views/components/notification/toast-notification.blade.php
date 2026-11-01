@@ -1,6 +1,6 @@
 <div x-data="{
     toasts: [],
-    addToast(message, type = 'success', undoEvent = null, undoPayload = null, duration = null, expireEvent = null, expirePayload = null) {
+    addToast(message, type = 'success', undoEvent = null, undoPayload = null, duration = null, expireEvent = null, expirePayload = null, variant = 'solid') {
         if (!message) return;
         const id = Date.now() + Math.random();
         const toastDuration = duration ? Number(duration) : (undoEvent ? 10000 : 4000);
@@ -8,6 +8,7 @@
             id,
             message,
             type,
+            variant,
             undoEvent,
             undoPayload,
             expireEvent,
@@ -91,6 +92,7 @@
         let duration = null;
         let expireEvent = null;
         let expirePayload = null;
+        let variant = 'solid';
 
         if (typeof raw === 'string') {
             message = raw;
@@ -103,10 +105,11 @@
             duration = raw.duration || null;
             expireEvent = raw.expireEvent || null;
             expirePayload = raw.expirePayload || null;
+            variant = raw.variant === 'inverted' ? 'inverted' : 'solid';
         }
 
         if (message) {
-            addToast(message, type, undoEvent, undoPayload, duration, expireEvent, expirePayload);
+            addToast(message, type, undoEvent, undoPayload, duration, expireEvent, expirePayload, variant);
         }
     })()
 "
@@ -117,7 +120,7 @@
 @elseif(session()->has('errorMessage'))
     x-init="addToast('{{ session('errorMessage') }}', 'error')"
 @endif
-class="fixed bottom-4 left-1/2 z-[120] flex -translate-x-1/2 flex-col gap-2.5 w-[calc(100%-2rem)] max-w-md pointer-events-none md:bottom-auto md:left-auto md:right-6 md:top-6 md:translate-x-0"
+class="fixed bottom-4 left-1/2 z-[120] flex -translate-x-1/2 flex-col gap-2.5 w-[calc(100%-2rem)] max-w-lg pointer-events-none md:bottom-auto md:left-auto md:right-6 md:top-6 md:translate-x-0"
 style="display: none;"
 x-show="toasts.length > 0"
 >
@@ -138,38 +141,37 @@ x-show="toasts.length > 0"
              x-transition:leave-end="opacity-0 translate-y-2 scale-95"
              @mouseenter="pauseToast(t.id)"
              @mouseleave="resumeToast(t.id)"
-             class="pointer-events-auto relative overflow-hidden flex items-center justify-between gap-3 p-4 rounded-2xl shadow-xl border backdrop-blur-sm text-sm font-semibold transition-all select-none"
-             :class="{
-                 'bg-emerald-50/95 border-emerald-200 text-emerald-900': t.type === 'success',
-                 'bg-red-50/95 border-red-200 text-red-900': t.type === 'error' || t.type === 'danger',
-                 'bg-amber-50/95 border-amber-200 text-amber-900': t.type === 'warning',
-                 'bg-[#EFF6FF]/95 border-[#BFDBFE] text-[#102B70]': t.type === 'info'
-             }"
+             role="status" aria-live="polite"
+             class="pointer-events-auto relative flex items-start justify-between gap-3 overflow-hidden rounded-xl border px-4 py-4 shadow-lg sm:px-5"
+             :class="t.variant === 'inverted'
+                 ? { 'bg-white text-slate-900 border-emerald-300': t.type === 'success', 'bg-white text-slate-900 border-red-300': t.type === 'error' || t.type === 'danger', 'bg-white text-slate-900 border-amber-400': t.type === 'warning', 'bg-white text-slate-900 border-blue-300': t.type === 'info' }
+                 : { 'bg-emerald-800 text-white border-emerald-800': t.type === 'success', 'bg-red-800 text-white border-red-800': t.type === 'error' || t.type === 'danger', 'bg-amber-800 text-white border-amber-800': t.type === 'warning', 'bg-[#102B70] text-white border-[#102B70]': t.type === 'info' }"
+
         >
-            <div class="flex items-center gap-3 min-w-0 pr-1">
+            <div class="flex min-w-0 flex-1 items-start gap-3">
                 <!-- Icon based on type -->
                 <template x-if="t.type === 'success'">
-                    <div class="h-8 w-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
-                        <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" :class="t.variant === 'inverted' ? 'bg-emerald-100 text-emerald-800' : 'bg-white/15 text-white'">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
                     </div>
                 </template>
                 <template x-if="t.type === 'error' || t.type === 'danger'">
-                    <div class="h-8 w-8 rounded-xl bg-red-100 text-red-700 flex items-center justify-center shrink-0">
-                        <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" :class="t.variant === 'inverted' ? 'bg-red-100 text-red-800' : 'bg-white/15 text-white'">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                     </div>
                 </template>
                 <template x-if="t.type === 'warning'">
-                    <div class="h-8 w-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
-                        <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" :class="t.variant === 'inverted' ? 'bg-amber-100 text-amber-800' : 'bg-white/15 text-white'">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                     </div>
                 </template>
                 <template x-if="t.type === 'info'">
-                    <div class="h-8 w-8 rounded-xl bg-[#DBEAFE] text-[#102B70] flex items-center justify-center shrink-0">
-                        <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" :class="t.variant === 'inverted' ? 'bg-blue-100 text-[#102B70]' : 'bg-white/15 text-white'">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                     </div>
                 </template>
 
-                <span class="text-xs font-semibold leading-snug break-words" x-text="t.message"></span>
+                <span class="min-w-0 pt-1 text-[0.9375rem] font-semibold leading-6 break-words [overflow-wrap:anywhere]" x-text="t.message"></span>
             </div>
 
             <!-- Right Side Controls: Undo & Close -->
@@ -178,7 +180,7 @@ x-show="toasts.length > 0"
                     <button
                         type="button"
                         @click.stop="handleUndo(t)"
-                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-[#102B70] text-[#102B70] hover:text-white border border-[#102B70]/20 hover:border-[#102B70] active:scale-95 font-bold text-xs transition-all shadow-sm shrink-0 cursor-pointer select-none"
+                        class="inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-lg border border-[#102B70] bg-white px-3 text-sm font-bold text-[#102B70] transition-colors hover:bg-[#102B70] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#102B70]"
                         title="Undo this action"
                     >
                         <svg class="w-3.5 h-3.5 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -189,15 +191,15 @@ x-show="toasts.length > 0"
                 </template>
 
                 <!-- Close Button -->
-                <button type="button" @click="removeToast(t.id)" class="text-slate-400 hover:text-slate-700 font-bold p-1 rounded-lg transition-colors shrink-0 select-none cursor-pointer">
+                <button type="button" @click="removeToast(t.id)" aria-label="Dismiss notification" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2" :class="t.variant === 'inverted' ? 'text-slate-700 hover:bg-slate-100 focus-visible:outline-[#102B70]' : 'text-white hover:bg-white/15 focus-visible:outline-white'">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
             </div>
 
             <!-- Countdown Bar (For Undoable Toasts) -->
             <template x-if="t.undoEvent">
-                <div class="absolute bottom-0 left-0 right-0 h-1 bg-slate-200/50 rounded-b-2xl overflow-hidden pointer-events-none">
-                    <div class="h-full bg-[#102B70]/40 origin-left"
+                <div class="absolute bottom-0 left-0 right-0 h-1 overflow-hidden rounded-b-xl bg-black/10 pointer-events-none">
+                    <div class="h-full origin-left" :class="t.variant === 'inverted' ? 'bg-[#102B70]/50' : 'bg-white/70'"
                          :style="{
                              animation: 'toastCountdownProgress ' + (t.duration || 10000) + 'ms linear forwards',
                              animationPlayState: t.isPaused ? 'paused' : 'running'

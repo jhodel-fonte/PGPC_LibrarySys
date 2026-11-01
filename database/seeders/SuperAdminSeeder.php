@@ -24,6 +24,7 @@ class SuperAdminSeeder extends Seeder
                 'role_id'           => 1, // Assuming '1' is your Superadmin role ID in the 'roles' table
                 'status_id'         => 1, // Assuming '1' is an Active status ID in 'account_statuses'
                 'username'          => 'superadmin',
+                'ml_user_token'     => bin2hex(random_bytes(32)),
                 'password_hash'     => Hash::make('Admin12345'), // Change this password
                 'email'             => 'admin@admin.com',
                 'is_email_verified' => true,

@@ -85,7 +85,7 @@ class PeriodicalIssueTest extends TestCase
             if (in_array($kind, ['magazine', 'journal'], true)) {
                 $form->set('issueNumber', '12')->set('issueBorrowable', false)->set('issueLoanDays', 7);
             }
-            $form->call('save')->assertHasNoErrors()->assertRedirect();
+            $form->call('submit')->assertHasNoErrors()->assertSet('showFeedback', true);
             $detail = BookDetail::where('catalog_kind', $kind)->whereHas('bookData', fn ($q) => $q->where('book_title', 'Test '.$kind))->firstOrFail();
             $this->assertDatabaseHas('books', ['book_detail_id' => $detail->id, 'accession_number' => 'TEST-'.$kind]);
             if (in_array($kind, ['magazine', 'journal'], true)) {
@@ -94,12 +94,58 @@ class PeriodicalIssueTest extends TestCase
         }
     }
 
+    public function test_submit_shows_validation_modal_and_preserves_entered_values(): void
+    {
+        \Livewire\Livewire::test(\App\Livewire\Forms\AddBookForm::class)
+            ->set('bookTitle', 'Unfinished title')
+            ->call('submit')
+            ->assertSet('showFeedback', true)
+            ->assertSet('bookTitle', 'Unfinished title')
+            ->assertHasErrors(['accessionNumber', 'callNumber'])
+            ->assertSee('Unable to save');
+    }
+
     public function test_book_cannot_be_saved_without_an_author(): void
     {
         \Livewire\Livewire::test(\App\Livewire\Forms\AddBookForm::class)
             ->set('bookTitle', 'Missing author')->set('accessionNumber', 'NO-AUTHOR')->set('callNumber', 'TEST')
             ->call('save')->assertHasErrors(['authorSearch']);
         $this->assertDatabaseMissing('books', ['accession_number' => 'NO-AUTHOR']);
+    }
+
+    public function test_periodical_requires_issue_identifier_and_valid_issn_format(): void
+    {
+        $form = \Livewire\Livewire::test(\App\Livewire\Forms\AddBookForm::class)
+            ->set('catalogKind', 'journal')->set('bookTitle', 'Test journal')
+            ->set('accessionNumber', 'VALIDATION-1')->set('issn', 'invalid');
+        $form->call('save')->assertHasErrors(['issn', 'issueNumber']);
+        $form->set('issn', '1234-567X')->set('issueLabel', 'Spring 2026')
+            ->call('submit')->assertHasNoErrors()->assertSet('showFeedback', true);
+    }
+
+    public function test_physical_item_does_not_receive_book_metadata_defaults(): void
+    {
+        \Livewire\Livewire::test(\App\Livewire\Forms\AddBookForm::class)
+            ->set('catalogKind', 'equipment')->set('bookTitle', 'Calculator')
+            ->set('accessionNumber', 'EQUIPMENT-1')->call('submit')->assertHasNoErrors()->assertSet('showFeedback', true);
+        $detail = BookDetail::where('catalog_kind', 'equipment')->whereHas('bookData', fn ($q) => $q->where('book_title', 'Calculator'))->firstOrFail();
+        $this->assertSame('Equipment', $detail->format);
+        $this->assertSame('Unknown', $detail->publisher->name);
+        $this->assertSame('Unknown', $detail->bookData->language->lang);
+    }
+
+    public function test_selecting_existing_periodical_preserves_title_metadata_and_publisher(): void
+    {
+        $title = BookData::create(['book_title' => 'Existing journal', 'subtitle' => 'Original subtitle', 'language_id' => Language::query()->value('id')]);
+        $publisher = Publisher::firstOrCreate(['name' => 'Journal publisher']);
+        BookDetail::create(['book_data_id' => $title->id, 'catalog_kind' => 'journal', 'format' => 'Journal', 'call_number' => 'TEST', 'book_type_id' => BookType::query()->value('id'), 'publisher_id' => $publisher->id]);
+        \Livewire\Livewire::test(\App\Livewire\Forms\AddBookForm::class)
+            ->set('catalogKind', 'journal')->set('periodicalTitleId', $title->id)
+            ->assertSet('publisherId', $publisher->id)->assertDontSee('Subtitle')
+            ->set('accessionNumber', 'EXISTING-ISSUE')->set('issueLabel', 'Spring')
+            ->call('submit')->assertHasNoErrors()->assertSet('showFeedback', true);
+        $this->assertSame('Original subtitle', $title->fresh()->subtitle);
+        $this->assertDatabaseHas('book_details', ['book_data_id' => $title->id, 'publisher_id' => $publisher->id]);
     }
     public function test_catalog_filters_separate_issues_and_physical_items(): void
     {

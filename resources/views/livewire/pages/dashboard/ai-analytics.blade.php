@@ -1,301 +1,68 @@
 @php
-    $routePrefix = \App\Services\EmployeeRoleService::getRoutePrefix();
     $formatMetric = fn ($value) => $value === null ? '—' : number_format((float) $value, 4);
     $formatCount = fn ($value) => $value === null ? '—' : number_format((int) $value);
-    $formatDetail = fn ($value) => $value === null ? '—' : number_format((float) $value, 4);
+    $ranking = $latestRun?->payload['recommendation_evaluation'] ?? null;
 @endphp
 
 <div class="min-h-full bg-[#F8FAFC]">
-    <div class="mx-auto w-full max-w-[1400px] space-y-6 p-5 sm:p-6 lg:p-8">
-
-        {{-- Header --}}
-        <div class="flex flex-col gap-4 border-b border-[#E2E8F0] pb-5 sm:flex-row sm:items-end sm:justify-between">
-            <div class="min-w-0">
-                <a
-                    href="{{ route($routePrefix . 'analytics') }}"
-                    wire:navigate
-                    class="inline-flex items-center gap-1 text-xs font-semibold text-[#64748B] hover:text-[#102B70]"
-                >
-                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
-                    </svg>
-                    Analytics
-                </a>
-                <h1 class="mt-1 text-2xl font-bold tracking-tight text-[#102B70]">Machine learning evaluation</h1>
-                <p class="mt-1 text-sm text-[#64748B]">
-                    Quality of the recommendation model used by the OPAC. Each new result is saved to the history below.
-                </p>
+    <div class="mx-auto max-w-[1400px] space-y-6 p-4 sm:p-6 lg:p-8">
+        <header class="flex flex-col gap-4 border-b border-[#DDE5EF] pb-6 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+                <p class="text-xs font-bold uppercase tracking-widest text-[#64748B]">Recommendation system</p>
+                <h1 class="mt-1 text-2xl font-bold text-[#0F172A] sm:text-3xl">Evaluation results</h1>
+                <p class="mt-2 max-w-2xl text-sm text-[#475569]">Compare how each recommendation strategy ranks books and review the data behind the latest evaluation.</p>
             </div>
+            <button type="button" wire:click="refreshEvaluation" wire:loading.attr="disabled" wire:target="refreshEvaluation" class="inline-flex min-h-11 items-center justify-center rounded-lg bg-[#102B70] px-5 text-sm font-semibold text-white hover:bg-[#0B225E] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#102B70] disabled:opacity-60">
+                <span wire:loading.remove wire:target="refreshEvaluation">Refresh results</span><span wire:loading wire:target="refreshEvaluation">Refreshing…</span>
+            </button>
+        </header>
 
-            <div class="flex shrink-0 items-center gap-3">
-                <span class="inline-flex items-center gap-2 text-xs font-medium text-[#64748B]">
-                    <span @class([
-                        'h-2 w-2 rounded-full',
-                        'bg-[#3B82F6]' => $evaluation['available'],
-                        'bg-[#FCC719]' => ! $evaluation['available'] && $latestRun,
-                        'bg-[#EF4444]' => ! $evaluation['available'] && ! $latestRun,
-                    ])></span>
-                    @if($evaluation['available'])
-                        Last Updated: {{ $checkedAt->format('M j, g:i A') }}
-                    @endif
-                </span>
-                <button
-                    type="button"
-                    wire:click="refreshEvaluation"
-                    wire:loading.attr="disabled"
-                    wire:target="refreshEvaluation"
-                    class="inline-flex h-10 items-center gap-2 rounded-2xl bg-[#102B70] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#0B225E] focus:outline-none focus-visible:ring-4 focus-visible:ring-[#DBEAFE] disabled:opacity-60"
-                >
-                    <svg wire:loading.class="animate-spin" wire:target="refreshEvaluation" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
-                    </svg>
-                    Refresh
-                </button>
-            </div>
+        <div role="status" class="rounded-lg border px-4 py-3 text-sm {{ $evaluation['available'] ? 'border-[#BFDBFE] bg-[#EFF6FF] text-[#1E3A8A]' : 'border-[#FECACA] bg-[#FEF2F2] text-[#991B1B]' }}">
+            @if($evaluation['available'])
+                Service connected · checked {{ $checkedAt->format('M j, Y g:i A') }}
+            @else
+                {{ $evaluation['error'] }} @if($latestRun) Showing the most recent saved evaluation. @else No saved evaluation is available yet. @endif
+            @endif
         </div>
 
-        {{-- Service status --}}
-        @unless($evaluation['available'])
-            <div class="flex items-start gap-3 rounded-2xl border border-[#FECACA] bg-[#FEF2F2] px-4 py-3 text-sm text-[#B91C1C]" role="alert">
-                <svg class="mt-0.5 h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
-                </svg>
-                <div>
-                    <p class="font-semibold">{{ $evaluation['error'] }}</p>
-                    <p class="mt-0.5">
-                        @if($latestRun)
-                            Displaying locally saved evaluation data (latest evaluated {{ $latestRun->evaluated_at->format('M j, Y g:i A') }} UTC).
-                        @else
-                            No saved results yet. Results appear here and are saved automatically once the service responds.
-                        @endif
-                    </p>
+        @if($latestRun)
+            <section aria-labelledby="dataset-heading" class="overflow-hidden rounded-lg border border-[#DDE5EF] bg-white">
+                <div class="flex flex-wrap items-baseline justify-between gap-2 border-b border-[#E2E8F0] px-5 py-4">
+                    <div><h2 id="dataset-heading" class="font-bold text-[#0F172A]">Latest evaluation</h2><p class="mt-1 text-xs text-[#64748B]">Evaluated {{ $latestRun->evaluated_at->format('M j, Y g:i A') }}</p></div>
+                    <span class="text-xs font-semibold text-[#64748B]">Training and held-out interactions</span>
                 </div>
-            </div>
-        @endunless
-
-        {{-- Evaluation dataset --}}
-        @php
-            $details = $evaluationDetails;
-            $actual = $details['actual'] ?? [];
-            $predicted = $details['predicted'] ?? [];
-        @endphp
-        @if($latestRun && ($details['training_interactions'] !== null || $details['test_interactions'] !== null))
-            <section class="rounded-2xl border border-[#E2E8F0] bg-white p-5 sm:p-6">
-                <div class="flex flex-col gap-1 border-b border-[#E2E8F0] pb-4 sm:flex-row sm:items-baseline sm:justify-between">
-                    <div>
-                        <h2 class="text-sm font-bold text-[#0F172A]">Evaluation dataset</h2>
-                        <p class="mt-1 text-xs text-[#64748B]">The data volume and score distributions used for the latest model evaluation.</p>
-                    </div>
-                    @if($details['rating_scale'])
-                        <span class="text-xs font-semibold text-[#64748B]">
-                            Rating scale: {{ implode('–', $details['rating_scale']) }}
-                        </span>
-                    @endif
-                </div>
-
-                <div class="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
-                    @foreach([
-                        ['Training interactions', $details['training_interactions'], 'records used to train'],
-                        ['Training users', $details['training_users'], 'users used to train'],
-                        ['Test interactions', $details['test_interactions'], 'held-out records'],
-                        ['Test users', $details['test_users'], 'held-out users'],
-                    ] as [$label, $value, $caption])
-                        <div class="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] px-4 py-3">
-                            <p class="text-[11px] font-semibold uppercase tracking-wide text-[#64748B]">{{ $label }}</p>
-                            <p class="mt-1 text-xl font-bold tabular-nums text-[#102B70]">{{ $formatCount($value) }}</p>
-                            <p class="mt-0.5 text-[11px] text-[#94A3B8]">{{ $caption }}</p>
-                        </div>
+                <dl class="grid grid-cols-2 divide-x divide-y divide-[#E2E8F0] sm:grid-cols-4 sm:divide-y-0">
+                    @foreach(['Training interactions' => 'training_interactions', 'Training users' => 'training_users', 'Test interactions' => 'test_interactions', 'Test users' => 'test_users'] as $label => $key)
+                        <div class="px-5 py-4"><dt class="text-xs text-[#64748B]">{{ $label }}</dt><dd class="mt-1 text-xl font-bold tabular-nums text-[#102B70]">{{ $formatCount($evaluationDetails[$key] ?? null) }}</dd></div>
                     @endforeach
-                </div>
-
-                @if($actual || $predicted)
-                    <div class="admin-mobile-table-scroll mt-5 overflow-x-auto">
-                        <table class="admin-mobile-table min-w-full text-left text-xs">
-                            <thead class="border-b border-[#E2E8F0] text-[10px] font-semibold uppercase tracking-wide text-[#64748B]">
-                                <tr>
-                                    <th class="px-3 py-2">Score distribution</th>
-                                    <th class="px-3 py-2 text-right">Count</th>
-                                    <th class="px-3 py-2 text-right">Mean</th>
-                                    <th class="px-3 py-2 text-right">Median</th>
-                                    <th class="px-3 py-2 text-right">Min</th>
-                                    <th class="px-3 py-2 text-right">Max</th>
-                                    <th class="px-3 py-2 text-right">Std. deviation</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-[#E2E8F0] text-[#334155]">
-                                @foreach([['Actual ratings', $actual], ['Predicted ratings', $predicted]] as [$label, $stats])
-                                    @if($stats)
-                                        <tr>
-                                            <th data-label="Score distribution" class="whitespace-nowrap px-3 py-3 font-semibold text-[#0F172A]">{{ $label }}</th>
-                                            <td data-label="Count" class="px-3 py-3 text-right tabular-nums">{{ $formatCount($stats['count'] ?? null) }}</td>
-                                            <td data-label="Mean" class="px-3 py-3 text-right tabular-nums">{{ $formatDetail($stats['mean'] ?? null) }}</td>
-                                            <td data-label="Median" class="px-3 py-3 text-right tabular-nums">{{ $formatDetail($stats['median'] ?? null) }}</td>
-                                            <td data-label="Minimum" class="px-3 py-3 text-right tabular-nums">{{ $formatDetail($stats['min'] ?? null) }}</td>
-                                            <td data-label="Maximum" class="px-3 py-3 text-right tabular-nums">{{ $formatDetail($stats['max'] ?? null) }}</td>
-                                            <td data-label="Std. deviation" class="px-3 py-3 text-right tabular-nums">{{ $formatDetail($stats['standard_deviation'] ?? null) }}</td>
-                                        </tr>
-                                    @endif
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                @endif
+                </dl>
             </section>
         @endif
 
-        {{-- Evaluation trend --}}
-        @if($evaluationTrend['labels'] && $evaluationTrend['series'])
-            <section class="rounded-2xl border border-[#E2E8F0] bg-white p-5 sm:p-6">
-                <div class="mb-4">
-                    <h2 class="text-sm font-bold text-[#0F172A]">Evaluation trend</h2>
-                    <p class="mt-1 text-xs text-[#64748B]">How the saved model metrics changed over time.</p>
-                </div>
-                <x-widget.graph.main
-                    :series="$evaluationTrend['series']"
-                    :labels="$evaluationTrend['labels']"
-                    :colors="['#102B70', '#3B82F6', '#D39B00', '#64748B', '#0F766E', '#B45309']"
-                    line
-                    compact
-                    grid
-                    legend
-                    height="280"
-                />
+        @include('livewire.pages.dashboard.partials.ml-recommendation-evaluation', ['evaluation' => $ranking])
+        @if(!is_array($ranking) || !is_array($ranking['strategies'] ?? null))
+            <section class="rounded-lg border border-dashed border-[#CBD5E1] bg-white px-5 py-10 text-center" role="status">
+                <h2 class="font-semibold text-[#0F172A]">No strategy comparison yet</h2>
+                <p class="mt-2 text-sm text-[#64748B]">Run the updated recommender evaluation, then refresh this page.</p>
             </section>
         @endif
 
-        {{-- Current metrics --}}
-        <section wire:loading.class="opacity-60" wire:target="refreshEvaluation" class="transition-opacity">
-            @if($metrics->isEmpty())
-                <div class="rounded-2xl border border-dashed border-[#CBD5E1] bg-white px-6 py-12 text-center">
-                    <p class="text-sm font-semibold text-[#0F172A]">No evaluation data</p>
-                    <p class="mt-1 text-sm text-[#64748B]">Start the recommendation service, then select Refresh.</p>
-                </div>
-            @else
-                <div class="mb-3 flex items-baseline justify-between gap-3">
-                    <h2 class="text-sm font-bold text-[#0F172A]">Current results</h2>
-                    @if($comparisonRun)
-                        <p class="text-xs text-[#64748B]">Change compared with {{ $comparisonRun->evaluated_at->format('M j, Y g:i A') }}</p>
-                    @endif
-                </div>
+        @include('livewire.pages.dashboard.partials.ml-signal-evaluation', ['signals' => $latestRun?->payload['signal_evaluation'] ?? null])
 
-                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                    @foreach($metrics as $metric)
-                        <article class="flex flex-col rounded-2xl border border-[#E2E8F0] bg-white p-5">
-                            <div class="flex items-start justify-between gap-3">
-                                <div class="min-w-0">
-                                    <h3 class="text-xs font-semibold uppercase tracking-wide text-[#334155]">{{ $metric['label'] }}</h3>
-                                    @if($metric['better'])
-                                        <p class="mt-0.5 text-[11px] text-[#94A3B8]">{{ $metric['better'] === 'lower' ? 'Lower is better' : 'Higher is better' }}</p>
-                                    @endif
-                                </div>
-
-                                @if($metric['delta'] !== null)
-                                    <span @class([
-                                        'inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums',
-                                        'bg-[#EFF6FF] text-[#102B70]' => $metric['trend'] === 'better',
-                                        'bg-[#FEF2F2] text-[#B91C1C]' => $metric['trend'] === 'worse',
-                                        'bg-[#F8FAFC] text-[#64748B]' => $metric['trend'] === 'neutral',
-                                    ])>
-                                        @if($metric['delta'] > 0) ▲ @elseif($metric['delta'] < 0) ▼ @endif
-                                        {{ $metric['delta'] == 0 ? 'No change' : number_format(abs($metric['delta']), 4) }}
-                                    </span>
-                                @endif
-                            </div>
-
-                            <p class="mt-3 text-3xl font-bold tabular-nums text-[#102B70]">{{ $formatMetric($metric['value']) }}</p>
-                            <p class="mt-1 text-xs leading-5 text-[#64748B]">{{ $metric['description'] }}</p>
-
-                            <div class="mt-auto pt-4">
-                                @if($metric['sparkline'])
-                                    <svg viewBox="0 0 120 32" preserveAspectRatio="none" class="h-8 w-full" role="img" aria-label="{{ $metric['label'] }} trend across saved runs">
-                                        <polyline
-                                            points="{{ $metric['sparkline'] }}"
-                                            fill="none"
-                                            stroke="#102B70"
-                                            stroke-width="1.5"
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            vector-effect="non-scaling-stroke"
-                                        />
-                                    </svg>
-                                @else
-                                    <p class="text-[11px] text-[#94A3B8]">Trend appears after two saved runs.</p>
-                                @endif
-                            </div>
-                        </article>
-                    @endforeach
-                </div>
-            @endif
-        </section>
-
-        {{-- History --}}
-        <section class="overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white">
-            <div class="flex flex-col gap-1 border-b border-[#E2E8F0] px-5 py-4 sm:flex-row sm:items-baseline sm:justify-between">
-                <h2 class="text-sm font-bold text-[#0F172A]">Evaluation history</h2>
-                <p class="text-xs text-[#64748B]">Synced from the recommender's persistent evaluation log (newest first) and saved locally for offline access.</p>
-                <p class="text-xs text-[#64748B]">Note: Historical records and offline fallback metrics are soft data snapshots and may be inaccurate if the model has been updated.</p>
-            </div>
-
+        <section class="overflow-hidden rounded-lg border border-[#DDE5EF] bg-white" aria-labelledby="history-heading">
+            <div class="border-b border-[#E2E8F0] px-5 py-4"><h2 id="history-heading" class="font-bold text-[#0F172A]">Evaluation history</h2><p class="mt-1 text-xs text-[#64748B]">Previous saved runs, newest first.</p></div>
             @if($history->isEmpty())
-                <div class="px-6 py-12 text-center">
-                    <p class="text-sm font-semibold text-[#0F172A]">No history yet</p>
-                    <p class="mt-1 text-sm text-[#64748B]">The first result is saved as soon as the recommendation service responds.</p>
-                </div>
+                <p class="px-5 py-8 text-sm text-[#64748B]">No evaluation runs have been saved yet.</p>
             @else
-                <div class="admin-mobile-table-scroll overflow-x-auto">
-                    <table class="admin-mobile-table min-w-full text-left text-sm">
-                        <thead class="bg-[#F8FAFC] text-[11px] font-semibold uppercase tracking-wide text-[#334155]">
-                            <tr>
-                                <th scope="col" class="whitespace-nowrap px-5 py-3">Evaluated</th>
-                                <th scope="col" class="whitespace-nowrap px-4 py-3 text-right">Data</th>
-                                @foreach($metricColumns as $label => $column)
-                                    <th scope="col" class="whitespace-nowrap px-4 py-3 text-right">{{ $label }}</th>
-                                @endforeach
-                                <th scope="col" class="whitespace-nowrap px-5 py-3 text-right">Last confirmed</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-[#E2E8F0]">
-                            @foreach($history as $run)
-                                <tr wire:key="ml-run-{{ $run->id }}" class="hover:bg-[#F8FAFC]">
-                                    <td data-label="Evaluated" class="whitespace-nowrap px-5 py-3"><span>
-                                        <span class="font-semibold text-[#0F172A]">{{ $run->evaluated_at->format('M j, Y') }}</span>
-                                        <span class="ml-1 text-[#64748B]">{{ $run->evaluated_at->format('g:i A') }}</span>
-                                        @if($latestRun && $run->is($latestRun))
-                                            <span class="ml-2 rounded-full bg-[#FCC719]/20 px-2 py-0.5 text-[10px] font-bold uppercase text-[#0F172A]">Latest</span>
-                                        @endif
-                                    </span></td>
-                                    @php($runDetails = $run->evaluationDetails())
-                                    <td data-label="Data" class="whitespace-nowrap px-4 py-3 text-right text-xs tabular-nums text-[#64748B]"><span>
-                                        {{ $formatCount($runDetails['training_interactions']) }} train
-                                        <span class="text-[#CBD5E1]">·</span>
-                                        {{ $formatCount($runDetails['test_interactions']) }} test
-                                    </span></td>
-                                    @foreach($metricColumns as $label => $column)
-                                        <td data-label="{{ $label }}" class="whitespace-nowrap px-4 py-3 text-right tabular-nums text-[#334155]">{{ $formatMetric($run->{$column}) }}</td>
-                                    @endforeach
-                                    <td data-label="Last confirmed" class="whitespace-nowrap px-5 py-3 text-right text-xs text-[#64748B]"><span>
-                                        {{ ($run->last_checked_at ?? $run->evaluated_at)->format('M j, g:i A') }}
-                                        <span class="text-[#94A3B8]">· {{ $run->times_checked }} {{ \Illuminate\Support\Str::plural('check', $run->times_checked) }}</span>
-                                    </span></td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-
-                @if($history->hasPages())
-                    <div class="border-t border-[#E2E8F0] px-5 py-3">
-                        {{ $history->links('components.widget.cursor-pagination') }}
-                    </div>
-                @endif
+                <div class="overflow-x-auto"><table class="min-w-full text-left text-sm">
+                    <thead class="bg-[#F8FAFC] text-xs text-[#475569]"><tr><th scope="col" class="px-5 py-3">Evaluated</th><th scope="col" class="px-4 py-3 text-right">Training / test</th>@foreach($metricColumns as $label => $column)<th scope="col" class="whitespace-nowrap px-4 py-3 text-right">{{ $label }}</th>@endforeach</tr></thead>
+                    <tbody class="divide-y divide-[#E2E8F0]">@foreach($history as $run)
+                        @php($runDetails = $run->evaluationDetails())
+                        <tr wire:key="ml-run-{{ $run->id }}"><th scope="row" class="whitespace-nowrap px-5 py-3 font-semibold text-[#0F172A]">{{ $run->evaluated_at->format('M j, Y g:i A') }}</th><td class="whitespace-nowrap px-4 py-3 text-right text-[#64748B]">{{ $formatCount($runDetails['training_interactions']) }} / {{ $formatCount($runDetails['test_interactions']) }}</td>@foreach($metricColumns as $label => $column)<td class="px-4 py-3 text-right tabular-nums text-[#334155]">{{ $formatMetric($run->{$column}) }}</td>@endforeach</tr>
+                    @endforeach</tbody>
+                </table></div>
+                @if($history->hasPages())<div class="border-t border-[#E2E8F0] px-5 py-3">{{ $history->links('components.widget.cursor-pagination') }}</div>@endif
             @endif
         </section>
     </div>
-
-    <script>
-        console.log('[ML API Evaluation]', @js($evaluation));
-        window.addEventListener('ml-api-evaluation', (event) => {
-            console.log('[ML API Evaluation (Refreshed)]', event.detail?.result ?? event.detail);
-        });
-    </script>
 </div>

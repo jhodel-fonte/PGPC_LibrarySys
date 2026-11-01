@@ -193,6 +193,11 @@ class StudentDetail extends Component
         abort_unless(\App\Services\EmployeeRoleService::canManageFines(auth()->user()), 403);
         $fine = $this->student?->fines->firstWhere('id', $fineId);
         abort_unless($fine && $fine->fine_status === 'unpaid', 404);
+        if ($fine->fineType?->name === 'Overdue') {
+            $prefix = \App\Services\EmployeeRoleService::getRoutePrefix();
+            $this->redirect(route($prefix . 'circulation-desk.fine-payments', ['student' => $this->student->id, 'fine' => $fineId]), navigate: true);
+            return;
+        }
         $this->paymentFineId = $fineId;
     }
 
@@ -206,6 +211,7 @@ class StudentDetail extends Component
         }
 
         abort_unless($this->student && $this->paymentFineId, 404);
+        abort_if($this->student->fines->firstWhere('id', $this->paymentFineId)?->fineType?->name === 'Overdue', 403);
         try {
             app(\App\Services\FineService::class)->confirmPayment($this->paymentFineId, $this->student->id, $librarian);
             $this->paymentFineId = null;

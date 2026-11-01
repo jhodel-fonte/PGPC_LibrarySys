@@ -389,7 +389,7 @@ class EditBookForm extends Component
             'newAuthorFirstName' => 'nullable|string|max:100',
 
             'isbn' => 'nullable|string|max:15',
-            'issn' => 'nullable|string|max:15',
+            'issn' => ['nullable', 'regex:/^\d{4}-?\d{3}[\dXx]$/'],
             'resourceUrl' => ['nullable', 'url:http,https', 'max:255'],
             'callNumber' => ($this->catalogKind === 'book' ? 'required' : 'nullable').'|string|max:30',
             'classification' => 'nullable|string|max:30',
@@ -412,6 +412,7 @@ class EditBookForm extends Component
             'accessionNumber.unique' => 'This Accession Number is already in use.',
             'bookTitle.required' => 'The Book Title is required.',
             'callNumber.required' => 'The Call Number is required.',
+            'issn.regex' => 'Enter an ISSN in the format 1234-567X.',
         ]);
 
         try {

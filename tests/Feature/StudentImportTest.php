@@ -41,6 +41,9 @@ class StudentImportTest extends TestCase
         (new ProcessStudentImport($import->id))->handle();
         $row = $import->rows()->where('status', 'imported')->firstOrFail();
         $this->assertDatabaseHas('students', ['school_id_number' => 'IMP-100', 'first_name' => 'Jane', 'last_name' => 'Doe']);
+        $account = Account::findOrFail($row->account_id);
+        $this->assertSame('IMP-100', $account->username);
+        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('doeimp-100', $account->password_hash));
         $this->assertSame('pending', $row->email_status);
         Queue::assertPushed(SendStudentImportInvitation::class);
         (new SendStudentImportInvitation($row->id))->handle();

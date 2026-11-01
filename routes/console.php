@@ -2,10 +2,23 @@
 
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use Symfony\Component\Process\Process;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
+
+Artisan::command('local:start', function () {
+    foreach (['npm run build', 'npm exec --no -- concurrently --kill-others "php artisan serve" "php artisan queue:work"'] as $command) {
+        $process = Process::fromShellCommandline($command, base_path())->setTimeout(null);
+        $process->run(fn ($type, $output) => $this->output->write($output));
+        if (! $process->isSuccessful()) {
+            return $process->getExitCode() ?: 1;
+        }
+    }
+
+    return 0;
+})->purpose('Build assets and start the local server and queue worker');
 
 Artisan::command('sms:send {phone : Target mobile number (e.g. 09171234567)} {message? : SMS message text} {--queue : Queue the SMS for background worker}', function (\App\Services\SmsService $smsService) {
     $phone = (string) $this->argument('phone');

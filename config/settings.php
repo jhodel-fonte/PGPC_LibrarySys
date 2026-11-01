@@ -241,7 +241,7 @@ return [
         'username' => [
             // Strategy: 'school_id' (e.g. 23-1234), 'id', 'email', or custom pattern '{id}'
             'strategy' => env('DEFAULT_ACCOUNT_USERNAME_STRATEGY', 'school_id'),
-            'case' => 'lowercase', // 'lowercase', 'uppercase', or 'original'
+            'case' => 'original', // 'lowercase', 'uppercase', or 'original'
             'fallback' => 'email', // fallback attribute if primary ID is not available
         ],
 

@@ -5,20 +5,24 @@
 
 @php
     $faqs = [];
-
-    try {
-        $jsonPath = storage_path('app/public/faq.json');
-
-        if (file_exists($jsonPath)) {
-            $content = file_get_contents($jsonPath);
-
-            if ($content !== false) {
-                $decoded = json_decode($content, true);
-                $faqs = $decoded['faqs'] ?? (is_array($decoded) ? $decoded : []);
-            }
+    foreach ([storage_path('app/public/faq.json'), resource_path('data/faq.json')] as $jsonPath) {
+        if (!is_readable($jsonPath)) {
+            continue;
         }
-    } catch (\Throwable $e) {
-        $faqs = [];
+
+        $decoded = json_decode(file_get_contents($jsonPath), true);
+        $items = is_array($decoded) ? ($decoded['faqs'] ?? $decoded) : null;
+        if (!is_array($items) || !array_is_list($items)) {
+            continue;
+        }
+
+        $faqs = array_values(array_filter($items, fn ($item) =>
+            is_array($item) && is_string($item['question'] ?? null) && trim($item['question']) !== ''
+            && is_string($item['answer'] ?? null) && trim($item['answer']) !== ''
+        ));
+        if ($items === [] || $faqs !== []) {
+            break;
+        }
     }
 
     $totalFaqs = count($faqs);
@@ -65,7 +69,7 @@
                 <!-- Left Column Stack -->
                 <div class="space-y-3.5 sm:space-y-4">
                     @foreach ($col1 as $index => $faq)
-                        @php $faqId = $faq['id'] ?? ('col1_' . $index); @endphp
+                        @php $faqId = 'col1_' . $index; @endphp
                         <div
                             class="rounded-2xl border border-[#DCE5F0] bg-white transition-all duration-200 overflow-hidden shadow-xs hover:border-[#163B7A]/30"
                             :class="{ 'border-[#163B7A]/40 ring-1 ring-[#163B7A]/15 shadow-sm': isOpen('{{ $faqId }}') }"
@@ -78,7 +82,7 @@
                                 :aria-expanded="isOpen('{{ $faqId }}') ? 'true' : 'false'"
                             >
                                 <div class="flex items-center gap-3 pr-3">
-                                    @if (!empty($faq['id']))
+                                    @if (is_scalar($faq['id'] ?? null) && $faq['id'] !== '')
                                         <span class="text-[12.5px] font-bold text-[#5D769D] tabular-nums shrink-0">
                                             {{ $faq['id'] }}
                                         </span>
@@ -116,7 +120,7 @@
                 <!-- Right Column Stack -->
                 <div class="space-y-3.5 sm:space-y-4">
                     @foreach ($col2 as $index => $faq)
-                        @php $faqId = $faq['id'] ?? ('col2_' . $index); @endphp
+                        @php $faqId = 'col2_' . $index; @endphp
                         <div
                             class="rounded-2xl border border-[#DCE5F0] bg-white transition-all duration-200 overflow-hidden shadow-xs hover:border-[#163B7A]/30"
                             :class="{ 'border-[#163B7A]/40 ring-1 ring-[#163B7A]/15 shadow-sm': isOpen('{{ $faqId }}') }"
@@ -129,7 +133,7 @@
                                 :aria-expanded="isOpen('{{ $faqId }}') ? 'true' : 'false'"
                             >
                                 <div class="flex items-center gap-3 pr-3">
-                                    @if (!empty($faq['id']))
+                                    @if (is_scalar($faq['id'] ?? null) && $faq['id'] !== '')
                                         <span class="text-[12.5px] font-bold text-[#5D769D] tabular-nums shrink-0">
                                             {{ $faq['id'] }}
                                         </span>

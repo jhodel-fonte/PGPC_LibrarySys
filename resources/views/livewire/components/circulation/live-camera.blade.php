@@ -1,13 +1,20 @@
 <div
     wire:ignore.self
-    x-data="liveCameraScanner($wire)"
+    x-data="liveCameraScanner($wire, @js($autoStart))"
     @start-camera.window="
         isCollapsed = false;
+        enabled = true;
         if (isPaused) {
             toggleScanner();
         } else if (permissionError) {
             startScanner();
         }
+    "
+    @stop-camera.window="
+        enabled = false;
+        isPaused = true;
+        clearInactivityTimer();
+        if (!isRequesting) cleanScannerInstance();
     "
     @collapse-camera.window="isCollapsed = true"
     @expand-camera.window="isCollapsed = false"
@@ -27,7 +34,9 @@
 
         <div class="flex items-center gap-2">
             <!-- Dynamic Status Badge inside Header -->
-            @if($state === 'ready')
+            @if(!$autoStart)
+                <span class="text-xs font-semibold uppercase tracking-wider" :class="isPaused ? 'text-[#64748B]' : 'text-[#15803D]'" x-text="isPaused ? 'Paused' : 'Scanning'"></span>
+            @elseif($state === 'ready')
                 <div class="flex items-center gap-1.5">
                     <span class="text-xs font-semibold text-[#64748B] uppercase tracking-wider">Paused</span>
                 </div>

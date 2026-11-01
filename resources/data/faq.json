@@ -1,0 +1,34 @@
+{
+    "faqs": [
+        {
+            "id": "01",
+            "question": "How do I search for a book in the library catalog?",
+            "answer": "Use the OPAC Search to find books and other library resources by title, author, subject, or keyword."
+        },
+        {
+            "id": "02",
+            "question": "How do I know if a book is available?",
+            "answer": "Open the book's catalog record to check its current availability and copy status."
+        },
+        {
+            "id": "03",
+            "question": "How do I reserve a book?",
+            "answer": "Sign in to your library account, open an available resource, and select the reservation option."
+        },
+        {
+            "id": "04",
+            "question": "How can I check my borrowed books and due dates?",
+            "answer": "Go to My Account to view your active loans, due dates, borrowing history, and reservations."
+        },
+        {
+            "id": "05",
+            "question": "Where can I access e-journals and online resources?",
+            "answer": "Visit the E-Resources section to browse the academic journals, databases, and other digital resources provided by the library."
+        },
+        {
+            "id": "06",
+            "question": "What should I do if I forget my password?",
+            "answer": "Select Forgot password? on the login page and follow the instructions sent to your registered email address."
+        }
+    ]
+}
