@@ -81,6 +81,7 @@ Route::middleware(['auth', 'verified', 'role:Admin'])->prefix('admin')->name('ad
             Route::get('/return/confirm', \App\Livewire\Pages\Dashboard\ConfirmReturn::class)->name('return.confirm');
             Route::get('/borrow', \App\Livewire\Pages\Dashboard\CheckOutBook::class)->name('borrow');
             Route::get('/borrowed-books', \App\Livewire\Pages\Dashboard\BorrowedList::class)->name('borrowed-books');
+            Route::get('/fine-payments', \App\Livewire\Pages\Dashboard\ProcessFinePayment::class)->name('fine-payments');
             Route::get('/reservations', \App\Livewire\Pages\Reservation\AdminDashboard::class)->name('reservations');
         });
 
@@ -129,6 +130,8 @@ Route::middleware(['auth', 'verified', 'role:Librarian,Head Librarian,Admin'])->
             Route::get('/borrowed-books', \App\Livewire\Pages\Dashboard\BorrowedList::class)->name('borrowed-books');
             Route::get('/reservations', \App\Livewire\Pages\Reservation\AdminDashboard::class)->name('reservations');
         });
+
+        Route::get('/circulation-desk/fine-payments', \App\Livewire\Pages\Dashboard\ProcessFinePayment::class)->name('circulation-desk.fine-payments')->middleware('permission:manage_fines,manage_circulation');
 
         Route::get('/reservations', \App\Livewire\Pages\Reservation\AdminDashboard::class)->name('reservations')->middleware('permission:manage_circulation,view_circulation');
 

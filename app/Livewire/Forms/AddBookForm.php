@@ -108,12 +108,16 @@ class AddBookForm extends Component
         if (! $value || ! in_array($this->catalogKind, ['magazine', 'journal'], true)) {
             return;
         }
-        $detail = BookDetail::where('book_data_id', $value)->where('catalog_kind', $this->catalogKind)->with('bookData')->first();
+        $detail = BookDetail::where('book_data_id', $value)->where('catalog_kind', $this->catalogKind)->with(['bookData', 'publisher'])->first();
         if ($detail?->bookData) {
             $this->bookTitle = $detail->bookData->book_title;
             $this->issn = $detail->issn ?? '';
             $this->resourceUrl = $detail->url ?? '';
             $this->callNumber = $detail->call_number ?? '';
+            $this->classification = $detail->classification ?? '';
+            $this->publisherId = $detail->publisher_id;
+            $this->publisherName = $detail->publisher?->name ?? '';
+            $this->selectedPublisherName = $this->publisherName;
         }
     }
 
@@ -672,11 +676,27 @@ class AddBookForm extends Component
         }
     }
 
+    public bool $showFeedback = false;
+
+    public function submit(): void
+    {
+        if ($this->successMessage !== '') {
+            return;
+        }
+
+        try {
+            $this->save();
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $this->setErrorBag($e->validator->errors());
+        }
+
+        $this->showFeedback = $this->successMessage !== '' || $this->errorMessage !== '' || $this->getErrorBag()->any();
+    }
+
     public function save()
     {
         if (auth()->check() && !auth()->user()->can('create', Book::class)) {
             $this->errorMessage = 'Unauthorized action. You do not have permission to add catalog books.';
-            $this->dispatch('toast', message: $this->errorMessage, type: 'error');
             return;
         }
 
@@ -704,7 +724,7 @@ class AddBookForm extends Component
             'dailyFine' => 'nullable|numeric|min:0|max:999999.99',
             'periodicalTitleId' => 'nullable|integer|exists:book_datas,id',
             'issueVolume' => 'nullable|string|max:50',
-            'issueNumber' => 'nullable|string|max:50',
+            'issueNumber' => (in_array($this->catalogKind, ['magazine', 'journal'], true) ? 'required_without_all:issueVolume,issueLabel,issueDate' : 'nullable').'|string|max:50',
             'issueLabel' => 'nullable|string|max:255',
             'issueDate' => 'nullable|date',
             'issueBorrowable' => 'boolean',
@@ -719,7 +739,7 @@ class AddBookForm extends Component
             'newAuthorFirstName' => 'nullable|string|max:100',
 
             'isbn' => 'nullable|string|max:15',
-            'issn' => 'nullable|string|max:15',
+            'issn' => ['nullable', 'regex:/^\d{4}-?\d{3}[\dXx]$/'],
             'resourceUrl' => ['nullable', 'url:http,https', 'max:255'],
             'callNumber' => ($this->catalogKind === 'book' ? 'required' : 'nullable').'|string|max:30',
             'classification' => 'nullable|string|max:30',
@@ -741,6 +761,8 @@ class AddBookForm extends Component
             'accessionNumber.unique' => 'This Accession Number is already in use.',
             'bookTitle.required' => 'The title or item name is required.',
             'callNumber.required' => 'The Call Number is required.',
+            'issueNumber.required_without_all' => 'Enter a volume, issue number, issue label, or publication date.',
+            'issn.regex' => 'Enter an ISSN in the format 1234-567X.',
         ]);
 
         if ($this->catalogKind === 'book' && !$hasAuthorId && !$hasAuthorSearch && !$hasNewNames) {
@@ -750,9 +772,9 @@ class AddBookForm extends Component
         try {
             DB::transaction(function () {
                 // 1. Resolve or Create Languages
-                $languageNames = !empty($this->selectedLanguages)
+                $languageNames = $this->catalogKind === 'equipment' ? ['Unknown'] : (!empty($this->selectedLanguages)
                     ? array_unique(array_filter(array_map('trim', $this->selectedLanguages)))
-                    : [trim($this->language) ?: 'English'];
+                    : [trim($this->language) ?: 'English']);
 
                 $languageIds = [];
                 $primaryLanguage = null;
@@ -841,7 +863,7 @@ class AddBookForm extends Component
                 if (!$pub) {
                     $pubName = trim($this->publisherName);
                     if (empty($pubName)) {
-                        $pub = Publisher::firstOrCreate(['name' => 'Independent / Unknown']);
+                        $pub = Publisher::firstOrCreate(['name' => $this->catalogKind === 'equipment' ? 'Unknown' : 'Independent / Unknown']);
                     } else {
                         $pub = Publisher::firstOrCreate(['name' => $pubName]);
                     }
@@ -925,7 +947,7 @@ class AddBookForm extends Component
                     'copyright_year' => $this->copyrightYear ?: $this->publicationYear,
                     'edition' => trim($this->edition) ?: null,
                     'pages' => $this->pages,
-                    'format' => in_array($this->catalogKind, ['magazine', 'journal'], true) ? ucfirst($this->catalogKind) : 'Paperback',
+                    'format' => $this->catalogKind === 'book' ? 'Paperback' : ucfirst($this->catalogKind),
                     'book_type_id' => $bookTypeId,
                     'call_number' => trim($this->callNumber),
                     'classification' => trim($this->classification) ?: null,
@@ -967,13 +989,10 @@ class AddBookForm extends Component
                 }
             });
 
-            session()->flash('successMessage', 'Catalog item "' . $this->bookTitle . '" registered successfully.');
-            $prefix = request()->is('librarian*') ? 'librarian.' : 'admin.';
-            return $this->redirect(route($prefix . 'book-management.index'), navigate: true);
+            $this->successMessage = 'Catalog item "' . $this->bookTitle . '" registered successfully.';
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             $this->errorMessage = 'Please review and fix the highlighted fields before submitting.';
-            $this->dispatch('toast', message: 'Form validation failed. Please check highlighted errors.', type: 'warning');
             throw $e;
         } catch (\Illuminate\Database\QueryException $e) {
             Log::error('Database error registering book: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
@@ -1003,11 +1022,9 @@ class AddBookForm extends Component
                 $this->errorMessage = 'A database error occurred while saving the book. Please try again.';
             }
 
-            $this->dispatch('toast', message: $this->errorMessage, type: 'error');
         } catch (\Throwable $e) {
             Log::error('Failed to register book: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
             $this->errorMessage = 'An unexpected error occurred: ' . $e->getMessage();
-            $this->dispatch('toast', message: 'Failed to save book record: ' . $e->getMessage(), type: 'error');
         }
     }
 

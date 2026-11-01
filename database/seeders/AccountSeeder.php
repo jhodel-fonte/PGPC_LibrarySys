@@ -23,6 +23,7 @@ class AccountSeeder extends Seeder
                 'role_id' => 4, // Patron / Student
                 'status_id' => 1, // Active
                 'username' => "student{$i}",
+                'ml_user_token' => bin2hex(random_bytes(32)),
                 'password_hash' => Hash::make('Student123!'),
                 'email' => "student{$i}@school.edu.ph",
                 'is_email_verified' => true,
@@ -42,6 +43,7 @@ class AccountSeeder extends Seeder
                 'role_id' => $roleId,
                 'status_id' => 1, // Active
                 'username' => "staff{$num}",
+                'ml_user_token' => bin2hex(random_bytes(32)),
                 'password_hash' => Hash::make('Staff123!'),
                 'email' => "staff{$num}@school.edu.ph",
                 'is_email_verified' => true,

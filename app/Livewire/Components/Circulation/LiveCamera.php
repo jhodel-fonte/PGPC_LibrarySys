@@ -6,6 +6,7 @@ use Livewire\Component;
 
 class LiveCamera extends Component
 {
+    public bool $autoStart = true;
     public $state = 'ready'; // 'ready', 'scanning', 'success_member', 'success_book', 'error'
     public $message = 'Scan a barcode or QR code';
     public $detail = '';

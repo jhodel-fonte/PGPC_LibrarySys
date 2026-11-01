@@ -15,6 +15,7 @@ class FinePayment extends Model
         'received_by_id',
         'payment_date',
         'payment_amount',
+        'receipt_number',
         'note',
     ];
 

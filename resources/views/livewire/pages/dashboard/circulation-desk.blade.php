@@ -37,19 +37,25 @@
                 </a>
             @endif
 
-            <a href="{{ $borrowedBooksRoute }}" wire:navigate class="group flex flex-col rounded-2xl border border-[#D5E2F0] bg-white p-5 shadow-sm transition hover:border-[#9CB2D4] hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#2563EB]/25 sm:min-h-[280px] sm:p-6 lg:min-h-[360px] lg:p-8">
-                <span class="flex h-12 w-12 items-center justify-center rounded-xl bg-[#E8F2FF] text-[#102B70] sm:h-20 sm:w-20 lg:h-24 lg:w-24" aria-hidden="true">
-                    <svg class="h-9 w-9" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2m6-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm10 10v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></svg>
-                </span>
-                <h2 class="mt-3 text-lg sm:mt-5 sm:text-xl lg:text-2xl font-bold text-[#102B70]">Active Borrowers</h2>
-                <p class="mt-2 flex-1 text-sm leading-relaxed text-[#52627F]">Find current loans and check their due dates.</p>
-                <span class="mt-3 sm:mt-5 inline-flex min-h-11 items-center justify-center rounded-xl border border-[#CBD5E1] bg-white px-4 text-sm font-bold text-[#102B70] group-hover:bg-[#F1F5F9]">View borrowers</span>
-            </a>
+            <div class="grid grid-cols-1 gap-4">
+                <a href="{{ route($prefix . 'circulation-desk.reservations') }}" wire:navigate class="group flex min-w-0 flex-col rounded-2xl border border-[#D5E2F0] bg-white p-4 shadow-sm transition hover:border-[#9CB2D4] hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#2563EB]/25 min-h-[160px] sm:p-5">
+                    <h2 class="text-base font-bold text-[#102B70] sm:text-lg">Reservations</h2>
+                    <p class="mt-2 flex-1 text-sm leading-relaxed text-[#52627F]">Review requests and manage pickups.</p>
+                    <span class="mt-4 text-sm font-bold text-[#102B70]">View reservations <span aria-hidden="true">&rarr;</span></span>
+                </a>
+                @if(\App\Services\EmployeeRoleService::canManageFines())
+                    <a href="{{ route($prefix . 'circulation-desk.fine-payments') }}" wire:navigate class="group flex min-w-0 flex-col rounded-2xl border border-[#D5E2F0] bg-white p-4 shadow-sm transition hover:border-[#9CB2D4] hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#2563EB]/25 min-h-[160px] sm:p-5">
+                        <h2 class="text-base font-bold text-[#102B70] sm:text-lg">Process Fine Payment</h2>
+                        <p class="mt-2 flex-1 text-sm leading-relaxed text-[#52627F]">Record a cashier receipt for a returned item.</p>
+                        <span class="mt-4 text-sm font-bold text-[#102B70]">Process payment <span aria-hidden="true">&rarr;</span></span>
+                    </a>
+                @endif
+            </div>
         </div>
 
-        <a href="{{ route($prefix . 'circulation-desk.reservations') }}" wire:navigate class="mt-4 flex min-h-16 items-center justify-between gap-4 rounded-2xl border border-[#D5E2F0] bg-white px-5 py-4 text-[#102B70] shadow-sm transition hover:border-[#9CB2D4] hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#2563EB]/25">
-            <span><strong class="block text-base">Reservations</strong><span class="block text-sm font-normal text-[#52627F]">Review requests and manage pickups.</span></span>
-            <span class="shrink-0 text-sm font-bold">View reservations <span aria-hidden="true">&rarr;</span></span>
+        <a href="{{ $borrowedBooksRoute }}" wire:navigate class="mt-4 flex min-h-16 items-center justify-between gap-4 rounded-2xl border border-[#D5E2F0] bg-white px-5 py-4 text-[#102B70] shadow-sm transition hover:border-[#9CB2D4] hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#2563EB]/25">
+            <span><strong class="block text-base">Active Borrowers</strong><span class="block text-sm font-normal text-[#52627F]">Find current loans and check their due dates.</span></span>
+            <span class="shrink-0 text-sm font-bold">View borrowers <span aria-hidden="true">&rarr;</span></span>
         </a>
 
         <section class="mt-7" aria-labelledby="circulation-summary-title">
@@ -63,3 +69,4 @@
         </section>
     </div>
 </section>
+
