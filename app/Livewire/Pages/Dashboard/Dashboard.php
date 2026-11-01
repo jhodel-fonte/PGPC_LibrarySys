@@ -291,7 +291,6 @@ class Dashboard extends Component
     {
         $trendsData = $this->getBorrowingTrendsData();
         $categoryData = $this->getCategoryDonutData();
-        $activityData = $this->getMonthlyActivityData();
 
         // Top Borrowed Book Titles
         $topBorrowings = DB::table('borrowing_transactions')
@@ -303,9 +302,10 @@ class Dashboard extends Component
             ->limit(5)
             ->get();
 
+        $bookDataById = BookData::with(['bookDetails.books'])->whereIn('id', $topBorrowings->pluck('book_data_id'))->get()->keyBy('id');
         $mostBorrowedTitles = collect();
         foreach ($topBorrowings as $row) {
-            $bookData = BookData::with(['bookDetails.books'])->find($row->book_data_id);
+            $bookData = $bookDataById->get($row->book_data_id);
             if ($bookData) {
                 $bookData->borrowing_transactions_count = $row->borrows;
                 $mostBorrowedTitles->push($bookData);
@@ -313,11 +313,6 @@ class Dashboard extends Component
         }
 
         return view('livewire.pages.dashboard.index', [
-            'kpiMetrics' => $this->getKpiMetrics(),
-            'overdueItems' => BorrowingTransaction::whereNull('return_date')
-                ->where('due_date', '<', now())
-                ->count(),
-            'pendingReservations' => BookReservation::where('reservation_status_id', 1)->count(),
             'currentBorrowers' => BorrowingTransaction::with(['student.account', 'book.bookDetail.bookData'])
                 ->whereNull('return_date')
                 ->orderBy('issued_date', 'desc')
@@ -329,8 +324,6 @@ class Dashboard extends Component
             'categoryDonutSeries' => $categoryData['series'],
             'categoryDonutLabels' => $categoryData['labels'],
             'categoryDonutTotal' => $categoryData['total'],
-            'monthlyActivitySeries' => $activityData['series'],
-            'monthlyActivityLabels' => $activityData['labels'],
         ]);
     }
 }

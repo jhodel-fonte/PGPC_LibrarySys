@@ -16,7 +16,7 @@ class EnsureStudentIsVerified
     {
         $user = $request->user();
 
-        if ($user && method_exists($user, 'isStudent') && $user->isStudent() && ! $user->isApprovedStudent()) {
+        if ($user && method_exists($user, 'isStudent') && $user->isStudent() && ($user->student?->contact_verification_required || ! $user->isApprovedStudent())) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,

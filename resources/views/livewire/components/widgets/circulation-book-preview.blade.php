@@ -105,7 +105,7 @@
                             </svg>
                             <span class="font-medium text-[#475569]">Due Date</span>
                         </div>
-                        <span class="font-bold text-sm text-[#000000]">{{ $bookData['due_date'] ?? 'N/A' }}</span>
+                        <span class="font-bold text-sm text-[#000000]">{{ $mode === 'check-out' ? 'See borrow summary' : ($bookData['due_date'] ?? 'N/A') }}</span>
                     </div>
                 </div>
 

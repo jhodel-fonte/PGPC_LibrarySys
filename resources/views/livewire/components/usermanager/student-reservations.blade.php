@@ -10,11 +10,11 @@
     <div class="rounded-2xl border border-[#E2E8F0] bg-white p-4 sm:p-6 lg:p-7 shadow-[0_4px_20px_rgba(16,43,112,0.03)] space-y-5">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-3">
             <div>
-                <div class="flex items-center gap-2">
+                <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                     <h3 class="text-lg sm:text-xl font-bold text-[#102B70]">Active Reservations</h3>
                     @if($activeReservations->count() > 0)
-                        <span class="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-[#EFF6FF] text-[#102B70] border border-[#DBEAFE]">
-                            {{ $activeReservations->count() }} Active
+                        <span class="text-sm font-semibold text-slate-600">
+                            {{ $activeReservations->count() }} active
                         </span>
                     @endif
                 </div>
@@ -44,49 +44,49 @@
                         $rAuthors = $rData?->authors?->map(fn($a) => $a->first_name . ' ' . $a->last_name)->join(', ') ?? 'Unknown Author';
                         $rCover = $rDetail?->cover_url ?: asset('images/' . config('settings.book_covers.default', 'book-cover.webp'));
                         $rStatusId = (int) $res->reservation_status_id;
-                        $rDue = $res->due_date ? \Carbon\Carbon::parse($res->due_date) : null;
+                        $rDue = $res->due_date?->copy()->setTimezone('Asia/Manila');
                         $rIsDueSoon = $rDue && $rDue->diffInDays(now()) <= 1;
                     @endphp
-                    <div class="rounded-2xl border border-slate-200 bg-[#F8FAFC]/60 p-3 sm:p-4 flex flex-col justify-between gap-4 hover:border-[#102B70]/40 transition-colors">
+                    <div class="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 flex flex-col gap-4">
                         <div class="flex items-start gap-3 sm:gap-4">
                             <img
                                 src="{{ $rCover }}"
                                 alt="{{ $rTitle }}"
-                                class="h-28 w-18 rounded-lg object-cover shadow-xs border border-slate-200 shrink-0"
+                                class="h-24 w-16 sm:h-28 sm:w-20 rounded-md object-cover border border-slate-200 shrink-0"
                                 onerror="this.src='{{ asset('images/book-cover.webp') }}'"
                             >
                             <div class="space-y-1 min-w-0 flex-1">
                                 <div class="flex flex-wrap items-start justify-between gap-2">
-                                    <span class="font-mono text-xs font-bold text-[#102B70]">
+                                    <span class="text-xs font-semibold text-slate-600">
                                         #RES-{{ str_pad($res->id, 5, '0', STR_PAD_LEFT) }}
                                     </span>
                                     @if($rStatusId === 1)
-                                        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-1.5 shrink-0">
-                                            <span class="h-2 w-2 rounded-full bg-amber-500 animate-pulse"></span>
+                                        <span class="text-xs font-semibold text-amber-800 flex items-center gap-1.5">
+
                                             Pending Approval
                                         </span>
                                     @elseif($rStatusId === 2)
-                                        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1.5 shrink-0">
-                                            <span class="h-2 w-2 rounded-full bg-blue-600"></span>
+                                        <span class="text-xs font-semibold text-blue-800 flex items-center gap-1.5">
+
                                             Ready for Pickup
                                         </span>
                                     @endif
                                 </div>
 
-                                <h4 class="text-base font-bold text-[#0F172A] line-clamp-1 leading-snug" title="{{ $rTitle }}">
+                                <h4 class="text-base font-bold text-[#0F172A] leading-snug break-words" title="{{ $rTitle }}">
                                     {{ $rTitle }}
                                 </h4>
-                                <p class="text-sm text-slate-500 truncate font-medium">By {{ $rAuthors }}</p>
+                                <p class="text-sm text-slate-600 leading-relaxed break-words">By {{ $rAuthors }}</p>
 
-                                <div class="pt-1 text-xs text-slate-500 font-mono space-y-0.5">
-                                    <div><span class="text-slate-400">Accession:</span> {{ $rBook?->accession_number ?: 'N/A' }}</div>
-                                    <div><span class="text-slate-400">Location:</span> {{ $rBook?->location ?: 'Main Library' }}</div>
+                                <div class="pt-1 text-xs text-slate-600 space-y-1 break-words">
+                                    <div><span class="font-semibold">Accession:</span> {{ $rBook?->accession_number ?: 'N/A' }}</div>
+                                    <div><span class="font-semibold">Location:</span> {{ $rBook?->location ?: 'Main Library' }}</div>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Pickup Window Banner -->
-                        <div class="p-3 rounded-xl border {{ $rIsDueSoon ? 'border-amber-200 bg-amber-50/70' : 'border-slate-200 bg-white' }} flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between text-sm">
+                        <div class="pt-3 border-t border-slate-200 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm">
                             <div class="flex items-center gap-2">
                                 <svg class="w-4 h-4 {{ $rIsDueSoon ? 'text-amber-600' : 'text-slate-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                 <span class="font-medium text-slate-700">Claim Deadline:</span>
@@ -97,21 +97,21 @@
                         </div>
 
                         <!-- Card Actions -->
-                        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between pt-1 border-t border-slate-100">
+                        <div class="flex flex-wrap items-center gap-2 mt-auto">
                             <a
-                                href="{{ route('student.reservations.confirmation', $res->id) }}"
+                                href="{{ $isProfile ? route('student.reservations.confirmation', ['reservation' => str_pad((string) $res->id, 5, '0', STR_PAD_LEFT)]) : route(auth()->user()->isAdmin() ? 'admin.reservations' : 'librarian.reservations', ['search' => $res->id]) }}"
                                 wire:navigate
-                                class="text-sm font-bold text-[#102B70] hover:underline flex items-center gap-1.5"
+                                class="min-h-11 px-4 rounded-lg bg-[#102B70] text-white hover:bg-[#0B225E] text-sm font-semibold inline-flex items-center justify-center gap-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#102B70]"
                             >
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                                <span>View Slip</span>
+                                <span>{{ $isProfile ? 'View Slip' : 'View Reservation' }}</span>
                             </a>
 
                             <button
                                 type="button"
                                 wire:click="cancelReservation({{ $res->id }})"
                                 wire:confirm="Are you sure you want to cancel this reservation? The held copy will be released."
-                                class="text-sm font-bold text-rose-600 hover:text-rose-800 hover:underline cursor-pointer"
+                                class="min-h-11 px-4 rounded-lg border border-slate-300 bg-white text-sm font-semibold text-slate-700 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#102B70]"
                             >
                                 Cancel Hold
                             </button>

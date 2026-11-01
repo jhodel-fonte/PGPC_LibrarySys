@@ -770,7 +770,7 @@ class AddBookForm extends Component
         }
 
         try {
-            DB::transaction(function () {
+            \App\Services\AuditTrail::transaction('Catalog entry created', function () {
                 // 1. Resolve or Create Languages
                 $languageNames = $this->catalogKind === 'equipment' ? ['Unknown'] : (!empty($this->selectedLanguages)
                     ? array_unique(array_filter(array_map('trim', $this->selectedLanguages)))
@@ -847,12 +847,12 @@ class AddBookForm extends Component
                 }
 
                 if (!$existingPeriodicalTitle && !empty($authorIds)) {
-                    $bookData->authors()->sync(array_unique($authorIds));
+                    \App\Services\AuditTrail::syncRelationship($bookData, 'authors', array_unique($authorIds));
                 }
 
                 // 4. Sync Categories
                 if (!$existingPeriodicalTitle && !empty($this->selectedCategories)) {
-                    $bookData->categories()->sync($this->selectedCategories);
+                    \App\Services\AuditTrail::syncRelationship($bookData, 'categories', $this->selectedCategories);
                 }
 
                 // 5. Resolve Publisher
@@ -985,7 +985,7 @@ class AddBookForm extends Component
 
                 // 11. Sync Multiple Languages to Physical Book Copy (via language_books pivot)
                 if (!empty($languageIds)) {
-                    $book->languages()->sync(array_unique($languageIds));
+                    \App\Services\AuditTrail::syncRelationship($book, 'languages', array_unique($languageIds));
                 }
             });
 

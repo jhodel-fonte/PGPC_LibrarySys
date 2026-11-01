@@ -17,6 +17,8 @@ return [
     'otp' => [
         'length' => 6,
         'expiry' => 10, // in minutes
+        'max_attempts' => 5,
+        'lockout_seconds' => 600,
     ],
 
     'defaults' => [

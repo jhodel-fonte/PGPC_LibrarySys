@@ -42,11 +42,12 @@ class SendSmsJob implements ShouldQueue
 
         if (!$result['success']) {
             // If it's a configuration issue (token missing or disabled), don't endlessly retry
-            if (in_array($result['status_code'], [200, 401, 422], true)) {
+            if (($result['response']['simulated'] ?? false) || in_array($result['status_code'], [401, 422], true)) {
                 Log::warning('[SendSmsJob] SMS was not dispatched due to configuration or validation.', [
                     'phone_number' => $this->phoneNumber,
                     'error' => $result['error'],
                 ]);
+                $this->fail(new RuntimeException('iProgSMS delivery failed: ' . ($result['error'] ?? 'Unknown error')));
                 return;
             }
 

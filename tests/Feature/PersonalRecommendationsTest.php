@@ -21,6 +21,31 @@ class PersonalRecommendationsTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_reservation_page_shows_ranked_recommendations_and_searches_the_full_catalog(): void
+    {
+        $user = Account::factory()->create(['role_id' => 4]);
+        $first = $this->catalogBook('1111111111', 'First recommendation');
+        $second = $this->catalogBook('2222222222', 'Second recommendation');
+        $this->catalogBook('3333333333', 'Another catalog book');
+        \App\Models\UserRecommendation::storeRecommendations($user->id, [$second->isbn, $first->isbn]);
+
+        $page = Livewire::actingAs($user)->test(\App\Livewire\Pages\Reservation\Index::class);
+        $page->assertSeeInOrder(['Second recommendation', 'First recommendation'])->assertDontSee('Another catalog book');
+        $page->set('search', 'Another catalog book')->assertSee('Search results')->assertSee('Another catalog book')->assertDontSee('First recommendation');
+        $page->call('showRecommendations')->assertSee('Recommended for you')->assertSee('First recommendation');
+    }
+
+    public function test_reservation_page_keeps_saved_recommendations_when_refresh_fails(): void
+    {
+        $user = Account::factory()->create(['role_id' => 4]);
+        $book = $this->catalogBook('4444444444', 'Saved recommendation');
+        \App\Models\UserRecommendation::storeRecommendations($user->id, [$book->isbn], now()->subDays(2));
+        Http::fake(['*' => Http::response([], 503)]);
+
+        Livewire::actingAs($user)->test(\App\Livewire\Pages\Reservation\Index::class)
+            ->call('refreshRecommendations')->assertSee('Saved recommendation')->assertSee('Recommended for you');
+    }
+
     public function test_missing_viewed_isbn_does_not_use_stale_recommendations_or_call_api(): void
     {
         $user = Account::factory()->create(['role_id' => 4]);

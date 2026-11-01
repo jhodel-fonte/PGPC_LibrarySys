@@ -13,6 +13,13 @@ class Student extends Model
 {
     use HasFactory, SoftDeletes, Searchable;
 
+    protected static function booted(): void
+    {
+        static::updating(function (self $student) {
+            if ($student->isDirty('contact_num')) $student->phone_verified_at = null;
+        });
+    }
+
     /**
      * Get the indexable data array for Scout.
      */
@@ -39,6 +46,8 @@ class Student extends Model
         'middle_name',
         'last_name',
         'contact_num',
+        'phone_verified_at',
+        'contact_verification_required',
         'date_of_birth',
         'gender',
         'image_url',

@@ -1,18 +1,18 @@
 <div class="student-page min-w-0 w-full min-h-full bg-[#eef3f7] text-base text-slate-800">
-    <div class="mx-auto w-full max-w-[1600px] p-3 sm:p-4 lg:p-6 space-y-5">
+    <div class="mx-auto w-full max-w-[1360px] space-y-5 px-3 py-4 sm:px-6 lg:px-8 lg:py-6">
         
         <!-- Page Header -->
-        <div class="bg-white rounded-2xl border border-[#E2E8F0] shadow-[0_1px_2px_rgba(15,23,42,0.04),0_1px_3px_rgba(15,23,42,0.03)] p-5 lg:p-6">
+        <div>
             <div class="student-page-heading flex flex-col justify-between gap-4">
                 <div>
-                    <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 leading-tight">My Circulation & Borrowing</h1>
-                    <p class="text-base text-slate-500 mt-1.5">
+                    <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-[#102B70]">My Circulation & Borrowing</h1>
+                    <p class="mt-1 text-base font-medium text-slate-500">
                         Track your currently borrowed books, upcoming due dates, complete borrowing archive, and library records.
                     </p>
                 </div>
                 
                 <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-                        <a href="{{ route('opac.index') }}" class="h-11 w-full px-5 bg-[#102B70] hover:bg-[#0B225E] text-white text-sm font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-xs shrink-0 sm:w-auto">
+                    <a href="{{ route('opac.index') }}" class="h-11 w-full px-5 bg-[#102B70] hover:bg-[#0B225E] text-white text-base font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shrink-0 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#EFF6FF] sm:w-auto">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
@@ -22,7 +22,7 @@
             </div>
 
             <!-- Quick Metric Summary Strip -->
-            <div class="grid grid-cols-2 xl:grid-cols-4 gap-3 mt-6 pt-5 border-t border-slate-100">
+            <div class="grid grid-cols-2 xl:grid-cols-4 gap-3 mt-5">
                 <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-100">
                     <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Currently Borrowed</p>
                     <p class="text-xl sm:text-2xl font-bold text-slate-900 mt-0.5">{{ $activeCount }} <span class="text-sm text-slate-500 font-normal">/ {{ config('settings.library_config.max_loan_limit', 3) }} books</span></p>

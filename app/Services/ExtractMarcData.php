@@ -576,7 +576,7 @@ class ExtractMarcData
                             ]);
 
                             if ($existingBookDetail->bookData && $existingBookDetail->bookData->language_id) {
-                                $book->languages()->sync([$existingBookDetail->bookData->language_id]);
+                                \App\Services\AuditTrail::syncRelationship($book, 'languages', [$existingBookDetail->bookData->language_id]);
                             }
                         }
 
@@ -639,13 +639,13 @@ class ExtractMarcData
                 // 3. Authors
                 $authorIds = $this->resolveAuthorIds($record);
                 if (!$sharedTitle && !empty($authorIds)) {
-                    $bookData->authors()->sync(array_unique($authorIds));
+                    \App\Services\AuditTrail::syncRelationship($bookData, 'authors', array_unique($authorIds));
                 }
 
                 // 4. Categories from subjects / dewey
                 $categoryIds = $this->resolveCategoryIds($record);
                 if (!$sharedTitle && !empty($categoryIds)) {
-                    $bookData->categories()->sync(array_unique($categoryIds));
+                    \App\Services\AuditTrail::syncRelationship($bookData, 'categories', array_unique($categoryIds));
                 }
 
                 // 5. Publisher
@@ -720,7 +720,7 @@ class ExtractMarcData
                         'date_acquired' => Carbon::now()->toDateString(),
                     ]);
 
-                    $book->languages()->sync([$language->id]);
+                    \App\Services\AuditTrail::syncRelationship($book, 'languages', [$language->id]);
                 }
 
                 DB::commit();

@@ -119,7 +119,7 @@ class ConfirmReturn extends Component
 
         try {
             $returnedItems = [];
-            DB::transaction(function () use (&$returnedItems) {
+            \App\Services\AuditTrail::transaction('Books returned', function () use (&$returnedItems) {
                 $now = Carbon::now();
                 $librarianId = auth()->user()?->librarian?->id ?? Librarian::first()?->id ?? null;
 
@@ -156,7 +156,7 @@ class ConfirmReturn extends Component
                     // Generate overdue fine record if applicable
                     $fineAmount = $transaction->isInsideLibrary() ? 0 : $this->getFineAmount($transaction->due_date, $transaction->book?->bookDetail);
                     if ($fineAmount > 0) {
-                        DB::table('fines')->insert([
+                        \App\Models\Fine::create([
                             'borrowing_transaction_id' => $transaction->id,
                             'student_id' => $this->studentId,
                             'fine_type_id' => $overdueFineTypeId,

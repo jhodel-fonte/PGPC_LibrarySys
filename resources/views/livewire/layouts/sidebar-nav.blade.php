@@ -53,6 +53,12 @@
             @endif
         </nav>
 
+        @if($isStudent)
+            <div class="shrink-0 px-3 pb-6">
+                @include('livewire.components.navigation-bar.student-guide')
+            </div>
+        @endif
+
     </aside>
 
     <!-- Custom Scrollbar Styles for the Sidebar -->

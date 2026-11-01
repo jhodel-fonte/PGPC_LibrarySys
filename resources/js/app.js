@@ -1,3 +1,5 @@
+import notificationCenter from './notification-center';
+window.notificationCenter = notificationCenter;
 import { Html5Qrcode } from 'html5-qrcode';
 import { saveQrImage } from './qr-image';
 window.saveQrImage = saveQrImage;

@@ -43,7 +43,7 @@ class StudentAuthController extends Controller
         if (! $account->student || in_array(strtolower($account->status?->status_name ?? ''), ['inactive', 'disabled', 'suspended', 'deactivated'], true)) {
             return response()->json(['message' => 'This account cannot access the student portal.'], 403);
         }
-        if ($account->setup_email_required || $account->setup_password_prompt || ! $account->isApprovedStudent()) {
+        if ($account->setup_email_required || $account->setup_password_prompt || $account->student->contact_verification_required || ! $account->isApprovedStudent()) {
             return response()->json(['message' => 'Complete account setup or student verification on the website before using the app.', 'setup_url' => route('login')], 403);
         }
         $account->update(['last_login' => now(), 'failed_attempts' => 0]);

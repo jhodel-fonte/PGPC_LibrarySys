@@ -258,7 +258,7 @@ class EditLibrarianForm extends Component
                 $imagePathToSave = null;
             }
 
-            DB::transaction(function () use ($account, $librarian, $roleId, $imagePathToSave) {
+            \App\Services\AuditTrail::transaction('Librarian account updated', function () use ($account, $librarian, $roleId, $imagePathToSave) {
                 $account->update([
                     'role_id' => $roleId,
                     'email' => $this->email,
@@ -297,7 +297,10 @@ class EditLibrarianForm extends Component
                     }
 
                     if (!empty($syncData)) {
+                        $before = $account->permissions()->get()->mapWithKeys(fn ($permission) => [$permission->name => (bool) $permission->pivot->is_allowed])->all();
                         $account->permissions()->sync($syncData);
+                        $after = $account->permissions()->get()->mapWithKeys(fn ($permission) => [$permission->name => (bool) $permission->pivot->is_allowed])->all();
+                        if ($before != $after) \App\Services\AuditTrail::record($account, 'permissions_changed', $before, $after);
                     }
                 }
             });

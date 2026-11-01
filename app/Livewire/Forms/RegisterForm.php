@@ -47,13 +47,21 @@ class RegisterForm extends Form
                 'max:255',
                 'unique:accounts,email',
                 function (string $attribute, mixed $value, \Closure $fail): void {
+                    $google = session('google_auth');
+                    if ($google && (($google['email_verified'] ?? false) !== true || empty($google['id']) || ! hash_equals(strtolower(trim((string) ($google['email'] ?? ''))), strtolower(trim((string) $value))))) {
+                        $fail('Use the verified email from your connected Google account, or disconnect Google.');
+                    }
+                },
+                function (string $attribute, mixed $value, \Closure $fail): void {
                     if (RegistrationEmailBlocklist::isBlocked((string) $value)) {
                         $days = (int) config('settings.registration.email_block_days', 3);
                         $fail("This email is temporarily blocked from registration. Please try again after {$days} days.");
                     }
                 },
             ],
-            'contact_num' => ['nullable', 'string', 'max:20'],
+            'contact_num' => ['required', 'string', 'max:20', function ($attribute, $value, $fail) {
+                if (! app(\App\Services\SmsService::class)->formatPhoneNumber($value)) $fail('Enter a valid Philippine mobile number.');
+            }],
             'username' => ['required', 'string', 'min:3', 'max:50', 'unique:accounts,username'],
             'password' => [
                 'required',
@@ -139,6 +147,7 @@ class RegisterForm extends Form
                 'middle_name' => $this->middle_name ? trim($this->middle_name) : null,
                 'last_name' => trim($this->last_name),
                 'contact_num' => $this->contact_num ? trim($this->contact_num) : null,
+                'contact_verification_required' => true,
                 'library_status_id' => 1, // Active
                 'program' => trim($this->program),
                 'year_level' => trim($this->year_level),

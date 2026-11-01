@@ -14,7 +14,7 @@ class EnsureMobileStudent
             return response()->json(['message' => 'A valid bearer token is required.'], 401);
         }
         if ($user->role?->name !== 'Student' || ! $user->student || ! $user->isApprovedStudent()
-            || $user->setup_email_required || $user->setup_password_prompt
+            || $user->setup_email_required || $user->setup_password_prompt || $user->student->contact_verification_required
             || in_array(strtolower($user->status?->status_name ?? ''), ['inactive', 'disabled', 'suspended', 'deactivated'], true)
             || ! $user->tokenCan('student-dashboard')) {
             return response()->json(['message' => 'Student account access is unavailable.'], 403);

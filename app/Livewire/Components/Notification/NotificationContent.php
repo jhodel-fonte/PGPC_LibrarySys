@@ -5,80 +5,93 @@ declare(strict_types=1);
 namespace App\Livewire\Components\Notification;
 
 use Illuminate\Support\Facades\Auth;
-use Livewire\Attributes\Computed;
-use Livewire\Attributes\On;
 use Livewire\Component;
 
 class NotificationContent extends Component
 {
-    #[Computed]
-    public function notifications()
-    {
-        if (!Auth::check()) {
-            return collect();
-        }
-
-        return Auth::user()->notifications()->latest()->take(15)->get();
-    }
-
-    #[Computed]
     public function unreadCount(): int
     {
-        if (!Auth::check()) {
-            return 0;
-        }
-
-        return Auth::user()->unreadNotifications()->count();
+        return Auth::check() ? Auth::user()->unreadNotifications()->count() : 0;
     }
 
-    public function markAsRead(string $id, ?string $redirectUrl = null)
+    public function page(?string $cursor = null): array
+    {
+        abort_unless(Auth::check(), 401);
+        $page = Auth::user()->notifications()->orderByDesc('created_at')->orderByDesc('id')
+            ->cursorPaginate(15, ['*'], 'cursor', $cursor);
+        return [
+            'items' => $page->getCollection()->map(fn ($item) => $this->notificationData($item))->all(),
+            'cursor' => $page->nextCursor()?->encode(),
+        ];
+    }
+
+    public function current(array $ids): array
+    {
+        abort_unless(Auth::check(), 401);
+        abort_if(count($ids) > 200, 422);
+        return Auth::user()->notifications()->whereIn('id', $ids)->get()
+            ->map(fn ($item) => $this->notificationData($item))->all();
+    }
+
+    private function notificationData($notification): array
+    {
+        $data = $notification->data;
+        return [
+            'id' => $notification->id,
+            'title' => $data['title'] ?? 'Library Alert',
+            'message' => $data['message'] ?? '',
+            'book_title' => $data['book_title'] ?? null,
+            'due_date' => $data['due_date'] ?? null,
+            'has_action' => ! empty($data['action_url']) || ! empty($data['reservation_id']),
+            'action_text' => $data['action_text'] ?? 'View',
+            'time' => $notification->created_at?->diffForHumans(),
+            'unread' => $notification->read_at === null,
+        ];
+    }
+
+    public function markAsRead(string $id, bool $open = false)
     {
         if (!Auth::check()) {
             return;
         }
 
         $notification = Auth::user()->notifications()->where('id', $id)->first();
+        if ($open && $notification && ! empty($notification->data['reservation_id'])) {
+            abort_unless(Auth::user()->status_id == 1 && (Auth::user()->isAdmin() || (Auth::user()->hasRole(['Librarian', 'Head Librarian']) && Auth::user()->canManageCirculation())), 403);
+        }
         if ($notification) {
             $notification->markAsRead();
-            unset($this->notifications, $this->unreadCount);
-            $this->dispatch('notifications-updated', unreadCount: Auth::user()->unreadNotifications()->count());
+
         }
 
-        if ($redirectUrl && filter_var($redirectUrl, FILTER_VALIDATE_URL)) {
-            return redirect()->to($redirectUrl);
-        } elseif ($redirectUrl && str_starts_with($redirectUrl, '/')) {
-            return $this->redirect($redirectUrl, navigate: true);
+        if ($open && $notification) {
+            $data = $notification->data;
+            if (! empty($data['reservation_id'])) {
+                $prefix = Auth::user()->isAdmin() ? 'admin.' : 'librarian.';
+                return $this->redirect(route($prefix . 'reservations', ['search' => $data['reservation_id']]), navigate: true);
+            }
+            $url = $data['action_url'] ?? '';
+            if (str_starts_with($url, '/') && ! str_starts_with($url, '//')) return $this->redirect($url, navigate: true);
+            if (filter_var($url, FILTER_VALIDATE_URL) && parse_url($url, PHP_URL_HOST) === parse_url(config('app.url'), PHP_URL_HOST)) return redirect()->to($url);
         }
     }
 
-    #[On('mark-all-notifications-read')]
-    public function markAllAsRead(): void
+    public function markAllAsRead(): int
     {
-        if (!Auth::check()) {
-            return;
-        }
-
+        abort_unless(Auth::check(), 401);
         Auth::user()->unreadNotifications()->update(['read_at' => now()]);
-        unset($this->notifications, $this->unreadCount);
-        $this->dispatch('notifications-updated', unreadCount: 0);
+        return $this->unreadCount();
     }
 
-    public function deleteNotification(string $id): void
+    public function deleteNotification(string $id): int
     {
-        if (!Auth::check()) {
-            return;
-        }
-
+        abort_unless(Auth::check(), 401);
         Auth::user()->notifications()->where('id', $id)->delete();
-        unset($this->notifications, $this->unreadCount);
-        $this->dispatch('notifications-updated', unreadCount: Auth::user()->unreadNotifications()->count());
+        return $this->unreadCount();
     }
 
     public function render()
     {
-        return view('livewire.components.notification.notification-content', [
-            'notifications' => $this->notifications,
-            'unreadCount' => $this->unreadCount,
-        ]);
+        return view('livewire.components.notification.notification-content');
     }
 }

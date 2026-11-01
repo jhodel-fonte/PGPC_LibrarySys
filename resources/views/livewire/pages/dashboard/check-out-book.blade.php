@@ -28,9 +28,9 @@
 
     <div class="workstation-content w-full min-w-0 flex flex-col">
         <!-- Header Area -->
-        <div class="workstation-header w-full flex flex-col mb-4 md:mt-2 relative z-10 shrink-0">
+        <div class="workstation-header w-full flex flex-col mb-4 relative z-10 shrink-0">
             <!-- Title Row -->
-            <div class="flex flex-col md:flex-row pt-2 justify-between items-start md:items-center">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
                 <div>
                     <h1 class="text-xl font-bold text-[#102B70] tracking-tight leading-tight">
                         Borrow Items
@@ -62,20 +62,24 @@
                 @endif
 
                 <div class="workstation-search relative overflow-hidden shrink-0 bg-white rounded-xl border border-[#E2E8F0] p-4 ">
-                    <label for="loan-location" class="block mb-2 text-sm font-semibold text-[#334155]">Loan type</label>
-                    <select id="loan-location" wire:model.live="loanLocation" class="mb-4 w-full rounded-lg border border-slate-300 p-2 text-sm">
-                        <option value="take_home">Take home</option>
-                        <option value="inside_library">Inside library — return by 7:00 PM today</option>
-                    </select>
                     <!-- Indeterminate Top Progress Bar -->
                     <div wire:loading class="absolute top-0 left-0 right-0 h-1 bg-[#EFF6FF] overflow-hidden">
                         <div class="h-full w-1/3 bg-[#FCC719] animate-loading-pulse rounded-full"></div>
                     </div>
 
-                    <livewire:components.circulation.qr-search-bar
-                        label="Member ID, book code, or reservation reference"
-                        placeholder="Scan member ID, book code, or #RES-00001"
-                    />
+                    <div class="grid grid-cols-1 items-end gap-4 sm:grid-cols-[minmax(180px,240px)_minmax(0,1fr)]">
+                        <div class="flex min-w-0 flex-col gap-1.5">
+                            <label for="loan-location" class="text-xs font-bold uppercase tracking-wider text-[#334155]">Loan type</label>
+                            <select id="loan-location" wire:model="loanLocation" class="h-14 w-full rounded-xl border border-slate-300 px-3 text-sm">
+                                <option value="take_home">Take home</option>
+                                <option value="inside_library">Inside library — return by 7:00 PM today</option>
+                            </select>
+                        </div>
+                        <livewire:components.circulation.qr-search-bar
+                            label="Member ID, book code, or reservation reference"
+                            placeholder="Scan member ID, book code, or #RES-00001"
+                        />
+                    </div>
                     @if($errorMessage)
                         @php
                             $isWarning = str_contains(strtolower($errorMessage), 'warning');
@@ -208,6 +212,7 @@
                     :stats="$stats"
                     :scanned-member="$scannedMember"
                     :checkout-books="$checkoutBooks"
+                    :due-date="$dueDate"
                 />
             </div>
 

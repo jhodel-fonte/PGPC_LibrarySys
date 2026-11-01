@@ -4,6 +4,8 @@ use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Locked;
@@ -50,7 +52,7 @@ new #[Layout('components.layouts.app')] class extends Component
             ],
         ]);
 
-        $status = Password::reset(
+        $reset = fn () => DB::transaction(fn () => Password::reset(
             $this->only('email', 'password', 'password_confirmation', 'token'),
             function ($user) {
                 $user->forceFill([
@@ -63,7 +65,14 @@ new #[Layout('components.layouts.app')] class extends Component
 
                 event(new PasswordReset($user));
             }
-        );
+        ));
+
+        $account = \App\Models\Account::where('email', $this->email)->first();
+        $status = $account ? Cache::lock('recovery-reset:'.$account->id, 60)->block(5, function () use ($account, $reset) {
+            $status = $reset();
+            if ($status === Password::PASSWORD_RESET) app(\App\Services\ContactOtp::class)->clearRecovery($account->id);
+            return $status;
+        }) : $reset();
 
         if ($status != Password::PASSWORD_RESET) {
             $this->addError('email', __($status));

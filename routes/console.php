@@ -20,9 +20,9 @@ Artisan::command('local:start', function () {
     return 0;
 })->purpose('Build assets and start the local server and queue worker');
 
-Artisan::command('sms:send {phone : Target mobile number (e.g. 09171234567)} {message? : SMS message text} {--queue : Queue the SMS for background worker}', function (\App\Services\SmsService $smsService) {
-    $phone = (string) $this->argument('phone');
-    $message = (string) ($this->argument('message') ?? 'This is a test notification from PGPC Library System.');
+Artisan::command('sms:send {phone? : Target mobile number (e.g. 09171234567)} {message? : SMS message text} {--queue : Queue the SMS for background worker}', function (\App\Services\SmsService $smsService) {
+    $phone = (string) ($this->argument('phone') ?? $this->ask('Enter the test mobile number (e.g. 09171234567)'));
+    $message = (string) ($this->argument('message') ?? 'This is a Notification from PGPC Library System. If you have any questions, please contact us. Thank you. and have a great day! Also, this is a test message to check if the SMS gateway is working properly.');
     $isQueued = (bool) $this->option('queue');
 
     $formattedPhone = $smsService->formatPhoneNumber($phone);
@@ -39,12 +39,14 @@ Artisan::command('sms:send {phone : Target mobile number (e.g. 09171234567)} {me
     $result = $smsService->send($phone, $message);
 
     if ($result['success']) {
-        $this->info("✓ SMS sent successfully!");
+        $this->info("✓ SMS accepted by iProgSMS for delivery.");
         $this->line("Response: " . json_encode($result['response'], JSON_PRETTY_PRINT));
         return 0;
     }
 
-    $this->error("✗ SMS delivery failed (HTTP {$result['status_code']})");
+    $this->error($result['response'] === null || ($result['response']['simulated'] ?? false)
+        ? '✗ SMS delivery failed before receiving a gateway response.'
+        : "✗ SMS delivery failed (HTTP {$result['status_code']})");
     $this->error("Error: " . ($result['error'] ?? 'Unknown error'));
     if (!empty($result['response'])) {
         $this->line("Response: " . json_encode($result['response'], JSON_PRETTY_PRINT));
@@ -174,6 +176,7 @@ Artisan::command('reservations:allocate-waitlist', function (\App\Services\Reser
     $waitlist->expireReservations();
     \App\Models\ReservationWaitlist::where('status', 'waiting')->distinct()->pluck('book_detail_id')
         ->each(fn ($detailId) => $waitlist->allocate($detailId));
+    app(\App\Services\ReservationApprovalService::class)->approveDue();
 })->purpose('Allocate available copies to reservation waitlists');
 
 \Illuminate\Support\Facades\Schedule::command('reservations:allocate-waitlist')->everyMinute()->withoutOverlapping();

@@ -49,7 +49,7 @@ class FineService
         if (trim($receiptNumber) === '' || mb_strlen($receiptNumber) > 255 || ! \Illuminate\Support\Facades\Validator::make(['date' => $paymentDate], ['date' => 'required|date_format:Y-m-d'])->passes()) {
             throw new \DomainException('A valid payment date and receipt number are required.');
         }
-        DB::transaction(function () use ($fineId, $studentId, $librarian, $paymentDate, $receiptNumber) {
+        \App\Services\AuditTrail::transaction('Fine payment recorded', function () use ($fineId, $studentId, $librarian, $paymentDate, $receiptNumber) {
             $fine = Fine::where('student_id', $studentId)->lockForUpdate()->findOrFail($fineId);
             if ($fine->fine_status !== 'unpaid') {
                 throw new \DomainException('This fine is no longer unpaid.');
@@ -67,7 +67,7 @@ class FineService
 
     public function confirmPayment(int $fineId, int $studentId, Librarian $librarian): void
     {
-        DB::transaction(function () use ($fineId, $studentId, $librarian) {
+        \App\Services\AuditTrail::transaction('Fine marked paid', function () use ($fineId, $studentId, $librarian) {
             $fine = Fine::where('student_id', $studentId)->lockForUpdate()->findOrFail($fineId);
 
             if ($fine->fine_status !== 'unpaid') {

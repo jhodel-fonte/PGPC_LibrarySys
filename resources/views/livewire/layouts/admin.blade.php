@@ -61,6 +61,7 @@
         </div>
         <livewire:components.widgets.modal />
         <livewire:components.widgets.qr-modal />
+        <x-widget.details-drawer />
         <x-notification.toast-notification />
         <x-notification.offline-indicator />
         @livewireScripts

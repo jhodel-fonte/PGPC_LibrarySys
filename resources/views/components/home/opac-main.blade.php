@@ -2,6 +2,7 @@
     'results' => [],
     'pagination' => null,
     'totalResults' => 0,
+    'suggestions' => [],
     'search' => '',
     'selectedType' => 'all',
     'selectedAvailabilities' => [],
@@ -47,6 +48,7 @@ function opacCatalog() {
     return {
         results: @json($resultsArray),
         totalCount: {{ (int) $totalCount }},
+        suggestions: @json($suggestions),
         searchTerm: @json($searchTerm),
         isLoading: false,
         mobileFilterOpen: false,
@@ -71,6 +73,7 @@ function opacCatalog() {
             this.isLoading = true;
             try {
                 const res = await fetch(url, {
+                    cache: 'no-store',
                     headers: {
                         'Accept': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest',
@@ -81,6 +84,7 @@ function opacCatalog() {
                 const data = await res.json();
                 this.results                = data.results || [];
                 this.totalCount             = data.totalResults || 0;
+                this.suggestions            = data.suggestions || [];
                 this.pagination             = data.pagination  || null;
                 this.searchTerm             = data.search      || '';
                 this.sortBy                 = data.sortBy      || this.sortBy;
@@ -104,6 +108,12 @@ function opacCatalog() {
                     this.isLoading = false;
                 }, 200);
             }
+        },
+        suggestionUrl(title) {
+            const url = new URL(window.location.href);
+            url.searchParams.set('search', title);
+            url.searchParams.delete('page');
+            return url.toString();
         },
         changePerPage(val) {
             // Fix: coerce to int — $event.target.value is always a string
@@ -436,6 +446,14 @@ function opacCatalog() {
                         <p class="text-sm text-slate-500 mt-1 max-w-sm mx-auto">
                             We couldn't find any resources matching your search or filters. Try adjusting your search query or reset the filters.
                         </p>
+                        <div x-show="suggestions.length" class="mt-4 text-sm text-slate-700">
+                            <p class="font-semibold">Did you mean:</p>
+                            <ul class="mt-2 space-y-2">
+                                <template x-for="suggestion in suggestions" :key="suggestion">
+                                    <li><a :href="suggestionUrl(suggestion)" x-text="suggestion" class="font-semibold text-[#102B70] underline underline-offset-2 hover:text-[#0B225E]"></a></li>
+                                </template>
+                            </ul>
+                        </div>
                         <button
                             type="button"
                             @click="resetAllFilters()"
@@ -589,13 +607,16 @@ function opacCatalog() {
                         <span>Library Reservation Policy</span>
                     </p>
                     <p class="leading-relaxed">
-                        Reserved items will be placed on hold at the <strong>Circulation Desk</strong> for <strong>3 school days</strong>. If not claimed within this period, the reservation will automatically expire.
+                        Choose a pickup deadline. Your request must be approved before collection and expires after the deadline.
                     </p>
                 </div>
 
                 <!-- Form to Submit Reservation -->
-                <form :action="'{{ url('opac/reserve') }}/' + (selectedBook?.id || '')" method="POST" class="flex items-center justify-end gap-3">
+                <form :action="'{{ url('opac/reserve') }}/' + (selectedBook?.id || '')" method="POST" class="flex flex-wrap items-end justify-end gap-3">
                     @csrf
+                    <label class="w-full text-sm font-semibold">Pickup deadline
+                        <input type="date" name="pickup_date" required min="{{ now('Asia/Manila')->addDay()->toDateString() }}" max="{{ now('Asia/Manila')->addDays(\App\Services\ReservationSettings::maxPickupDays())->toDateString() }}" class="mt-1 block w-full rounded-xl border border-slate-300 p-2">
+                    </label>
                     <button
                         type="button"
                         @click="reservationModalOpen = false"

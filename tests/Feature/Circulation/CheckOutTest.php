@@ -71,6 +71,51 @@ class CheckOutTest extends TestCase
         $response->assertStatus(200);
     }
 
+    public function test_selected_due_date_is_used_for_take_home_checkout(): void
+    {
+        $this->travelTo(Carbon::parse('2026-10-30 09:00', 'Asia/Manila'));
+        config(['settings.library_config.loan_period' => 5]);
+
+        Livewire::actingAs($this->librarian)->test(CheckOutBook::class)
+            ->assertSet('dueDate', '2026-10-31')
+            ->call('handleSearchCode', '2026-0001')
+            ->call('handleSearchCode', 'BAR-999')
+            ->call('confirmCheckout', '2026-11-02')
+            ->assertDispatched('checkout-completed');
+
+        $loan = BorrowingTransaction::where('book_id', $this->book->id)->firstOrFail();
+        $this->assertSame('2026-11-02', $loan->due_date->copy()->setTimezone('Asia/Manila')->toDateString());
+    }
+
+    public function test_checkout_rejects_due_dates_outside_configured_limit(): void
+    {
+        $this->travelTo(Carbon::parse('2026-10-30 09:00', 'Asia/Manila'));
+        config(['settings.library_config.loan_period' => 5]);
+
+        foreach (['2026-10-29', '2026-11-05', 'invalid'] as $date) {
+            Livewire::actingAs($this->librarian)->test(CheckOutBook::class)
+                ->call('confirmCheckout', $date)
+                ->assertDispatched('checkout-failed');
+        }
+        $this->assertDatabaseCount('borrowing_transactions', 0);
+    }
+
+    public function test_periodical_keeps_its_shorter_loan_limit(): void
+    {
+        $this->travelTo(Carbon::parse('2026-10-30 09:00', 'Asia/Manila'));
+        config(['settings.library_config.loan_period' => 5]);
+        $this->book->bookDetail->periodicalIssue()->create(['borrowable' => true, 'loan_days' => 2]);
+
+        Livewire::actingAs($this->librarian)->test(CheckOutBook::class)
+            ->call('handleSearchCode', '2026-0001')
+            ->call('handleSearchCode', 'BAR-999')
+            ->call('confirmCheckout', '2026-11-04')
+            ->assertDispatched('checkout-completed');
+
+        $loan = BorrowingTransaction::where('book_id', $this->book->id)->firstOrFail();
+        $this->assertSame('2026-11-01', $loan->due_date->copy()->setTimezone('Asia/Manila')->toDateString());
+    }
+
     public function test_approved_reservation_link_loads_student_and_copy_without_checkout(): void
     {
         $this->book->update(['status' => 'reserved']);
@@ -85,6 +130,28 @@ class CheckOutTest extends TestCase
             ->assertSet('checkoutBooks.0.reservation_id', $reservation->id);
         $this->assertSame(2, (int) $reservation->fresh()->reservation_status_id);
         $this->assertSame('reserved', $this->book->fresh()->status);
+    }
+
+    public function test_reservation_search_lists_only_approved_pickups(): void
+    {
+        $this->book->update(['status' => 'reserved']);
+        $reservation = \App\Models\BookReservation::create([
+            'book_id' => $this->book->id, 'student_id' => $this->student->id,
+            'account_id' => $this->student->account_id, 'reservation_status_id' => 1,
+            'reservation_date' => now(), 'due_date' => now()->addDay(),
+        ]);
+
+        $modal = Livewire::actingAs($this->librarian)
+            ->test(\App\Livewire\Components\Circulation\SearchEntityModal::class, ['service' => 'check-out'])
+            ->call('openModal')
+            ->assertSet('reservationCount', 0);
+
+        $reservation->update(['reservation_status_id' => 2]);
+        $modal->call('openModal')->assertSet('reservationCount', 1)
+            ->assertSee('#RES-'.str_pad((string) $reservation->id, 5, '0', STR_PAD_LEFT));
+
+        $reservation->update(['due_date' => now()->subMinute()]);
+        $modal->call('openModal')->assertSet('reservationCount', 0);
     }
 
     public function test_fulfill_action_opens_checkout_without_changing_reservation(): void
@@ -266,4 +333,28 @@ class CheckOutTest extends TestCase
         $this->assertSame('borrowed', $this->book->fresh()->status);
         $this->assertSame(3, (int) $reservation->fresh()->reservation_status_id);
     }
+    public function test_reservation_receipt_is_scoped_to_its_student(): void
+    {
+        $reservation = \App\Models\BookReservation::create([
+            'book_id' => $this->book->id, 'student_id' => $this->student->id,
+            'account_id' => $this->student->account_id, 'reservation_status_id' => 1,
+            'reservation_date' => now(), 'due_date' => now()->addDay(),
+        ]);
+        $page = new \App\Livewire\Pages\Reservation\Confirmation();
+        $page->reference = str_pad((string) $reservation->id, 5, '0', STR_PAD_LEFT);
+        $this->actingAs($this->student->account);
+        $this->assertSame($reservation->id, $page->reservation()?->id);
+        $this->actingAs($this->librarian);
+        $this->assertNull($page->reservation());
+        $this->actingAs($this->student->account);
+        $page->reference = 'not-a-number';
+        $this->assertNull($page->reservation());
+    }
+
+    public function test_old_reservation_link_redirects_to_padded_reference(): void
+    {
+        $this->withoutMiddleware()->get('/student/reservations/confirmation/9')
+            ->assertRedirect(route('student.reservations.confirmation', ['reservation' => '00009']));
+    }
+
 }

@@ -74,7 +74,16 @@ class Register extends Component
             session()->regenerate();
             session()->forget('url.intended');
 
-            $this->redirect(route('verification.upload'), navigate: false);
+            foreach (['email', 'sms'] as $channel) {
+                if ($channel === 'email' && $account->is_email_verified) continue;
+                try {
+                    app(\App\Services\ContactOtp::class)->send('registration', $account->id, $channel, $channel === 'email' ? $account->email : $account->student->contact_num);
+                } catch (\Throwable $e) {
+                    session()->flash('contact_delivery_failed', true);
+                }
+            }
+
+            $this->redirect(route('student.contact.verify'), navigate: false);
         } catch (\Illuminate\Validation\ValidationException $e) {
             $this->dispatch('registration-failed');
             $this->dispatch('scroll-to-error');

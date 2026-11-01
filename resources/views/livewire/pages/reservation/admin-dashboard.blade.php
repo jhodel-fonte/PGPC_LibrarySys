@@ -1,4 +1,4 @@
-<div class="admin-page-table bg-[#F8FAFC] flex flex-col min-h-0 flex-1 overflow-hidden font-sans text-slate-800 selection:bg-[#102B70] selection:text-white">
+<div @if(! $showDetailModal && ! $showCancelModal && ! $showCreateModal) wire:poll.15s @endif class="admin-page-table bg-[#F8FAFC] flex flex-col min-h-0 flex-1 overflow-hidden font-sans text-slate-800 selection:bg-[#102B70] selection:text-white">
     <div class="mx-auto w-full max-w-[1600px] p-3 sm:p-4 lg:p-6 relative flex flex-col gap-3 sm:gap-4 min-h-0 flex-1">
 
         <!-- ======================================================== -->
@@ -146,7 +146,7 @@
                                 $bookData = $bookDetail?->bookData;
                                 $authors = $bookData?->authors?->map(fn($a) => $a->first_name . ' ' . $a->last_name)->join(', ') ?? 'Unknown Author';
 
-                                $dueDate = $reservation->due_date ? \Carbon\Carbon::parse($reservation->due_date) : null;
+                                $dueDate = $reservation->due_date?->copy()->setTimezone('Asia/Manila');
                                 $isOverdue = $dueDate && $dueDate->isPast() && in_array($statusId, [1, 2]);
 
                                 $coverUrl = $bookDetail?->cover_url ?: asset('images/' . config('settings.book_covers.default', 'book-cover.webp'));
@@ -376,8 +376,8 @@
             $resAuthors = $resData?->authors?->map(fn($a) => $a->first_name . ' ' . $a->last_name)->join(', ') ?? 'Unknown Author';
             $resCover = $resDetail?->cover_url ?: asset('images/' . config('settings.book_covers.default', 'book-cover.webp'));
         @endphp
-        <div class="fixed inset-0 z-50 flex items-start sm:items-center justify-center overflow-y-auto overscroll-contain p-3 sm:p-4 bg-black/60 backdrop-blur-xs" role="dialog" aria-modal="true">
-            <div class="my-auto flex max-h-[calc(100dvh-1.5rem)] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-[#E2E8F0] bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+        <div class="receipt-dialog fixed inset-0 z-50 flex items-start sm:items-center justify-center overflow-y-auto overscroll-contain p-3 sm:p-4 bg-black/60 backdrop-blur-xs" role="dialog" aria-modal="true" aria-label="Reservation details" x-data x-trap.inert.noscroll="true" x-on:keydown.escape.window="$wire.closeDetailModal()">
+            <div class="my-auto flex max-h-[calc(100dvh-1.5rem)] w-full max-w-5xl flex-col overflow-hidden rounded-xl border border-[#E2E8F0] bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-150">
                 <!-- Modal Header -->
                 <div class="flex shrink-0 items-center justify-between px-4 py-4 sm:px-6 border-b border-slate-100 bg-[#F8FAFC]">
                     <div>
@@ -392,6 +392,17 @@
                 </div>
 
                 <div class="min-h-0 overflow-y-auto overscroll-contain p-4 sm:p-6 space-y-6">
+                    @if($showReceipt)
+                        @php
+                            try {
+                                $qrCodeSvg = \App\Services\QrCodeServices::svg('PGPC-RES-' . str_pad((string) $res->id, 5, '0', STR_PAD_LEFT) . '-' . ($res->student?->school_id_number ?? 'STUDENT'));
+                            } catch (\Throwable $e) {
+                                report($e);
+                                $qrCodeSvg = null;
+                            }
+                        @endphp
+                        @include('livewire.pages.reservation.receipt', ['reservation' => $res, 'receiptModal' => true])
+                    @else
                     <!-- Book Information Card -->
                     <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/50 flex gap-4">
                         <img
@@ -438,7 +449,7 @@
                             <h5 class="text-base font-semibold uppercase tracking-wider text-slate-500">Timeline & Dates</h5>
                             <div class="text-base text-slate-600 space-y-1">
                                 <div><span class="font-semibold">Reserved On:</span> {{ $res->reservation_date ? \Carbon\Carbon::parse($res->reservation_date)->format('M d, Y h:i A') : 'N/A' }}</div>
-                                <div><span class="font-semibold">Pickup Deadline:</span> <span class="font-bold text-[#102B70]">{{ $res->due_date ? \Carbon\Carbon::parse($res->due_date)->format('M d, Y') : 'N/A' }}</span></div>
+                                <div><span class="font-semibold">Pickup Deadline:</span> <span class="font-bold text-[#102B70]">{{ $res->due_date?->copy()->setTimezone('Asia/Manila')->format('M d, Y') ?? 'N/A' }}</span></div>
                                 <div><span class="font-semibold">Approved Date:</span> {{ $res->approved_date ? \Carbon\Carbon::parse($res->approved_date)->format('M d, Y h:i A') : 'Pending' }}</div>
                                 <div><span class="font-semibold">Fulfilled Date:</span> {{ $res->fulfilled_date ? \Carbon\Carbon::parse($res->fulfilled_date)->format('M d, Y h:i A') : 'Not yet' }}</div>
                                 <div><span class="font-semibold">Current Status:</span> <span class="font-bold text-[#102B70]">{{ $res->reservationStatus?->status ?? 'Pending' }}</span></div>
@@ -452,10 +463,13 @@
                             <p class="text-slate-600 mt-0.5">{{ $res->comment }}</p>
                         </div>
                     @endif
+                    @endif
                 </div>
 
                 <!-- Modal Actions -->
                 <div class="flex shrink-0 items-center justify-end gap-3 px-4 py-4 sm:px-6 border-t border-slate-100 bg-[#F8FAFC]">
+                    <button type="button" wire:click="$toggle('showReceipt')" class="h-10 px-4 rounded-xl border border-slate-300 text-sm font-semibold">{{ $showReceipt ? 'View Details' : 'View Receipt' }}</button>
+                    @if($showReceipt)<button type="button" onclick="window.print()" class="h-10 px-4 rounded-xl border border-slate-300 text-sm font-semibold">Print Receipt</button>@endif
                     <button
                         type="button"
                         wire:click="closeDetailModal"
@@ -627,7 +641,7 @@
                             <input
                                 type="number"
                                 min="1"
-                                max="14"
+                                max="{{ \App\Services\ReservationSettings::maxPickupDays() }}"
                                 wire:model="createPickupDays"
                                 class="h-10 w-full rounded-xl border border-slate-300 px-3 text-base text-slate-800 focus:border-[#102B70] focus:ring-2 focus:ring-[#EFF6FF] focus:outline-none"
                             >
@@ -665,3 +679,14 @@
     @endif
 
 </div>
+
+@if($showDetailModal && $showReceipt)
+@push('styles')
+<style media="print">
+body * { visibility: hidden; }
+#reservation-slip, #reservation-slip * { visibility: visible; }
+.receipt-dialog, .receipt-dialog > div, .receipt-dialog > div > div { overflow: visible !important; max-height: none !important; }
+#reservation-slip { position: absolute; inset: 0 auto auto 0; width: 100%; overflow: visible; print-color-adjust: exact; }
+</style>
+@endpush
+@endif

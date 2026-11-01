@@ -47,7 +47,7 @@
             this.selected = [];
         }
     }"
-    wire:poll.15s
+    @if(! $reviewingApplicant) wire:poll.15s @endif
     class="bg-[#F8FAFC] flex flex-col min-h-0 flex-1 overflow-hidden font-sans text-[#0F172A]"
 >
     <div class="mx-auto w-full max-w-[1600px] p-4 lg:p-6 relative flex flex-col gap-4 sm:gap-5 min-h-0 flex-1">

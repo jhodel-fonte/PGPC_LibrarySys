@@ -17,7 +17,6 @@ Route::middleware('unauthenticated')->group(function () {
 
     // Google OAuth
     Route::get('/auth/google', [\App\Http\Controllers\Auth\GoogleAuthController::class, 'redirect'])->name('auth.google');
-    Route::get('/auth/google/callback', [\App\Http\Controllers\Auth\GoogleAuthController::class, 'callback'])->name('auth.google.callback');
 
     // Redirects for direct /login and /staff/login visits
     Route::redirect('login', '/student/');
@@ -26,6 +25,8 @@ Route::middleware('unauthenticated')->group(function () {
     Route::redirect('admin/login', '/employee/');
     Route::redirect('librarian/login', '/employee/');
 });
+
+Route::get('/auth/google/callback', [\App\Http\Controllers\Auth\GoogleAuthController::class, 'callback'])->name('auth.google.callback');
 
 // 401 Error Page for deactivated / disabled accounts
 Route::get('/account/deactivated', function () {
@@ -52,6 +53,8 @@ Route::get('/account/deactivated', function () {
 Route::redirect('/account-deactivated', '/account/deactivated');
 
 Route::middleware('auth')->group(function () {
+    Route::get('/account/verify-contact/google', [\App\Http\Controllers\Auth\GoogleAuthController::class, 'verifyEmail'])->name('student.contact.google');
+    Route::get('/account/verify-contact', \App\Livewire\Pages\Auth\VerifyContact::class)->name('student.contact.verify');
     Route::get('/account/setup', \App\Livewire\Pages\Auth\StudentSetup::class)->name('student.setup');
     Route::get('/account/setup/verify/{id}/{hash}', function (\Illuminate\Http\Request $request, string $id, string $hash) {
         $user = $request->user();

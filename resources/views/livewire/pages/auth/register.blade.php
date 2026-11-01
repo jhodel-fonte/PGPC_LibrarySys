@@ -210,6 +210,7 @@
                     </label>
                     <input
                         wire:model="form.email"
+                        @if(session()->has('google_auth')) readonly @endif
                         id="email"
                         name="email"
                         type="email"
@@ -226,7 +227,7 @@
                 <!-- Contact Number -->
                 <div>
                     <label for="contact_num" class="mb-2 inline-block cursor-pointer text-[14px] font-semibold text-slate-700">
-                        Contact number <span class="text-xs font-normal text-slate-400">(optional)</span>
+                        Contact number <span class="text-red-500">*</span>
                     </label>
                     <input
                         wire:model="form.contact_num"

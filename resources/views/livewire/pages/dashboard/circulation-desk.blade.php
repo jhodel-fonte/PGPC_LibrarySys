@@ -7,7 +7,7 @@
     $canReturn = \App\Services\EmployeeRoleService::canReturn();
 @endphp
 
-<section class="min-h-full bg-[#F8FAFC] font-sans text-[#132657]" aria-labelledby="circulation-title">
+<section wire:poll.30s class="min-h-full bg-[#F8FAFC] font-sans text-[#132657]" aria-labelledby="circulation-title">
     <div class="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
         <header class="mb-6 sm:mb-8">
             <h1 id="circulation-title" class="text-2xl font-bold tracking-tight text-[#102B70] sm:text-3xl">Circulation Desk</h1>

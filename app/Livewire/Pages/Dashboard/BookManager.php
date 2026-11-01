@@ -357,9 +357,9 @@ class BookManager extends Component
         }
 
         $count = count($this->selectedCopies);
-        Book::whereIn('id', $this->selectedCopies)->update([
-            'location' => trim($this->bulkLocation) ?: null,
-        ]);
+        \Illuminate\Support\Facades\DB::transaction(function () {
+            Book::whereIn('id', $this->selectedCopies)->get()->each->update(['location' => trim($this->bulkLocation) ?: null]);
+        });
 
         $this->dispatch('toast', message: "Updated location for {$count} copies.", type: 'success');
         $this->showBulkLocationModal = false;
@@ -388,19 +388,14 @@ class BookManager extends Component
             default => 'available'
         };
 
-        // Do not change status for currently borrowed copies
-        Book::whereIn('id', $this->selectedCopies)
-            ->where('status', '!=', 'borrowed')
-            ->update([
-                'book_condition_id' => $this->bulkConditionId,
-                'status' => $newStatus,
-            ]);
-
-        Book::whereIn('id', $this->selectedCopies)
-            ->where('status', 'borrowed')
-            ->update([
-                'book_condition_id' => $this->bulkConditionId,
-            ]);
+        \Illuminate\Support\Facades\DB::transaction(function () use ($newStatus) {
+            foreach (Book::whereIn('id', $this->selectedCopies)->get() as $book) {
+                $book->update([
+                    'book_condition_id' => $this->bulkConditionId,
+                    'status' => $book->status === 'borrowed' ? 'borrowed' : $newStatus,
+                ]);
+            }
+        });
 
         $this->dispatch('toast', message: "Updated condition for {$count} copies.", type: 'success');
         $this->showBulkConditionModal = false;
@@ -433,8 +428,11 @@ class BookManager extends Component
         }
 
         $books = Book::onlyTrashed()->whereIn('id', $this->selectedCopies)->get();
-        BookDetail::onlyTrashed()->whereIn('id', $books->pluck('book_detail_id'))->restore();
-        $count = Book::onlyTrashed()->whereIn('id', $books->modelKeys())->restore();
+        $count = \Illuminate\Support\Facades\DB::transaction(function () use ($books) {
+            BookDetail::onlyTrashed()->whereIn('id', $books->pluck('book_detail_id'))->get()->each->restore();
+            $books->each->restore();
+            return $books->count();
+        });
         if ($count > 0) {
             $this->dispatch('toast', message: "Restored {$count} book copies successfully.", type: 'success');
             $this->dispatch('book-details-updated');
@@ -455,8 +453,11 @@ class BookManager extends Component
         }
 
         $books = Book::onlyTrashed()->whereIn('id', $ids)->get();
-        BookDetail::onlyTrashed()->whereIn('id', $books->pluck('book_detail_id'))->restore();
-        $count = Book::onlyTrashed()->whereIn('id', $books->modelKeys())->restore();
+        $count = \Illuminate\Support\Facades\DB::transaction(function () use ($books) {
+            BookDetail::onlyTrashed()->whereIn('id', $books->pluck('book_detail_id'))->get()->each->restore();
+            $books->each->restore();
+            return $books->count();
+        });
         if ($count > 0) {
             $this->dispatch('toast', message: "Restored {$count} book copies successfully.", type: 'success');
             $this->dispatch('book-details-updated');

@@ -1,4 +1,4 @@
-<div class="workstation-summary bg-white rounded-3xl border border-[#E2E8F0] p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex-1 flex flex-col h-auto lg:h-full lg:overflow-hidden">
+<div x-data="{ selectedDueDate: @js($dueDate) }" class="workstation-summary bg-white rounded-3xl border border-[#E2E8F0] p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex-1 flex flex-col h-auto lg:h-full lg:overflow-hidden">
     <div class="flex flex-col gap-3 shrink-0">
         <h3 class="text-xs font-bold text-[#102B70] uppercase tracking-wider">Borrow Summary</h3>
 
@@ -35,13 +35,13 @@
             @endif
 
             <!-- Due Date Row -->
-            <div class="flex justify-between items-center py-2.5">
+            <div x-show="$wire.$parent.loanLocation === 'inside_library'" x-cloak class="flex justify-between items-center py-2.5">
                 <span class="text-[#64748B]">Due Date</span>
                 <div class="flex items-center gap-1.5 text-[#0F172A] font-bold">
                     <svg class="w-4 h-4 text-[#94A3B8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                     </svg>
-                    <span>{{ $stats['due_date'] }}</span>
+                    <span>{{ now('Asia/Manila')->setTime(19, 0)->format('M. d, Y h:i A') }}</span>
                 </div>
             </div>
         </div>
@@ -51,6 +51,14 @@
 
     <!-- Checkout Button block -->
     <div class="shrink-0 pt-3 border-t border-[#F1F5F9]">
+            <div x-show="$wire.$parent.loanLocation === 'take_home'" x-cloak class="mb-4">
+                <label for="checkout-due-date" class="block text-xs font-bold uppercase tracking-wider text-[#334155]">Due date</label>
+                <input id="checkout-due-date" type="date" x-model="selectedDueDate"
+                    min="{{ now('Asia/Manila')->toDateString() }}"
+                    max="{{ now('Asia/Manila')->addDays(max(1, (int) config('settings.library_config.loan_period', config('settings.loan_period', 5))))->toDateString() }}"
+                    class="mt-1.5 h-11 w-full rounded-xl border border-slate-300 px-3 text-sm text-slate-800">
+                <p class="mt-1 text-xs text-slate-600">Some items may have a shorter loan period.</p>
+            </div>
         @php
             $cannotCheckout = !$scannedMember || empty($checkoutBooks) ||
                               ($stats['overdue_count'] ?? 0) > 0 ||
@@ -58,7 +66,7 @@
                               (strtolower($scannedMember['status'] ?? 'active') !== 'active');
         @endphp
         <button type="button"
-                wire:click="$parent.confirmCheckout"
+                @click="$wire.$parent.confirmCheckout(selectedDueDate)"
                 wire:loading.attr="disabled"
                 wire:target="$parent.confirmCheckout"
                 @if($cannotCheckout) disabled @endif

@@ -33,6 +33,11 @@ class Verify extends Component
             return;
         }
 
+        if ($user->student?->contact_verification_required) {
+            $this->redirect(route('student.contact.verify'), navigate: false);
+            return;
+        }
+
         if ($user->isApprovedStudent()) {
             $this->redirect(route('student.dashboard'), navigate: false);
             return;
@@ -53,6 +58,7 @@ class Verify extends Component
 
     public function submitVerification(): void
     {
+        abort_if(Auth::user()?->student?->contact_verification_required, 403);
         $this->validate([
             'documentType' => ['required', 'string', 'in:school_id,cor,enrollment_form'],
             'uploadedFile' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:5120'],

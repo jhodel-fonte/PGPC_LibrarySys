@@ -78,7 +78,7 @@ class Alerts extends Notification implements ShouldQueue
             ->subject('PGPC Library - ' . $this->title)
             ->view('emails.template', [
                 'title'      => $this->title,
-                'message'    => $this->message,
+                'emailMessage' => $this->message,
                 'bookTitle'  => $this->bookTitle,
                 'dueDate'    => $this->dueDate,
                 'details'    => $this->details,

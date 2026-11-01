@@ -42,24 +42,31 @@ class ProcessFinePayment extends Component
     }
 
     #[On('code-scanned')]
-    public function scanStudent($code): void
+    public function scanStudent($code, $scanId = null): void
     {
-        abort_unless(EmployeeRoleService::canManageFines(), 403);
-        if (! is_string($code) && ! is_numeric($code)) {
-            $this->addError('scan', 'The scanned code is invalid. Try again or search for the student.');
-            return;
+        try {
+            abort_unless(EmployeeRoleService::canManageFines(), 403);
+            $this->resetValidation('scan');
+            if (! is_string($code) && ! is_numeric($code)) {
+                $this->addError('scan', 'The scanned code is invalid. Try again or search for the student.');
+                return;
+            }
+            $code = trim((string) $code);
+            $student = Student::where('school_id_number', $code)->first();
+            if (! $student && ctype_digit($code)) {
+                $student = Student::find((int) $code);
+            }
+            if (! $student) {
+                $this->addError('scan', 'No student matches this QR code. Try again or search for the student.');
+                return;
+            }
+            $this->selectStudent($student->id);
+            $this->dispatch('student-qr-selected');
+        } finally {
+            if ($scanId !== null) {
+                $this->dispatch('scan-lookup-completed', scanId: $scanId, message: $this->getErrorBag()->first('scan') ?: 'Student recognized.', success: ! $this->getErrorBag()->has('scan'));
+            }
         }
-        $code = trim((string) $code);
-        $student = Student::where('school_id_number', $code)->first();
-        if (! $student && ctype_digit($code)) {
-            $student = Student::find((int) $code);
-        }
-        if (! $student) {
-            $this->addError('scan', 'No student matches this QR code. Try again or search for the student.');
-            return;
-        }
-        $this->selectStudent($student->id);
-        $this->dispatch('student-qr-selected');
     }
 
     private function selectedFine(): Fine
