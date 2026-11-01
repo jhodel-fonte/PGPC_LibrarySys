@@ -1,98 +1,24 @@
-<div wire:poll.30s class="divide-y divide-slate-100">
-    @if($notifications->isNotEmpty())
-        @foreach ($notifications as $notification)
-            @php
-                $data = $notification->data ?? [];
-                $isUnread = is_null($notification->read_at);
-                $actionUrl = $data['action_url'] ?? null;
-            @endphp
-            <div 
-                wire:key="notif-{{ $notification->id }}" 
-                class="relative px-4 py-3 hover:bg-[#EFF6FF]/40 transition-colors group {{ $isUnread ? 'bg-[#F8FAFC]' : '' }}"
-            >
-                <div class="flex items-start gap-3">
-                    <!-- Content -->
-                    <div 
-                        class="flex-1 min-w-0 {{ $actionUrl ? 'cursor-pointer' : '' }}"
-                        @if($actionUrl)
-                            wire:click="markAsRead('{{ $notification->id }}', '{{ $actionUrl }}')"
-                        @else
-                            wire:click="markAsRead('{{ $notification->id }}')"
-                        @endif
-                    >
-                        <div class="flex items-center justify-between gap-1">
-                            <p class="text-xs sm:text-sm font-bold text-slate-800 truncate group-hover:text-[#102B70] transition-colors">
-                                {{ $data['title'] ?? 'Library Alert' }}
-                            </p>
-                        </div>
-
-                        <p class="text-xs text-slate-600 mt-0.5 line-clamp-2 leading-relaxed">
-                            {{ $data['message'] ?? '' }}
-                        </p>
-
-                        <!-- Related Book Details if present -->
-                        @if(!empty($data['book_title']))
-                            <div class="mt-1.5 flex items-center gap-2 p-1.5 rounded-lg bg-white border border-slate-200/80 shadow-2xs">
-                                @if(!empty($data['book_cover']))
-                                    <img 
-                                        src="{{ $data['book_cover'] }}" 
-                                        alt="Book Cover" 
-                                        class="h-8 w-6 rounded object-cover border border-slate-200 shrink-0"
-                                        onerror="this.style.display='none'"
-                                    >
-                                @endif
-                                <div class="min-w-0 flex-1">
-                                    <p class="text-[11px] font-bold text-[#102B70] truncate leading-tight">
-                                        {{ $data['book_title'] }}
-                                    </p>
-                                    @if(!empty($data['due_date']))
-                                        <p class="text-[10px] font-semibold text-amber-700 mt-0.5">
-                                            Due: {{ $data['due_date'] }}
-                                        </p>
-                                    @endif
-                                </div>
-                            </div>
-                        @endif
-
-                        <div class="flex items-center gap-2 mt-1.5">
-                            <span class="text-[10px] font-semibold text-slate-400">
-                                {{ $notification->created_at->diffForHumans() }}
-                            </span>
-                            @if($actionUrl)
-                                <span class="text-[10px] font-bold text-[#102B70] underline hover:text-[#0B225E]">
-                                    {{ $data['action_text'] ?? 'View' }} &rarr;
-                                </span>
-                            @endif
-                        </div>
-                    </div>
-
-                    <!-- Unread Badge & Actions -->
-                    <div class="shrink-0 flex items-center gap-1.5 pt-1">
-                        @if($isUnread)
-                            <button 
-                                type="button" 
-                                wire:click="markAsRead('{{ $notification->id }}')" 
-                                title="Mark as read"
-                                class="text-[10px] font-semibold text-slate-500 hover:text-[#102B70]">Mark read</button>
-                        @endif
-
-                        <button
-                            type="button"
-                            wire:click="deleteNotification('{{ $notification->id }}')"
-                            title="Dismiss notification"
-                            class="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 text-[10px] font-semibold text-slate-500 hover:text-rose-600 transition-opacity p-0.5 cursor-pointer"
-                        >
-                            Dismiss
-                        </button>
-                    </div>
-                </div>
+<div x-data="notificationCenter($wire)" @notification-drawer-opened.window="open()" @notification-drawer-closed.window="opened = false" @online.window="opened ? sync() : refreshCount()" @visibilitychange.document="if (!document.hidden) opened ? sync() : refreshCount()" class="divide-y divide-slate-100">
+    <div class="border-b border-slate-200 px-6 py-3" x-show="count > 0" x-cloak>
+        <button type="button" @click="action(null, 'all')" :disabled="busy || loading" class="min-h-11 text-sm font-semibold text-[#102B70] underline disabled:opacity-50">Mark all as read</button>
+    </div>
+    <p x-show="error" x-text="error" role="alert" class="px-6 py-3 text-sm text-red-800"></p>
+    <div x-show="error" class="px-6 pb-3"><button type="button" @click="loaded ? sync() : firstPage()" class="text-sm font-semibold text-[#102B70] underline">Try again</button></div>
+    <p x-show="loading && !loaded" class="px-6 py-8 text-sm text-slate-600" role="status">Loading notifications…</p>
+    <template x-for="item in items" :key="item.id">
+        <article class="px-6 py-4" :class="item.unread ? 'bg-slate-50' : 'bg-white'">
+            <div class="flex items-start gap-2"><span x-show="item.unread" class="mt-2 h-2 w-2 shrink-0 rounded-full bg-blue-600" aria-label="Unread"></span><h3 x-text="item.title" class="font-bold text-slate-900"></h3></div>
+            <p x-text="item.message" class="mt-1 break-words text-sm text-slate-700"></p>
+            <p x-show="item.book_title" x-text="item.book_title" class="mt-2 break-words text-sm font-semibold text-[#102B70]"></p>
+            <p x-show="item.due_date" class="text-xs text-slate-600">Due: <span x-text="item.due_date"></span></p>
+            <p x-text="item.time" class="mt-2 text-xs text-slate-600"></p>
+            <div class="mt-3 flex flex-wrap gap-3">
+                <button x-show="item.has_action" type="button" @click="$wire.markAsRead(item.id, true)" :disabled="busy || loading" x-text="item.action_text" class="min-h-11 text-sm font-semibold text-[#102B70] underline disabled:opacity-50"></button>
+                <button x-show="item.unread" type="button" @click="action(item, 'read')" :disabled="busy || loading" class="min-h-11 rounded-lg bg-[#102B70] px-4 text-sm font-semibold text-white disabled:opacity-50">Mark read</button>
+                <button type="button" @click="action(item, 'dismiss')" :disabled="busy || loading" class="min-h-11 rounded-lg border border-slate-300 px-4 text-sm font-semibold text-slate-700 disabled:opacity-50">Dismiss</button>
             </div>
-        @endforeach
-    @else
-        <!-- Empty State -->
-        <div class="px-4 py-10 text-center">
-            <p class="text-sm font-bold text-slate-700">No notifications</p>
-            <p class="text-xs text-slate-400 mt-0.5">You're all caught up with your library notices!</p>
-        </div>
-    @endif
+        </article>
+    </template>
+    <p x-show="loaded && !loading && !items.length && !error" x-cloak class="px-6 py-10 text-center text-sm text-slate-600">You are all caught up with your library notices.</p>
+    <div x-show="cursor" x-cloak class="p-4 text-center"><button type="button" @click="more()" :disabled="busy || loading" class="min-h-11 text-sm font-semibold text-[#102B70] underline disabled:opacity-50">Load more</button></div>
 </div>

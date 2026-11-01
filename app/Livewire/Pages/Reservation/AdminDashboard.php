@@ -43,6 +43,7 @@ class AdminDashboard extends Component
 
     // View Details Modal
     public bool $showDetailModal = false;
+    public bool $showReceipt = false;
     public ?int $selectedReservationId = null;
 
     // Cancellation Modal
@@ -256,6 +257,7 @@ class AdminDashboard extends Component
             'book.bookDetail' => fn ($q) => $q->withTrashed(),
             'book.bookDetail.bookData' => fn ($q) => $q->withTrashed(),
             'book.bookDetail.bookData.authors',
+            'book.bookDetail.bookData.categories',
             'book.bookDetail.publisher',
             'book.condition',
             'student.account',
@@ -274,6 +276,7 @@ class AdminDashboard extends Component
     public function closeDetailModal(): void
     {
         $this->showDetailModal = false;
+        $this->showReceipt = false;
         $this->selectedReservationId = null;
     }
 
@@ -285,41 +288,7 @@ class AdminDashboard extends Component
         abort_unless(\App\Services\EmployeeRoleService::can('manage_circulation'), 403);
 
         try {
-            DB::transaction(function () use ($id) {
-                $reservation = BookReservation::findOrFail($id);
-
-                $book = \App\Models\Book::withTrashed()
-                    ->with([
-                        'bookDetail' => fn ($q) => $q->withTrashed(),
-                        'bookDetail.bookData' => fn ($q) => $q->withTrashed(),
-                    ])
-                    ->lockForUpdate()->find($reservation->book_id);
-                if (! $book || $book->trashed() || $book->bookDetail?->trashed() || $book->bookDetail?->bookData?->trashed()) {
-                    throw new \RuntimeException('This copy has been deleted and cannot be approved. Cancel the reservation instead.');
-                }
-
-                if ($reservation->student?->account?->reservations_blocked) {
-                    throw new \RuntimeException('This account cannot place reservations.');
-                }
-
-                if ($book->bookDetail?->periodicalIssue && ! $book->bookDetail->periodicalIssue->borrowable) {
-                    throw new \RuntimeException('This issue is for library use only.');
-                }
-                if ($reservation->reservation_status_id !== 1) {
-                    throw new \RuntimeException('Only pending reservations can be approved.');
-                }
-
-                $reservation->update([
-                    'reservation_status_id' => 2, // Approved
-                    'approved_date' => now(),
-                    'due_date' => now()->addDays(3)->setTime(17, 0, 0), // 3 days window to pick up by 5:00 PM closing
-                ]);
-
-                // Ensure copy is marked as reserved
-                $book->update(['status' => 'reserved']);
-            });
-
-            app(\App\Services\ReservationNotificationService::class)->statusChanged(BookReservation::findOrFail($id));
+            app(\App\Services\ReservationApprovalService::class)->approve($id);
 
             $this->dispatch('toast', message: 'Reservation #' . $id . ' approved successfully. The copy is reserved for student pickup.', type: 'success');
         } catch (\Throwable $e) {
@@ -356,7 +325,7 @@ class AdminDashboard extends Component
         }
 
         try {
-            DB::transaction(function () {
+            \App\Services\AuditTrail::transaction('Reservation cancelled', function () {
                 $reservation = BookReservation::lockForUpdate()->findOrFail($this->cancelReservationId);
                 if (! in_array((int) $reservation->reservation_status_id, [1, 2], true)) {
                     throw new \RuntimeException('Only active reservations can be cancelled.');
@@ -447,7 +416,7 @@ class AdminDashboard extends Component
         $this->createSearchBook = '';
         $this->createSelectedStudentId = null;
         $this->createSelectedBookId = null;
-        $this->createPickupDays = 3;
+        $this->createPickupDays = \App\Services\ReservationSettings::maxPickupDays();
         $this->createNotes = '';
         $this->showCreateModal = true;
     }
@@ -516,7 +485,7 @@ class AdminDashboard extends Component
         $this->validate([
             'createSelectedStudentId' => 'required|exists:students,id',
             'createSelectedBookId' => 'required|exists:books,id',
-            'createPickupDays' => 'required|integer|min:1|max:14',
+            'createPickupDays' => 'required|integer|min:1|max:' . \App\Services\ReservationSettings::maxPickupDays(),
         ], [
             'createSelectedStudentId.required' => 'Please select a student from the list.',
             'createSelectedBookId.required' => 'Please select an available book copy.',
@@ -525,7 +494,7 @@ class AdminDashboard extends Component
         try {
             $detailId = Book::whereKey($this->createSelectedBookId)->value('book_detail_id');
             app(\App\Services\ReservationWaitlistService::class)->allocate($detailId);
-            $reservation = DB::transaction(function () {
+            $reservation = \App\Services\AuditTrail::transaction('Reservation created', function () {
                 $detailId = Book::whereKey($this->createSelectedBookId)->value('book_detail_id');
                 $detail = \App\Models\BookDetail::lockForUpdate()->findOrFail($detailId);
                 if ($detail->periodicalIssue && ! $detail->periodicalIssue->borrowable) {
@@ -551,16 +520,21 @@ class AdminDashboard extends Component
                     'reservation_status_id' => 2, // Pre-approved when created by staff
                     'reservation_date' => now(),
                     'approved_date' => now(),
-                    'due_date' => now()->addDays($this->createPickupDays)->setTime(17, 0, 0),
+                    'due_date' => \App\Services\ReservationSettings::deadline($this->createPickupDays),
                     'comment' => 'Staff reservation. Note: ' . (trim($this->createNotes) ?: 'None'),
                 ]);
 
                 $book->update(['status' => 'reserved']);
 
+                app(\App\Services\ReservationNotificationService::class)->notifyStaff($reservation, auth()->id());
                 return $reservation;
             });
 
-            app(\App\Services\ReservationNotificationService::class)->created($reservation);
+            try {
+                app(\App\Services\ReservationNotificationService::class)->created($reservation);
+            } catch (\Throwable $e) {
+                report($e);
+            }
 
             $this->closeCreateModal();
             $this->dispatch('toast', message: 'Manual reservation placed and pre-approved successfully!', type: 'success');
@@ -571,7 +545,7 @@ class AdminDashboard extends Component
 
     public function render()
     {
-        $routePrefix = request()->is('admin*') ? 'admin.' : 'librarian.';
+        $routePrefix = auth()->user()?->isAdmin() ? 'admin.' : 'librarian.';
 
         return view('livewire.pages.reservation.admin-dashboard', [
             'routePrefix' => $routePrefix,

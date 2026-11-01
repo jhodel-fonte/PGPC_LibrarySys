@@ -23,7 +23,7 @@ class LiveCamera extends Component
         return config('settings', []);
     }
 
-    public function handleScan($code)
+    public function handleScan($code, $scanId = null)
     {
         $code = trim((string) $code);
         if (empty($code)) {
@@ -35,7 +35,7 @@ class LiveCamera extends Component
         $this->detail = $code;
         $this->message = 'Processing scan...';
 
-        $this->dispatch('code-scanned', code: $code);
+        $this->dispatch('code-scanned', code: $code, scanId: $scanId);
     }
 
     public function render()

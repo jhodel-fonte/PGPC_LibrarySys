@@ -18,7 +18,7 @@
 @endphp
 
 <div
-    class="w-full max-w-[1380px] mx-auto select-none"
+    class="w-full max-w-[1360px] mx-auto"
     x-data="{
         isCollapsed: {{ $hasSearched ? 'true' : 'false' }},
         title: @js(request('title', '')),
@@ -71,16 +71,13 @@
         </a>
     </div>
 
-    <!-- Advanced Search Card Container -->
-    <div class="rounded-[14px] border border-[#DDE5EF] bg-white p-6 sm:p-8 lg:p-10 shadow-[0_4px_16px_rgba(7,26,61,0.06)] transition-all">
-
-        <!-- 1. Card Header -->
+        <!-- Page Header -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4" :class="isCollapsed ? 'mb-0' : 'mb-6 sm:mb-8'">
             <div>
                 <div class="flex items-center gap-3">
-                    <h2 class="text-[24px] sm:text-[26px] font-bold text-[#0B2454] leading-tight tracking-tight">
+                    <h1 class="text-2xl sm:text-3xl font-bold text-[#102B70] leading-tight tracking-tight">
                         Search the Library Collection
-                    </h2>
+                    </h1>
                 </div>
                 <p class="text-[15px] sm:text-[16px] text-[#64748B] mt-1.5 leading-normal font-normal">
                     Enter one or more search criteria to narrow your results.
@@ -110,10 +107,10 @@
             @endif
         </div>
 
-        <!-- Advanced Search Form -->
+    <!-- Advanced Search Form -->
+    <div x-show="!isCollapsed" class="rounded-2xl border border-[#E2E8F0] bg-white p-4 sm:p-6 lg:p-8">
         <form
             x-ref="searchForm"
-            x-show="!isCollapsed"
             x-transition:enter="transition ease-out duration-200"
             x-transition:enter-start="opacity-0 -translate-y-2"
             x-transition:enter-end="opacity-100 translate-y-0"
@@ -283,8 +280,7 @@
 
             </div>
 
-            <div class="border-t border-[#E3E9F1] pt-5 sm:pt-6"></div>
-            <div>
+            <div class="border-t border-[#E3E9F1] pt-6">
                 <h3 class="text-[17px] sm:text-[18px] font-bold text-[#0B2454] leading-tight mb-3.5">
                     Additional Filters
                 </h3>
@@ -299,7 +295,7 @@
                         <div class="flex items-center gap-3">
                             <!-- From Year -->
                             <div
-                                class="relative flex-1"
+                                class="relative min-w-0 flex-1"
                                 x-data="{
                                     open: false,
                                     pickerDecadeStart: Math.floor((parseInt(year_from) || new Date().getFullYear()) / 12) * 12,
@@ -324,6 +320,7 @@
                                     <input
                                         type="number"
                                         name="year_from"
+                                        aria-label="Publication year from"
                                         x-model="year_from"
                                         placeholder="e.g. 2018"
                                         min="1900"
@@ -416,7 +413,7 @@
 
                             <!-- To Year -->
                             <div
-                                class="relative flex-1"
+                                class="relative min-w-0 flex-1"
                                 x-data="{
                                     open: false,
                                     pickerDecadeStart: Math.floor((parseInt(year_to) || new Date().getFullYear()) / 12) * 12,
@@ -441,6 +438,7 @@
                                     <input
                                         type="number"
                                         name="year_to"
+                                        aria-label="Publication year to"
                                         x-model="year_to"
                                         placeholder="e.g. 2026"
                                         min="1900"
@@ -468,7 +466,7 @@
                                     x-transition:leave="transition ease-in duration-100"
                                     x-transition:leave-start="opacity-100 translate-y-0 scale-100"
                                     x-transition:leave-end="opacity-0 translate-y-1 scale-95"
-                                    class="absolute left-0 top-full mt-1.5 z-50 w-[240px] sm:w-[260px] rounded-xl bg-white border border-[#D7E0EC] p-3 shadow-[0_10px_25px_rgba(7,26,61,0.12)]"
+                                    class="absolute right-0 top-full mt-1.5 z-50 w-[240px] sm:w-[260px] rounded-xl bg-white border border-[#D7E0EC] p-3 shadow-[0_10px_25px_rgba(7,26,61,0.12)]"
                                     style="display: none;"
                                 >
                                     <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
@@ -559,10 +557,8 @@
             </div>
 
             <!-- 5. Bottom Divider -->
-            <div class="border-t border-[#E3E9F1] pt-5 sm:pt-6"></div>
-
             <!-- 6. Bottom Area: Search Options + Action Buttons -->
-            <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-5 pt-1">
+            <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-6 border-t border-[#E3E9F1] pt-6">
 
                 <!-- Left: Search Options -->
                 <div>
@@ -577,7 +573,7 @@
                                 name="match"
                                 value="all"
                                 x-model="matchType"
-                                class="mt-0.5 h-4.5 w-4.5 text-[#F9C000] accent-[#F9C000] focus:ring-[#F9C000] focus:ring-offset-0 border-[#D7E0EC] cursor-pointer"
+                                class="mt-0.5 h-4 w-4 accent-[#102B70] focus:ring-[#102B70] border-[#D7E0EC] cursor-pointer"
                             >
                             <div>
                                 <span class="block text-[14.5px] sm:text-[15px] font-semibold text-[#132B53] leading-snug group-hover:text-[#0B2454]">
@@ -596,7 +592,7 @@
                                 name="match"
                                 value="any"
                                 x-model="matchType"
-                                class="mt-0.5 h-4.5 w-4.5 text-[#F9C000] accent-[#F9C000] focus:ring-[#F9C000] focus:ring-offset-0 border-[#D7E0EC] cursor-pointer"
+                                class="mt-0.5 h-4 w-4 accent-[#102B70] focus:ring-[#102B70] border-[#D7E0EC] cursor-pointer"
                             >
                             <div>
                                 <span class="block text-[14.5px] sm:text-[15px] font-semibold text-[#132B53] leading-snug group-hover:text-[#0B2454]">
@@ -611,12 +607,12 @@
                 </div>
 
                 <!-- Right: Action Buttons ([ Clear ] [ Search Catalog ]) -->
-                <div class="flex items-center gap-3 shrink-0 self-stretch sm:self-auto justify-end">
+                <div class="flex flex-col-reverse gap-3 sm:flex-row lg:shrink-0">
                     <!-- Clear Button -->
                     <button
                         type="button"
                         @click="clearForm()"
-                        class="h-[48px] px-7 rounded-lg border border-[#BCC9DA] bg-white text-[15px] font-semibold text-[#173664] hover:bg-slate-50 hover:border-slate-400 active:scale-[0.98] transition-all cursor-pointer whitespace-nowrap shadow-2xs"
+                        class="h-12 px-7 rounded-xl border border-slate-300 bg-white text-base font-bold text-[#102B70] hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70] transition-colors cursor-pointer"
                     >
                         Clear
                     </button>
@@ -624,9 +620,9 @@
                     <!-- Search Catalog Button (Primary Strongest Element) -->
                     <button
                         type="submit"
-                        class="h-[48px] px-7 sm:px-8 rounded-lg bg-[#F9C000] hover:bg-[#E9B500] active:scale-[0.98] text-[#071A3D] text-[15.5px] font-bold shadow-xs hover:shadow transition-all flex items-center justify-center gap-2.5 cursor-pointer whitespace-nowrap"
+                        class="h-12 px-7 sm:px-8 rounded-xl bg-[#102B70] hover:bg-[#0B225E] text-white text-base font-bold transition-colors flex items-center justify-center gap-2 cursor-pointer focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#EFF6FF]"
                     >
-                        <svg width="18" height="18" class="h-4.5 w-4.5 text-[#071A3D] stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg width="18" height="18" class="h-4 w-4 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
                         <span>Search Catalog</span>

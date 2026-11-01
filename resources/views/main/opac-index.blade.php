@@ -16,6 +16,7 @@
         :results="$results ?? []"
         :pagination="$pagination ?? null"
         :totalResults="$totalResults ?? 0"
+        :suggestions="$suggestions ?? []"
         :availabilities="$availabilities ?? []"
         :resourceTypes="$resourceTypes ?? []"
         :subjects="$subjects ?? []"

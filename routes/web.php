@@ -67,6 +67,7 @@ Route::middleware(['auth', 'verified', 'role:Admin'])->prefix('admin')->name('ad
         });
 
         Route::get('/dashboard', \App\Livewire\Pages\Dashboard\Dashboard::class)->name('dashboard');
+        Route::get('/audit-trail', \App\Livewire\Pages\Dashboard\AuditLog::class)->name('audit-trail');
         Route::get('/user-management', \App\Livewire\Pages\Dashboard\UserManagement::class)->name('user-management');
         Route::get('/user-management/approvals', \App\Livewire\Pages\Dashboard\UserApprovals::class)->name('user-management.approvals');
         Route::get('/user-management/add', \App\Livewire\Pages\Dashboard\AddUser::class)->name('user-management.add');
@@ -232,7 +233,11 @@ Route::middleware(['auth', 'verified', 'role:Student', 'student.setup', 'student
     Route::get('/borrow', \App\Livewire\Pages\Student\Borrow::class)->name('borrow');
     Route::get('/profile', \App\Livewire\Pages\Student\Profile::class)->name('profile');
     Route::get('/reservations', \App\Livewire\Pages\Reservation\Index::class)->name('reservations');
-    Route::get('/reservations/confirmation/{id}', \App\Livewire\Pages\Reservation\Confirmation::class)->name('reservations.confirmation');
+    Route::get('/reservations/confirmation', \App\Livewire\Pages\Reservation\Confirmation::class)->name('reservations.confirmation');
+    Route::get('/reservations/confirmation/{id}', function (string $id) {
+        abort_unless(ctype_digit($id) && strlen($id) <= 20, 404);
+        return redirect()->route('student.reservations.confirmation', ['reservation' => str_pad($id, 5, '0', STR_PAD_LEFT)]);
+    });
 });
 
 require __DIR__.'/auth.php';

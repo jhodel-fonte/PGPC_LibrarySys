@@ -9,14 +9,16 @@
         default => 'Document Resubmission Required',
     } }}</title>
 </head>
-<body style="margin: 0; padding: 24px; font-family: Arial, Helvetica, sans-serif; font-size: 14px; line-height: 1.6; color: #111827; background: #ffffff;">
-    <div>
-        <p style="margin: 0; font-size: 16px; font-weight: bold;">{{ $collegeName }}</p>
+<body style="margin: 0; padding: 24px 12px; font-family: Arial, Helvetica, sans-serif; font-size: 15px; line-height: 1.6; color: #172033; background: #f3f5f8;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 24px; background: #ffffff; border: 1px solid #dbe3ef;">
+        <p style="margin: 0; font-size: 16px; font-weight: bold; color: #102b70;">{{ $collegeName }}</p>
         <p style="margin: 0 0 20px 0; color: #4b5563;">{{ $libraryName }}</p>
 
         <hr style="border: 0; border-top: 1px solid #d1d5db; margin: 0 0 20px 0;">
 
         <p style="margin: 0 0 16px 0;">Hello {{ $name }},</p>
+
+        <p style="margin: 0 0 16px 0; font-size: 21px; line-height: 1.3; font-weight: bold; color: #102b70;">{{ match ($result) { 'approved' => 'Account approved', 'blocked' => 'Registration temporarily rejected', default => 'Document resubmission required' } }}</p>
 
         @if(!empty($studentDetails))
             <div style="margin: 0 0 18px 0; padding: 14px 16px; border: 1px solid #dbe3ef; border-radius: 8px; background: #f8fafc;">

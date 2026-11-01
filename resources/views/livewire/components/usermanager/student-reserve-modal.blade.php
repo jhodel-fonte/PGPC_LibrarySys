@@ -97,17 +97,15 @@
                 <div class="space-y-1.5">
                     <div class="flex items-center justify-between">
                         <label class="text-sm font-bold text-[#334155]">Hold Window (Days)</label>
-                        <span class="text-sm font-bold text-[#102B70]">Claim by {{ now()->addDays($reservePickupDays)->format('M d, Y') }}</span>
+                        <span class="text-sm font-bold text-[#102B70]">Claim by {{ now('Asia/Manila')->addDays($reservePickupDays)->format('M d, Y') }}</span>
                     </div>
                     <select
                         wire:model.live="reservePickupDays"
                         class="h-12 w-full rounded-xl border border-slate-300 px-3.5 text-sm text-slate-800 font-medium focus:border-[#102B70] focus:ring-2 focus:ring-[#EFF6FF] focus:outline-none"
                     >
-                        <option value="1">1 Day (Tomorrow)</option>
-                        <option value="2">2 Days</option>
-                        <option value="3">3 Days (Recommended)</option>
-                        <option value="5">5 Days</option>
-                        <option value="7">7 Days (Maximum)</option>
+                        @for ($days = 1; $days <= \App\Services\ReservationSettings::maxPickupDays(); $days++)
+                            <option value="{{ $days }}">{{ $days }} {{ $days === 1 ? 'day' : 'days' }}</option>
+                        @endfor
                     </select>
                 </div>
 

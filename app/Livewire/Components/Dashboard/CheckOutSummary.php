@@ -16,6 +16,8 @@ class CheckOutSummary extends Component
     #[Reactive]
     public $checkoutBooks = [];
 
+    public string $dueDate = '';
+
     public function render()
     {
         return view('livewire.components.dashboard.check-out-summary');

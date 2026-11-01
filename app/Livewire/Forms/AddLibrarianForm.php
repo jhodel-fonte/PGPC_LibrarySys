@@ -234,7 +234,7 @@ class AddLibrarianForm extends Component
             }
 
             // 3. Atomically create Account, Librarian and assign permissions in DB transaction
-            $librarian = DB::transaction(function () use ($roleId, $statusId, $username, $credentials) {
+            $librarian = \App\Services\AuditTrail::transaction('Librarian account created', function () use ($roleId, $statusId, $username, $credentials) {
                 $account = Account::create([
                     'role_id' => $roleId,
                     'status_id' => $statusId,
@@ -280,7 +280,10 @@ class AddLibrarianForm extends Component
                     }
 
                     if (!empty($syncData)) {
+                        $before = $account->permissions()->get()->mapWithKeys(fn ($permission) => [$permission->name => (bool) $permission->pivot->is_allowed])->all();
                         $account->permissions()->sync($syncData);
+                        $after = $account->permissions()->get()->mapWithKeys(fn ($permission) => [$permission->name => (bool) $permission->pivot->is_allowed])->all();
+                        if ($before != $after) \App\Services\AuditTrail::record($account, 'permissions_changed', $before, $after);
                     }
                 }
 

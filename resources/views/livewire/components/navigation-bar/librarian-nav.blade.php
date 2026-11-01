@@ -158,3 +158,12 @@
         Settings
     </x-widget.sidebar-button>
 @endif --}}
+
+@if($signedInUser?->isAdmin())
+    <x-widget.sidebar-button href="{{ route('admin.audit-trail') }}" :active="request()->routeIs('admin.audit-trail')" :textSize="$textClass" wire:navigate>
+        <x-slot:icon>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5h6M9 9h6m-6 4h6M6 3h12v18H6z" /></svg>
+        </x-slot:icon>
+        Logs
+    </x-widget.sidebar-button>
+@endif

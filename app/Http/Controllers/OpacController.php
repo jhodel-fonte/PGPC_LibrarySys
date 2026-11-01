@@ -25,6 +25,8 @@ class OpacController extends Controller
     public function index(Request $request)
     {
         $data = $this->executeCatalogQuery($request);
+        $suggestions = ! empty($data['search']) && $data['totalResults'] === 0 && $data['catalogAvailable']
+            ? $this->suggestTitles($data) : [];
 
         // AJAX / Alpine.js dynamic response (no full page reload)
         if ($request->ajax() || $request->wantsJson() || $request->header('X-Alpine-Request')) {
@@ -43,7 +45,8 @@ class OpacController extends Controller
                 'yearTo'                => $data['yearTo'],
                 'sortBy'                => $data['sortBy'],
                 'perPage'               => $data['perPage'],
-            ]);
+                'suggestions'           => $suggestions,
+            ])->header('Cache-Control', 'no-store');
         }
 
         return view('main.opac-index', [
@@ -63,6 +66,7 @@ class OpacController extends Controller
             'subjects'               => $data['subjects'],
             'isLoggedIn'             => $data['isLoggedIn'],
             'currentUser'            => $data['currentUser'],
+            'suggestions'            => $suggestions,
         ]);
     }
 
@@ -88,6 +92,9 @@ class OpacController extends Controller
 
         $data = $this->executeCatalogQuery($request);
 
+        $suggestions = $hasSearched && ! empty($data['advTitle']) && $data['totalResults'] === 0 && $data['catalogAvailable']
+            ? $this->suggestTitles($data) : [];
+
         if ($request->ajax() || $request->wantsJson() || $request->header('X-Alpine-Request')) {
             return response()->json([
                 'results'      => DataNormalizationService::normalizeItems($data['items']),
@@ -96,11 +103,13 @@ class OpacController extends Controller
                 'sortBy'       => $data['sortBy'],
                 'perPage'      => $data['perPage'],
                 'hasSearched'  => $hasSearched,
-            ]);
+                'suggestions'  => $suggestions,
+            ])->header('Cache-Control', 'no-store');
         }
 
         return view('main.advance-search', array_merge($data, [
             'hasSearched' => $hasSearched,
+            'suggestions' => $suggestions,
             'title'       => $data['advTitle'],
             'author'      => $data['advAuthor'],
             'subject'     => $data['advSubject'],
@@ -151,6 +160,10 @@ class OpacController extends Controller
             return redirect()->to($redirectUrl)->with('warning', 'Please complete account verification before reserving books.');
         }
 
+        $request->validate([
+            'pickup_date' => 'required|date_format:Y-m-d|after_or_equal:' . now('Asia/Manila')->addDay()->toDateString() . '|before_or_equal:' . now('Asia/Manila')->addDays(\App\Services\ReservationSettings::maxPickupDays())->toDateString(),
+        ]);
+
         try {
             $detailId = BookDetail::whereKey($bookId)->value('id') ?? Book::whereKey($bookId)->value('book_detail_id');
             if (! $detailId || ! BookDetail::publicCatalog()->whereDoesntHave('periodicalIssue', fn($q) => $q->where('borrowable', false))->whereKey($detailId)->exists()) {
@@ -160,7 +173,7 @@ class OpacController extends Controller
             if ($detailId) {
                 app(\App\Services\ReservationWaitlistService::class)->allocate($detailId);
             }
-            $reservation = DB::transaction(function () use ($bookId) {
+            $reservation = \App\Services\AuditTrail::transaction('Reservation created', function () use ($bookId, $request) {
                 // Bug fix #7: OPAC passes book_detail_id — resolve an available copy via BookDetail
                 $detail = BookDetail::find($bookId);
                 $detailId = $detail?->id ?? Book::whereKey($bookId)->value('book_detail_id');
@@ -199,12 +212,13 @@ class OpacController extends Controller
                     'account_id'             => $user?->id,
                     'reservation_status_id'  => 1,
                     'reservation_date'       => now(),
-                    'due_date'               => now()->addDays(3)->setTime(17, 0, 0),
+                    'due_date'               => \Carbon\Carbon::parse($request->input('pickup_date'), 'Asia/Manila')->setTime(17, 0)->setTimezone(config('app.timezone')),
                     'comment'                => 'Online OPAC reservation by ' . ($user?->username ?? 'student'),
                 ]);
 
                 $book->update(['status' => 'reserved']);
 
+                app(\App\Services\ReservationNotificationService::class)->notifyStaff($reservation);
                 return $reservation;
             });
 
@@ -213,12 +227,12 @@ class OpacController extends Controller
             if (request()->expectsJson()) {
                 return response()->json([
                     'success'        => true,
-                    'message'        => 'Book reservation submitted successfully! Please pick up the item within {count} days.',
+                    'message'        => 'Book reservation submitted and pending library approval.',
                     'reservation_id' => $reservation->id,
                 ]);
             }
 
-            return back()->with('success', 'Book reservation submitted! Please pick up your item at the circulation desk within 3 days.');
+            return back()->with('success', 'Book reservation submitted and pending library approval.');
 
         } catch (\RuntimeException $e) {
             $message = match ($e->getMessage()) {
@@ -374,7 +388,45 @@ class OpacController extends Controller
             'subjects'       => $subjects,
             'isLoggedIn'     => $isLoggedIn,
             'currentUser'    => $currentUser,
+            'catalogAvailable' => $useView,
         ]);
+    }
+
+    protected function suggestTitles(array $filters): array
+    {
+        $query = OpacCatalogView::query()->whereNotNull('book_title');
+        if (! $filters['isAdvancedSearch']) {
+            $query->filterType($filters['selectedType'])
+                ->filterAvailability($filters['selectedAvailabilities'])
+                ->filterYear($filters['yearFrom'], $filters['yearTo'])
+                ->filterSubject($filters['selectedSubjects']);
+        } elseif ($filters['matchType'] === 'all') {
+            $query->advancedSearch([
+                'author' => $filters['advAuthor'], 'subject' => $filters['advSubject'],
+                'isbn' => $filters['advIsbn'], 'type' => $filters['selectedType'],
+                'availability' => $filters['selectedAvailabilities'], 'year_from' => $filters['yearFrom'],
+                'year_to' => $filters['yearTo'], 'location' => $filters['advLocation'],
+            ], 'all');
+        }
+
+        $title = mb_strtolower(trim($filters['isAdvancedSearch'] ? $filters['advTitle'] : $filters['search']));
+        if (mb_strlen($title) < 3) {
+            return [];
+        }
+
+        if (DB::connection()->getDriverName() === 'pgsql') {
+            return $query->select('book_title')->selectRaw('word_similarity(?, lower(book_title)) as score', [$title])
+                ->whereRaw('word_similarity(?, lower(book_title)) >= ?', [$title, 0.5])
+                ->orderByDesc('score')->distinct()->limit(3)->get()->pluck('book_title')->all();
+        }
+
+        // shortcut: non-PostgreSQL suggestions scan up to 500 titles; add indexed fuzzy search for larger catalogs.
+        return $query->distinct()->limit(500)->pluck('book_title')
+            ->map(function ($candidate) use ($title) {
+                similar_text($title, mb_strtolower($candidate), $score);
+                return ['title' => $candidate, 'score' => $score];
+            })->filter(fn ($candidate) => $candidate['score'] >= 60)
+            ->sortByDesc('score')->take(3)->pluck('title')->values()->all();
     }
 
     /**

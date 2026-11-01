@@ -3,253 +3,168 @@
         function liveCameraScanner(wire, autoStart = true) {
             return {
                 scanner: null,
+                cleanup: null,
                 isPaused: !autoStart,
                 enabled: autoStart,
                 isCollapsed: false,
-                hasPermission: true,
                 permissionError: false,
                 isRequesting: false,
                 isSecure: window.isSecureContext,
                 cameraErrorTitle: 'Camera Unavailable',
-                cameraErrorMsg: 'Camera permission denied or blocked',
+                cameraErrorMsg: '',
                 hasActiveScan: false,
-                scanTimeout: null,
-                resetTimeout: null,
-                inactivityTimeout: null,
-                loaderInterval: null,
-                loaderTimeout: null,
-                inactivityDelay: 60000, // 60 seconds before pausing automatically
+                scanMessage: 'Point the camera at a QR code or barcode.',
+                scanSuccess: false,
+                lastCode: '',
+                lastSeen: 0,
+                scanId: null,
+                scanTimer: null,
+                scanTimedOut: false,
+                generation: 0,
+                destroyed: false,
 
-                state: wire ? wire.entangle('state') : null,
-                message: wire ? wire.entangle('message') : null,
-                detail: wire ? wire.entangle('detail') : null,
-
-                async init() {
-                    if (!autoStart) return;
-                    // Use active polling to reliably detect Html5Qrcode module regardless of SPA navigation/load timings
-                    if (window.Html5Qrcode) {
-                        this.startScanner();
-                    } else {
-                        this.loaderInterval = setInterval(() => {
-                            if (window.Html5Qrcode) {
-                                clearInterval(this.loaderInterval);
-                                clearTimeout(this.loaderTimeout);
-                                this.startScanner();
-                            }
-                        }, 50);
-                        // Clear interval after 6 seconds to prevent infinite execution if script fails
-                        this.loaderTimeout = setTimeout(() => clearInterval(this.loaderInterval), 6000);
-                    }
+                init() {
+                    if (autoStart) this.startScanner();
                 },
                 async cleanScannerInstance() {
-                    if (this.scanner) {
-                        try {
-                            if (this.scanner.isScanning) {
-                                await this.scanner.stop();
-                            }
-                            await this.scanner.clear();
-                        } catch (_) {}
-                        this.scanner = null;
-                    }
-
-                    // Release any unclosed media tracks from any video tag in the viewfinder
+                    const scanner = this.scanner;
+                    this.scanner = null;
+                    if (!scanner) return;
                     try {
-                        const existingVideos = document.querySelectorAll('#reader-viewfinder video');
-                        existingVideos.forEach(v => {
-                            if (v.srcObject && v.srcObject.getTracks) {
-                                v.srcObject.getTracks().forEach(t => t.stop());
-                                v.srcObject = null;
-                            }
-                        });
-                        const container = document.getElementById('reader-viewfinder');
-                        if (container) {
-                            container.innerHTML = '';
-                        }
-                    } catch (_) {}
+                        if (scanner.isScanning) await scanner.stop();
+                        scanner.clear();
+                    } catch (error) {
+                        console.warn('Could not release camera:', error);
+                    }
                 },
                 async startScanner() {
-                    if (!autoStart && !this.enabled) return;
-                    if (this.isRequesting) return;
-                    if (this.scanner && this.scanner.isScanning) {
-                        this.hasPermission = true;
-                        this.permissionError = false;
-                        this.isPaused = false;
-                        return;
-                    }
-
+                    this.enabled = true;
+                    if (this.isRequesting || this.destroyed) return;
+                    if (this.scanner?.isScanning) { this.isPaused = false; return; }
                     this.isRequesting = true;
                     this.permissionError = false;
-
-                    // Fully release prior instance and tracks
-                    await this.cleanScannerInstance();
-
-                    const config = {
-                        fps: 20,
-                        aspectRatio: 1.0,
-                        experimentalFeatures: {
-                            useBarCodeDetectorIfSupported: true
-                        }
-                    };
-
-                    const onScanSuccess = (decodedText, decodedResult) => {
-                        if (decodedText && !this.hasActiveScan) {
-                            this.hasActiveScan = true;
-                            if (wire) wire.handleScan(decodedText);
-                            this.startInactivityTimer();
-
-                            clearTimeout(this.scanTimeout);
-                            clearTimeout(this.resetTimeout);
-
-                            this.scanTimeout = setTimeout(() => {
-                                this.hasActiveScan = false;
-                            }, 1500);
-
-                            this.resetTimeout = setTimeout(() => {
-                                if (!this.isPaused && !this.permissionError && wire && autoStart) {
-                                    wire.setScanState('scanning', 'Searching for barcode or QR code...');
-                                }
-                            }, 2500);
-                        }
-                    };
-
-                    const onScanFailure = (errorMessage) => {
-                        // Frame decode error; suppress to keep console clean
-                    };
-
+                    this.isPaused = false;
+                    this.scanMessage = 'Starting camera…';
+                    const generation = ++this.generation;
                     try {
-                        let started = false;
-
-                        // 1. First attempt: Query detected cameras
+                        if (this.cleanup) await this.cleanup;
+                        await this.cleanScannerInstance();
+                        for (let i = 0; i < 60 && !window.Html5Qrcode && generation === this.generation && !this.destroyed; i++) {
+                            await new Promise(resolve => setTimeout(resolve, 100));
+                        }
+                        if (generation !== this.generation || !this.enabled || this.destroyed) return;
+                        if (!window.Html5Qrcode) throw new Error('Scanner library is unavailable. Reload the page and try again.');
+                        const config = { fps: 20, aspectRatio: 1.0 };
+                        const onSuccess = code => this.detectCode(code);
+                        const onFailure = () => {
+                            if (this.lastCode && Date.now() - this.lastSeen > 1000) this.lastCode = '';
+                        };
                         let devices = [];
-                        try {
-                            devices = await Html5Qrcode.getCameras();
-                        } catch (e) {
-                            console.warn('Could not list cameras:', e);
-                        }
-
-                        if (devices && devices.length > 0) {
-                            const backCamera = devices.find(d =>
-                                d.label.toLowerCase().includes('back') ||
-                                d.label.toLowerCase().includes('environment') ||
-                                d.label.toLowerCase().includes('rear')
-                            );
-                            const targetId = backCamera ? backCamera.id : devices[0].id;
-
+                        try { devices = await window.Html5Qrcode.getCameras(); } catch (_) {}
+                        if (generation !== this.generation || !this.enabled || this.destroyed) return;
+                        const back = devices.find(device => /back|rear|environment/i.test(device.label));
+                        const candidates = [back?.id || devices[0]?.id, { facingMode: 'environment' }, { facingMode: 'user' }].filter(Boolean);
+                        let lastError;
+                        for (const candidate of candidates) {
+                            if (generation !== this.generation || !this.enabled || this.destroyed) return;
+                            this.scanner = new window.Html5Qrcode('reader-viewfinder');
                             try {
-                                this.scanner = new Html5Qrcode('reader-viewfinder');
-                                await this.scanner.start(targetId, config, onScanSuccess, onScanFailure);
-                                started = true;
-                            } catch (devErr) {
-                                console.warn('Starting with camera ID failed, attempting generic fallback:', devErr);
+                                await this.scanner.start(candidate, config, onSuccess, onFailure);
+                                lastError = null;
+                                break;
+                            } catch (error) {
+                                lastError = error;
                                 await this.cleanScannerInstance();
                             }
                         }
-
-                        // 2. Second attempt: FacingMode environment (back camera)
-                        if (!started) {
-                            try {
-                                this.scanner = new Html5Qrcode('reader-viewfinder');
-                                await this.scanner.start({ facingMode: 'environment' }, config, onScanSuccess, onScanFailure);
-                                started = true;
-                            } catch (envErr) {
-                                console.warn('Starting with facingMode environment failed, attempting user webcam:', envErr);
-                                await this.cleanScannerInstance();
-                            }
-                        }
-
-                        // 3. Third attempt: FacingMode user (standard webcam)
-                        if (!started) {
-                            this.scanner = new Html5Qrcode('reader-viewfinder');
-                            await this.scanner.start({ facingMode: 'user' }, config, onScanSuccess, onScanFailure);
-                            started = true;
-                        }
-
-                        if (!autoStart && !this.enabled) {
-                            await this.cleanScannerInstance();
-                            this.isRequesting = false;
-                            return;
-                        }
-                        this.hasPermission = true;
-                        this.permissionError = false;
-                        this.isPaused = false;
-                        this.isRequesting = false;
-                        if (wire && autoStart) wire.setScanState('scanning', 'Searching for barcode or QR code...');
-                        this.startInactivityTimer();
-                    } catch (err) {
-                        console.warn('Failed to start html5-qrcode feed:', err);
-                        this.hasPermission = false;
+                        if (generation !== this.generation || !this.enabled || this.destroyed) return;
+                        if (lastError) throw lastError;
+                        this.scanMessage = 'Point the camera at a QR code or barcode.';
+                    } catch (error) {
+                        if (generation !== this.generation || !this.enabled || this.destroyed) return;
                         this.permissionError = true;
-                        this.isRequesting = false;
-
-                        const errStr = (err?.message || err?.name || err?.toString() || '').toLowerCase();
-                        if (errStr.includes('notreadableerror') || errStr.includes('could not start video source')) {
-                            this.cameraErrorTitle = 'Camera In Use / Locked';
-                            this.cameraErrorMsg = 'The webcam is currently in use by another application (Zoom, Teams, Camera app) or another browser tab. Please close other apps and click Retry.';
-                        } else if (errStr.includes('notallowederror') || errStr.includes('permission denied')) {
-                            this.cameraErrorTitle = 'Camera Permission Blocked';
-                            this.cameraErrorMsg = 'Camera access was blocked. Please allow camera permissions in your browser address bar and click Retry.';
-                        } else if (errStr.includes('notfounderror') || errStr.includes('no camera') || errStr.includes('devicenotfound')) {
-                            this.cameraErrorTitle = 'No Webcam Detected';
-                            this.cameraErrorMsg = 'No camera device was detected. Please plug in or enable your webcam and click Retry.';
+                        this.cameraErrorTitle = 'Camera unavailable';
+                        const description = String(error?.message || error?.name || error);
+                        if (/notallowed|permission denied/i.test(description)) {
+                            this.cameraErrorTitle = 'Camera permission blocked';
+                            this.cameraErrorMsg = 'Allow camera access in your browser settings, then retry.';
+                        } else if (/notfound|no camera|devicenotfound/i.test(description)) {
+                            this.cameraErrorTitle = 'No camera detected';
+                            this.cameraErrorMsg = 'Connect or enable a camera, then retry.';
+                        } else if (/notreadable|video source/i.test(description)) {
+                            this.cameraErrorTitle = 'Camera in use';
+                            this.cameraErrorMsg = 'Close other apps or tabs using the camera, then retry.';
                         } else {
-                            this.cameraErrorTitle = 'Camera Unavailable';
-                            this.cameraErrorMsg = err.message || err.toString();
+                            this.cameraErrorMsg = description;
                         }
-
-                        if (wire && autoStart) wire.setScanState('error', this.cameraErrorTitle);
+                    } finally {
+                        if (generation !== this.generation || !this.enabled || this.destroyed) await this.cleanScannerInstance();
+                        this.isRequesting = false;
+                        if (generation !== this.generation && this.enabled && !this.destroyed) this.startScanner();
                     }
+                },
+                detectCode(code) {
+                    if (!this.enabled || this.destroyed || !code) return;
+                    const now = Date.now();
+                    if (code === this.lastCode) { this.lastSeen = now; return; }
+                    if (this.hasActiveScan) return;
+                    this.lastCode = code;
+                    this.lastSeen = now;
+                    if (autoStart) {
+                        window.dispatchEvent(new CustomEvent('camera-code-read', { detail: { code } }));
+                        this.scanSuccess = true;
+                        this.scanMessage = 'Code added to the input. Looking up details…';
+                        return;
+                    }
+                    this.hasActiveScan = true;
+                    this.scanTimedOut = false;
+                    this.scanSuccess = false;
+                    this.scanMessage = 'Code detected. Looking up details…';
+                    const scanId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+                    this.scanId = scanId;
+                    this.scanTimer = setTimeout(() => {
+                        if (this.scanId === scanId) {
+                            this.scanTimedOut = true;
+                            this.scanMessage = 'Lookup is taking longer than expected. Check the connection or retry.';
+                        }
+                    }, 15000);
+                    Promise.resolve(wire.handleScan(code, scanId)).catch(() => this.finishScan({ scanId, success: false, message: 'Could not process the scan. Try again.' }));
+                },
+                finishScan(result) {
+                    if (!this.hasActiveScan || result.scanId !== this.scanId) return;
+                    clearTimeout(this.scanTimer);
+                    this.hasActiveScan = false;
+                    this.scanTimedOut = false;
+                    this.scanId = null;
+                    this.scanSuccess = !!result.success;
+                    this.scanMessage = result.message || 'Lookup complete.';
+                },
+                retryScan() {
+                    clearTimeout(this.scanTimer);
+                    this.hasActiveScan = false;
+                    this.scanTimedOut = false;
+                    this.scanId = null;
+                    this.lastCode = '';
+                    this.scanSuccess = false;
+                    this.scanMessage = 'Point the camera at a QR code or barcode.';
+                },
+                stopScanner() {
+                    this.enabled = false;
+                    this.isPaused = true;
+                    this.generation++;
+                    this.retryScan();
+                    if (!this.isRequesting) this.cleanup = this.cleanScannerInstance();
                 },
                 toggleScanner() {
-                    if (this.isPaused) {
-                        this.startScanner();
-                    } else if (this.scanner && this.scanner.isScanning) {
-                        this.scanner.stop().then(() => {
-                            this.isPaused = true;
-                            this.clearInactivityTimer();
-                            if (wire && autoStart) wire.setScanState('ready', 'Camera is currently paused');
-                        }).catch(err => {
-                            console.warn('Failed to stop html5-qrcode scanner:', err);
-                        });
-                    } else {
-                        this.isPaused = true;
-                        this.clearInactivityTimer();
-                        if (wire && autoStart) wire.setScanState('ready', 'Camera is currently paused');
-                    }
+                    if (this.enabled && !this.isPaused) this.stopScanner();
+                    else this.startScanner();
                 },
                 destroy() {
-                    this.cleanScannerInstance();
-                    clearInterval(this.loaderInterval);
-                    clearTimeout(this.loaderTimeout);
-                    clearTimeout(this.scanTimeout);
-                    clearTimeout(this.resetTimeout);
-                    this.clearInactivityTimer();
-                },
-                startInactivityTimer() {
-                    this.clearInactivityTimer();
-                    this.inactivityTimeout = setTimeout(() => {
-                        this.handleInactivityPause();
-                    }, this.inactivityDelay);
-                },
-                clearInactivityTimer() {
-                    if (this.inactivityTimeout) {
-                        clearTimeout(this.inactivityTimeout);
-                        this.inactivityTimeout = null;
-                    }
-                },
-                handleInactivityPause() {
-                    if (this.scanner && this.scanner.isScanning && !this.isPaused) {
-                        this.scanner.stop().then(() => {
-                            this.isPaused = true;
-                            if (wire && autoStart) wire.setScanState('ready', 'Camera paused due to inactivity');
-                        }).catch(err => {
-                            console.warn('Failed to stop scanner on inactivity:', err);
-                        });
-                    }
+                    this.destroyed = true;
+                    this.stopScanner();
                 }
             };
         }
-
         window.liveCameraScanner = liveCameraScanner;
-
     })();
 </script>

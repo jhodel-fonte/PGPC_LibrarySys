@@ -33,7 +33,7 @@ class CatalogDeletionService
     public function delete(string $type, array $ids, bool $confirmed): void
     {
         $ids = $this->expandPeriodicalTitles($type, $ids);
-        $cancelledReservations = DB::transaction(function () use ($type, $ids, $confirmed) {
+        $cancelledReservations = \App\Services\AuditTrail::transaction('Catalog entries deleted', function () use ($type, $ids, $confirmed) {
             if (in_array($type, ['title', 'issue'], true)) {
                 $details = BookDetail::whereIn('id', $ids)->lockForUpdate()->get();
                 if ($details->count() !== count($ids)) {

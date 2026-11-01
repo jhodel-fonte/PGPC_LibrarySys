@@ -1,5 +1,6 @@
 <div class="w-full flex flex-col gap-1.5"
      x-data="{ queryVal: @entangle('value'), openingAdd: false }"
+     x-on:camera-code-read.window="queryVal = $event.detail.code; $wire.submit(queryVal); $nextTick(() => $refs.checkinInput?.focus())"
      @clear-search-input.window="queryVal = ''; $nextTick(() => { $refs.checkinInput?.focus(); });"
      @set-search-value.window="
          let codeStr = ($event.detail && typeof $event.detail === 'object') ? ($event.detail.code || '') : ($event.detail || '');

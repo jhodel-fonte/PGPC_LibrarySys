@@ -372,6 +372,9 @@ class Account extends Authenticatable
      */
     public function getVerificationRedirectRoute(): string
     {
+        if ($this->student?->contact_verification_required) {
+            return route('student.contact.verify');
+        }
         if ((int) $this->status_id === 5 || strtolower($this->status?->status_name ?? '') === 'not approved') {
             return route('verification.status');
         }

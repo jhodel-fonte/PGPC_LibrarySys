@@ -515,7 +515,7 @@ class CatalogSpreadsheetImportService
 
         foreach ($import->rows()->where('status', 'pending')->orderBy('id')->limit(100)->get() as $row) {
             try {
-                $processed = DB::transaction(function () use ($import, $row, $options, $prefix, &$startNum, &$assignedInBatch, &$context): string {
+                $processed = \App\Services\AuditTrail::transaction('Catalog entry imported', function () use ($import, $row, $options, $prefix, &$startNum, &$assignedInBatch, &$context): string {
                     $currentImport = CatalogImport::whereKey($import->id)->lockForUpdate()->firstOrFail();
                     if ($currentImport->status !== 'importing') {
                         return 'cancelled';
@@ -677,13 +677,13 @@ class CatalogSpreadsheetImportService
         if (!empty($data['author'])) {
             $authorIds = $this->authorIds($data['author'], $context);
             if (!empty($authorIds)) {
-                $bookData->authors()->syncWithoutDetaching($authorIds);
+                \App\Services\AuditTrail::syncRelationship($bookData, 'authors', $authorIds, false);
             }
         }
         if (!empty($data['categories'])) {
             $catIds = $this->namedIds(Category::class, $data['categories'], $context);
             if (!empty($catIds)) {
-                $bookData->categories()->syncWithoutDetaching($catIds);
+                \App\Services\AuditTrail::syncRelationship($bookData, 'categories', $catIds, false);
             }
         }
         if (!empty($data['subject'])) {
@@ -778,7 +778,7 @@ class CatalogSpreadsheetImportService
             'date_acquired' => now()->toDateString(),
         ]);
 
-        $book->languages()->syncWithoutDetaching([$language->id]);
+        \App\Services\AuditTrail::syncRelationship($book, 'languages', [$language->id], false);
 
         return [$bookData, $bookDetail, $book];
     }

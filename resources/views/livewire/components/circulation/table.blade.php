@@ -85,7 +85,7 @@
                                         <div class="flex items-center gap-1">
                                             <span class="font-medium text-slate-500">Due:</span>
                                             <span class="font-bold {{ $isOverdue ? 'text-[#B91C1C]' : 'text-slate-800' }} tabular-nums">
-                                                {{ $item['due_date'] ?? 'N/A' }}
+                                                {{ $mode === 'check-out' ? 'See borrow summary' : ($item['due_date'] ?? 'N/A') }}
                                             </span>
                                         </div>
                                     </div>
@@ -106,7 +106,7 @@
                                 {{ $item['borrowed_on'] ?? $item['added_on'] ?? now()->format('M d, Y') }}
                             </td>
                             <td class="circulation-desktop-cell hidden md:table-cell py-3 px-2 sm:px-3 align-top text-xs font-semibold text-[#475569] tabular-nums">
-                                {{ $item['due_date'] ?? 'N/A' }}
+                                {{ $mode === 'check-out' ? 'See borrow summary' : ($item['due_date'] ?? 'N/A') }}
                             </td>
                             <td class="circulation-desktop-cell hidden md:table-cell py-3 px-2 sm:px-3 align-top text-right">
                                 @if($mode === 'check-out')

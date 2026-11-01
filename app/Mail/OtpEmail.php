@@ -24,7 +24,7 @@ class OtpEmail extends Mailable implements ShouldQueue
     /**
      * Create a new message instance.
      */
-    public function __construct(string|int|null $otp = null)
+    public function __construct(string|int|null $otp = null, public ?int $expiryMinutes = null)
     {
         $this->otp = $otp;
     }
@@ -49,7 +49,8 @@ class OtpEmail extends Mailable implements ShouldQueue
             with: [
                 'title' => 'Account Verification Code',
                 'otp' => $this->otp,
-                'message' => 'Your one-time verification code (OTP) for your PGPC Library account is: ' . $this->otp,
+                'emailMessage' => 'Use this code to verify your PGPC Library account.',
+                'expiryMinutes' => $this->expiryMinutes ?? config('auth.otp.expiry', 10),
             ],
         );
     }

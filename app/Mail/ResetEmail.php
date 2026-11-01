@@ -26,7 +26,7 @@ class ResetEmail extends Mailable implements ShouldQueue
     /**
      * Create a new message instance.
      */
-    public function __construct(string $url, ?Account $user = null)
+    public function __construct(string $url, ?Account $user = null, public ?string $otp = null, public ?int $otpExpiresAt = null)
     {
         $this->url = $url;
         $this->user = $user;
@@ -50,13 +50,19 @@ class ResetEmail extends Mailable implements ShouldQueue
         return new Content(
             view: 'emails.template',
             with: [
-                'title' => 'Password Reset Request',
+                'title' => 'Reset your password',
                 'lines' => [
                     'We received a request to reset the password for your PGPC Library account.',
-                    'Open the link below to choose a new password. If you did not request this, you can ignore this email.',
+                    $this->otp !== null ? 'Enter the code on the recovery page, or use the button below to reset your password.' : 'Use the button below to choose a new password.',
                 ],
+                'otp' => $this->otp,
+                'formattedOtpExpiresAt' => $this->otpExpiresAt ? \Carbon\Carbon::createFromTimestamp($this->otpExpiresAt, 'Asia/Manila')->format('M d, Y g:i A') . ' (Philippine time)' : null,
                 'actionUrl' => $this->url,
                 'actionText' => 'Reset your password',
+                'outroLines' => [
+                    'The reset link expires '.(int) config('auth.passwords.'.config('auth.defaults.passwords', 'users').'.expire', 60).' minutes after it was requested.',
+                    'If you did not request a password reset, you can ignore this email.',
+                ],
                 'user' => $this->user,
             ],
         );

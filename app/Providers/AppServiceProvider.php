@@ -18,6 +18,7 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        \App\Services\AuditTrail::register();
         \Livewire\Livewire::addPersistentMiddleware([\App\Http\Middleware\EnsureStudentSetup::class]);
         \App\Models\Book::updated(function (\App\Models\Book $book) {
             if (! $book->trashed() && $book->wasChanged('status') && $book->status === 'available' && $book->book_detail_id) {

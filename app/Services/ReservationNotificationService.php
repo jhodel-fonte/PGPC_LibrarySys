@@ -3,12 +3,43 @@
 namespace App\Services;
 
 use App\Models\BookReservation;
+use App\Models\Account;
 use App\Notifications\Alerts;
 use App\Support\EmailUrl;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Throwable;
 
 class ReservationNotificationService
 {
+    public function notifyStaff(BookReservation $reservation, ?int $excludeAccountId = null): void
+    {
+        $reservation->loadMissing('book.bookDetail.bookData');
+        $reference = 'RES-' . str_pad((string) $reservation->id, 5, '0', STR_PAD_LEFT);
+        $staff = Account::where('status_id', 1)
+            ->whereHas('role', fn ($q) => $q->whereIn('name', EmployeeRoleService::STAFF_ROLES))
+            ->with(['role', 'permissions'])->get();
+
+        foreach ($staff as $account) {
+            if ($account->id === $excludeAccountId || ! EmployeeRoleService::canManageCirculation($account)) continue;
+            $inserted = DB::table('reservation_notification_deliveries')->insertOrIgnore([
+                'reservation_id' => $reservation->id, 'account_id' => $account->id,
+            ]);
+            if (! $inserted) continue;
+
+            DB::table('notifications')->insert([
+                'id' => (string) Str::uuid(), 'type' => Alerts::class,
+                'notifiable_type' => $account->getMorphClass(), 'notifiable_id' => $account->id,
+                'data' => json_encode([
+                    'title' => 'New reservation', 'message' => $reference . ' was created.',
+                    'type' => 'info', 'book_title' => $reservation->book?->bookDetail?->bookData?->book_title,
+                    'reservation_id' => $reservation->id, 'action_text' => 'View reservations',
+                ], JSON_THROW_ON_ERROR),
+                'created_at' => now(), 'updated_at' => now(),
+            ]);
+        }
+    }
+
     public function created(BookReservation $reservation): void
     {
         $this->statusChanged($reservation);
@@ -65,7 +96,7 @@ class ReservationNotificationService
                 details: [
                     'Reservation reference' => $reference,
                     'Reserved on' => $reservation->reservation_date?->format('M d, Y h:i A'),
-                    'Pickup deadline' => strtolower($status) === 'approved' || $titleOverride === 'Pickup deadline extended' ? $dueDate : null,
+                    'Pickup deadline' => in_array(strtolower($status), ['pending', 'approved'], true) || $titleOverride === 'Pickup deadline extended' ? $dueDate : null,
                     'Accession number' => $reservation->book?->accession_number,
                     'Call number' => $detail?->call_number,
                     'ISBN' => $detail?->isbn,

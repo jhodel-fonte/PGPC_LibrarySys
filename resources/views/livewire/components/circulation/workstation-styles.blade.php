@@ -28,7 +28,6 @@
         .circulation-workstation .workstation-table { order: 3; }
         .circulation-workstation .workstation-preview { order: 4; min-height: 0; }
         .circulation-workstation .workstation-summary { order: 5; }
-        .circulation-workstation .workstation-camera-view { height: clamp(160px, 48vw, 220px); }
         .circulation-workstation .workstation-camera button { min-height: 44px; }
         .circulation-workstation .workstation-table button { min-height: 44px; }
         .circulation-workstation .workstation-student button { min-height: 44px; }
@@ -54,7 +53,6 @@
         .circulation-workstation .workstation-sidebar { min-height: 0; overflow-y: auto; gap: 0.75rem; }
         .circulation-workstation .workstation-student { min-height: 0; padding: 1rem; }
         .circulation-workstation .workstation-table { min-height: 0; height: 100%; }
-        .circulation-workstation .workstation-camera-view { height: clamp(100px, 18vh, 150px); }
         .circulation-workstation .workstation-preview, .circulation-workstation .workstation-preview-card { min-height: 0; }
     }
 </style>

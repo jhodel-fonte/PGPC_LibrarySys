@@ -11,6 +11,7 @@ use App\Models\Student;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Url;
@@ -33,12 +34,46 @@ class Index extends Component
     public string $selectedCategory = 'all';
 
     public int $perPage = 8;
+    public bool $browseAll = false;
+
+    public function showRecommendations(): void
+    {
+        $this->reset(['search', 'selectedCategory', 'browseAll']);
+        $this->resetPage();
+    }
+
+    public function refreshRecommendations(): void
+    {
+        $account = Auth::user();
+        if (! $account || ($account->recommendation?->generated_at?->gt(now()->subDay()))
+            || ! Cache::add('reservation-recommendations:'.$account->id, true, now()->addMinutes(5))) {
+            return;
+        }
+
+        try {
+            app(\App\Services\RecommendationService::class)->refreshFor($account);
+            $account->unsetRelation('recommendation');
+            unset($this->recommendedBooks);
+        } catch (\Throwable $e) {
+            report($e);
+        }
+    }
+
+    #[Computed]
+    public function recommendedBooks()
+    {
+        return Auth::user()?->recommendation?->getActiveBooks()
+            ->filter(fn ($book) => (! $book->periodicalIssue || $book->periodicalIssue->borrowable)
+                && $book->books->contains(fn ($copy) => in_array($copy->status, ['available', 'borrowed', 'reserved'], true)))
+            ->each(fn ($book) => $book->setRelation('books', $book->books->where('status', 'available')->values()))
+            ->values() ?? collect();
+    }
 
     // Reservation Modal state
     public bool $showModal = false;
     public ?int $selectedBookDetailId = null;
     public ?int $selectedBookCopyId = null;
-    public int $pickupDays = 3;
+    public string $pickupDate = '';
     public string $studentComment = '';
     public bool $isSubmitting = false;
 
@@ -169,7 +204,7 @@ class Index extends Component
         $firstAvailableCopy = $detail?->books->first();
 
         $this->selectedBookCopyId = $firstAvailableCopy?->id;
-        $this->pickupDays = 3;
+        $this->pickupDate = now('Asia/Manila')->addDay()->toDateString();
         $this->studentComment = '';
         $this->showModal = true;
     }
@@ -211,7 +246,7 @@ class Index extends Component
 
         $this->validate([
             'selectedBookCopyId' => 'required|exists:books,id',
-            'pickupDays' => 'required|integer|min:1|max:7',
+            'pickupDate' => 'required|date_format:Y-m-d|after_or_equal:' . now('Asia/Manila')->addDay()->toDateString() . '|before_or_equal:' . now('Asia/Manila')->addDays(\App\Services\ReservationSettings::maxPickupDays())->toDateString(),
         ], [
             'selectedBookCopyId.required' => 'An available book copy could not be determined.',
         ]);
@@ -236,7 +271,7 @@ class Index extends Component
 
         try {
             app(\App\Services\ReservationWaitlistService::class)->allocate($this->selectedBookDetailId);
-            $reservation = DB::transaction(function () use ($student) {
+            $reservation = \App\Services\AuditTrail::transaction('Reservation created', function () use ($student) {
                 $detail = BookDetail::whereHas('bookData')->lockForUpdate()->findOrFail($this->selectedBookDetailId);
                 if ($detail->periodicalIssue && ! $detail->periodicalIssue->borrowable) {
                     throw new \RuntimeException('This issue is for library use only.');
@@ -249,6 +284,10 @@ class Index extends Component
                     throw new \RuntimeException('Copies are reserved for people already on the waitlist.');
                 }
                 $book = Book::lockForUpdate()->findOrFail($this->selectedBookCopyId);
+                \App\Models\Student::lockForUpdate()->findOrFail($student->id);
+                if (BookReservation::where('student_id', $student->id)->whereIn('reservation_status_id', [1, 2])->count() >= 3) {
+                    throw new \RuntimeException('You have reached the maximum limit of 3 active book reservations.');
+                }
 
                 if ($book->book_detail_id !== $detail->id || $book->status !== 'available') {
                     throw new \RuntimeException('This book copy is no longer available. Please select another copy or title.');
@@ -263,22 +302,27 @@ class Index extends Component
                     'account_id' => $student->account_id ?? Auth::id(),
                     'reservation_status_id' => $pendingStatusId,
                     'reservation_date' => now(),
-                    'due_date' => now()->addDays($this->pickupDays)->setTime(17, 0, 0),
+                    'due_date' => Carbon::parse($this->pickupDate, 'Asia/Manila')->setTime(17, 0)->setTimezone(config('app.timezone')),
                     'comment' => trim($this->studentComment) ?: 'Student reservation through student portal',
                 ]);
 
                 // Mark copy as reserved
                 $book->update(['status' => 'reserved']);
 
+                app(\App\Services\ReservationNotificationService::class)->notifyStaff($newReservation);
                 return $newReservation;
             });
 
-            app(\App\Services\ReservationNotificationService::class)->created($reservation);
+            try {
+                app(\App\Services\ReservationNotificationService::class)->created($reservation);
+            } catch (\Throwable $e) {
+                report($e);
+            }
 
             $this->closeModal();
             $this->isSubmitting = false;
 
-            return redirect()->route('student.reservations.confirmation', $reservation->id);
+            return redirect()->route('student.reservations.confirmation', ['reservation' => str_pad((string) $reservation->id, 5, '0', STR_PAD_LEFT)]);
         } catch (\Throwable $e) {
             $this->isSubmitting = false;
             $this->dispatch('toast', message: 'Reservation failed: ' . $e->getMessage(), type: 'error');
@@ -289,6 +333,7 @@ class Index extends Component
     {
         return view('livewire.pages.reservation.index', [
             'books' => $this->catalogBooks,
+            'recommendedBooks' => $this->recommendedBooks,
             'categories' => $this->categories,
             'student' => $this->currentStudent,
             'activeCount' => $this->activeReservationsCount,

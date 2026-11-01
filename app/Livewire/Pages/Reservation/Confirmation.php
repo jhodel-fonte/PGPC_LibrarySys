@@ -16,27 +16,40 @@ use Livewire\Component;
 ])]
 class Confirmation extends Component
 {
-    public int|string|null $id = null;
+    #[\Livewire\Attributes\Locked]
+    public string $reference = '';
 
-    public function mount($id = null): void
+    public function mount(): void
     {
-        $this->id = $id ?? request()->route('id');
+        $reference = request()->query('reservation');
+        $this->reference = is_string($reference) ? $reference : '';
     }
 
     #[Computed]
     public function reservation(): ?BookReservation
     {
-        if (!$this->id) {
+        if (! preg_match('/^[0-9]{1,20}$/D', $this->reference) || ! auth()->user()?->student) {
             return null;
         }
 
+        $studentId = auth()->user()->student->id;
         return BookReservation::with([
+            'book' => fn ($q) => $q->withTrashed(),
+            'book.bookDetail' => fn ($q) => $q->withTrashed(),
+            'book.bookDetail.bookData' => fn ($q) => $q->withTrashed(),
             'book.bookDetail.bookData.authors',
-            'book.bookDetail.publisher',
-            'book.condition',
-            'student.account',
+            'book.bookDetail.bookData.categories',
+            'student',
             'reservationStatus',
-        ])->find($this->id);
+        ])->where(function ($query) use ($studentId) {
+            $query->where(function ($query) use ($studentId) {
+                $query->where('student_id', $studentId)->where(function ($query) {
+                    $query->whereNull('account_id')->orWhere('account_id', auth()->id());
+                });
+            })->orWhere(function ($query) {
+                $query->whereNull('student_id')->where('account_id', auth()->id());
+            });
+        })->find(ltrim($this->reference, '0') ?: '0');
     }
 
     #[Computed]
@@ -52,6 +65,7 @@ class Confirmation extends Component
         try {
             return \App\Services\QrCodeServices::svg($codeContent);
         } catch (\Throwable $e) {
+            report($e);
             return null;
         }
     }

@@ -36,6 +36,12 @@ return [
     | operating schedules, and physical library facility location.
     |
     */
+    'reservation' => [
+        'max_pickup_days' => 3,
+        'auto_approve' => false,
+        'auto_approve_delay_minutes' => 60,
+    ],
+
     'library_config' => [
         'loan_period' => 5, // extendable (days)
         'penalty_fee' => 50, // pesos per day

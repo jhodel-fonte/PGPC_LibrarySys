@@ -1,33 +1,25 @@
-<div class="student-page min-w-0 w-full min-h-full bg-[#F8FAFC] pb-16 font-sans text-base text-slate-800 selection:bg-[#102B70] selection:text-white">
+<div wire:init="refreshRecommendations" class="student-page min-w-0 w-full min-h-full bg-[#F8FAFC] pb-16 font-sans text-base text-slate-800 selection:bg-[#102B70] selection:text-white">
     <div class="mx-auto w-full max-w-[1360px] space-y-5 px-3 py-4 sm:px-6 lg:px-8 lg:py-6">
 
         <!-- ======================================================== -->
         <!-- 1. HERO HEADER                                           -->
         <!-- ======================================================== -->
-        <div class="rounded-xl border border-[#E2E8F0] bg-white p-5 sm:p-6 text-slate-800">
+        <div class="student-page-heading flex flex-col justify-between gap-4">
+            <div>
+                <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-[#102B70]">Find &amp; Reserve Books</h1>
+                <p class="mt-1 text-base font-medium text-slate-500">
+                    Find a book and request a hold. Once approved, collect it at the circulation desk by your pickup deadline.
+                </p>
+            </div>
 
-            <div class="student-page-heading flex flex-col gap-4">
-                <div class="space-y-2 max-w-xl">
-                    <h1 class="text-xl font-semibold tracking-tight text-[#102B70]">Reserve Books Online</h1>
-                    <p class="text-base leading-relaxed text-slate-600">
-                        Reserve available academic and reference resources in advance. Claim your reserved copies at the circulation desk within your scheduled pickup window.
-                    </p>
-                </div>
-
-                <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-                    <a
-                        href="{{ route('student.profile') }}"
-                        wire:navigate
-                        class="inline-flex h-11 w-full items-center justify-center gap-2.5 rounded-xl border border-[#CBD5E1] bg-white px-4 text-base font-semibold text-[#102B70] transition-colors hover:bg-[#F8FAFC] focus:outline-none focus:ring-2 focus:ring-[#102B70]/20 sm:w-auto"
-                    >
-                        <span>My Profile</span>
-                        @if($activeCount > 0)
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold border border-[#CBD5E1] bg-[#F8FAFC] text-[#102B70]">
-                                {{ $activeCount }} Active
-                            </span>
-                        @endif
-                    </a>
-                </div>
+            <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                <a
+                    href="{{ route('student.profile', ['tab' => 'reservations']) }}"
+                    wire:navigate
+                    class="inline-flex h-11 w-full items-center justify-center rounded-xl bg-[#102B70] px-5 text-base font-bold text-white transition-colors hover:bg-[#0B225E] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#EFF6FF] sm:w-auto"
+                >
+                    <span>My Reservations</span>
+                </a>
             </div>
         </div>
 
@@ -80,32 +72,39 @@
                 </div>
             </div>
 
-            <!-- Category quick-filter pills -->
-            <div class="flex items-center gap-2 overflow-x-auto pb-1 pt-1 no-scrollbar">
-                <button
-                    type="button"
-                    wire:click="$set('selectedCategory', 'all')"
-                    class="min-h-11 shrink-0 px-4 rounded-xl text-base font-bold transition-all cursor-pointer whitespace-nowrap {{ $selectedCategory === 'all' ? 'bg-[#102B70] text-white ' : 'bg-white text-slate-700 border border-[#CBD5E1] hover:bg-[#F8FAFC]' }}"
-                >
-                    All Disciplines
-                </button>
-                @foreach($categories->take(8) as $cat)
-                    <button
-                        type="button"
-                        wire:click="$set('selectedCategory', '{{ $cat->id }}')"
-                        class="min-h-11 shrink-0 px-4 rounded-xl text-base font-bold transition-all cursor-pointer whitespace-nowrap {{ (string)$selectedCategory === (string)$cat->id ? 'bg-[#102B70] text-white ' : 'bg-white text-slate-700 border border-[#CBD5E1] hover:bg-[#F8FAFC]' }}"
-                    >
-                        {{ $cat->name }}
-                    </button>
-                @endforeach
+            @if($search || $selectedCategory !== 'all')
+                <button type="button" wire:click="showRecommendations" class="min-h-11 text-sm font-semibold text-[#102B70] underline underline-offset-4">Clear filters</button>
+            @endif
+        </div>
+
+        @php
+            $filtering = trim($search) !== '' || $selectedCategory !== 'all';
+            $showRecommended = ! $filtering && ! $browseAll && $recommendedBooks->isNotEmpty();
+            $displayBooks = $showRecommended ? $recommendedBooks : $books;
+        @endphp
+        <div class="flex flex-wrap items-end justify-between gap-3" aria-live="polite">
+            <div>
+                <h2 class="text-xl font-bold text-[#102B70]">{{ $filtering ? 'Search results' : ($showRecommended ? 'Recommended for you' : 'Browse all books') }}</h2>
+                @if(! $filtering && ! $browseAll && $recommendedBooks->isEmpty())
+                    <p class="mt-1 text-sm text-slate-600">No recommendations are available right now. Browse the catalog below.</p>
+                @elseif($showRecommended)
+                    <p class="mt-1 text-sm text-slate-600">Saved recommendations based on your library activity{{ auth()->user()->recommendation?->generated_at ? ' · Updated '.auth()->user()->recommendation->generated_at->diffForHumans() : '' }}.</p>
+                @endif
             </div>
+            @if(! $filtering)
+                @if($showRecommended)
+                    <button type="button" wire:click="$set('browseAll', true)" class="min-h-11 rounded-lg border border-[#102B70] px-4 text-sm font-semibold text-[#102B70] hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70]">Browse all books</button>
+                @elseif($recommendedBooks->isNotEmpty())
+                    <button type="button" wire:click="showRecommendations" class="min-h-11 rounded-lg border border-[#102B70] px-4 text-sm font-semibold text-[#102B70] hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70]">Recommended for you</button>
+                @endif
+            @endif
         </div>
 
         <!-- ======================================================== -->
         <!-- 3. AVAILABLE BOOKS GRID                                 -->
         <!-- ======================================================== -->
         <div class="student-catalog-grid grid grid-cols-1 gap-4">
-            @forelse($books as $item)
+            @forelse($displayBooks as $item)
                 @php
                     $bdata = $item->bookData;
                     $title = $bdata?->book_title ?? 'Untitled Book';
@@ -122,14 +121,11 @@
                             <img
                                 src="{{ $coverUrl }}"
                                 alt="{{ $title }}"
-                                loading="lazy" width="96" height="144" class="h-36 w-24 object-contain"
+                                loading="lazy" width="80" height="120" class="h-28 w-20 object-contain"
                                 onerror="this.src='{{ asset('images/book-cover.webp') }}'"
                             >
                             <span class="absolute top-2 left-2 px-2 py-1 rounded-full text-xs font-bold bg-white text-[#102B70] border border-[#CBD5E1] ">
-                                {{ $availableCopiesCount }} Available
-                            </span>
-                            <span class="absolute bottom-2 right-2 max-w-[70%] break-all px-2 py-1 rounded text-xs font-mono font-bold bg-white text-slate-600 border border-[#CBD5E1]">
-                                {{ $firstCopy?->accession_number ?: 'N/A' }}
+                                {{ $availableCopiesCount ? $availableCopiesCount . ' ' . \Illuminate\Support\Str::plural('copy', $availableCopiesCount) . ' available' : 'No copies available' }}
                             </span>
                         </div>
 
@@ -145,8 +141,8 @@
                         </div>
 
                         <div class="pt-2 text-sm text-slate-500 break-words space-y-0.5 border-t border-slate-100">
-                            <div><span class="text-slate-500">Call No:</span> {{ $item->call_number ?: 'General Stack' }}</div>
-                            <div><span class="text-slate-500">Location:</span> {{ $firstCopy?->location ?: 'Main Library' }}</div>
+                            @if($item->call_number)<div>Call No: {{ $item->call_number }}</div>@endif
+                            @if($firstCopy?->location)<div>Location: {{ $firstCopy->location }}</div>@endif
                         </div>
                     </div>
 
@@ -157,13 +153,13 @@
                             wire:click="openReservationModal({{ $item->id }})"
                             class="w-full h-11 rounded-xl bg-[#102B70] hover:bg-[#0B225E] text-white text-base font-bold transition-all flex items-center justify-center cursor-pointer active:scale-[0.98]"
                         >
-                            <span>{{ $availableCopiesCount ? 'Reserve This Book' : 'Join Waitlist' }}</span>
+                            <span>{{ $availableCopiesCount ? 'Reserve' : 'Join waitlist' }}</span>
                         </button>
                     </div>
                 </div>
             @empty
                 <div class="col-span-full py-16 text-center bg-white rounded-xl border border-[#E2E8F0] p-6 space-y-3">
-                    <h3 class="text-lg font-bold text-[#102B70]">No available books found</h3>
+                    <h3 class="text-lg font-bold text-[#102B70]">No books found</h3>
                     <p class="text-base text-slate-500 max-w-md mx-auto">
                         Try modifying your search keywords or clear the category filter to view more titles available for hold.
                     </p>
@@ -179,7 +175,7 @@
         </div>
 
         <!-- Pagination -->
-        @if($books->hasPages())
+        @if(! $showRecommended && $books->hasPages())
             <div class="rounded-xl border border-[#E2E8F0] bg-white p-4 ">
                 {{ $books->links('components.widget.cursor-pagination') }}
             </div>
@@ -190,6 +186,7 @@
     <!-- ======================================================== -->
     <!-- 4. CONFIRM RESERVATION MODAL                             -->
     <!-- ======================================================== -->
+    <x-widget.modal-loading target="openReservationModal" title="Reservation details" />
     @if($showModal && $this->selectedBookDetail)
         @php
             $mBook = $this->selectedBookDetail;
@@ -198,18 +195,19 @@
             $mAuthors = $mData?->authors?->map(fn($a) => $a->first_name . ' ' . $a->last_name)->join(', ') ?? 'Unknown Author';
             $mCover = $mBook->cover_url ?: asset('images/' . config('settings.book_covers.default', 'book-cover.webp'));
         @endphp
-        <div class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-[#071943]/60 backdrop-blur-xs overflow-y-auto" role="dialog" aria-modal="true">
-            <div class="my-auto w-full max-w-lg rounded-xl border border-[#E2E8F0] bg-white p-4 sm:p-6 max-h-[calc(100dvh-2rem)] overflow-y-auto shadow-2xl animate-in fade-in zoom-in-95 duration-150 space-y-5 text-base">
-                <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-100">
-                    <div class="flex items-center gap-2">
-                        <h3 class="text-lg font-bold text-[#102B70]">{{ $selectedBookCopyId ? 'Confirm Book Reservation' : 'Join the Waitlist?' }}</h3>
+        <div class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[#071943]/60 p-3 sm:p-4" role="dialog" aria-modal="true" aria-labelledby="reservation-modal-title">
+            <div class="my-auto max-h-[calc(100dvh-1.5rem)] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-5 text-base shadow-2xl sm:max-h-[calc(100dvh-2rem)] sm:p-7">
+                <div class="flex items-start justify-between gap-4 border-b border-slate-200 pb-4">
+                    <div>
+                        <h3 id="reservation-modal-title" class="text-xl font-bold tracking-tight text-[#102B70]">{{ $selectedBookCopyId ? 'Confirm Book Reservation' : 'Join the Waitlist?' }}</h3>
+                        <p class="mt-1 text-sm text-slate-600">{{ $selectedBookCopyId ? 'Review the book and pickup details below.' : 'Review the book details below.' }}</p>
                     </div>
-                    <button type="button" wire:click="closeModal" class="min-h-11 rounded-lg px-3 py-2 text-base font-medium text-slate-600 hover:bg-[#F8FAFC] hover:text-slate-700">
+                    <button type="button" wire:click="closeModal" class="min-h-11 shrink-0 rounded-lg px-3 text-sm font-semibold text-slate-600 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70]">
                     Close</button>
                 </div>
 
                 <!-- Book Preview -->
-                <div class="flex gap-4 p-4 rounded-xl border border-slate-200 bg-[#F8FAFC]">
+                <div class="my-5 flex min-w-0 gap-4 rounded-xl border border-slate-200 bg-[#F8FAFC] p-4 sm:p-5">
                     <img
                         src="{{ $mCover }}"
                         alt="{{ $mTitle }}"
@@ -217,23 +215,24 @@
                         onerror="this.src='{{ asset('images/book-cover.webp') }}'"
                     >
                     <div class="min-w-0 space-y-1">
-                        <h4 class="text-base font-bold text-slate-900 line-clamp-2 leading-snug">{{ $mTitle }}</h4>
-                        <p class="text-base text-slate-600 font-medium">By {{ $mAuthors }}</p>
-                        <div class="text-base font-mono text-slate-500 pt-1">
+                        <h4 class="break-words text-base font-bold leading-snug text-slate-900 sm:text-lg">{{ $mTitle }}</h4>
+                        <p class="break-words text-sm text-slate-600">By {{ $mAuthors }}</p>
+                        <div class="break-words pt-1 text-sm text-slate-600">
                             Call Number: {{ $mBook->call_number ?: 'N/A' }}
                         </div>
                     </div>
                 </div>
 
                 @if(!$selectedBookCopyId)
-                    <p class="text-base text-slate-700">All copies are borrowed or reserved. Would you like to join the waitlist? We will automatically reserve the next available copy for you and notify you.</p>
+                    <p class="text-base text-slate-700">All copies are borrowed or reserved. Would you like to join the waitlist? We will automatically create a reservation when a copy becomes available and notify you. The reservation will still need library approval.</p>
                 @else
                 <!-- Reservation Form -->
                 <div class="space-y-4">
                     <!-- Available Copy Selection -->
                     <div class="space-y-1.5">
-                        <label class="text-base font-bold text-[#334155]">Select Copy to Reserve <span class="text-[#EF4444]">*</span></label>
+                        <label for="reservation-copy" class="text-base font-bold text-[#334155]">Select Copy to Reserve <span class="text-[#EF4444]">*</span></label>
                         <select
+                            id="reservation-copy"
                             wire:model="selectedBookCopyId"
                             class="h-12 w-full rounded-xl border border-slate-300 px-3.5 text-base text-slate-800 font-medium focus:border-[#102B70] focus:ring-2 focus:ring-[#EFF6FF] focus:outline-none"
                         >
@@ -246,29 +245,21 @@
                         @error('selectedBookCopyId') <p class="text-base text-[#B91C1C] font-semibold">{{ $message }}</p> @enderror
                     </div>
 
-                    <!-- Pickup Hold Duration -->
                     <div class="space-y-1.5">
-                        <div class="flex flex-wrap items-center justify-between gap-2">
-                            <label class="text-base font-bold text-[#334155]">Expected Pickup Window</label>
-                            <span class="text-base font-bold text-[#102B70]">Pick up by {{ now()->addDays($pickupDays)->format('M d, Y') }}</span>
-                        </div>
-                        <select
-                            wire:model.live="pickupDays"
+                        <label for="pickup-date" class="text-base font-bold text-[#334155]">Pickup deadline</label>
+                        <input id="pickup-date" type="date" wire:model="pickupDate"
+                            min="{{ now('Asia/Manila')->addDay()->toDateString() }}" max="{{ now('Asia/Manila')->addDays(\App\Services\ReservationSettings::maxPickupDays())->toDateString() }}"
                             class="h-12 w-full rounded-xl border border-slate-300 px-3.5 text-base text-slate-800 font-medium focus:border-[#102B70] focus:ring-2 focus:ring-[#EFF6FF] focus:outline-none"
                         >
-                            <option value="1">Within 1 Day (Tomorrow)</option>
-                            <option value="2">Within 2 Days</option>
-                            <option value="3">Within 3 Days (Standard)</option>
-                            <option value="5">Within 5 Days</option>
-                            <option value="7">Within 7 Days (1 Week Max)</option>
-                        </select>
-                        <p class="text-base text-slate-500">Hold is released back to inventory if not collected by the deadline.</p>
+                        @error('pickupDate') <p class="text-base text-[#B91C1C]">{{ $message }}</p> @enderror
+                        <p class="text-base text-slate-500">Collect after approval by 5:00 PM on your selected date. The hold expires after that.</p>
                     </div>
 
                     <!-- Comment / Note -->
                     <div class="space-y-1.5">
-                        <label class="text-base font-bold text-[#334155]">Note / Remarks (Optional)</label>
+                        <label for="reservation-note" class="text-base font-bold text-[#334155]">Note / Remarks (Optional)</label>
                         <input
+                            id="reservation-note"
                             type="text"
                             wire:model="studentComment"
                             placeholder="e.g. Needed for Thesis research / Capstone work..."
@@ -278,7 +269,7 @@
                 </div>
 
                 @endif
-                <div class="flex flex-col-reverse gap-2 border-t border-slate-100 pt-3 sm:flex-row sm:items-center sm:justify-end">
+                <div class="mt-5 flex flex-col-reverse gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-end">
                     <button
                         type="button"
                         wire:click="closeModal"

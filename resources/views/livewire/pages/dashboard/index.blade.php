@@ -12,39 +12,7 @@
         </div>
 
         {{-- KPI Summary Cards --}}
-        <div class="dashboard-kpis grid gap-4">
-            {{-- KPI 1: Total Number of Students --}}
-            <x-widget.data-card 
-                title="Total Students" 
-                :value="$kpiMetrics['totalStudents']['value']" 
-                :change="$kpiMetrics['totalStudents']['change']" 
-                :subtext="$kpiMetrics['totalStudents']['subtext']" 
-            />
-
-            {{-- KPI 2: Total Number of Books --}}
-            <x-widget.data-card 
-                title="Total Books" 
-                :value="$kpiMetrics['totalBooks']['value']" 
-                :change="$kpiMetrics['totalBooks']['change']" 
-                :subtext="$kpiMetrics['totalBooks']['subtext']" 
-            />
-
-            {{-- KPI 3: Due Books Today --}}
-            <x-widget.data-card 
-                title="Due Books Today" 
-                :value="$kpiMetrics['dueBooksToday']['value']" 
-                :change="$kpiMetrics['dueBooksToday']['change']" 
-                :subtext="$kpiMetrics['dueBooksToday']['subtext']" 
-            />
-
-            {{-- KPI 4: Book Reserved Today --}}
-            <x-widget.data-card 
-                title="Book Reserved Today" 
-                :value="$kpiMetrics['bookReservedToday']['value']" 
-                :change="$kpiMetrics['bookReservedToday']['change']" 
-                :subtext="$kpiMetrics['bookReservedToday']['subtext']" 
-            />
-        </div>
+        <livewire:components.dashboard.live-kpis />
 
         <!-- Middle Row: 3 Diagram Cards (Multiple Series, Donut, Grouped Bars) -->
         <div class="dashboard-charts grid gap-5 items-stretch">
@@ -113,10 +81,7 @@
 
             <!-- 3. Requires Attention (Replaces Monthly Library Activity) -->
             <div class="dashboard-attention h-full min-w-0">
-                <x-dashboard.requires-attention 
-                    :overdueCount="$overdueItems" 
-                    :pendingCount="$pendingReservations" 
-                />
+                <livewire:components.dashboard.live-attention />
             </div>
 
         </div>

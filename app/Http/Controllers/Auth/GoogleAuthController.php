@@ -17,6 +17,15 @@ class GoogleAuthController extends Controller
      */
     public function redirect(): RedirectResponse|\Symfony\Component\HttpFoundation\Response
     {
+        session()->forget('google_verify_account');
+        return Socialite::driver('google')->redirect();
+    }
+
+    public function verifyEmail(Request $request): RedirectResponse|\Symfony\Component\HttpFoundation\Response
+    {
+        $user = $request->user();
+        abort_unless($user?->isStudent() && $user->student?->contact_verification_required && ! $user->is_email_verified, 403);
+        $request->session()->put('google_verify_account', $user->id);
         return Socialite::driver('google')->redirect();
     }
 
@@ -25,21 +34,42 @@ class GoogleAuthController extends Controller
      */
     public function callback(Request $request): RedirectResponse
     {
+        $verifyAccountId = $request->session()->pull('google_verify_account');
+        $failureRoute = $verifyAccountId ? 'student.contact.verify' : 'login';
+        if ($verifyAccountId && (! $request->user() || (string) $request->user()->id !== (string) $verifyAccountId)) {
+            return redirect()->route('login')->with('error', 'Your session changed. Please sign in and try again.');
+        }
+        if (! $verifyAccountId && $request->user()) {
+            return redirect()->route('student.contact.verify')->with('error', 'Please start email verification again.');
+        }
         try {
             /** @var \Laravel\Socialite\Two\User $googleUser */
             $googleUser = Socialite::driver('google')->user();
         } catch (\Throwable $e) {
             Log::error('Google OAuth callback failed: ' . $e->getMessage());
 
-            return redirect()->route('login')->with('error', 'Google authentication failed or was cancelled. Please try again.');
+            return redirect()->route($failureRoute)->with('error', 'Google authentication failed or was cancelled. Please try again.');
         }
 
-        if (! $googleUser || ! $googleUser->getEmail()) {
-            return redirect()->route('login')->with('error', 'Unable to retrieve your email from Google.');
+        if (! $googleUser || ! $googleUser->getEmail() || ! $googleUser->getId() || ($googleUser->user['email_verified'] ?? false) !== true) {
+            return redirect()->route($failureRoute)->with('error', 'Google did not provide a verified email address. Please use the email code or try another account.');
         }
 
         $email = strtolower(trim($googleUser->getEmail()));
         $googleId = (string) $googleUser->getId();
+
+        if ($verifyAccountId) {
+            $user = $request->user()->fresh('student');
+            if (! $user?->isStudent() || ! $user->student?->contact_verification_required || ! hash_equals(strtolower(trim((string) $user->email)), $email)) {
+                return redirect()->route('student.contact.verify')->with('error', 'The verified Google email must match your registered email address.');
+            }
+            $user->forceFill(['is_email_verified' => true, 'email_verified_at' => $user->email_verified_at ?? now()])->save();
+            if ($user->student->phone_verified_at) {
+                $user->student->forceFill(['contact_verification_required' => false])->save();
+                return redirect()->route('verification.upload');
+            }
+            return redirect()->route('student.contact.verify')->with('status', 'Email verified with Google. Please verify your mobile number.');
+        }
 
         // 1. Look for existing account with matching Google provider ID (including soft-deleted accounts)
         $account = Account::withTrashed()
@@ -62,6 +92,10 @@ class GoogleAuthController extends Controller
 
             if ($isDeactivated) {
                 return redirect()->route('account.deactivated');
+            }
+
+            if (! hash_equals(strtolower(trim((string) $account->email)), $email) || ($account->provider === 'google' && $account->provider_id && ! hash_equals((string) $account->provider_id, $googleId))) {
+                return redirect()->route('login')->with('error', 'This Google account does not match the linked library account.');
             }
 
             // Update Google link and verify email if not already set
@@ -101,6 +135,7 @@ class GoogleAuthController extends Controller
             'google_auth' => [
                 'id' => $googleId,
                 'email' => $email,
+                'email_verified' => true,
                 'first_name' => $firstName,
                 'last_name' => $lastName,
                 'avatar' => $googleUser->getAvatar(),

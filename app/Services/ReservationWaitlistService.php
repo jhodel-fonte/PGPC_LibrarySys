@@ -39,7 +39,7 @@ class ReservationWaitlistService
         BookReservation::whereIn('reservation_status_id', [1, 2])->where('due_date', '<', now())
             ->orderBy('id')->chunkById(100, function ($reservations) {
                 foreach ($reservations as $reservation) {
-                    $expired = DB::transaction(function () use ($reservation) {
+                    $expired = \App\Services\AuditTrail::transaction('Reservation expired', function () use ($reservation) {
                         $reservation = BookReservation::lockForUpdate()->find($reservation->id);
                         if (! $reservation || ! in_array((int) $reservation->reservation_status_id, [1, 2], true) || ! $reservation->due_date || ! $reservation->due_date->isPast()) {
                             return null;
@@ -61,7 +61,7 @@ class ReservationWaitlistService
 
     public function join(int $detailId, Account $account): void
     {
-        DB::transaction(function () use ($detailId, $account) {
+        \App\Services\AuditTrail::transaction('Reservation waitlist updated', function () use ($detailId, $account) {
             $detail = BookDetail::whereHas('bookData')->lockForUpdate()->findOrFail($detailId);
             if ($detail->periodicalIssue && ! $detail->periodicalIssue->borrowable) {
                 throw new \RuntimeException('This issue is for library use only.');
@@ -87,7 +87,7 @@ class ReservationWaitlistService
 
     public function allocate(int $detailId): void
     {
-        DB::transaction(function () use ($detailId) {
+        \App\Services\AuditTrail::transaction('Reservation waitlist allocated', function () use ($detailId) {
             $detail = BookDetail::lockForUpdate()->find($detailId);
             if ($detail && $detail->bookData && (! $detail->periodicalIssue || $detail->periodicalIssue->borrowable)) {
                 $this->allocateLocked($detail);
@@ -121,16 +121,21 @@ class ReservationWaitlistService
             if ($account->reservations_blocked) {
                 continue;
             }
+            if (! \App\Models\Student::whereKey($entry->student_id)->lockForUpdate()->first()) {
+                $entry->update(['status' => 'ineligible']);
+                continue;
+            }
             if (BookReservation::where('student_id', $entry->student_id)->whereIn('reservation_status_id', [1, 2])->count() >= 3) {
                 continue;
             }
             $reservation = BookReservation::create([
                 'book_id' => $book->id, 'student_id' => $entry->student_id, 'account_id' => $account->id,
-                'reservation_status_id' => 2, 'reservation_date' => now(), 'approved_date' => now(),
-                'due_date' => now()->addDays(3)->setTime(17, 0), 'comment' => 'Automatically reserved from the waitlist',
+                'reservation_status_id' => 1, 'reservation_date' => now(),
+                'due_date' => ReservationSettings::deadline(ReservationSettings::maxPickupDays()), 'comment' => 'Automatically reserved from the waitlist',
             ]);
             $book->update(['status' => 'reserved']);
             $entry->update(['status' => 'allocated', 'book_reservation_id' => $reservation->id]);
+            app(ReservationNotificationService::class)->notifyStaff($reservation);
             app(ReservationNotificationService::class)->created($reservation);
         }
     }

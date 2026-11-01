@@ -3,19 +3,12 @@
     x-data="liveCameraScanner($wire, @js($autoStart))"
     @start-camera.window="
         isCollapsed = false;
-        enabled = true;
-        if (isPaused) {
-            toggleScanner();
-        } else if (permissionError) {
-            startScanner();
-        }
+        startScanner();
     "
-    @stop-camera.window="
-        enabled = false;
-        isPaused = true;
-        clearInactivityTimer();
-        if (!isRequesting) cleanScannerInstance();
+    x-on:stop-camera.window="
+        stopScanner();
     "
+    @scan-lookup-completed.window="finishScan($event.detail)"
     @collapse-camera.window="isCollapsed = true"
     @expand-camera.window="isCollapsed = false"
     class="flex flex-col gap-3">
@@ -34,25 +27,7 @@
 
         <div class="flex items-center gap-2">
             <!-- Dynamic Status Badge inside Header -->
-            @if(!$autoStart)
-                <span class="text-xs font-semibold uppercase tracking-wider" :class="isPaused ? 'text-[#64748B]' : 'text-[#15803D]'" x-text="isPaused ? 'Paused' : 'Scanning'"></span>
-            @elseif($state === 'ready')
-                <div class="flex items-center gap-1.5">
-                    <span class="text-xs font-semibold text-[#64748B] uppercase tracking-wider">Paused</span>
-                </div>
-            @elseif($state === 'scanning')
-                <div class="flex items-center gap-1.5">
-                    <span class="text-xs font-semibold text-[#15803D] uppercase tracking-wider">Scanning</span>
-                </div>
-            @elseif($state === 'success_member' || $state === 'success_book')
-                <div class="flex items-center gap-1.5">
-                    <span class="text-xs font-bold text-[#15803D] uppercase tracking-wider">Recognized</span>
-                </div>
-            @elseif($state === 'error')
-                <div class="flex items-center gap-1.5">
-                    <span class="text-xs font-semibold text-[#B91C1C] uppercase tracking-wider">Blocked</span>
-                </div>
-            @endif
+            <span class="text-xs font-semibold uppercase tracking-wider" :class="permissionError ? 'text-[#B91C1C]' : (isPaused ? 'text-[#64748B]' : 'text-[#15803D]')" x-text="permissionError ? 'Unavailable' : (isPaused ? 'Paused' : (isRequesting ? 'Starting' : 'Scanning'))"></span>
 
             <!-- Pause/Resume Camera Action -->
             <button type="button" x-show="!permissionError" @click="toggleScanner()" class="text-xs text-[#475569] hover:text-[#102B70] font-semibold transition-colors flex items-center gap-1 border-l border-[#E2E8F0] pl-2.5 focus:outline-none focus:underline">
@@ -66,7 +41,7 @@
     <div x-show="!isCollapsed" x-transition class="flex flex-col gap-3">
 
         <!-- Viewfinder Outer Box (wire:ignore remains crucial here) -->
-        <div wire:ignore class="workstation-camera-view relative w-full h-[200px] bg-[#0F172A] rounded-2xl overflow-hidden flex items-center justify-center border border-[#334155] shadow-inner shrink-0">
+        <div wire:ignore class="workstation-camera-view relative mx-auto w-full max-w-[320px] aspect-square bg-[#0F172A] rounded-2xl overflow-hidden flex items-center justify-center border border-[#334155] shadow-inner shrink-0">
 
             <!-- Camera Permission Blocked Overlay -->
             <div x-show="permissionError" class="absolute inset-0 z-30 bg-[#0F172A] flex flex-col items-center justify-center p-4 text-center gap-2">
@@ -117,15 +92,12 @@
             <div :class="hasActiveScan ? 'border-[#FCC719]' : 'border-white/60'" class="absolute bottom-3.5 right-3.5 w-5 h-5 border-b-2 border-r-2 rounded-br z-20 pointer-events-none transition-colors duration-200"></div>
 
             <!-- Solid Detection Target Frame (Clean institutional detection, no arcade neon glow) -->
-            <div x-show="hasActiveScan" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" class="absolute z-20 pointer-events-none w-28 h-28 border-2 border-[#15803D] rounded-xl bg-[#15803D]/15 flex items-center justify-center">
-                <div class="absolute border border-[#15803D]/40 rounded-lg inset-2"></div>
+            <div x-show="hasActiveScan" class="absolute z-20 pointer-events-none w-28 h-28 border-2 border-[#FCC719] rounded-xl flex items-center justify-center">
             </div>
 
             <!-- Floating Subtitle Status Pill (Accessible aria-live) -->
             <div aria-live="polite" class="absolute bottom-2 left-1/2 transform -translate-x-1/2 z-20 py-1.5 px-4 bg-[#071943]/90 backdrop-blur-xs rounded-lg border border-white/10 flex items-center justify-center text-center max-w-[92%] transition-all duration-200">
-                <p x-text="state === 'success_member' || state === 'success_book' ? detail : message"
-                   :class="state === 'success_member' || state === 'success_book' ? 'text-[#BBF7D0] font-bold' : (state === 'error' ? 'text-[#FECACA] font-bold' : 'text-white font-medium')"
-                   class="text-xs tracking-wider leading-normal truncate"></p>
+                <p x-text="scanMessage" :class="scanSuccess ? 'text-[#BBF7D0]' : 'text-white'" class="text-xs leading-normal"></p>
             </div>
 
             <!-- Target Div element for HTML5 QR Code Scanner -->
@@ -133,6 +105,7 @@
         </div>
 
     </div>
+    <button type="button" x-show="!isPaused && !permissionError && lastCode && (!hasActiveScan || scanTimedOut)" @click="retryScan()" class="min-h-11 self-center rounded-lg px-3 text-sm font-semibold text-[#102B70] underline" x-cloak>Scan this code again</button>
 
     <!-- Styles for html5-qrcode generated stream video and canvas nodes -->
     <style>
@@ -147,7 +120,8 @@
         #reader-viewfinder video {
             width: 100% !important;
             height: 100% !important;
-            object-fit: cover !important;
+            object-fit: contain !important;
+            transform: scaleX(-1);
             background-color: #0F172A !important;
         }
         #reader-viewfinder canvas {

@@ -103,7 +103,7 @@ class SearchEntityModal extends Component
         }
 
         if ($this->service === 'check-out') {
-            $this->reservationCount = BookReservation::where('reservation_status_id', 1)->count();
+            $this->reservationCount = $this->pickupReservations()->count();
         }
         $results = [];
 
@@ -141,12 +141,11 @@ class SearchEntityModal extends Component
 
         // 2. Fetch pending reservations for checkout.
         if ($this->service === 'check-out' && ($this->activeTab === 'all' || $this->activeTab === 'reservations')) {
-            $reservations = BookReservation::with([
+            $reservations = $this->pickupReservations()->with([
                 'student',
                 'book.bookDetail.bookData.authors',
                 'reservationStatus',
             ])
-                ->where('reservation_status_id', 1)
                 ->orderByDesc('reservation_date')
                 ->limit($this->perPage)
                 ->get();
@@ -267,8 +266,7 @@ class SearchEntityModal extends Component
             $reservationTerm = preg_replace('/[^0-9]/', '', $searchTerm);
             $likeTerm = '%' . $searchTerm . '%';
 
-            $reservationsQuery = BookReservation::query()
-                ->where('reservation_status_id', 1)
+            $reservationsQuery = $this->pickupReservations()
                 ->where(function ($q) use ($likeTerm, $reservationTerm) {
                     if ($reservationTerm !== '') {
                         $q->orWhere('id', 'like', '%' . $reservationTerm . '%');
@@ -331,6 +329,14 @@ class SearchEntityModal extends Component
 
         $this->results = $results;
         $this->dispatch('search-completed');
+    }
+
+    private function pickupReservations(): \Illuminate\Database\Eloquent\Builder
+    {
+        return BookReservation::where('reservation_status_id', 2)
+            ->where(fn ($query) => $query->whereNull('due_date')->orWhere('due_date', '>', now()))
+            ->whereHas('student')
+            ->whereHas('book', fn ($query) => $query->where('status', 'reserved'));
     }
 
     protected function formatStudentResult($student): array

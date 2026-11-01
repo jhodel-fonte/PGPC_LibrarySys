@@ -47,6 +47,9 @@ class StudentDetail extends Component
     public function mount($userId = null, $id = null, $isProfile = false): void
     {
         $this->isProfile = $isProfile;
+        if ($isProfile && request()->query('tab') === 'reservations') {
+            $this->activeTab = 'reservations';
+        }
         $this->userId = $userId ?? $id ?? request()->route('id') ?? request()->route('userId') ?? request()->route('user');
         if (! $this->userId && auth()->check()) {
             $this->userId = auth()->id();
@@ -319,7 +322,7 @@ class StudentDetail extends Component
     {
         $this->reserveSearchBook = '';
         $this->selectedBookId = null;
-        $this->reservePickupDays = 3;
+        $this->reservePickupDays = \App\Services\ReservationSettings::maxPickupDays();
         $this->reserveComment = '';
         $this->showReserveModal = true;
     }
@@ -343,7 +346,7 @@ class StudentDetail extends Component
         }
         $this->validate([
             'selectedBookId' => 'required|exists:books,id',
-            'reservePickupDays' => 'required|integer|min:1|max:7',
+            'reservePickupDays' => 'required|integer|min:1|max:' . \App\Services\ReservationSettings::maxPickupDays(),
         ], [
             'selectedBookId.required' => 'Please select an available book copy.',
         ]);
@@ -363,7 +366,7 @@ class StudentDetail extends Component
         try {
             $detailId = \App\Models\Book::whereKey($this->selectedBookId)->value('book_detail_id');
             app(\App\Services\ReservationWaitlistService::class)->allocate($detailId);
-            $reservation = \Illuminate\Support\Facades\DB::transaction(function () use ($student) {
+            $reservation = \App\Services\AuditTrail::transaction('Reservation created', function () use ($student) {
                 $detailId = \App\Models\Book::whereKey($this->selectedBookId)->value('book_detail_id');
                 $detail = \App\Models\BookDetail::whereHas('bookData')->lockForUpdate()->findOrFail($detailId);
                 if ($detail->periodicalIssue && ! $detail->periodicalIssue->borrowable) {
@@ -373,6 +376,10 @@ class StudentDetail extends Component
                     throw new \RuntimeException('Copies are reserved for people already on the waitlist.');
                 }
                 $book = \App\Models\Book::lockForUpdate()->findOrFail($this->selectedBookId);
+                \App\Models\Student::lockForUpdate()->findOrFail($student->id);
+                if (\App\Models\BookReservation::where('student_id', $student->id)->whereIn('reservation_status_id', [1, 2])->count() >= 3) {
+                    throw new \RuntimeException('You have reached the maximum limit of 3 active reservations.');
+                }
 
                 if ($book->status !== 'available') {
                     throw new \RuntimeException('This book copy is no longer available.');
@@ -387,16 +394,21 @@ class StudentDetail extends Component
                     'account_id' => $student->account_id ?? auth()->id(),
                     'reservation_status_id' => $pendingStatusId,
                     'reservation_date' => now(),
-                    'due_date' => now()->addDays($this->reservePickupDays)->setTime(17, 0, 0),
+                    'due_date' => \App\Services\ReservationSettings::deadline($this->reservePickupDays),
                     'comment' => trim($this->reserveComment) ?: 'Reserved from student profile',
                 ]);
 
                 $book->update(['status' => 'reserved']);
 
+                app(\App\Services\ReservationNotificationService::class)->notifyStaff($reservation, auth()->id());
                 return $reservation;
             });
 
-            app(\App\Services\ReservationNotificationService::class)->created($reservation);
+            try {
+                app(\App\Services\ReservationNotificationService::class)->created($reservation);
+            } catch (\Throwable $e) {
+                report($e);
+            }
 
             $this->closeReserveModal();
             $this->activeTab = 'reservations';
@@ -421,7 +433,7 @@ class StudentDetail extends Component
     public function cancelReservation(int $id): void
     {
         try {
-            $reservation = \Illuminate\Support\Facades\DB::transaction(function () use ($id) {
+            $reservation = \App\Services\AuditTrail::transaction('Reservation cancelled', function () use ($id) {
                 $reservation = \App\Models\BookReservation::findOrFail($id);
 
                 if (!in_array((int)$reservation->reservation_status_id, [1, 2])) {

@@ -1,7 +1,7 @@
 <x-layouts.home active="opac">
     <!-- Advanced Search Canvas -->
-    <div class="min-h-[calc(100vh-140px)] bg-[#F8FAFC] py-8 sm:py-10 lg:py-14 px-4 sm:px-6 lg:px-8">
-        <div class="max-w-[1380px] mx-auto w-full space-y-10">
+    <div class="min-h-[calc(100vh-140px)] bg-[#F8FAFC] px-3 py-4 sm:px-6 lg:px-8 lg:py-6">
+        <div class="max-w-[1360px] mx-auto w-full space-y-6">
 
             <!-- 1. The Advanced Search Card -->
             <x-home.advance-search-card :has-results="!empty($hasSearched)" />
@@ -27,10 +27,12 @@
                         results: @json($items ?? []),
                         totalCount: {{ (int) ($totalResults ?? 0) }},
                         pagination: @json($paginationData ?? null),
+                        suggestions: @json($suggestions ?? []),
                         isLoading: false,
                         reservationModalOpen: false,
                         selectedBook: null,
                         reserveStatus: null,
+                        pickupDate: '',
                         perPage: {{ (int) ($perPage ?? 5) }},
                         sortBy: @json($sortBy ?? 'relevance'),
                         isLoggedIn: {{ !empty($isLoggedIn) ? 'true' : 'false' }},
@@ -39,6 +41,7 @@
                             this.isLoading = true;
                             try {
                                 const res = await fetch(url, {
+                                    cache: 'no-store',
                                     headers: {
                                         'Accept': 'application/json',
                                         'X-Requested-With': 'XMLHttpRequest',
@@ -50,6 +53,7 @@
                                 this.results = data.results || [];
                                 this.totalCount = data.totalResults || 0;
                                 this.pagination = data.pagination || null;
+                                this.suggestions = data.suggestions || [];
                                 this.perPage = data.perPage || this.perPage;
                                 if (updateHistory) {
                                     window.history.pushState(null, '', url);
@@ -75,6 +79,12 @@
                             url.searchParams.delete('page');
                             this.fetchResults(url.toString());
                         },
+                        suggestionUrl(title) {
+                            const url = new URL(window.location.href);
+                            url.searchParams.set('title', title);
+                            url.searchParams.delete('page');
+                            return url.toString();
+                        },
                         openReserve(book) {
                             this.selectedBook = book;
                             this.reserveStatus = null;
@@ -90,7 +100,8 @@
                                         'Content-Type': 'application/json',
                                         'X-CSRF-TOKEN': '{{ csrf_token() }}',
                                         'Accept': 'application/json'
-                                    }
+                                    },
+                                    body: JSON.stringify({ pickup_date: this.pickupDate })
                                 });
                                 const data = await res.json();
                                 if (res.ok && data.success) {
@@ -117,7 +128,7 @@
 
                 <div
                     x-data="advanceSearchResults()"
-                    class="rounded-[14px] border border-[#DDE5EF] bg-white p-6 sm:p-8 lg:p-10 shadow-[0_4px_16px_rgba(7,26,61,0.06)]"
+                    class="rounded-2xl border border-[#E2E8F0] bg-white p-4 sm:p-6 lg:p-8"
                 >
                     <!-- Header Bar -->
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-100">
@@ -185,6 +196,14 @@
                             <p class="text-[13.5px] text-slate-500 mt-1 max-w-sm mx-auto">
                                 We couldn't find any resources matching your criteria. Try loosening your terms or switching to "Match any criteria".
                             </p>
+                            <div x-show="suggestions.length" class="mt-4 text-sm text-slate-700">
+                                <p class="font-semibold">Did you mean:</p>
+                                <ul class="mt-2 space-y-2">
+                                    <template x-for="suggestion in suggestions" :key="suggestion">
+                                        <li><a :href="suggestionUrl(suggestion)" x-text="suggestion" class="font-semibold text-[#102B70] underline underline-offset-2 hover:text-[#0B225E]"></a></li>
+                                    </template>
+                                </ul>
+                            </div>
                         </div>
                     </div>
 
@@ -296,9 +315,12 @@
                                 </h4>
                                 <p class="text-sm text-slate-600 mb-4">
                                     Are you sure you want to place a hold on
-                                    <span class="font-bold text-[#0B2454]" x-text="selectedBook ? selectedBook.title : ''"></span>?
+                                    <span class="font-bold text-[#0B2454]" x-text="selectedBook ? selectedBook.title : ''"></span>? The reservation requires approval before pickup.
                                 </p>
 
+                                <label class="block text-sm font-semibold mb-3">Pickup deadline
+                                    <input type="date" x-model="pickupDate" min="{{ now('Asia/Manila')->addDay()->toDateString() }}" max="{{ now('Asia/Manila')->addDays(\App\Services\ReservationSettings::maxPickupDays())->toDateString() }}" class="mt-1 block w-full rounded-xl border border-slate-300 p-2">
+                                </label>
                                 <div class="flex items-center justify-end gap-3 pt-2">
                                     <button
                                         type="button"
@@ -310,7 +332,7 @@
                                     <button
                                         type="button"
                                         @click="submitReservation()"
-                                        :disabled="reserveStatus === 'loading'"
+                                        :disabled="reserveStatus === 'loading' || !pickupDate"
                                         class="px-5 py-2 rounded-xl bg-[#102B70] text-xs font-bold text-white hover:bg-[#0B225E] transition shadow-xs cursor-pointer flex items-center gap-1.5"
                                     >
                                         <span x-show="reserveStatus !== 'loading'">Confirm Hold</span>

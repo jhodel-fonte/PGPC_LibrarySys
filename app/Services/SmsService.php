@@ -74,7 +74,6 @@ class SmsService
         if (!$this->enabled) {
             Log::info('[iProgSMS] SMS sending is disabled in configuration (SMS_ENABLED=false).', [
                 'phone_number' => $formattedPhone,
-                'message' => $message,
             ]);
 
             return [
@@ -110,20 +109,19 @@ class SmsService
                     'message'      => $message,
                 ]);
 
-            $isSuccessful = $response->successful();
-            $responseBody = $response->json() ?? $response->body();
+            $safeBody = str_replace($this->apiToken, '[REDACTED]', $response->body());
+            $responseBody = json_decode($safeBody, true) ?? $safeBody;
+            $isSuccessful = $response->successful() && (!is_array($responseBody) || !isset($responseBody['status']) || (int) $responseBody['status'] === 200);
 
             if ($isSuccessful) {
                 Log::info('[iProgSMS] SMS dispatched successfully.', [
                     'phone_number' => $formattedPhone,
                     'status' => $response->status(),
-                    'response' => $responseBody,
                 ]);
             } else {
                 Log::error('[iProgSMS] Gateway returned error.', [
                     'phone_number' => $formattedPhone,
                     'status' => $response->status(),
-                    'response' => $responseBody,
                 ]);
             }
 
@@ -132,12 +130,12 @@ class SmsService
                 'status_code' => $response->status(),
                 'phone_number' => $formattedPhone,
                 'response' => $responseBody,
-                'error' => $isSuccessful ? null : ($response->body() ?: 'SMS request failed with status ' . $response->status()),
+                'error' => $isSuccessful ? null : ($safeBody ?: 'SMS request failed with status ' . $response->status()),
             ];
         } catch (Throwable $e) {
-            Log::error('[iProgSMS] Exception occurred during SMS delivery: ' . $e->getMessage(), [
+            $error = str_replace($this->apiToken, '[REDACTED]', $e->getMessage());
+            Log::error('[iProgSMS] Exception occurred during SMS delivery: ' . $error, [
                 'phone_number' => $formattedPhone,
-                'exception' => $e,
             ]);
 
             return [
@@ -145,7 +143,7 @@ class SmsService
                 'status_code' => 500,
                 'phone_number' => $formattedPhone,
                 'response' => null,
-                'error' => 'Network/Connection error: ' . $e->getMessage(),
+                'error' => 'Network/Connection error: ' . $error,
             ];
         }
     }
@@ -189,7 +187,7 @@ class SmsService
             return $digits;
         }
 
-        return $digits;
+        return '';
     }
 
     /**

@@ -271,7 +271,11 @@ class OpacCatalogView extends Model
 
         // 5. Resource Type
         if (!empty($criteria['type']) && filled($criteria['type']) && $criteria['type'] !== 'all') {
-            $val = \App\Services\SanitizeInput::escapeLike(trim((string)$criteria['type']));
+            $type = trim((string) $criteria['type']);
+            $val = \App\Services\SanitizeInput::escapeLike(match ($type) {
+                'books' => 'book', 'theses' => 'thesis', 'journals' => 'journal',
+                'magazines' => 'magazine', 'reports' => 'report', default => $type,
+            });
             if ($val !== '') {
                 $activeClauses[] = function (Builder $sub) use ($val, $likeOp) {
                     $sub->where('resource_type', $likeOp, "%{$val}%")

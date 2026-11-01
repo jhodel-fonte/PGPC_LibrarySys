@@ -230,9 +230,7 @@ class UserApprovals extends Component
             ->keyBy('id');
 
         DB::transaction(function () use ($ids) {
-            Account::whereIn('id', $ids)->update([
-                'status_id' => 1, // Active
-            ]);
+            Account::whereIn('id', $ids)->get()->each->update(['status_id' => 1]);
 
             Student::whereIn('account_id', $ids)->update([
                 'library_status_id' => 1,
@@ -265,9 +263,7 @@ class UserApprovals extends Component
             ->keyBy('id');
 
         DB::transaction(function () use ($ids) {
-            Account::whereIn('id', $ids)->update([
-                'status_id' => 5, // Not Approved
-            ]);
+            Account::whereIn('id', $ids)->get()->each->update(['status_id' => 5]);
 
             Student::whereIn('account_id', $ids)->update([
                 'verified_at' => now(),

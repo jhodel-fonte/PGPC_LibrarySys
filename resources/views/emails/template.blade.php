@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $subject ?? $title ?? $email_subject ?? 'PGPC Library Notification' }}</title>
 </head>
-<body style="margin: 0; padding: 24px; font-family: Arial, Helvetica, sans-serif; font-size: 14px; line-height: 1.6; color: #000000; background-color: #ffffff;">
+<body style="margin: 0; padding: 24px 12px; font-family: Arial, Helvetica, sans-serif; font-size: 15px; line-height: 1.6; color: #172033; background-color: #f3f5f8;">
 
-    <div>
-        <p style="margin: 0 0 4px 0; font-size: 15px; font-weight: bold;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 24px; background-color: #ffffff; border: 1px solid #dbe3ef;">
+        <p style="margin: 0 0 4px 0; font-size: 16px; font-weight: bold; color: #102b70;">
             PGPC LIBRARY SYSTEM
         </p>
         <p style="margin: 0 0 16px 0; font-size: 13px;">
@@ -24,9 +24,11 @@
             <p style="margin: 0 0 16px 0;">Hello {{ $name }},</p>
         @elseif(!empty($user))
             @php
-                $userName = is_object($user)
+                $userName = $user instanceof \App\Models\Account
+                    ? ($user->username ?: 'User')
+                    : (is_object($user)
                     ? ($user->first_name ?? $user->name ?? $user->username ?? 'User')
-                    : $user;
+                    : $user);
             @endphp
             <p style="margin: 0 0 16px 0;">Hello {{ $userName }},</p>
         @else
@@ -35,7 +37,7 @@
 
         {{-- Title / Subject Header if provided --}}
         @if(!empty($title))
-            <p style="margin: 0 0 16px 0; font-weight: bold; font-size: 15px;">
+            <p style="margin: 0 0 16px 0; font-weight: bold; font-size: 21px; line-height: 1.3; color: #102b70;">
                 {{ $title }}
             </p>
         @endif
@@ -63,11 +65,11 @@
             $displayBookTitle = $bookTitle ?? $book_title ?? null;
             $displayDueDate = $dueDate ?? $due_date ?? null;
         @endphp
-        @if($displayBookTitle)
+        @if($displayBookTitle || ($displayDueDate && empty($details['Due date']) && empty($details['Pickup deadline']) && !isset($details['Reservation reference'])))
             <p style="margin: 0 0 14px 0;">
-                <strong>Book:</strong> {{ $displayBookTitle }}
-                @if($displayDueDate)
-                    <br><strong>Due Date:</strong> {{ $displayDueDate }}
+                @if($displayBookTitle)<strong>Book:</strong> {{ $displayBookTitle }}@endif
+                @if($displayDueDate && empty($details['Due date']) && empty($details['Pickup deadline']) && !isset($details['Reservation reference']))
+                    @if($displayBookTitle)<br>@endif<strong>Due date:</strong> {{ $displayDueDate }}
                 @endif
             </p>
         @endif
@@ -107,7 +109,11 @@
                 OTP: {{ $otp }}
             </p>
             <p style="margin: 0 0 16px 0; font-size: 13px;">
-                This one-time password is valid for {{ config('auth.otp.expiry', 10) }} minutes. Please do not share this code with anyone.
+                @if(!empty($formattedOtpExpiresAt))
+                    This code expires at {{ $formattedOtpExpiresAt }}. Please do not share it with anyone.
+                @else
+                    This code expires within {{ $expiryMinutes ?? config('auth.otp.expiry', 10) }} minutes. Please do not share it with anyone.
+                @endif
             </p>
         @endif
 
@@ -126,7 +132,9 @@
 
         @if($actionLink)
             <p style="margin: 16px 0;">
-                {{ $actionLabel }}:<br>
+                <a href="{{ $actionLink }}" style="display: inline-block; padding: 10px 18px; background-color: #102b70; color: #ffffff; font-weight: bold; text-decoration: none;">{{ $actionLabel }}</a>
+            </p>
+            <p style="margin: 0 0 16px 0; font-size: 13px;">Or open this link:<br>
                 <a href="{{ $actionLink }}" style="color: #0000ee; text-decoration: underline; word-break: break-all;">
                     {{ $actionLink }}
                 </a>
