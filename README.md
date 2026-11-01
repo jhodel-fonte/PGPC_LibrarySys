@@ -112,6 +112,39 @@ port 80; configure a TLS certificate before serving production traffic over
 the public internet. Open only the web ports needed in the Azure Network
 Security Group, and keep database port 5432 private.
 
+### Ubuntu maintenance menu
+
+After this version is present in the native Ubuntu checkout, run:
+
+```bash
+sudo bash /opt/pgpc-lib/deploy/manage.sh
+```
+
+The menu checks service and database status, starts or stops the library stack,
+updates a clean Git checkout, edits `.env`, runs pending migrations, creates
+local backups, manages the queue and scheduler, sends confirmed test messages,
+and shows recent logs. It is designed for the native `/opt/pgpc-lib` deployment,
+not Docker Compose. PostgreSQL client tools (`pg_dump` and `pg_restore`) are
+required for backups; no automatic restore is provided.
+
+Stopping the library puts Laravel in maintenance mode and stops its queue and
+scheduler; shared Nginx and PHP-FPM remain running. Queue jobs can take up to
+30 minutes to finish. Updating requires a confirmed restorable backup, a clean
+checkout with an upstream branch, working Git credentials, and writable
+dependencies for the checkout owner. If an update fails after maintenance
+begins, inspect the failed step and recover before bringing the site back up;
+database migrations are not automatically rolled back. Installed systemd and
+Nginx configuration files are not overwritten by an application update.
+
+Environment edits are made in a protected copy, checked for a changed or
+missing `APP_KEY`, and applied only after confirmation. Protected copies and
+local archives are stored in `/var/backups/pgpc-lib`; they contain secrets and
+student data. Backups include the configured PostgreSQL database, `storage/app`,
+`.env`, and available PGPC server config files. Database and file copies occur
+at different times, so stop the library first for a consistent backup. The menu
+checks archive and dump structure but does not test a restore or create an
+off-server copy. TLS keys and external services are not included.
+
 ## Directory Structure Highlights
 
 - `app/Livewire/Pages/Admin/Settings.php`: Core logic for the unified system settings module, featuring deep-comparison unsaved changes tracking.
