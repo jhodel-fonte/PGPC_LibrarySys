@@ -153,7 +153,7 @@ class BookCopyModal extends Component
     public function saveCopy(): void
     {
         if ($this->isEditing) {
-            if (auth()->check() && !auth()->user()->can('update', Book::class)) {
+            if (!auth()->user()?->can('update', Book::class)) {
                 abort(403, 'Unauthorized action. You do not have permission to update book copies.');
             }
 
@@ -163,8 +163,9 @@ class BookCopyModal extends Component
                 return;
             }
 
-            $book = Book::find($this->copyId);
-            if ($book) {
+            \Illuminate\Support\Facades\DB::transaction(function () {
+                $book = Book::lockForUpdate()->findOrFail($this->copyId);
+                $book->validateCopyState((int) $this->conditionId, $this->status);
                 $book->update([
                     'book_condition_id' => $this->conditionId,
                     'accession_number' => trim($this->accessionNumber),
@@ -176,13 +177,13 @@ class BookCopyModal extends Component
                 $this->dispatch('toast', message: "Physical copy '{$book->accession_number}' updated successfully.", type: 'success');
                 $this->dispatch('copy-updated', bookDetailId: $this->bookDetailId, copyId: $this->copyId);
                 $this->dispatch('book-details-updated');
-            }
+            });
 
             $this->close();
             return;
         }
 
-        if (auth()->check() && !auth()->user()->can('create', Book::class)) {
+        if (!auth()->user()?->can('create', Book::class)) {
             abort(403, 'Unauthorized action. You do not have permission to add book copies.');
         }
 
@@ -192,6 +193,7 @@ class BookCopyModal extends Component
             return;
         }
 
+        (new Book)->validateCopyState((int) $this->conditionId, $this->status);
         $book = Book::create([
             'book_detail_id' => $this->bookDetailId,
             'book_condition_id' => $this->conditionId,

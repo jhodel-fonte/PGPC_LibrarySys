@@ -25,6 +25,21 @@
             @if($student)<p class="mt-4 text-sm"><strong>{{ $student->first_name }} {{ $student->last_name }}</strong> &middot; {{ $student->school_id_number }} &middot; {{ $fines->count() }} unpaid returned-item {{ Str::plural('fine', $fines->count()) }}</p>@endif
             </div>
         </section>
+        @if($student)
+        <section class="border-t border-slate-200 px-5 py-6 sm:px-8">
+            <h3 class="text-base font-bold text-[#102B70]">Unreturned books</h3>
+            <p class="mt-1 text-sm text-slate-600">Process the return before paying a fine for these books.</p>
+            @forelse($activeLoans as $loan)
+                <div class="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm">
+                    <strong class="block">{{ $loan->book?->bookDetail?->bookData?->book_title ?? 'Book unavailable' }}</strong>
+                    <span class="mt-1 block">Accession: {{ $loan->book?->accession_number ?? '—' }} &middot; Due {{ $loan->due_date?->format('M d, Y') ?? '—' }}</span>
+                    <span class="mt-1 block font-semibold text-amber-800">Not yet returned{{ $loan->due_date && $loan->due_date->isBefore(now()->startOfDay()) ? ' · Overdue' : '' }}</span>
+                </div>
+            @empty
+                <p class="mt-3 text-sm text-slate-600">This student has no unreturned books.</p>
+            @endforelse
+        </section>
+        @endif
         <section class="border-t border-slate-200 px-5 py-6 sm:px-8">
             <h3 class="text-base font-bold text-[#102B70]">Select a fine</h3>
             @if(!$student)<p class="mt-3 text-sm text-slate-600">Find a student to see unpaid fines for returned items.</p>

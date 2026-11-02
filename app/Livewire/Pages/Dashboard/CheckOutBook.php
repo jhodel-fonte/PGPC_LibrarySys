@@ -701,6 +701,9 @@ class CheckOutBook extends Component
                 foreach ($this->checkoutBooks as $item) {
                     $bookId = $item['book_id'];
                     $book = Book::lockForUpdate()->findOrFail($bookId);
+                    if (in_array($book->book_condition_id, [4, 5])) {
+                        throw new \DomainException('A queued book copy is damaged or lost.');
+                    }
                     $reservationId = $item['reservation_id'] ?? null;
                     $issue = $book->bookDetail?->periodicalIssue;
                     if ($issue && ! $issue->borrowable && ! $insideLibrary) {
@@ -738,7 +741,7 @@ class CheckOutBook extends Component
                         'issued_by_id' => $librarianId,
                         'book_reservation_id' => $reservationId,
                         'borrow_type_id' => $borrowType->id,
-                        'issued_condition_id' => 2,
+                        'issued_condition_id' => $book->book_condition_id,
                         'issued_date' => $now,
                         'due_date' => $dueDate,
                         'return_date' => null,

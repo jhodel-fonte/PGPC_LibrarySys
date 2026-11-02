@@ -4,34 +4,12 @@
     $librarianProfile = auth()->user()?->librarian;
     $personProfile = $studentProfile ?? $librarianProfile;
     $profileName = $personProfile ? ($personProfile->first_name . ' ' . $personProfile->last_name) : (auth()->user()?->name ?? auth()->user()?->username ?? 'Profile');
-    $initialChar = strtoupper(substr($personProfile?->first_name ?? auth()->user()?->name ?? auth()->user()?->username ?? 'P', 0, 1));
 
-    // Resolve profile image if available
-    $rawImage = $personProfile ? (method_exists($personProfile, 'getRawOriginal') ? $personProfile->getRawOriginal('image_url') : ($personProfile->image_url ?? null)) : null;
-    $hasCustomImage = !empty($rawImage);
-    $profileImageUrl = $hasCustomImage ? $personProfile->image_url : null;
 @endphp
-<div x-data="{ dropdownOpen: false, imgError: false }" class="relative">
+<div x-data="{ dropdownOpen: false }" class="relative">
     <button @click="dropdownOpen = !dropdownOpen" @click.away="dropdownOpen = false" class="min-h-11 flex items-center gap-3 pl-3 md:pl-4 border-l border-white/10 md:border-gray-200 group focus:outline-none cursor-pointer" title="My Profile">
         <div class="flex items-center gap-2">
-            @if($hasCustomImage)
-                <!-- Profile Image -->
-                <img 
-                    src="{{ $profileImageUrl }}" 
-                    alt="{{ $profileName }}" 
-                    class="w-8 h-8 rounded-full object-cover shadow-sm group-hover:ring-2 group-hover:ring-white/50 md:group-hover:ring-[#102B70]/30 transition-all shrink-0 border border-white/20 md:border-gray-200"
-                    x-show="!imgError"
-                    x-on:error="imgError = true"
-                >
-            @endif
-
-            <!-- Initial Avatar Fallback (Used when user has no profile image or on image load error) -->
-            <div 
-                @if($hasCustomImage) x-show="imgError" style="display: none;" @endif
-                class="w-8 h-8 rounded-full bg-white md:bg-[#102B70] text-[#102B70] md:text-white flex items-center justify-center text-xs font-black overflow-hidden shadow-sm group-hover:ring-2 group-hover:ring-white/50 md:group-hover:ring-[#102B70]/30 transition-all shrink-0"
-            >
-                {{ $initialChar }}
-            </div>
+            <x-widget.avatar :person="$personProfile" class="w-8 h-8 text-xs group-hover:ring-2 group-hover:ring-[#102B70]/30 transition-all" />
 
             <!-- Name & Chevron for Desktop -->
             <div class="hidden xl:flex items-center gap-1.5">

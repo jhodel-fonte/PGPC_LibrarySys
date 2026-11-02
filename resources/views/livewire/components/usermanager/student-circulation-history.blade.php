@@ -41,6 +41,9 @@
                         <p class="font-mono text-xs text-slate-500 font-semibold mt-0.5">
                             {{ $hAccession }}
                         </p>
+                        @if(\App\Services\EmployeeRoleService::canViewStudents(auth()->user()) && $hist->return_condition_note)
+                            <p class="mt-1 text-xs text-slate-600">Return observation: {{ $hist->return_condition_note }}</p>
+                        @endif
                     </div>
                     <span class="text-xs font-semibold text-slate-400 shrink-0">#{{ $index + 1 }}</span>
                 </div>
@@ -147,6 +150,9 @@
                             <div class="font-mono text-xs sm:text-sm text-slate-500 font-semibold">
                                 {{ $hAccession }}
                             </div>
+                            @if(\App\Services\EmployeeRoleService::canViewStudents(auth()->user()) && $hist->return_condition_note)
+                                <p class="mt-1 whitespace-normal text-xs text-slate-600">Return observation: {{ $hist->return_condition_note }}</p>
+                            @endif
                         </td>
                         <td class="py-3.5 px-4 text-sm font-semibold text-slate-700 whitespace-nowrap">
                             {{ $hBorrowDate }}

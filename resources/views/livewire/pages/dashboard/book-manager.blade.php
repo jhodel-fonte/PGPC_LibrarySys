@@ -898,6 +898,7 @@
                                 <option value="{{ $cond->id }}">{{ $cond->status }}</option>
                             @endforeach
                         </select>
+                        @error('bulkConditionId')<p role="alert" class="text-sm text-red-700">{{ $message }}</p>@enderror
                     </div>
                     <div class="pt-2 flex justify-end gap-2">
                         <button type="button" wire:click="$set('showBulkConditionModal', false)" class="px-3.5 h-9 rounded-lg border border-slate-200 text-xs font-semibold text-slate-600">Cancel</button>

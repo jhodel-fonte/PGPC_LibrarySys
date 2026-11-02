@@ -244,6 +244,7 @@ class AddLibrarianForm extends Component
                     'is_email_verified' => true,
                     'email_verified_at' => now(),
                     'password_changed_at' => $credentials['force_change'] ? null : now(),
+                    'password_change_reminder' => $credentials['force_change'],
                 ]);
 
                 $librarianRecord = Librarian::create([
@@ -310,8 +311,8 @@ class AddLibrarianForm extends Component
             session()->flash('status', "Librarian account for {$fullName} ({$librarian->school_id_number}) created successfully.");
             session()->flash('successMessage', "Librarian account for {$fullName} ({$librarian->school_id_number}) created successfully.");
 
-            $prefix = request()->is('librarian*') ? 'librarian.' : 'admin.';
-            return $this->redirect(route($prefix . 'user-management'), navigate: true);
+            $prefix = \App\Services\EmployeeRoleService::getRoutePrefix();
+            return $this->redirect(route($prefix . 'user-management', ['type' => 'librarian']), navigate: true);
 
         } catch (UniqueConstraintViolationException $e) {
             if ($storedPath) {

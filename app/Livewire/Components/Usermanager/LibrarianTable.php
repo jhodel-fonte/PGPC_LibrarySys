@@ -558,9 +558,12 @@ class LibrarianTable extends Component
             ->whereHas('role', fn ($q) => $q->whereIn('name', ['Librarian', 'Head Librarian']))
             ->whereHas('librarian', fn ($lq) => $lq->whereNull('deleted_at'));
 
-        $totalLibrarians = (clone $baseLibrarianQuery)->count();
-        $headLibrarians = (clone $baseLibrarianQuery)->whereHas('role', fn ($q) => $q->where('name', 'Head Librarian'))->count();
-        $regularLibrarians = (clone $baseLibrarianQuery)->whereHas('role', fn ($q) => $q->where('name', 'Librarian'))->count();
+        $counts = $baseLibrarianQuery->join('roles', 'accounts.role_id', '=', 'roles.id')
+            ->selectRaw("count(*) as total, sum(case when roles.name = 'Head Librarian' then 1 else 0 end) as heads, sum(case when roles.name = 'Librarian' then 1 else 0 end) as regular")
+            ->first();
+        $totalLibrarians = (int) $counts->total;
+        $headLibrarians = (int) $counts->heads;
+        $regularLibrarians = (int) $counts->regular;
 
         $deletedLibrarians = EmployeeRoleService::isAdmin()
             ? Account::withTrashed()

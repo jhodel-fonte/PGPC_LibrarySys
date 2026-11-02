@@ -162,8 +162,7 @@ class StudentImportTest extends TestCase
         $this->actingAs($user)->get($link)->assertRedirect(route('student.setup'));
         $this->assertFalse($user->fresh()->setup_email_required);
         $this->assertSame('verified', $row->fresh()->email_status);
-        Livewire::actingAs($user->fresh())->test(\App\Livewire\Pages\Auth\StudentSetup::class)
-            ->call('skipPassword')->assertRedirect(route('student.dashboard'));
+        $this->assertTrue($user->fresh()->password_change_reminder);
         $this->assertFalse($user->fresh()->setup_password_prompt);
     }
 

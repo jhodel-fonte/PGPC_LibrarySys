@@ -287,6 +287,7 @@ class AddUserForm extends Component
                     'is_email_verified' => true,
                     'email_verified_at' => now(),
                     'password_changed_at' => $credentials['force_change'] ? null : now(),
+                    'password_change_reminder' => $credentials['force_change'],
                 ]);
 
                 return Student::create([

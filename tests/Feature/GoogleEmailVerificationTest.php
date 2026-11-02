@@ -31,6 +31,14 @@ class GoogleEmailVerificationTest extends TestCase
         Socialite::shouldReceive('driver')->once()->with('google')->andReturn($provider);
     }
 
+    public function test_google_login_marks_a_default_password_for_reminder(): void
+    {
+        $account = Account::factory()->create(['password_change_reminder' => true]);
+        $this->googleUser($account->email);
+        $this->get(route('auth.google.callback'))->assertSessionHas('password_reminder_account', $account->id);
+        $this->assertAuthenticatedAs($account);
+    }
+
     public function test_matching_verified_google_email_completes_only_email_verification(): void
     {
         $account = $this->student();

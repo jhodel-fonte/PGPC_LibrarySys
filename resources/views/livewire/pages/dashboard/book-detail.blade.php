@@ -371,6 +371,12 @@
                                         </h3>
                                         <p class="text-xs text-slate-500 mt-0.5">{{ $availableCopies }} available, {{ $borrowedCopies }} borrowed</p>
                                     </div>
+                                    @if(\App\Services\EmployeeRoleService::canManageCirculation())
+                                        <a href="{{ route(\App\Services\EmployeeRoleService::getRoutePrefix() . 'circulation-desk.borrowed-books', ['book' => $bookDetail->id]) }}" wire:navigate
+                                           class="inline-flex min-h-8 items-center rounded-lg border border-slate-300 px-3 py-1 text-xs font-semibold text-[#102B70] hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70]">
+                                            View borrowing history
+                                        </a>
+                                    @endif
                                     @can('create', \App\Models\Book::class)
                                         <div class="relative" x-data="{ addDropdownOpen: false }">
                                             <button
@@ -425,6 +431,7 @@
                                             <tr>
                                                 <th class="px-3.5 py-2.5">Accession No.</th>
                                                 <th class="px-3.5 py-2.5">Unique Code</th>
+                                                <th class="px-3.5 py-2.5">Condition</th>
                                                 <th class="px-3.5 py-2.5">Status</th>
                                                 <th class="px-3.5 py-2.5 text-right">Action</th>
                                             </tr>
@@ -447,6 +454,12 @@
                                                     </td>
                                                     <td data-label="Unique code" class="px-3.5 py-2.5 text-xs font-medium tabular-nums text-slate-600">
                                                         {{ $copy->code ?: 'Not assigned' }}
+                                                    </td>
+                                                    <td data-label="Condition" class="px-3.5 py-2.5">
+                                                        {{ $copy->condition?->status ?? 'Not recorded' }}
+                                                        @can('viewAny', \App\Models\Book::class)
+                                                            @if($copy->last_return_condition_note)<p class="mt-1 whitespace-normal text-xs text-slate-600">Latest return observation: {{ $copy->last_return_condition_note }}</p>@endif
+                                                        @endcan
                                                     </td>
                                                     <td data-label="Status" class="px-3.5 py-2.5">
                                                         <span class="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold border {{ $statBadgeClass }}">
@@ -510,7 +523,7 @@
                                                 </tr>
                                             @empty
                                                 <tr>
-                                                    <td colspan="4" class="px-4 py-8 text-center text-sm font-medium text-slate-500">
+                                                    <td colspan="5" class="px-4 py-8 text-center text-sm font-medium text-slate-500">
                                                         No physical copies recorded for this title yet.
                                                     </td>
                                                 </tr>

@@ -64,6 +64,9 @@
     .student-catalog-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @container student-page (min-width: 64rem) {
+    .student-welcome-grid { grid-template-columns: minmax(0, 1fr) minmax(16rem, 21rem); }
+    .student-pass { border-top: 0; border-left: 1px solid rgb(255 255 255 / .2); padding-top: 0; padding-left: 1.5rem; }
+    .student-dashboard-grid { grid-template-columns: minmax(0, 1.8fr) minmax(19rem, 1fr); }
     .student-page-heading { flex-direction: row; align-items: center; }
     .student-page-heading > :first-child { min-width: 0; flex: 1; }
     .student-page-heading > :last-child { flex-shrink: 0; }
