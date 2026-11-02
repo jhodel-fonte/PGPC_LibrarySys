@@ -1,588 +1,75 @@
-<div class="min-h-full bg-[#F8FAFC]"
-    x-data="{
-        scrollToTarget(sec) {
-            if (!sec) return;
-            const targetMap = {
-                'circulation': 'analytics-circulation',
-                'programs': 'analytics-programs',
-                'gender': 'analytics-demographics',
-                'demographics': 'analytics-demographics',
-                'operations': 'analytics-operations',
-                'overview': 'analytics-overview'
-            };
-            const id = targetMap[sec] || ('analytics-' + sec);
-            const el = document.getElementById(id);
-            if (el) {
-                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-        },
-        init() {
-            const check = () => {
-                const params = new URLSearchParams(window.location.search);
-                const s = params.get('section');
-                if (s) {
-                    this.scrollToTarget(s);
-                }
-            };
-            this.$nextTick(() => {
-                setTimeout(check, 200);
-            });
-            window.addEventListener('popstate', check);
-            document.addEventListener('livewire:navigated', () => {
-                setTimeout(check, 150);
-            });
-        }
-    }"
-    @scroll-to-section.window="scrollToTarget($event.detail)"
->
+<div class="min-h-full bg-slate-50" x-data="{ selectedPeriod: @js($period), openChart() { this.$refs.expandedChart.showModal() }, scrollToSection(section) { document.getElementById('analytics-' + ({gender: 'demographics'}[section] || section))?.scrollIntoView({ behavior: 'smooth' }); } }" x-init="$nextTick(() => { const section = new URLSearchParams(location.search).get('section'); if (section) scrollToSection(section); })" @scroll-to-section.window="scrollToSection($event.detail)">
+    @php
+        $prefix = \App\Services\EmployeeRoleService::getRoutePrefix();
+        $labels = array_column($buckets, 'label');
+        $chartWidth = max(1000, count($labels) * 55);
+        $series = [
+            ['name' => 'Loans issued', 'data' => array_column($buckets, 'loans')],
+            ['name' => 'Returns', 'data' => array_column($buckets, 'returns')],
+        ];
+        $range = $start->format('M j, Y').' – '.$end->format('M j, Y');
+        $previousRange = $previousStart->format('M j, Y').' – '.$previousEnd->format('M j, Y');
+    @endphp
+    <main class="analytics-screen mx-auto max-w-[1500px] space-y-7 p-4 sm:p-6 lg:p-8 print:hidden">
+        <header class="flex flex-wrap items-end justify-between gap-4">
+            <div><h1 class="text-2xl font-bold text-[#102B70]">Library analytics</h1><p class="mt-1 text-sm text-slate-600">Understand circulation and see what needs attention today.</p></div>
+            <div class="flex gap-3 text-sm font-semibold"><a class="text-[#102B70] underline underline-offset-4" href="{{ route($prefix.'analytics.ai') }}">AI evaluation</a><button type="button" class="text-[#102B70] underline underline-offset-4" onclick="window.print()">Print report</button></div>
+        </header>
 
-    <div class="relative z-10 mx-auto w-full max-w-[1600px] p-5 sm:p-6 lg:p-8 xl:p-10 space-y-8 lg:space-y-10 print:hidden">
+        <form wire:submit="applyPeriod" class="flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white p-4" aria-label="Analytics date range">
+            <label class="grid gap-1 text-sm font-semibold text-slate-700">Date range
+                <select wire:model="period" x-model="selectedPeriod" class="rounded-lg border-slate-300 text-sm"><option value="month">This month to date</option><option value="last_month">Last month</option><option value="year">This year to date</option><option value="custom">Custom range</option></select>
+            </label>
+            <label x-show="selectedPeriod === 'custom'" x-cloak class="grid gap-1 text-sm font-semibold text-slate-700">From<input type="date" wire:model="startDate" class="rounded-lg border-slate-300 text-sm"></label>
+            <label x-show="selectedPeriod === 'custom'" x-cloak class="grid gap-1 text-sm font-semibold text-slate-700">To<input type="date" wire:model="endDate" class="rounded-lg border-slate-300 text-sm"></label>
+            <button type="submit" class="rounded-lg bg-[#102B70] px-4 py-2 text-sm font-semibold text-white hover:bg-[#173d90]" wire:loading.attr="disabled">Apply range</button>
+            <span wire:loading wire:target="applyPeriod" role="status" class="text-sm text-slate-600">Updating analytics…</span>
+            @error('period') <p class="w-full text-sm text-red-700">{{ $message }}</p> @enderror
+            @error('startDate') <p class="w-full text-sm text-red-700">{{ $message }}</p> @enderror
+            @error('endDate') <p class="w-full text-sm text-red-700">{{ $message }}</p> @enderror
+            <p class="w-full text-xs text-slate-600">Showing {{ $range }} · Compared with {{ $previousRange }} · Philippine time. Month-to-date and year-to-date comparisons use matching calendar dates; last month uses the previous calendar month. Custom ranges use the preceding equal-length period.</p>
+        </form>
 
-        <!-- 1. Page Header & Primary Period Switcher -->
-        <div class="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between lg:shrink-0">
-            <div class="max-w-2xl">
-                <h1 class="text-xl sm:text-2xl font-bold tracking-[-0.02em] text-[#102B70]">Analytics</h1>
-                <p class="mt-0.5 text-xs sm:text-sm font-medium text-[#64748B]">Circulation velocity, patron engagement, and collection performance metrics.</p>
+        <section id="analytics-overview" class="scroll-mt-24" aria-labelledby="overview-heading">
+            <h2 id="overview-heading" class="mb-3 text-lg font-bold text-slate-900">Activity in this period</h2><p class="mb-3 text-sm text-slate-600">Loans count issued transactions, including room use; returns count transactions returned in the selected period. Students who borrowed counts each student once.</p>
+            <div class="grid gap-3 sm:grid-cols-3">
+                @foreach (['loans' => 'Loans issued', 'returns' => 'Items returned', 'borrowers' => 'Students who borrowed'] as $key => $label)
+                    <div class="rounded-xl border border-slate-200 bg-white p-5"><p class="text-sm font-medium text-slate-600">{{ $label }}</p><p class="mt-2 text-3xl font-bold tabular-nums text-[#102B70]">{{ number_format($current[$key]) }}</p><p class="mt-2 text-sm text-slate-700">{{ \App\Livewire\Pages\Dashboard\Analytics::comparison($current[$key], $previous[$key]) }}</p><p class="mt-1 text-xs text-slate-600">Previous: {{ number_format($previous[$key]) }}</p></div>
+                @endforeach
             </div>
+        </section>
 
-            <div class="flex flex-wrap items-center gap-2.5 shrink-0">
-                @php($analyticsPrefix = \App\Services\EmployeeRoleService::getRoutePrefix())
-                <a
-                    href="{{ route($analyticsPrefix . 'analytics.ai') }}"
-                    class="text-xs font-semibold text-[#102B70] hover:text-[#0B225E] hover:underline"
-                >
-                    AI evaluation &rarr;
-                </a>
+        <section id="analytics-circulation" class="scroll-mt-24 rounded-xl border border-slate-200 bg-white p-4 sm:p-6" aria-labelledby="trend-heading">
+            <div class="flex flex-wrap items-start justify-between gap-3"><div><h2 id="trend-heading" class="text-lg font-bold text-slate-900">Circulation trend</h2><p class="mt-1 text-sm text-slate-600">{{ $monthly ? 'Monthly' : 'Daily' }} loans issued and returns · {{ $range }}</p></div><button type="button" @click="openChart()" class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-[#102B70] hover:bg-slate-50">Expand chart</button></div>
+            @if ($current['loans'] + $current['returns'] === 0)
+                <p class="py-12 text-center text-sm text-slate-600">No loans or returns in this period.</p>
+            @else
+                <div class="mx-auto mt-5 max-w-4xl overflow-x-auto"><div style="min-width: {{ $chartWidth * 0.7 }}px"><x-widget.graph.main :series="$series" :labels="$labels" :palette="['#102B70', '#0284c7']" line grid legend :height="240" :svg-width="$chartWidth" /></div></div>
+            @endif
+            <details class="mt-4 text-sm"><summary class="cursor-pointer font-semibold text-[#102B70]">View trend data</summary><div class="mt-3 max-h-72 overflow-auto"><table class="w-full text-left"><thead><tr class="border-b border-slate-200"><th class="py-2">Period</th><th class="py-2">Loans</th><th class="py-2">Returns</th></tr></thead><tbody>@foreach ($buckets as $bucket)<tr class="border-b border-slate-100"><th scope="row" class="py-2 font-medium">{{ $bucket['label'] }}</th><td>{{ $bucket['loans'] }}</td><td>{{ $bucket['returns'] }}</td></tr>@endforeach</tbody></table></div></details>
+        </section>
 
-                {{-- Period Selector: Monthly Data vs Yearly Data --}}
-                <div class="inline-flex items-center p-1 bg-white border border-[#E2E8F0] rounded-lg shadow-xs text-xs font-semibold text-[#102B70]">
-                    <button
-                        type="button"
-                        wire:click="setTimePeriod('monthly')"
-                        class="px-3 py-1.5 rounded-md transition-all cursor-pointer {{ $timePeriod === 'monthly' ? 'bg-[#102B70] text-white shadow-xs' : 'hover:bg-slate-50 text-[#64748B] hover:text-[#0F172A]' }}"
-                    >
-                        Monthly Data
-                    </button>
-                    <button
-                        type="button"
-                        wire:click="setTimePeriod('yearly')"
-                        class="px-3 py-1.5 rounded-md transition-all cursor-pointer {{ $timePeriod === 'yearly' ? 'bg-[#102B70] text-white shadow-xs' : 'hover:bg-slate-50 text-[#64748B] hover:text-[#0F172A]' }}"
-                    >
-                        Yearly Data
-                    </button>
-                </div>
-
-                {{-- Export Report Action --}}
-                <div class="relative" x-data="{ open: false }">
-                    <button
-                        @click="open = !open"
-                        type="button"
-                        class="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-white border border-[#E2E8F0] hover:border-[#102B70] text-[#102B70] px-3.5 text-xs font-semibold transition-all shadow-xs cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70]"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/>
-                        </svg>
-                        <span>Export Analytics</span>
-                        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                    </button>
-
-                    <div
-                        x-show="open"
-                        @click.away="open = false"
-                        x-cloak
-                        class="absolute right-0 mt-1.5 w-48 bg-white border border-[#E2E8F0] rounded-xl shadow-lg py-1 z-50 text-xs font-semibold text-[#334155]"
-                    >
-                        <a href="javascript:void(0)" @click="open = false; window.print()" class="flex items-center gap-2 px-3.5 py-2 hover:bg-[#F8FAFC] text-[#0F172A]">
-                            <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                            Print Summary Report
-                        </a>
-                    </div>
-                </div>
+        <section id="analytics-operations" class="scroll-mt-24 rounded-xl border border-slate-200 bg-white p-4 sm:p-6" aria-labelledby="operations-heading">
+            <div class="flex flex-wrap items-start justify-between gap-3"><div><h2 id="operations-heading" class="text-lg font-bold text-slate-900">Today and current status</h2><p class="mt-1 text-sm text-slate-600">As of {{ $now->format('M j, Y, g:i A') }} Philippine time · These figures are independent of the selected range.</p></div>
+                @if (\App\Services\EmployeeRoleService::canManageCirculation())<a class="text-sm font-semibold text-[#102B70] underline underline-offset-4" href="{{ route($prefix.'circulation-desk.borrowed-books') }}">View borrowed books</a>@endif
             </div>
+            <div class="mt-4 flex flex-wrap gap-x-10 gap-y-3"><p class="text-sm text-slate-700"><strong class="text-2xl text-[#102B70]">{{ number_format($dueCount) }}</strong> outstanding due today</p><p class="text-sm text-slate-700"><strong class="text-2xl text-amber-800">{{ number_format($overdueCount) }}</strong> currently overdue</p></div>
+            <p class="mt-2 text-xs text-slate-600">A loan due today can also be overdue once its due time has passed.</p>
+            <div class="mt-4 divide-y divide-slate-100">@forelse ($items as $item)<div class="flex flex-wrap justify-between gap-2 py-3 text-sm"><div><p class="font-semibold text-slate-900">{{ $item->book?->bookDetail?->bookData?->book_title ?? 'Book record unavailable' }}</p><p class="text-slate-600">{{ $item->student ? trim($item->student->first_name.' '.$item->student->last_name) : 'Student record unavailable' }}</p></div><span class="text-slate-700">Due {{ $item->due_date->copy()->setTimezone('Asia/Manila')->format('M j, g:i A') }}</span></div>@empty<p class="py-4 text-sm text-slate-600">No outstanding books due today or overdue.</p>@endforelse</div>
+            @if ($items->count() === 5)<p class="mt-2 text-xs text-slate-600">Showing up to five items, earliest due first.</p>@endif
+        </section>
+
+        <div class="grid gap-5 lg:grid-cols-2">
+            <section id="analytics-programs" class="scroll-mt-24 rounded-xl border border-slate-200 bg-white p-4 sm:p-6"><h2 class="text-lg font-bold text-slate-900">Loans by program</h2><p class="mt-1 text-sm text-slate-600">{{ $range }} · Program recorded at issue; missing historical values are shown separately.</p><div class="mt-4 divide-y divide-slate-100">@forelse ($programs as $row)<div class="flex justify-between gap-4 py-2 text-sm"><span class="break-words text-slate-700">{{ $row->label }}</span><strong class="shrink-0 tabular-nums text-[#102B70]">{{ number_format($row->total) }}</strong></div>@empty<p class="py-4 text-sm text-slate-600">No loans in this period.</p>@endforelse</div>@if ($programs->count() === 8)<p class="mt-3 text-xs text-slate-600">Showing up to eight programs.</p>@endif</section>
+            <section id="analytics-demographics" class="scroll-mt-24 rounded-xl border border-slate-200 bg-white p-4 sm:p-6"><h2 class="text-lg font-bold text-slate-900">Loans by gender</h2><p class="mt-1 text-sm text-slate-600">{{ $range }} · Based on current student records; historical values may have changed.</p><div class="mt-4 divide-y divide-slate-100">@forelse ($genders as $row)<div class="flex justify-between gap-4 py-2 text-sm"><span class="break-words text-slate-700">{{ $row->label }}</span><strong class="shrink-0 tabular-nums text-[#102B70]">{{ number_format($row->total) }}</strong></div>@empty<p class="py-4 text-sm text-slate-600">No loans in this period.</p>@endforelse</div></section>
         </div>
+        <section class="rounded-xl border border-slate-200 bg-white p-4 sm:p-6"><h2 class="text-lg font-bold text-slate-900">Busiest borrowing hours</h2><p class="mt-1 text-sm text-slate-600">Loans issued in {{ $range }}, grouped by Philippine local time.</p><div class="mt-4 divide-y divide-slate-100">@forelse ($hourly as $hour => $total)<div class="flex justify-between py-2 text-sm"><span>{{ \Carbon\CarbonImmutable::createFromTime($hour, 0, 0, 'Asia/Manila')->format('g:i A') }} – {{ \Carbon\CarbonImmutable::createFromTime($hour, 0, 0, 'Asia/Manila')->addHour()->format('g:i A') }}</span><strong>{{ number_format($total) }} loans</strong></div>@empty<p class="py-4 text-sm text-slate-600">No loans in this period.</p>@endforelse</div></section>
+    </main>
 
-        {{-- 2. PRIMARY EXECUTIVE KPI METRICS --}}
-        <div id="analytics-overview" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 scroll-mt-24">
-
-            {{-- KPI 1: Total Number of Students --}}
-            <x-widget.data-card
-                title="Total Students"
-                :value="$kpiMetrics['totalStudents']['value']"
-                :change="$kpiMetrics['totalStudents']['change']"
-                :subtext="$kpiMetrics['totalStudents']['subtext']"
-                changeColor="emerald"
-            />
-
-            {{-- KPI 2: Total Number of Books --}}
-            <x-widget.data-card
-                title="Total Books"
-                :value="$kpiMetrics['totalBooks']['value']"
-                :change="$kpiMetrics['totalBooks']['change']"
-                :subtext="$kpiMetrics['totalBooks']['subtext']"
-                changeColor="blue"
-            />
-
-            {{-- KPI 3: Due Books Today --}}
-            <x-widget.data-card
-                title="Due Books Today"
-                :value="$kpiMetrics['dueBooksToday']['value']"
-                :change="$kpiMetrics['dueBooksToday']['change']"
-                :subtext="$kpiMetrics['dueBooksToday']['subtext']"
-                changeColor="amber"
-            />
-
-            {{-- KPI 4: Peak Hour --}}
-            <x-widget.data-card
-                title="Peak Hour"
-                :value="$kpiMetrics['peakHour']['value']"
-                :subtext="$kpiMetrics['peakHour']['subtext']"
-                changeColor="amber"
-                valueSize="text-xl"
-            />
-
-            {{-- KPI 5: Gender Breakdown Dominance --}}
-            <x-widget.data-card
-                title="Most Active Gender"
-                :value="$kpiMetrics['genderDominance']['value']"
-                :change="$kpiMetrics['genderDominance']['change']"
-                :subtext="$kpiMetrics['genderDominance']['subtext']"
-                changeColor="emerald"
-                valueSize="text-xl"
-            />
-
-        </div>
-
-        {{-- 3. CIRCULATION SECTION --}}
-        <div id="analytics-circulation" class="space-y-4 scroll-mt-24">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 pb-3 border-b border-[#E2E8F0]">
-                <div class="flex items-center gap-2.5">
-                    <span class="w-1.5 h-5 rounded-full bg-[#102B70]"></span>
-                    <div>
-                        <h2 class="text-base sm:text-lg font-bold text-[#0F172A] tracking-tight">Circulation</h2>
-                    </div>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-
-                {{-- MAIN CHART --}}
-                <div class="lg:col-span-8 bg-white rounded-xl border border-[#E2E8F0] shadow-xs p-5 sm:p-6 flex flex-col justify-between min-w-0">
-
-                    <div>
-                        {{-- Minimalist Chart Header --}}
-                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-[#F1F5F9]">
-                            <div>
-                                <h3 class="text-sm sm:text-base font-bold text-[#0F172A] tracking-tight">
-                                    {{ $timePeriod === 'monthly' ? ($viewMode === 'users_per_month' ? 'Users Per Month' : 'Circulation Trends') : 'Yearly Progression' }}
-                                </h3>
-                                <p class="text-xs text-[#64748B] mt-0.5">
-                                    {{ $timePeriod === 'monthly' ? 'Monthly overview (Jan – Dec)' : 'Annual comparison (2022 – 2026)' }}
-                                </p>
-                            </div>
-
-                            {{-- Mode Selector Dropdowns --}}
-                            @if ($timePeriod === 'monthly')
-                                <div class="flex flex-wrap items-center gap-2">
-                                    <div class="relative">
-                                        <select
-                                            wire:model.live="viewMode"
-                                            class="text-xs font-semibold text-[#102B70] bg-[#F8FAFC] border border-[#CBD5E1] rounded-lg pl-2.5 pr-7 py-1.5 cursor-pointer focus:outline-none focus:border-[#102B70] hover:border-[#102B70] transition-colors shadow-xs"
-                                        >
-                                            <option value="circulation">Circulation Trends</option>
-                                            <option value="users_per_month">Users Per Month</option>
-                                        </select>
-                                    </div>
-
-                                    @if ($viewMode === 'circulation')
-                                        <div class="relative">
-                                            <select
-                                                wire:model.live="circulationMetric"
-                                                class="text-xs font-semibold text-[#334155] bg-[#F8FAFC] border border-[#CBD5E1] rounded-lg pl-2.5 pr-7 py-1.5 cursor-pointer focus:outline-none focus:border-[#102B70] hover:border-[#102B70] transition-colors shadow-xs"
-                                            >
-                                                <option value="all">All (Loans & Returns)</option>
-                                                <option value="borrowed">Loans Only</option>
-                                                <option value="returned">Returns Only</option>
-                                            </select>
-                                        </div>
-                                    @endif
-                                </div>
-                            @else
-                                <div class="relative">
-                                    <span class="inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-lg bg-[#EFF6FF] text-[#102B70] border border-[#DBEAFE]">
-                                        5-Year Historical View
-                                    </span>
-                                </div>
-                            @endif
-                        </div>
-
-                        {{-- Chart Canvas --}}
-                        <div class="my-auto py-2" wire:loading.class="opacity-50 transition-opacity">
-                            @if ($timePeriod === 'monthly')
-                                <x-widget.graph.main
-                                    :series="$monthlyTrend['series']"
-                                    :labels="$monthlyTrend['labels']"
-                                    line
-                                    grid
-                                    legend
-                                    markers
-                                    height="300"
-                                />
-                            @else
-                                <x-widget.graph.main
-                                    :series="$yearlyTrend['series']"
-                                    :labels="$yearlyTrend['labels']"
-                                    bar
-                                    grid
-                                    legend
-                                    height="300"
-                                />
-                            @endif
-                        </div>
-                    </div>
-
-                </div>
-
-                {{-- CHART SUMMARY CARDS --}}
-                <div class="lg:col-span-4 bg-white rounded-xl border border-[#E2E8F0] shadow-xs p-5 sm:p-6 flex flex-col justify-between min-w-0">
-
-                    {{-- Header --}}
-                    <div class="flex items-center justify-between pb-3 border-b border-[#F1F5F9]">
-                        <div>
-                            <h3 class="text-sm sm:text-base font-bold text-[#0F172A] tracking-tight">Chart Summary</h3>
-                            <p class="text-xs text-[#64748B] mt-0.5">Key circulation & patron metrics</p>
-                        </div>
-                        <span class="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-[#EFF6FF] text-[#102B70] border border-[#DBEAFE]">
-                            Summary
-                        </span>
-                    </div>
-
-                    {{-- Summary Sub-Cards --}}
-                    <div class="py-3 space-y-3 my-auto">
-
-                        {{-- Card 1: Peak Circulation Month --}}
-                        <div class="flex items-center gap-3 p-3 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] hover:border-[#CBD5E1] transition-colors">
-                            <div class="w-9 h-9 rounded-lg bg-[#EFF6FF] text-[#102B70] flex items-center justify-center shrink-0">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
-                            </div>
-                            <div class="min-w-0 flex-1">
-                                <span class="text-[11px] text-[#64748B] font-semibold block uppercase tracking-wider">Peak Period</span>
-                                <span class="font-bold text-[#0F172A] text-sm mt-0.5 block truncate">
-                                    {{ $timePeriod === 'monthly' ? $monthlyTrend['peakMonth'] : '2026 (29,400 loans)' }}
-                                </span>
-                                <span class="text-xs text-[#64748B] font-medium block truncate">
-                                    {{ $timePeriod === 'monthly' ? 'Midterm examination rush' : 'Highest volume recorded' }}
-                                </span>
-                            </div>
-                        </div>
-
-                        {{-- Card 2: Average Monthly Users --}}
-                        <div class="flex items-center gap-3 p-3 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] hover:border-[#CBD5E1] transition-colors">
-                            <div class="w-9 h-9 rounded-lg bg-[#EFF6FF] text-[#3B82F6] flex items-center justify-center shrink-0">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-                            </div>
-                            <div class="min-w-0 flex-1">
-                                <span class="text-[11px] text-[#64748B] font-semibold block uppercase tracking-wider">Average Monthly Users</span>
-                                <span class="font-bold text-[#0F172A] text-sm mt-0.5 block truncate">{{ number_format($monthlyTrend['avgMonthlyUsers'] ?? 988) }} Patrons / Month</span>
-                                <span class="text-xs text-[#64748B] font-medium block truncate">Consistent campus engagement</span>
-                            </div>
-                        </div>
-
-                        {{-- Card 3: Year-over-Year Growth --}}
-                        <div class="flex items-center gap-3 p-3 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] hover:border-[#CBD5E1] transition-colors">
-                            <div class="w-9 h-9 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center shrink-0">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                            </div>
-                            <div class="min-w-0 flex-1">
-                                <span class="text-[11px] text-[#64748B] font-semibold block uppercase tracking-wider">Year-over-Year Growth</span>
-                                <span class="font-bold text-[#0F172A] text-sm mt-0.5 block truncate">{{ $yearlyTrend['growthRate'] }}</span>
-                                <span class="text-xs text-emerald-700 font-medium block truncate">Expanding student utilization</span>
-                            </div>
-                        </div>
-
-                        {{-- Card 4: Return Turnaround Compliance --}}
-                        <div class="flex items-center gap-3 p-3 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] hover:border-[#CBD5E1] transition-colors">
-                            <div class="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
-                            </div>
-                            <div class="min-w-0 flex-1">
-                                <span class="text-[11px] text-[#64748B] font-semibold block uppercase tracking-wider">Return Compliance</span>
-                                <span class="font-bold text-[#0F172A] text-sm mt-0.5 block truncate">91.4% On-Time</span>
-                                <span class="text-xs text-[#64748B] font-medium block truncate">4.2 days avg turnaround</span>
-                            </div>
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </div>
-        </div>
-
-        {{-- 4. PROGRAMS SECTION --}}
-        <div id="analytics-programs" class="space-y-4 scroll-mt-24">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 pb-3 border-b border-[#E2E8F0]">
-                <div class="flex items-center gap-2.5">
-                    <span class="w-1.5 h-5 rounded-full bg-[#102B70]"></span>
-                    <div>
-                        <h2 class="text-base sm:text-lg font-bold text-[#0F172A] tracking-tight">Programs &amp; Demographics</h2>
-                    </div>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-
-                {{-- PROGRAM / COURSE BREAKDOWN --}}
-                <div class="lg:col-span-8 bg-white rounded-xl border border-[#E2E8F0] shadow-xs p-5 sm:p-6 flex flex-col justify-between min-w-0">
-
-                    <div>
-                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-[#F1F5F9]">
-                            <div>
-                                <h3 class="text-sm sm:text-base font-bold text-[#0F172A] tracking-tight">Program / Course Breakdown</h3>
-                                <p class="text-xs text-[#64748B] mt-0.5">
-                                    Utilization and borrowing by academic degree
-                                </p>
-                            </div>
-                        </div>
-
-                        {{-- Grouped Bar Chart of Program Usage --}}
-                        <div class="py-4" wire:loading.class="opacity-50 transition-opacity">
-                            <x-widget.graph.main
-                                :series="$programBreakdown['series']"
-                                :labels="$programBreakdown['labels']"
-                                :colors="['#102B70', '#3B82F6']"
-                                bar
-                                grid
-                                legend
-                                height="210"
-                            />
-                        </div>
-                    </div>
-
-                    {{-- Program Details Ranking Table --}}
-                    <div class="pt-3 border-t border-[#F1F5F9]">
-                        <div
-                            class="overflow-y-auto divide-y divide-[#F1F5F9] text-xs pr-1"
-                            style="max-height: 200px;"
-                        >
-                            @foreach ($programBreakdown['programs'] as $prog)
-                                <div class="h-9 flex items-center justify-between">
-                                    <div class="flex items-center gap-3 min-w-0">
-                                        <span class="w-12 font-bold text-slate-800">{{ $prog['code'] }}</span>
-                                        <span class="text-slate-700 truncate font-medium" title="{{ $prog['name'] }}">{{ $prog['name'] }}</span>
-                                    </div>
-                                    <div class="flex items-center gap-3 shrink-0 text-right">
-                                        <span class="text-[#64748B]">{{ $prog['users'] }} students</span>
-                                        <span class="font-bold text-[#102B70] tabular-nums">{{ $prog['loans'] }} borrows</span>
-                                        <span class="w-9 text-right font-semibold text-[#64748B]">{{ $prog['pct'] }}%</span>
-                                    </div>
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
-
-                </div>
-
-                {{-- GENDER BREAKDOWN --}}
-                <div id="analytics-demographics" class="lg:col-span-4 bg-white rounded-xl border border-[#E2E8F0] shadow-xs p-5 sm:p-6 flex flex-col justify-between min-w-0 scroll-mt-24">
-
-                    <div>
-                        {{-- Card Header --}}
-                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-[#F1F5F9]">
-                            <div>
-                                <h3 class="text-sm sm:text-base font-bold text-[#0F172A] tracking-tight">Gender Breakdown</h3>
-                                <p class="text-xs text-[#64748B] mt-0.5">Borrowing participation by gender</p>
-                            </div>
-                        </div>
-
-                        {{-- Gender Breakdown Chart --}}
-                        <div class="py-4 flex items-center justify-center min-h-[250px]" wire:loading.class="opacity-50 transition-opacity">
-                            <x-charts.pie
-                                :series="$genderBreakdown['donutSeries']"
-                                :labels="['Female', 'Male']"
-                                :colors="['#102B70', '#3B82F6']"
-                                :height="250"
-                                pie
-                                legend
-                                legend-position="bottom"
-                                legend-text-size="text-xs sm:text-sm font-semibold"
-                                legend-value-size="text-xs sm:text-sm font-bold"
-                                suffix="Students"
-                            />
-                        </div>
-                    </div>
-
-                    {{-- Gender Comparison Breakdown & Details --}}
-                    <div class="pt-3 border-t border-[#F1F5F9] divide-y divide-[#F1F5F9] text-xs">
-                        <!-- Female -->
-                        <div class="py-3 space-y-1.5">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center gap-2 min-w-0">
-                                    <span class="w-2.5 h-2.5 rounded-full bg-[#102B70] shrink-0"></span>
-                                    <span class="font-bold text-[#0F172A]">Female</span>
-                                </div>
-                                <div class="flex items-center gap-3 shrink-0 text-right">
-                                    <span class="text-[#64748B] font-medium">{{ number_format($genderBreakdown['female']['count']) }} Students</span>
-                                    <span class="font-bold text-[#102B70] tabular-nums">{{ $genderBreakdown['female']['avgLoans'] }}</span>
-                                    <span class="w-9 text-right font-semibold text-[#64748B]">{{ $genderBreakdown['female']['pct'] }}%</span>
-                                </div>
-                            </div>
-                            <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                                <div class="h-full bg-[#102B70] rounded-full transition-all duration-500" style="width: {{ $genderBreakdown['female']['pct'] }}%"></div>
-                            </div>
-                            <div class="flex items-center justify-between text-xs text-[#64748B]">
-                                <span class="truncate">Top Categories: <strong class="text-slate-800 font-semibold">{{ $genderBreakdown['female']['preferredGenre'] }}</strong></span>
-                            </div>
-                        </div>
-
-                        <!-- Male -->
-                        <div class="py-3 space-y-1.5">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center gap-2 min-w-0">
-                                    <span class="w-2.5 h-2.5 rounded-full bg-[#3B82F6] shrink-0"></span>
-                                    <span class="font-bold text-[#0F172A]">Male</span>
-                                    @if($genderBreakdown['dominantGender'] === 'Lalaki (Male)' || str_contains($genderBreakdown['dominantGender'], 'Male'))
-                                        <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-[#EFF6FF] text-[#102B70] border border-[#DBEAFE]">Top User</span>
-                                    @endif
-                                </div>
-                                <div class="flex items-center gap-3 shrink-0 text-right">
-                                    <span class="text-[#64748B] font-medium">{{ number_format($genderBreakdown['male']['count']) }} patrons</span>
-                                    <span class="font-bold text-[#3B82F6] tabular-nums">{{ $genderBreakdown['male']['avgLoans'] }}</span>
-                                    <span class="w-9 text-right font-semibold text-[#64748B]">{{ $genderBreakdown['male']['pct'] }}%</span>
-                                </div>
-                            </div>
-                            <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                                <div class="h-full bg-[#3B82F6] rounded-full transition-all duration-500" style="width: {{ $genderBreakdown['male']['pct'] }}%"></div>
-                            </div>
-                            <div class="flex items-center justify-between text-xs text-[#64748B]">
-                                <span class="truncate">Top Categories: <strong class="text-slate-800 font-semibold">{{ $genderBreakdown['male']['preferredGenre'] }}</strong></span>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-
-            </div>
-        </div>
-
-        {{-- 5. OPERATIONS SECTION --}}
-        <div id="analytics-operations" class="space-y-4 scroll-mt-24">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 pb-3 border-b border-[#E2E8F0]">
-                <div class="flex items-center gap-2.5">
-                    <span class="w-1.5 h-5 rounded-full bg-[#102B70]"></span>
-                    <div>
-                        <h2 class="text-base sm:text-lg font-bold text-[#0F172A] tracking-tight">Operations &amp; Schedule</h2>
-                    </div>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-
-                {{-- DUE BOOKS TODAY (6 COLS) --}}
-                <div class="lg:col-span-6 bg-white rounded-xl border border-[#E2E8F0] shadow-xs p-5 sm:p-6 flex flex-col justify-between min-w-0">
-
-                    <div>
-                        {{-- Header with Due Books Today Highlight --}}
-                        <div class="flex items-center justify-between pb-3 border-b border-[#F1F5F9]">
-                            <div>
-                                <h3 class="text-sm sm:text-base font-bold text-[#0F172A] tracking-tight">Due Books Today ({{ count($dueBooksToday) }} Total)</h3>
-                                <p class="text-xs text-[#64748B] mt-0.5">{{ $kpiMetrics['dueBooksToday']['change'] }} &bull; {{ $kpiMetrics['dueBooksToday']['subtext'] }}</p>
-                            </div>
-                            <span class="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200/60">
-                                Schedule
-                            </span>
-                        </div>
-
-                        {{-- Due Books Today Mini List --}}
-                        <div class="py-2.5 divide-y divide-[#F1F5F9] text-xs">
-                            @foreach ($dueBooksToday as $book)
-                                <div class="py-2 flex items-center justify-between gap-3">
-                                    <div class="min-w-0">
-                                        <h4 class="font-semibold text-slate-800 truncate" title="{{ $book['title'] }}">
-                                            {{ $book['title'] }}
-                                        </h4>
-                                        <p class="text-[11px] text-[#64748B] mt-0.5">
-                                            {{ $book['borrower'] }} ({{ $book['program'] }}) &bull; Due {{ $book['due_time'] }}
-                                        </p>
-                                    </div>
-                                    <span class="shrink-0 px-2 py-0.5 rounded text-[11px] font-semibold {{ $book['status'] === 'Returned' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' : ($book['status'] === 'Overdue' ? 'bg-[#FEF2F2] text-[#B91C1C] border border-[#FECACA]' : 'bg-amber-50 text-amber-800 border border-amber-200/60') }}">
-                                        {{ $book['status'] }}
-                                    </span>
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
-
-                    <div class="pt-3 border-t border-[#F1F5F9] flex items-center justify-between text-xs text-[#64748B]">
-                        <span>Automated return reminders dispatched at 8:00 AM</span>
-                        <a href="javascript:void(0)" class="text-[#102B70] font-semibold hover:underline">View All Due Items &rarr;</a>
-                    </div>
-
-                </div>
-
-                {{-- PEAK CIRCULATION HOURS & HOURLY VELOCITY (6 COLS) --}}
-                <div class="lg:col-span-6 bg-white rounded-xl border border-[#E2E8F0] shadow-xs p-5 sm:p-6 flex flex-col justify-between min-w-0">
-
-                    <div>
-                        <div class="flex items-center justify-between pb-3 border-b border-[#F1F5F9]">
-                            <div>
-                                <h3 class="text-sm sm:text-base font-bold text-[#0F172A] tracking-tight">Circulation Desk Rush Hours</h3>
-                                <p class="text-xs text-[#64748B] mt-0.5">Operating schedule traffic profile (8:00 AM – 5:00 PM)</p>
-                            </div>
-                            <span class="p-1 rounded-lg bg-[#EFF6FF] text-[#102B70]">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                            </span>
-                        </div>
-
-                        {{-- Hourly Bar Distribution --}}
-                        <div class="py-3 space-y-2.5">
-                            @foreach ($hourlyTraffic as $slot)
-                                <div class="space-y-1">
-                                    <div class="flex items-center justify-between text-xs font-semibold">
-                                        <div class="flex items-center gap-2">
-                                            <span class="w-16 text-[#64748B] font-medium text-[11px]">{{ $slot['hour'] }}</span>
-                                            @if(isset($slot['tag']))
-                                                <span class="text-[9px] font-semibold px-1.5 py-0.5 rounded {{ $slot['isPeak'] ? 'bg-amber-100 text-amber-900 border border-amber-200' : 'bg-slate-100 text-[#334155]' }}">
-                                                    {{ $slot['tag'] }}
-                                                </span>
-                                            @endif
-                                        </div>
-                                        <span class="text-slate-700 tabular-nums text-[11px] font-medium">{{ $slot['count'] }} actions</span>
-                                    </div>
-                                    <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                                        <div
-                                            class="h-full rounded-full transition-all duration-500 {{ $slot['isPeak'] ? 'bg-[#FCC719]' : ($slot['pct'] > 60 ? 'bg-[#102B70]' : 'bg-[#3B82F6]') }}"
-                                            style="width: {{ $slot['pct'] }}%"
-                                        ></div>
-                                    </div>
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
-
-                    {{-- Desk Recommendation Alert --}}
-                    <div class="bg-[#EFF6FF] border border-[#DBEAFE] p-3 rounded-lg flex items-center gap-2.5 text-xs text-[#102B70] mt-2">
-                        <svg class="w-4 h-4 text-[#102B70] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                        <span class="text-[11px] leading-relaxed"><strong>Peak Activity:</strong> Busiest rush hour is <strong>2:00 PM (72 actions)</strong>. Keep both checkout stations operational.</span>
-                    </div>
-
-                </div>
-
-            </div>
-        </div>
-
-    </div>
-
-    {{-- Print & PDF Official Institutional Template --}}
-    <div class="hidden print:block w-full">
-        <x-template.analytics
-            :kpiMetrics="$kpiMetrics"
-            :monthlyTrend="$monthlyTrend"
-            :yearlyTrend="$yearlyTrend"
-            :genderBreakdown="$genderBreakdown"
-            :programBreakdown="$programBreakdown"
-            :dueBooksToday="$dueBooksToday"
-            :hourlyTraffic="$hourlyTraffic"
-            :timePeriod="$timePeriod"
-        />
-    </div>
+    <dialog x-ref="expandedChart" aria-labelledby="expanded-heading" class="m-auto w-[min(96vw,1100px)] max-w-none rounded-xl border border-slate-200 bg-white p-5 shadow-xl backdrop:bg-slate-900/60 print:hidden">
+        <div class="flex items-center justify-between gap-3"><div><h2 id="expanded-heading" class="text-lg font-bold text-slate-900">Circulation trend</h2><p class="text-sm text-slate-600">{{ $range }}</p></div><form method="dialog"><button class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-[#102B70]">Close</button></form></div>
+        @if ($current['loans'] + $current['returns'] === 0)<p class="py-12 text-center text-sm text-slate-600">No loans or returns in this period.</p>@else<div class="mt-5 overflow-x-auto"><div style="min-width: {{ $chartWidth * 0.7 }}px"><x-widget.graph.main :series="$series" :labels="$labels" :palette="['#102B70', '#0284c7']" line grid legend :height="280" :svg-width="$chartWidth" /></div></div>@endif
+        <div class="mt-4 max-h-64 overflow-auto"><table class="w-full text-left text-sm"><caption class="text-left font-semibold">Trend data</caption><thead><tr class="border-b border-slate-200"><th class="py-2">Period</th><th>Loans</th><th>Returns</th></tr></thead><tbody>@foreach ($buckets as $bucket)<tr class="border-b border-slate-100"><th scope="row" class="py-2 font-medium">{{ $bucket['label'] }}</th><td>{{ $bucket['loans'] }}</td><td>{{ $bucket['returns'] }}</td></tr>@endforeach</tbody></table></div>
+    </dialog>
+    <div class="hidden print:block"><x-template.analytics :start="$start" :end="$end" :previous-start="$previousStart" :previous-end="$previousEnd" :current="$current" :previous="$previous" :buckets="$buckets" :hourly="$hourly" :programs="$programs" :genders="$genders" :due-count="$dueCount" :overdue-count="$overdueCount" :now="$now" /></div>
 </div>

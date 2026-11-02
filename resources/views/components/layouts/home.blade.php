@@ -59,6 +59,7 @@
     </div>
     <livewire:components.widgets.qr-modal />
     <x-notification.toast-notification />
+    @auth <livewire:components.change-password /> @endauth
     @livewireScripts
 </body>
 </html>

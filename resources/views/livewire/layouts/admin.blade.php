@@ -64,6 +64,7 @@
         <x-widget.details-drawer />
         <x-notification.toast-notification />
         <x-notification.offline-indicator />
+        @auth <livewire:components.change-password /> @endauth
         @livewireScripts
     </body>
 </html>

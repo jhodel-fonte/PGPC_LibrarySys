@@ -150,7 +150,7 @@
 
             <!-- Scrollable Table Container -->
             @php
-                $visibleIds = $filteredApplicants->pluck('id')->all();
+                $visibleIds = $filteredApplicants->where('status', 'Pending')->pluck('id')->all();
                 $allVisibleSelected = count($visibleIds) > 0 && count(array_diff(array_map('strval', $visibleIds), array_map('strval', $selectedIds))) === 0;
             @endphp
             @if(count($visibleIds) > 0)
@@ -192,7 +192,7 @@
                             >
                                 <td class="mobile-cell p-3" colspan="8">
                                     <article class="rounded-xl border border-slate-200 bg-white p-4 text-sm shadow-sm">
-                                        <div class="flex items-start gap-3"><input type="checkbox" value="{{ (string) $applicant['id'] }}" wire:model.live="selectedIds" aria-label="Select {{ $applicant['name'] }}" class="mt-1 h-4 w-4 rounded border-slate-300 text-[#102B70]"><div class="min-w-0"><p class="font-bold text-[#102B70] break-words">{{ $applicant['name'] }}</p><p class="text-xs text-slate-500 break-all">{{ $applicant['email'] }}</p></div></div>
+                                        <div class="flex items-start gap-3"><input type="checkbox" @disabled($applicant['status'] !== 'Pending') value="{{ (string) $applicant['id'] }}" wire:model.live="selectedIds" aria-label="Select {{ $applicant['name'] }}" class="mt-1 h-4 w-4 rounded border-slate-300 text-[#102B70]"><div class="min-w-0"><p class="font-bold text-[#102B70] break-words">{{ $applicant['name'] }}</p><p class="text-xs text-slate-500 break-all">{{ $applicant['email'] }}</p></div></div>
                                         <dl class="mt-3 grid grid-cols-2 gap-3 text-xs"><div><dt class="text-slate-500">Student ID</dt><dd class="font-semibold break-words">{{ $applicant['student_id'] }}</dd></div><div><dt class="text-slate-500">Program and year</dt><dd class="font-semibold break-words">{{ $applicant['program'] }} · {{ $applicant['year_level'] }}</dd></div><div><dt class="text-slate-500">Submitted</dt><dd>{{ $applicant['submitted_at'] }}</dd></div><div><dt class="text-slate-500">Status</dt><dd class="font-semibold">{{ $applicant['status'] }}</dd></div></dl>
                                         <p class="mt-3 text-xs text-slate-600 break-words">Document: {{ $applicant['document_type'] }} · {{ $applicant['document_file'] }}</p>
                                         <button type="button" wire:click="openReview({{ $applicant['id'] }})" class="mt-3 min-h-11 rounded-lg border border-slate-300 px-4 text-xs font-semibold text-[#102B70]">Review Document</button>
@@ -201,6 +201,8 @@
                                 <td class="px-4 sm:px-5 py-4 align-middle">
                                     <input
                                         type="checkbox"
+                                        @disabled($applicant['status'] !== 'Pending')
+                                        aria-label="Select {{ $applicant['name'] }}"
                                         value="{{ (string) $applicant['id'] }}"
                                         wire:model.live="selectedIds"
                                         class="h-4 w-4 rounded border-[#CBD5E1] text-[#102B70] focus:ring-[#102B70]/20 cursor-pointer"
@@ -374,6 +376,7 @@
                     <div class="lg:col-span-5 flex flex-col justify-between space-y-5">
                         <div class="rounded-2xl border border-[#E2E8F0] p-5 space-y-3 text-sm sm:text-base">
                             <p class="text-xs sm:text-sm font-bold uppercase tracking-wider text-[#64748B]">Registered Student Info</p>
+                            <p class="font-bold">Status: {{ $reviewingApplicant['status'] }}</p>
 
                             <div class="flex flex-col sm:flex-row sm:justify-between gap-0.5 pt-1">
                                 <span class="text-[#64748B]">Full Name:</span>
@@ -397,6 +400,7 @@
                             </div>
                         </div>
 
+                        @if($reviewingApplicant['status'] === 'Pending')
                         <!-- Rejection / Resubmission Reason Input -->
                         <div class="space-y-2">
                             <label class="block text-sm font-bold text-[#334155]">
@@ -409,6 +413,9 @@
                                 class="w-full rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-3.5 text-sm sm:text-base text-[#0F172A] outline-none focus:border-[#102B70] focus:bg-white focus:ring-4 focus:ring-[#EFF6FF]"
                             ></textarea>
                         </div>
+                        @elseif($reviewingApplicant['remarks'])
+                            <p class="text-sm text-[#334155]"><strong>Remarks:</strong> {{ $reviewingApplicant['remarks'] }}</p>
+                        @endif
                     </div>
                 </div>
 
@@ -421,6 +428,7 @@
                     >
                         Cancel
                     </button>
+                    @if($reviewingApplicant['status'] === 'Pending')
                     <button
                         type="button"
                         wire:click="blockApplicant({{ $reviewingApplicant['id'] }})"
@@ -434,15 +442,17 @@
                         wire:click="rejectApplicant({{ $reviewingApplicant['id'] }})"
                         class="h-11 sm:h-12 rounded-xl border border-[#FECACA] bg-[#FEF2F2] px-5 text-sm sm:text-base font-bold text-[#B91C1C] hover:bg-rose-100 cursor-pointer"
                     >
-                        Not Approve (Request Resubmission)
+                        Request Resubmission
                     </button>
                     <button
                         type="button"
                         wire:click="approveApplicant({{ $reviewingApplicant['id'] }})"
+                        @disabled(! $reviewingApplicant['has_document'])
                         class="h-11 sm:h-12 rounded-xl bg-[#102B70] px-6 text-sm sm:text-base font-bold text-white hover:bg-[#0B225E] cursor-pointer"
                     >
                         Approve & Activate Account
                     </button>
+                    @endif
                 </div>
             </div>
         </div>

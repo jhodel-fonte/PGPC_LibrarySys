@@ -14,6 +14,8 @@ class Book extends Model
 {
     use HasFactory, SoftDeletes, Searchable;
 
+    protected $hidden = ['last_return_condition_note'];
+
     /**
      * Get the indexable data array for Scout.
      */
@@ -49,6 +51,24 @@ class Book extends Model
     public function condition(): BelongsTo
     {
         return $this->belongsTo(BookCondition::class, 'book_condition_id');
+    }
+
+    public function validateCopyState(int $conditionId, string $status, string $field = 'status'): void
+    {
+        $condition = BookCondition::findOrFail($conditionId);
+        $status = strtolower($status);
+        $conditionName = strtolower($condition->status);
+        $activeLoan = $this->exists && $this->borrowingTransactions()->whereNull('return_date')->exists();
+        $activeReservation = $this->exists && $this->reservations()->whereIn('reservation_status_id', [1, 2])->exists();
+
+        if (($activeLoan && $status !== 'borrowed') || ($activeReservation && $status !== 'reserved')
+            || ($status === 'borrowed' && ! $activeLoan) || ($status === 'reserved' && ! $activeReservation)
+            || ($conditionName === 'damaged' && ! in_array($status, ['damaged', 'maintenance'], true))
+            || ($conditionName === 'lost' && $status !== 'lost')) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                $field => 'The condition or status conflicts with an active loan, reservation, or damaged/lost copy.',
+            ]);
+        }
     }
 
     public function reservations(): HasMany

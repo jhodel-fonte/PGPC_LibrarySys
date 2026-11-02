@@ -37,22 +37,27 @@
                     @endforeach
                 </select>
             </label>
-            <p class="text-xs text-slate-500">Choose an existing title to add another issue.</p>
+            <p class="text-xs text-slate-500">Choose a title to reuse its title, description and categories. The issue and copy details below apply to the new issue. To add another copy of an existing issue, use Add Copy in the catalog.</p>
             @error('periodicalTitleId') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
         @endif
         <label class="block text-sm font-semibold">ISSN (optional)
             <input wire:model="issn" maxlength="9" placeholder="1234-567X" class="mt-1 w-full rounded-lg border-slate-300">
         </label>
         @error('issn') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
-        <div class="grid gap-3 sm:grid-cols-2">
+        <fieldset aria-describedby="issue-identifier-help">
+        <legend class="text-sm font-semibold">Issue identifier {{ ($onlyIssueFields ?? false) ? '(at least one required)' : '(if available)' }}</legend>
+        <div class="mt-2 grid gap-3 sm:grid-cols-2">
             <label class="text-sm font-semibold">Volume <input wire:model="issueVolume" maxlength="50" class="mt-1 w-full rounded-lg border-slate-300"></label>
             <label class="text-sm font-semibold">Issue number <input wire:model="issueNumber" maxlength="50" class="mt-1 w-full rounded-lg border-slate-300"></label>
             <label class="text-sm font-semibold">Issue label <input wire:model="issueLabel" maxlength="255" class="mt-1 w-full rounded-lg border-slate-300"></label>
             <label class="text-sm font-semibold">Publication date <input type="date" wire:model="issueDate" class="mt-1 w-full rounded-lg border-slate-300"></label>
+        </div>
+        <p id="issue-identifier-help" class="mt-2 text-xs text-slate-500">Use the issue label for a month or season if the exact date is unknown.</p>
+        </fieldset>
+        <div class="grid gap-3 sm:grid-cols-2">
             <label class="text-sm font-semibold">Loan period in days (optional) <input type="number" min="1" max="3650" wire:model="issueLoanDays" class="mt-1 w-full rounded-lg border-slate-300"></label>
             <label class="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" wire:model="issueBorrowable"> Allow borrowing and reservations</label>
         </div>
-        <p class="text-xs text-slate-500">Enter at least one issue identifier. Use the issue label for a month or season if the exact date is unknown.</p>
         @foreach(['issueVolume', 'issueNumber', 'issueLabel', 'issueDate', 'issueLoanDays'] as $issueField)
             @error($issueField) <p class="text-sm text-red-600">{{ $message }}</p> @enderror
         @endforeach

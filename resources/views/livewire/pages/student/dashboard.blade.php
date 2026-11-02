@@ -1,225 +1,93 @@
 <div class="student-page min-w-0 w-full min-h-full bg-[#eef3f7] text-base text-slate-800">
     <div class="mx-auto w-full max-w-[1600px] p-3 sm:p-4 lg:p-6 space-y-5">
         
-        <!-- Top Row: Student Hero Banner & Status Notice -->
-        <div class="grid grid-cols-1 2xl:grid-cols-[minmax(0,2.15fr)_minmax(0,1fr)] gap-5 items-stretch">
-            
             <!-- Student Greeting Banner -->
-            <div class="bg-[#17357A] rounded-[16px] p-5 sm:p-6 lg:p-7 relative overflow-hidden shadow-sm flex flex-col justify-center">
-                <!-- Background Decoration -->
-                <div class="absolute inset-0 pointer-events-none" style="background: linear-gradient(105deg, transparent 0%, transparent 60%, rgba(255,255,255,.03) 60%);"></div>
+            <div class="bg-[#102B70] rounded-2xl p-5 sm:p-7 lg:px-8">
 
-                <div class="relative z-10 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6">
+                <div class="student-welcome-grid grid gap-6">
+                <div class="flex items-start gap-4 sm:gap-5">
+                    <x-widget.avatar :person="$student" class="w-14 h-14 sm:w-16 sm:h-16 text-xl ring-2 ring-white/40" />
                     <!-- Left Column: Student Greeting & Info -->
                     <div class="flex-1 min-w-0">
-                        <div class="flex flex-wrap items-center gap-2 mb-1.5">
-                            <span class="text-blue-200 text-xs sm:text-sm font-semibold uppercase tracking-wider">
-                                {{ strtoupper(now()->format('l, F j, Y')) }}
-                            </span>
-                        </div>
-                        
-                        <h1 class="text-2xl sm:text-[28px] lg:text-[32px] font-bold text-white leading-tight mb-2">
+                        <h1 class="text-2xl sm:text-3xl font-bold text-white leading-tight mb-2">
                             Good {{ now()->hour < 12 ? 'morning' : (now()->hour < 18 ? 'afternoon' : 'evening') }}, 
-                            <span class="text-[#FFC61A]">{{ $student ? ($student->first_name . ' ' . $student->last_name) : (auth()->user()?->name ?? 'Student') }}</span>
+                            <span class="text-white">{{ $student ? ($student->first_name . ' ' . $student->last_name) : (auth()->user()?->name ?? 'Student') }}</span>
                         </h1>
                         
-                        <div class="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-base text-blue-100/90 mt-2">
+                        <div class="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-blue-100 mt-2">
                             @if($student?->school_id_number)
                                 <div class="flex flex-wrap items-center gap-1.5">
                                     <span class="text-blue-200 text-sm font-medium">Student ID:</span>
-                                    <span class="font-bold text-white font-mono text-base tracking-wider">{{ $student->school_id_number }}</span>
+                                    <span class="font-semibold text-white">{{ $student->school_id_number }}</span>
                                 </div>
                             @endif
                             @if($student?->program)
-                                <span class="text-blue-300/60 hidden sm:inline">•</span>
+                                <span class="text-blue-300 hidden sm:inline">•</span>
                                 <div class="flex flex-wrap items-center gap-1.5">
                                     <span class="text-blue-200 text-sm font-medium">Program:</span>
-                                    <span class="font-semibold text-white text-base">{{ $student->program }}</span>
+                                    <span class="font-medium text-white">{{ $student->program }}</span>
                                 </div>
                             @endif
                             @if($student?->year_level)
-                                <span class="text-blue-300/60 hidden sm:inline">•</span>
+                                <span class="text-blue-300 hidden sm:inline">•</span>
                                 <div class="flex flex-wrap items-center gap-1.5">
                                     <span class="text-blue-200 text-sm font-medium">Year:</span>
-                                    <span class="font-semibold text-white text-base">{{ $student->year_level }}</span>
+                                    <span class="font-medium text-white">{{ $student->year_level }}</span>
                                 </div>
                             @endif
                         </div>
 
-                        <p class="text-blue-100/95 text-base leading-relaxed max-w-[640px] mt-3">
-                            Welcome to your student library portal. Track your checked-out books, view upcoming return deadlines, and discover resources for your research and courses.
-                        </p>
-
                         <!-- Quick Action Button -->
                         <div class="mt-5 pt-1 flex items-center gap-3 flex-wrap">
-                            <button
-                                type="button"
-                                @click="$dispatch('open-qr-modal', {
-                                    value: {{ Js::from($studentIdValue ?? '') }},
-                                    name: {{ Js::from($student ? ($student->first_name . ' ' . $student->last_name) : (auth()->user()?->name ?? 'Student')) }},
-                                    title: 'PGPC Student',
-                                    subtitle: 'Digital Identification Pass',
-                                    secondaryInfo: {{ Js::from(($student?->program ?? 'Student') . ($student?->year_level ? ' • '.$student->year_level : '')) }},
-                                    label: 'Student ID Number:',
-                                    instruction: 'Present this QR code to the library circulation desk or scanner to borrow, return, or verify your library account.'
-                                })"
-                                class="w-full sm:w-auto h-11 px-5 bg-[#FFC61A] hover:bg-[#e6b217] text-[#102B70] text-base font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-[0.99] whitespace-nowrap"
-                            >
-                                <svg class="w-5 h-5 shrink-0 text-[#102B70]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-                                </svg>
-                                <span>Student QR Code</span>
-                            </button>
+
 
                             <a
                                 href="{{ route('student.reservations') }}"
                                 wire:navigate
-                                class="w-full sm:w-auto h-11 px-5 bg-white/10 hover:bg-white/20 border border-white/20 text-white text-base font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer backdrop-blur-xs whitespace-nowrap"
+                                class="w-full sm:w-auto h-11 px-5 bg-white/10 hover:bg-white/20 border border-white/30 text-white text-base font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
                             >
                                 <svg class="w-5 h-5 text-[#FFC61A]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
                                 </svg>
-                                <span>Reserve a Book</span>
+                                <span>My Reservations</span>
                                 @if($activeReservationsCount > 0)
                                     <span class="px-2 py-0.5 rounded-full text-xs font-extrabold bg-[#FFC61A] text-[#102B70]">
                                         {{ $activeReservationsCount }}
                                     </span>
                                 @endif
                             </a>
+                            <a href="{{ route('opac.index') }}" class="w-full sm:w-auto h-11 px-5 border border-white/40 text-white text-base font-bold rounded-xl flex items-center justify-center hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">Browse Catalog</a>
                         </div>
                     </div>
 
                 </div>
-            </div>
-
-            <!-- Requires Attention / Account Summary Card -->
-            <div class="h-full rounded-2xl border border-slate-200 bg-white p-5 lg:p-6 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_1px_3px_rgba(15,23,42,0.03)] flex flex-col justify-between">
-                <div>
-                    <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-lg font-bold text-slate-900">Library Summary</h2>
-                    </div>
-
-                    <div class="space-y-3">
-                        @if($overdueCount > 0)
-                            <!-- Overdue Alert -->
-                            <a href="{{ route('student.borrow') }}" wire:navigate class="group block">
-                                <div class="flex min-h-[58px] items-center gap-3 rounded-xl border border-red-200 bg-red-50/70 p-3.5 transition-colors hover:bg-red-50">
-                                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-600">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                        </svg>
-                                    </div>
-                                    <div class="flex-1 min-w-0">
-                                        <p class="text-sm font-bold text-red-800">Action Required: Overdue Items</p>
-                                        <p class="text-xs sm:text-sm text-red-600 truncate">Return books to avoid additional fines</p>
-                                    </div>
-                                    <span class="text-base font-bold tabular-nums text-red-700 bg-white px-2 py-0.5 rounded-md border border-red-200">
-                                        {{ $overdueCount }}
-                                    </span>
-                                </div>
-                            </a>
-                        @endif
-
-                        @if($unpaidFines > 0)
-                            <!-- Unpaid Fines Alert -->
-                            <div class="flex min-h-[58px] items-center gap-3 rounded-xl border border-amber-200 bg-amber-50/70 p-3.5">
-                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                </div>
-                                <div class="flex-1 min-w-0">
-                                    <p class="text-sm font-bold text-amber-900">Unpaid Library Fines</p>
-                                    <p class="text-xs sm:text-sm text-amber-700 truncate">Settle at circulation desk</p>
-                                </div>
-                                <span class="text-sm font-bold tabular-nums text-amber-800 bg-white px-2.5 py-1 rounded-md border border-amber-200">
-                                    ₱{{ number_format($unpaidFines, 2) }}
-                                </span>
-                            </div>
-                        @endif
-
-                        @if($overdueCount === 0 && $unpaidFines <= 0)
-                            <!-- Clear Status -->
-                            <div class="flex items-center gap-3 rounded-xl border border-emerald-100 bg-emerald-50/50 p-3.5">
-                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                </div>
-                                <div class="flex-1 min-w-0">
-                                    <p class="text-sm font-bold text-emerald-900">Account in Good Standing</p>
-                                    <p class="text-xs sm:text-sm text-emerald-700">No overdue items or pending fees</p>
-                                </div>
-                            </div>
-                        @endif
-
-                        <!-- Patron Borrowing Allowance Details -->
-                        <div class="pt-2 border-t border-slate-100 space-y-2.5 text-sm sm:text-base">
-                            <div class="flex flex-wrap gap-2 justify-between items-center text-slate-600">
-                                <span class="text-slate-500">Max Loan Limit:</span>
-                                <span class="font-bold text-slate-900">{{ config('settings.library_config.max_loan_limit', 3) }} Books</span>
-                            </div>
-                            <div class="flex flex-wrap gap-2 justify-between items-center text-slate-600">
-                                <span class="text-slate-500">Loan Period:</span>
-                                <span class="font-bold text-slate-900">{{ config('settings.library_config.loan_period', 5) }} Calendar Days</span>
-                            </div>
-                            <div class="flex flex-wrap gap-2 justify-between items-center text-slate-600">
-                                <span class="text-slate-500">Library Desk Hours:</span>
-                                <span class="font-medium text-slate-700">{{ config('settings.library_config.desk_hours', '8:00 AM – 5:00 PM') }}</span>
-                            </div>
-                        </div>
-                    </div>
+                <div class="border-t border-white/20 pt-5 student-pass">
+                    <h2 class="text-base font-bold text-white">At the circulation desk</h2>
+                    <p class="mt-1 max-w-xs text-sm leading-relaxed text-blue-100">Show your student QR code when borrowing or returning an item.</p>
+                            <button
+                                type="button"
+                                @click="$dispatch('open-qr-modal', {
+                                    value: {{ Js::from($studentIdValue ?? '') }},
+                                    name: {{ Js::from($student ? ($student->first_name . ' ' . $student->last_name) : (auth()->user()?->name ?? 'Student')) }},
+                                    title: 'Student library pass',
+                                    subtitle: 'Digital Identification Pass',
+                                    secondaryInfo: {{ Js::from(($student?->program ?? 'Student') . ($student?->year_level ? ' • '.$student->year_level : '')) }},
+                                    label: 'Student ID Number:',
+                                    instruction: 'Present this QR code to the library circulation desk or scanner to borrow, return, or verify your library account.'
+                                })"
+                                class="mt-4 w-full sm:w-auto h-11 px-5 bg-[#FFC61A] hover:bg-[#e6b217] text-[#102B70] text-base font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-[0.99] whitespace-nowrap focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                            >
+                                <svg class="w-5 h-5 shrink-0 text-[#102B70]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                                </svg>
+                                <span>Student QR Code</span>
+                            </button>
                 </div>
-
-                <div class="pt-3 mt-3 border-t border-slate-100">
-                    <a href="{{ route('student.borrow') }}" wire:navigate class="w-full py-2.5 px-3 text-center text-sm font-bold text-[#102B70] hover:text-[#0B225E] hover:bg-slate-50 rounded-lg transition-colors block">
-                        Open Borrowing Records &rarr;
-                    </a>
                 </div>
             </div>
-        </div>
-
-        <!-- Middle Row: 4 Metric Cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
-            <x-dashboard.stat-card 
-                title="Active Loans" 
-                :value="$activeCount" 
-                subtext="Books currently in your care" 
-            />
-            
-            <div class="bg-white rounded-2xl border {{ $overdueCount > 0 ? 'border-red-300 ring-2 ring-red-100' : 'border-slate-200' }} shadow-[0_1px_2px_rgba(15,23,42,0.04),0_1px_3px_rgba(15,23,42,0.03)] px-6 py-5 flex flex-col justify-center min-h-[120px]">
-                <h3 class="text-xs font-bold tracking-wider uppercase mb-1 {{ $overdueCount > 0 ? 'text-red-600' : 'text-slate-500' }}">
-                    Overdue Items
-                </h3>
-                <div class="text-[28px] font-bold leading-tight mb-1 {{ $overdueCount > 0 ? 'text-red-600' : 'text-slate-900' }}">
-                    {{ $overdueCount }}
-                </div>
-                <p class="text-sm font-bold {{ $overdueCount > 0 ? 'text-red-500' : 'text-slate-500' }}">
-                    {{ $overdueCount > 0 ? 'Action required immediately' : 'No overdue items' }}
-                </p>
-            </div>
-
-            <x-dashboard.stat-card 
-                title="Total Borrowed" 
-                :value="$totalBorrowed" 
-                subtext="All-time books borrowed" 
-            />
-
-            <div class="bg-white rounded-2xl border {{ $unpaidFines > 0 ? 'border-amber-300' : 'border-slate-200' }} shadow-[0_1px_2px_rgba(15,23,42,0.04),0_1px_3px_rgba(15,23,42,0.03)] px-6 py-5 flex flex-col justify-center min-h-[120px]">
-                <h3 class="text-xs font-bold tracking-wider uppercase mb-1 {{ $unpaidFines > 0 ? 'text-amber-600' : 'text-slate-500' }}">
-                    Outstanding Fines
-                </h3>
-                <div class="text-[28px] font-bold leading-tight mb-1 {{ $unpaidFines > 0 ? 'text-amber-600' : 'text-emerald-600' }}">
-                    ₱{{ number_format($unpaidFines, 2) }}
-                </div>
-                <p class="text-sm font-bold {{ $unpaidFines > 0 ? 'text-amber-600' : 'text-slate-500' }}">
-                    {{ $unpaidFines > 0 ? 'Please settle at circulation' : 'Zero balance' }}
-                </p>
-            </div>
-        </div>
 
         <!-- Bottom Row: Currently Borrowed Books & Information Widgets -->
-        <div class="grid grid-cols-1 2xl:grid-cols-[minmax(0,2.15fr)_minmax(0,1fr)] gap-5 items-start">
+        <div class="student-dashboard-grid grid grid-cols-1 gap-5 items-start">
             
             <!-- Left Main Column: Currently Borrowed Books -->
             <div class="space-y-5">
@@ -229,15 +97,15 @@
                     <div class="px-5 py-4 sm:px-7 sm:py-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E2E8F0]">
                         <div>
                             <div class="flex items-center gap-2">
-                                <h2 class="text-lg sm:text-xl font-bold text-slate-900">My Active Loans</h2>
+                                <h2 class="text-lg sm:text-xl font-bold text-slate-900">Your loans</h2>
                                 <span class="bg-[#EFF6FF] text-[#102B70] text-xs sm:text-sm font-bold px-2.5 py-0.5 rounded-full">
                                     {{ $activeCount }} / {{ config('settings.library_config.max_loan_limit', 3) }}
                                 </span>
                             </div>
-                            <p class="text-slate-500 text-xs sm:text-sm mt-1">Books currently in your possession and their due dates</p>
+                            <p class="text-slate-500 text-xs sm:text-sm mt-1">Keep track of what you have checked out and when it is due.</p>
                         </div>
                         <a href="{{ route('student.borrow') }}" wire:navigate class="w-full sm:w-auto text-center px-3.5 py-2 bg-blue-50 text-[#102B70] hover:bg-blue-100 transition-colors rounded-lg text-xs sm:text-sm font-bold shrink-0">
-                            View All Records &rarr;
+                            Borrowing history &rarr;
                         </a>
                     </div>
 
@@ -249,7 +117,6 @@
                                 $bookData = $bookDetail?->bookData;
                                 $authors = $bookData?->authors ? $bookData->authors->map(fn($a) => $a->first_name . ' ' . $a->last_name)->join(', ') : 'Unknown Author';
                                 $isOverdue = $loan->due_date && $loan->due_date->isPast();
-                                $daysRemaining = $loan->due_date ? (int) ceil(now()->diffInDays($loan->due_date, false)) : null;
                                 $coverUrl = $bookDetail?->cover_url ?: asset('images/' . config('settings.book_covers.default', 'book-cover.webp'));
                             @endphp
                             <div class="p-4 space-y-3 hover:bg-slate-50/60 transition-colors">
@@ -274,44 +141,28 @@
 
                                 <div class="grid grid-cols-2 gap-2 text-xs bg-slate-50 rounded-xl p-2.5 border border-slate-100">
                                     <div>
-                                        <span class="text-slate-400 font-medium block">Accession No.</span>
+                                        <span class="text-slate-600 font-medium block">Accession No.</span>
                                         <span class="font-mono font-semibold text-slate-700">{{ $loan->book?->accession_number ?? '—' }}</span>
                                     </div>
                                     <div>
-                                        <span class="text-slate-400 font-medium block">Issued Date</span>
+                                        <span class="text-slate-600 font-medium block">Issued Date</span>
                                         <span class="font-medium text-slate-700">{{ $loan->issued_date ? $loan->issued_date->format('M d, Y') : '—' }}</span>
                                     </div>
-                                    <div class="col-span-2 flex items-center justify-between pt-1 border-t border-slate-200/60">
+                                    <div class="col-span-2 flex flex-wrap gap-2 items-center justify-between pt-1 border-t border-slate-200/60">
                                         <div>
-                                            <span class="text-slate-400 font-medium">Due Date:</span>
+                                            <span class="text-slate-600 font-medium">Due Date:</span>
                                             <span class="font-bold ml-1 {{ $isOverdue ? 'text-red-600' : 'text-slate-900' }}">
                                                 {{ $loan->due_date ? $loan->due_date->copy()->setTimezone('Asia/Manila')->format($loan->isInsideLibrary() ? 'M d, Y h:i A' : 'M d, Y') : '—' }}
                                             </span>
                                         </div>
                                         <div>
-                                            @if ($isOverdue)
-                                                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-red-100 text-red-700 border border-red-200">
-                                                    Overdue ({{ abs($daysRemaining) }}d)
-                                                </span>
-                                            @elseif ($daysRemaining === 0)
-                                                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
-                                                    Due Today
-                                                </span>
-                                            @elseif ($daysRemaining <= 2)
-                                                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                                                    Due in {{ $daysRemaining }}d
-                                                </span>
-                                            @else
-                                                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                                    Due in {{ $daysRemaining }}d
-                                                </span>
-                                            @endif
+                                            <x-student.loan-status :loan="$loan" />
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         @empty
-                            <div class="px-5 py-10 text-center">
+                            <div class="px-5 py-7 text-center">
                                 <div class="max-w-xs mx-auto flex flex-col items-center">
                                     <p class="text-base font-bold text-slate-800">No active book loans</p>
                                     <p class="text-xs sm:text-sm text-slate-500 mt-1 mb-4">You currently don't have any books checked out from the library.</p>
@@ -326,6 +177,7 @@
                     <!-- Desktop & Tablet Table View (768px+) -->
                     <div tabindex="0" role="region" aria-label="My active loans" class="student-record-table overflow-x-auto focus:outline-none focus:ring-2 focus:ring-[#102B70]/20">
                         <table class="w-full text-left border-collapse">
+                            @if($activeLoans->isNotEmpty())
                             <thead>
                                 <tr class="bg-[#F8FAFC] border-b border-[#E2E8F0]">
                                     <th scope="col" class="py-3.5 px-6 sm:px-7 text-xs font-bold text-slate-600 uppercase tracking-wider">Book Details</th>
@@ -335,6 +187,7 @@
                                     <th scope="col" class="py-3.5 px-6 sm:px-7 text-xs font-bold text-slate-600 uppercase tracking-wider text-right">Status</th>
                                 </tr>
                             </thead>
+                            @endif
                             <tbody class="divide-y divide-[#E2E8F0] bg-white">
                                 @forelse ($activeLoans as $loan)
                                     @php
@@ -342,7 +195,6 @@
                                         $bookData = $bookDetail?->bookData;
                                         $authors = $bookData?->authors ? $bookData->authors->map(fn($a) => $a->first_name . ' ' . $a->last_name)->join(', ') : 'Unknown Author';
                                         $isOverdue = $loan->due_date && $loan->due_date->isPast();
-                                        $daysRemaining = $loan->due_date ? (int) ceil(now()->diffInDays($loan->due_date, false)) : null;
                                         $coverUrl = $bookDetail?->cover_url ?: asset('images/' . config('settings.book_covers.default', 'book-cover.webp'));
                                     @endphp
                                     <tr class="hover:bg-slate-50/80 transition-colors">
@@ -376,28 +228,12 @@
                                             {{ $loan->due_date ? $loan->due_date->copy()->setTimezone('Asia/Manila')->format($loan->isInsideLibrary() ? 'M d, Y h:i A' : 'M d, Y') : '—' }}
                                         </td>
                                         <td class="px-6 sm:px-7 py-4 text-right whitespace-nowrap">
-                                            @if ($isOverdue)
-                                                <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs sm:text-sm font-bold bg-red-100 text-red-700 border border-red-200">
-                                                    Overdue by {{ abs($daysRemaining) }} {{ abs($daysRemaining) === 1 ? 'day' : 'days' }}
-                                                </span>
-                                            @elseif ($daysRemaining === 0)
-                                                <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs sm:text-sm font-bold bg-amber-100 text-amber-800 border border-amber-200">
-                                                    Due Today
-                                                </span>
-                                            @elseif ($daysRemaining <= 2)
-                                                <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs sm:text-sm font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                                                    Due in {{ $daysRemaining }} {{ $daysRemaining === 1 ? 'day' : 'days' }}
-                                                </span>
-                                            @else
-                                                <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs sm:text-sm font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                                    Due in {{ $daysRemaining }} days
-                                                </span>
-                                            @endif
+                                            <x-student.loan-status :loan="$loan" />
                                         </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="5" class="px-6 py-12 text-center">
+                                        <td colspan="5" class="px-6 py-7 text-center">
                                             <div class="max-w-xs mx-auto flex flex-col items-center">
                                                 <p class="text-base font-bold text-slate-800">No active book loans</p>
                                                 <p class="text-sm text-slate-500 mt-1 mb-4">You currently don't have any books checked out from the library.</p>
@@ -413,13 +249,43 @@
                     </div>
                 </div>
 
+                <!-- Library Borrowing Guidelines Card -->
+                <div class="bg-white rounded-2xl border border-[#E2E8F0] shadow-[0_1px_2px_rgba(15,23,42,0.04),0_1px_3px_rgba(15,23,42,0.03)] p-5 sm:p-6">
+                    <div class="flex items-center justify-between gap-2 mb-3">
+                        <h3 class="text-lg font-bold text-slate-900">Borrowing Guidelines</h3>
+                        <a href="{{ route('terms') }}" wire:navigate class="text-sm font-semibold text-[#102B70] hover:text-[#0B225E] hover:underline inline-flex items-center gap-1">
+                            <span>Full Terms</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                        </a>
+                    </div>
+
+                    <ul class="grid gap-4 sm:grid-cols-2 text-sm text-slate-700 mt-4 leading-relaxed">
+                        <li class="flex items-start gap-2.5">
+                            <span class="text-[#FFC61A] font-bold text-lg leading-none">•</span>
+                            <span><strong>Loan Period:</strong> General circulation books may be borrowed for up to <strong>{{ config('settings.library_config.loan_period', 5) }} days</strong>.</span>
+                        </li>
+                        <li class="flex items-start gap-2.5">
+                            <span class="text-[#FFC61A] font-bold text-lg leading-none">•</span>
+                            <span><strong>Renewal:</strong> Books may be renewed once if there are no pending reservations from other patrons.</span>
+                        </li>
+                        <li class="flex items-start gap-2.5">
+                            <span class="text-[#FFC61A] font-bold text-lg leading-none">•</span>
+                            <span><strong>Overdue Fines:</strong> Standard late returns incur a fee of <strong>₱{{ number_format(config('settings.library_config.penalty_fee', 50), 2) }} per day</strong> based on college library regulations.</span>
+                        </li>
+                        <li class="flex items-start gap-2.5">
+                            <span class="text-[#FFC61A] font-bold text-lg leading-none">•</span>
+                            <span><strong>Book Care:</strong> Please keep books clean and report any pre-existing damage when checking out.</span>
+                        </li>
+                    </ul>
+                </div>
+
                 <!-- Recent Returned Books Table Card -->
                 @if($recentTransactions->isNotEmpty())
                     <div class="bg-white rounded-2xl border border-[#E2E8F0] shadow-[0_1px_2px_rgba(15,23,42,0.04),0_1px_3px_rgba(15,23,42,0.03)] overflow-hidden">
                         <div class="px-5 py-4 sm:px-7 flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#E2E8F0] bg-slate-50/50">
                             <div>
                                 <h3 class="text-base font-bold text-slate-900">Recently Returned Books</h3>
-                                <p class="text-xs sm:text-sm text-slate-500">Your past circulation transactions</p>
+                                <p class="text-xs sm:text-sm text-slate-500">Your past circulation transactions · {{ $totalBorrowed }} borrowed in total</p>
                             </div>
                             <a href="{{ route('student.borrow') }}" wire:navigate class="text-xs sm:text-sm font-bold text-[#102B70] hover:underline">
                                 View Full History &rarr;
@@ -442,7 +308,7 @@
                                         </div>
                                     </div>
                                     <span class="text-xs font-semibold text-slate-600 bg-slate-100 px-2.5 py-1 rounded shrink-0 self-start sm:self-auto">
-                                        {{ $tx->returnCondition?->condition ?? 'Returned' }}
+                                        {{ $tx->returnCondition?->status ?? 'Not recorded' }}
                                     </span>
                                 </div>
                             @endforeach
@@ -454,39 +320,102 @@
 
             <!-- Right Column: Guidelines & Library Resources -->
             <div class="space-y-5">
-                
-                <!-- Library Borrowing Guidelines Card -->
-                <div class="bg-white rounded-2xl border border-[#E2E8F0] shadow-[0_1px_2px_rgba(15,23,42,0.04),0_1px_3px_rgba(15,23,42,0.03)] p-5 sm:p-6">
-                    <div class="flex items-center justify-between gap-2 mb-3">
-                        <h3 class="text-lg font-bold text-slate-900">Borrowing Guidelines</h3>
-                        <a href="{{ route('terms') }}" wire:navigate class="text-sm font-semibold text-[#102B70] hover:text-[#0B225E] hover:underline inline-flex items-center gap-1">
-                            <span>Full Terms</span>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-                        </a>
+            <!-- Requires Attention / Account Summary Card -->
+            <div class="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-bold text-slate-900">Your library account</h2>
                     </div>
 
-                    <ul class="space-y-3.5 text-base text-slate-700 mt-4 leading-relaxed">
-                        <li class="flex items-start gap-2.5">
-                            <span class="text-[#FFC61A] font-bold text-lg leading-none">•</span>
-                            <span><strong>Loan Period:</strong> General circulation books may be borrowed for up to <strong>{{ config('settings.library_config.loan_period', 5) }} days</strong>.</span>
-                        </li>
-                        <li class="flex items-start gap-2.5">
-                            <span class="text-[#FFC61A] font-bold text-lg leading-none">•</span>
-                            <span><strong>Renewal:</strong> Books may be renewed once if there are no pending reservations from other patrons.</span>
-                        </li>
-                        <li class="flex items-start gap-2.5">
-                            <span class="text-[#FFC61A] font-bold text-lg leading-none">•</span>
-                            <span><strong>Overdue Fines:</strong> Standard late returns incur a fee of <strong>₱{{ number_format(config('settings.library_config.penalty_fee', 50), 2) }} per day</strong> based on college library regulations.</span>
-                        </li>
-                        <li class="flex items-start gap-2.5">
-                            <span class="text-[#FFC61A] font-bold text-lg leading-none">•</span>
-                            <span><strong>Book Care:</strong> Please keep books clean and report any pre-existing damage when checking out.</span>
-                        </li>
-                    </ul>
+                    <div class="space-y-3">
+                        @if($overdueCount > 0)
+                            <!-- Overdue Alert -->
+                            <a href="{{ route('student.borrow') }}" wire:navigate class="group block">
+                                <div class="flex min-h-[58px] items-center gap-3 rounded-xl border border-red-200 bg-red-50/70 p-3.5 transition-colors hover:bg-red-50">
+                                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-600">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                        </svg>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-bold text-red-800">Action Required: Overdue Items</p>
+                                        <p class="text-xs sm:text-sm text-red-700">Return items to avoid additional fines</p>
+                                    </div>
+                                    <span class="text-base font-bold tabular-nums text-red-700 bg-white px-2 py-0.5 rounded-md border border-red-200">
+                                        {{ $overdueCount }}
+                                    </span>
+                                </div>
+                            </a>
+                        @endif
+
+                        @if($unpaidFines > 0)
+                            <!-- Unpaid Fines Alert -->
+                            <div class="flex min-h-[58px] items-center gap-3 rounded-xl border border-amber-200 bg-amber-50/70 p-3.5">
+                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-bold text-amber-900">Unpaid Library Fines</p>
+                                    <p class="text-xs sm:text-sm text-amber-700">Settle at circulation desk</p>
+                                </div>
+                                <span class="text-sm font-bold tabular-nums text-amber-800 bg-white px-2.5 py-1 rounded-md border border-amber-200">
+                                    ₱{{ number_format($unpaidFines, 2) }}
+                                </span>
+                            </div>
+                        @endif
+
+                        @if($overdueCount === 0 && $unpaidFines <= 0)
+                            <!-- Clear Status -->
+                            <div class="flex items-center gap-3 rounded-xl border border-emerald-100 bg-emerald-50/50 p-3.5">
+                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-bold text-emerald-900">No overdue items or unpaid fines</p>
+                                    <p class="text-xs sm:text-sm text-emerald-700">Your borrowing account is clear</p>
+                                </div>
+                            </div>
+                        @endif
+
+                        <!-- Patron Borrowing Allowance Details -->
+                        <div class="pt-2 border-t border-slate-100 space-y-2.5 text-sm sm:text-base">
+                            <div class="flex flex-wrap gap-2 justify-between items-center text-slate-600">
+                                <span class="text-slate-500">Max Loan Limit:</span>
+                                <span class="font-bold text-slate-900">{{ config('settings.library_config.max_loan_limit', 3) }} Books</span>
+                            </div>
+                            <div class="flex flex-wrap gap-2 justify-between items-center text-slate-600">
+                                <span class="text-slate-500">Loan Period:</span>
+                                <span class="font-bold text-slate-900">{{ config('settings.library_config.loan_period', 5) }} Calendar Days</span>
+                            </div>
+                            <div class="flex flex-wrap gap-2 justify-between items-center text-slate-600">
+                                <span class="text-slate-500">Library Desk Hours:</span>
+                                <span class="font-medium text-slate-700">{{ config('settings.library_config.desk_hours', '8:00 AM – 5:00 PM') }}</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
+                <div class="pt-3 mt-3 border-t border-slate-100">
+                    <a href="{{ route('student.borrow') }}" wire:navigate class="w-full py-2.5 px-3 text-center text-sm font-bold text-[#102B70] hover:text-[#0B225E] hover:bg-slate-50 rounded-lg transition-colors block">
+                        Open Borrowing Records &rarr;
+                    </a>
+                </div>
+            </div>
+
+                <a href="{{ route('student.reservations') }}" wire:navigate class="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#102B70]">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900">My reservations</h2>
+                        <p class="mt-1 text-sm text-slate-600">View your active reservations</p>
+                    </div>
+                    <span class="shrink-0 rounded-full bg-blue-50 px-3 py-1 text-sm font-bold text-[#102B70]">{{ $activeReservationsCount }} active <span aria-hidden="true">&rarr;</span></span>
+                </a>
+
                 <!-- Library Help & Operating Info -->
-                <div class="bg-gradient-to-br from-[#102B70] to-[#0B225E] rounded-2xl p-5 sm:p-6 text-white shadow-sm">
+                <div class="bg-[#102B70] rounded-2xl p-5 sm:p-6 text-white shadow-sm">
                     <h3 class="text-base font-bold text-white mb-2">Need Library Assistance?</h3>
                     <p class="text-sm sm:text-base text-blue-100/90 leading-relaxed mb-4">
                         Visit the Circulation Desk during school hours or contact our librarians for book reservations, inquiries, and clearances.

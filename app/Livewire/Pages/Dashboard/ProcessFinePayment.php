@@ -131,6 +131,8 @@ class ProcessFinePayment extends Component
             $query->where('school_id_number', 'like', $term)->orWhere('first_name', 'like', $term)->orWhere('last_name', 'like', $term);
         })->limit(10)->get() : collect();
         $student = $this->studentId ? Student::find($this->studentId) : null;
+        $activeLoans = $student ? $student->borrowingTransactions()
+            ->with('book.bookDetail.bookData')->whereNull('return_date')->orderBy('due_date')->get() : collect();
         $fines = $student ? Fine::with(['transaction.book.bookDetail.bookData', 'fineType'])
             ->where('student_id', $student->id)->where('fine_status', 'unpaid')
             ->whereHas('transaction', fn ($query) => $query->whereNotNull('return_date'))
@@ -140,6 +142,6 @@ class ProcessFinePayment extends Component
         if ($fine && $this->paymentDate && \Illuminate\Support\Facades\Validator::make(['date' => $this->paymentDate], ['date' => 'date_format:Y-m-d'])->passes()) {
             try { $calculation = app(FineService::class)->paymentCalculation($fine, $this->paymentDate); } catch (\DomainException $e) { }
         }
-        return view('livewire.pages.dashboard.process-fine-payment', compact('students', 'student', 'fines', 'fine', 'calculation'));
+        return view('livewire.pages.dashboard.process-fine-payment', compact('students', 'student', 'activeLoans', 'fines', 'fine', 'calculation'));
     }
 }

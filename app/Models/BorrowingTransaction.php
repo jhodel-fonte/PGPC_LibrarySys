@@ -26,11 +26,14 @@ class BorrowingTransaction extends Model
         'borrow_type_id',
         'issued_condition_id',
         'return_condition_id',
+        'return_condition_note',
         'issued_date',
         'due_date',
         'return_date',
         'received_by_id',
     ];
+
+    protected $hidden = ['return_condition_note'];
 
     protected $casts = [
         'issued_date' => 'datetime',

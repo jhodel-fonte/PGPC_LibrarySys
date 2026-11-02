@@ -5,6 +5,8 @@
             $isLibrarian = in_array($signedInUser?->role?->name, ['Librarian', 'Head Librarian', 'Admin']) || (bool) $signedInUser?->librarian;
         @endphp
 
+        <div class="flex justify-end"><button type="button" x-on:click="$dispatch('open-change-password')" class="min-h-11 rounded-lg border border-[#102B70] bg-white px-4 text-sm font-semibold text-[#102B70] hover:bg-blue-50 focus-visible:ring-2 focus-visible:ring-[#102B70]">Change password</button></div>
+
         @if ($isLibrarian)
             <livewire:components.usermanager.librarian-detail :userId="$signedInUser?->id" :isProfile="true" :key="'profile-librarian-'.($signedInUser?->id ?? 'guest')" />
         @else

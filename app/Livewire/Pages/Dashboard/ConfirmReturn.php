@@ -8,6 +8,8 @@ use Livewire\Attributes\On;
 use App\Models\Student;
 use App\Notifications\Alerts;
 use App\Models\BorrowingTransaction;
+use App\Models\Book;
+use App\Models\BookCondition;
 use App\Models\Librarian;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -24,6 +26,8 @@ class ConfirmReturn extends Component
 
     // Mapped properties for display
     public $transactionsData = [];
+    public array $returnConditions = [];
+    public array $returnNotes = [];
     public $totalFine = 0.00;
     public $overdueCount = 0;
     public ?string $errorMessage = null;
@@ -85,6 +89,7 @@ class ConfirmReturn extends Component
                 'title' => $data ? $data->book_title : 'Unknown Book',
                 'author' => $authorName,
                 'accession' => $book ? $book->accession_number : 'N/A',
+                'issued_condition' => $t->issuedCondition?->status ?? 'Not recorded',
                 'cover_image' => $detail ? $detail->cover_image : null,
                 'cover_url' => $detail ? $detail->cover_url : null,
                 'issued_date' => $t->issued_date?->format('M d, Y') ?? 'N/A',
@@ -117,6 +122,27 @@ class ConfirmReturn extends Component
             return $this->redirect($returnUrl, navigate: true);
         }
 
+        $conditions = BookCondition::whereIn('status', ['New', 'Good', 'Fair', 'Damaged'])->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $this->validate([
+            'returnConditions' => ['required', 'array'],
+            'returnConditions.*' => ['required', 'integer', \Illuminate\Validation\Rule::in($conditions)],
+            'returnNotes' => ['array'],
+            'returnNotes.*' => ['nullable', 'string', 'max:500'],
+        ]);
+        foreach ($this->transactionIds as $id) {
+            if (! isset($this->returnConditions[$id]) || ! in_array((int) $this->returnConditions[$id], $conditions, true)) {
+                $this->addError('returnConditions.'.$id, 'Select a valid return condition.');
+                return;
+            }
+        }
+        $damagedId = BookCondition::where('status', 'Damaged')->value('id');
+        foreach ($this->transactionIds as $id) {
+            if ((int) $this->returnConditions[$id] === (int) $damagedId && blank(trim($this->returnNotes[$id] ?? ''))) {
+                $this->addError('returnNotes.'.$id, 'Describe the observed damage.');
+                return;
+            }
+        }
+
         try {
             $returnedItems = [];
             \App\Services\AuditTrail::transaction('Books returned', function () use (&$returnedItems) {
@@ -131,7 +157,7 @@ class ConfirmReturn extends Component
                     ->get();
 
                 if ($transactions->count() !== count(array_unique($this->transactionIds))) {
-                    throw new \RuntimeException('Some selected items were already returned or do not belong to this student. Please review the return again.');
+                    throw new \DomainException('Some selected items were already returned or do not belong to this student. Please review the return again.');
                 }
 
                 // Safely resolve Overdue fine type ID
@@ -140,18 +166,23 @@ class ConfirmReturn extends Component
                     ?? 1;
 
                 foreach ($transactions as $transaction) {
+                    $book = Book::withTrashed()->lockForUpdate()->findOrFail($transaction->book_id);
+                    if ($book->reservations()->whereIn('reservation_status_id', [1, 2])->exists()) {
+                        throw new \DomainException('A returned copy has an active reservation. Please review its circulation record.');
+                    }
+                    $conditionId = (int) $this->returnConditions[$transaction->id];
+                    $condition = BookCondition::findOrFail($conditionId);
+                    $note = trim($this->returnNotes[$transaction->id] ?? '');
                     // Update borrowing transaction in database
                     $transaction->update([
                         'return_date' => $now,
                         'received_by_id' => $librarianId,
+                        'return_condition_id' => $conditionId,
+                        'return_condition_note' => $note === '' ? null : $note,
                     ]);
 
                     // Update physical book copy status to available
-                    if ($transaction->book) {
-                        $transaction->book->update([
-                            'status' => 'available',
-                        ]);
-                    }
+                    $book->update(['book_condition_id' => $conditionId, 'status' => $condition->status === 'Damaged' ? 'damaged' : 'available']);
 
                     // Generate overdue fine record if applicable
                     $fineAmount = $transaction->isInsideLibrary() ? 0 : $this->getFineAmount($transaction->due_date, $transaction->book?->bookDetail);
@@ -186,9 +217,13 @@ class ConfirmReturn extends Component
                     ];
                 }
             });
+        } catch (\DomainException $e) {
+            $this->errorMessage = $e->getMessage();
+            $this->dispatch('return-failed', message: $this->errorMessage);
+            return;
         } catch (\Throwable $e) {
-            Log::error('Return Database Error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
-            $this->errorMessage = 'A database error occurred during return processing: ' . $e->getMessage();
+            Log::error('Return processing failed', ['exception' => $e]);
+            $this->errorMessage = 'The return could not be completed. No changes were saved. Please try again or contact the system administrator.';
             $this->dispatch('return-failed', message: $this->errorMessage);
             return;
         }
@@ -229,6 +264,7 @@ class ConfirmReturn extends Component
         $prefix = EmployeeRoleService::getRoutePrefix();
         return view('livewire.pages.dashboard.confirm-return', [
             'returnUrl' => route($prefix . 'circulation-desk.return'),
+            'conditions' => BookCondition::whereIn('status', ['New', 'Good', 'Fair', 'Damaged'])->orderBy('id')->get(),
         ]);
     }
 }

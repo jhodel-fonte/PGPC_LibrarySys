@@ -13,6 +13,8 @@ class StudentTable extends Component
 {
     use WithPagination;
 
+    private const SORTABLE_COLUMNS = ['id', 'student', 'id_number', 'program', 'status', 'last_login'];
+
     public string $search = '';
     public string $activeTab = 'ALL'; // 'ALL', 'Active', 'Inactive', 'Suspended', 'Deleted' (Superadmin only)
     public int $perPage = 10;
@@ -57,8 +59,12 @@ class StudentTable extends Component
 
     public function sortBy(string $column): void
     {
-        if ($this->sort['column'] === $column) {
-            $this->sort['direction'] = $this->sort['direction'] === 'asc' ? 'desc' : 'asc';
+        if (! in_array($column, self::SORTABLE_COLUMNS, true)) {
+            return;
+        }
+
+        if (($this->sort['column'] ?? null) === $column) {
+            $this->sort['direction'] = ($this->sort['direction'] ?? null) === 'asc' ? 'desc' : 'asc';
         } else {
             $this->sort['column'] = $column;
             $this->sort['direction'] = 'asc';
@@ -451,8 +457,8 @@ class StudentTable extends Component
         }
 
         // 4. Sorting
-        $sortColumn = $this->sort['column'];
-        $sortDirection = $this->sort['direction'];
+        $sortColumn = in_array($this->sort['column'] ?? null, self::SORTABLE_COLUMNS, true) ? $this->sort['column'] : 'id';
+        $sortDirection = in_array($this->sort['direction'] ?? null, ['asc', 'desc'], true) ? $this->sort['direction'] : 'desc';
 
         if ($sortColumn === 'student') {
             $query->leftJoin('students', 'accounts.id', '=', 'students.account_id')
@@ -488,10 +494,13 @@ class StudentTable extends Component
             ->whereHas('role', fn ($q) => $q->whereIn('name', ['Student', 'Member']))
             ->whereHas('student', fn ($sq) => $sq->whereNull('deleted_at'));
 
-        $totalStudents = (clone $baseStudentQuery)->count();
-        $activeStudents = (clone $baseStudentQuery)->whereHas('status', fn ($q) => $q->where('status_name', 'Active'))->count();
-        $inactiveStudents = (clone $baseStudentQuery)->whereHas('status', fn ($q) => $q->where('status_name', 'Inactive'))->count();
-        $lockedStudents = (clone $baseStudentQuery)->whereHas('status', fn ($q) => $q->whereIn('status_name', ['Locked', 'Suspended']))->count();
+        $counts = $baseStudentQuery->leftJoin('account_statuses', 'accounts.status_id', '=', 'account_statuses.id')
+            ->selectRaw("count(*) as total, sum(case when account_statuses.status_name = 'Active' then 1 else 0 end) as active, sum(case when account_statuses.status_name = 'Inactive' then 1 else 0 end) as inactive, sum(case when account_statuses.status_name in ('Locked', 'Suspended') then 1 else 0 end) as locked")
+            ->first();
+        $totalStudents = (int) $counts->total;
+        $activeStudents = (int) $counts->active;
+        $inactiveStudents = (int) $counts->inactive;
+        $lockedStudents = (int) $counts->locked;
 
         $deletedStudents = EmployeeRoleService::isAdmin()
             ? Account::withTrashed()

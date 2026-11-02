@@ -109,6 +109,7 @@ class GoogleAuthController extends Controller
 
             Auth::login($account, remember: true);
             $request->session()->regenerate();
+            $request->session()->put('password_reminder_account', $account->password_change_reminder ? $account->id : null);
             $request->session()->forget('url.intended');
 
             // Redirect based on role directly to appropriate dashboard

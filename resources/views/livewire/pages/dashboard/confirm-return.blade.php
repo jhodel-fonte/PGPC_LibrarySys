@@ -87,6 +87,7 @@
             <section class="xl:col-span-7 flex min-w-0 flex-col xl:h-full xl:overflow-hidden">
                 <div class="xl:flex-1 xl:min-h-0 flex flex-col bg-white border border-[#E2E8F0] rounded-2xl p-4 sm:p-6 shadow-sm xl:overflow-hidden">
                     <h2 class="mb-4 shrink-0 text-base font-bold uppercase tracking-wider text-[#102B70]">Items to be Returned ({{ count($transactionsData) }})</h2>
+                    @error('returnConditions')<p role="alert" class="mb-3 text-sm text-red-700">Select a condition for each item.</p>@enderror
 
                     <div class="divide-y divide-[#E2E8F0] rounded-xl border border-[#E2E8F0] bg-white xl:flex-1 xl:overflow-y-auto">
                         @foreach($transactionsData as $item)
@@ -96,6 +97,7 @@
                                         <h3 class="font-bold leading-snug text-[#0F172A]">{{ $item['title'] }}</h3>
                                         <p class="mt-1 text-sm text-[#64748B]">{{ $item['author'] }}</p>
                                         <p class="mt-0.5 text-xs text-[#94A3B8]">Accession No. {{ $item['accession'] }}</p>
+                                        <p class="mt-1 text-xs text-slate-600">Recorded condition at issue: {{ $item['issued_condition'] }}</p>
                                     </div>
 
                                     <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-xs sm:min-w-[230px] sm:text-right">
@@ -120,6 +122,21 @@
                                         </div>
                                     </div>
                                 </div>
+                                <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                                    <div>
+                                        <label for="return-condition-{{ $item['id'] }}" class="block text-sm font-semibold text-slate-700">Condition on return</label>
+                                        <select id="return-condition-{{ $item['id'] }}" wire:model="returnConditions.{{ $item['id'] }}" class="mt-1 w-full rounded-lg border-slate-300 text-sm">
+                                            <option value="">Select condition</option>
+                                            @foreach($conditions as $condition)<option value="{{ $condition->id }}">{{ $condition->status }}</option>@endforeach
+                                        </select>
+                                        @error('returnConditions.'.$item['id'])<p role="alert" class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror
+                                    </div>
+                                    <div>
+                                        <label for="return-note-{{ $item['id'] }}" class="block text-sm font-semibold text-slate-700">Condition observation <span class="font-normal text-slate-500">(required if damaged)</span></label>
+                                        <textarea id="return-note-{{ $item['id'] }}" wire:model="returnNotes.{{ $item['id'] }}" maxlength="500" rows="2" placeholder="For example: back cover torn" class="mt-1 w-full rounded-lg border-slate-300 text-sm"></textarea>
+                                        @error('returnNotes.'.$item['id'])<p role="alert" class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror
+                                    </div>
+                                </div>
                             </article>
                         @endforeach
                     </div>
@@ -128,7 +145,7 @@
                         <svg class="h-5 w-5 shrink-0 text-[#10B981]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
-                        <span class="text-sm font-semibold">All items are ready to be returned.</span>
+                        <span class="text-sm font-semibold">Select the condition of each returned item before confirming.</span>
                     </div>
                 </div>
             </section>

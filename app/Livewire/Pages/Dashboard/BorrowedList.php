@@ -3,7 +3,9 @@
 namespace App\Livewire\Pages\Dashboard;
 
 use App\Models\BorrowingTransaction;
+use App\Models\BookDetail;
 use App\Models\Student;
+use App\Services\EmployeeRoleService;
 use Carbon\Carbon;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Url;
@@ -24,6 +26,9 @@ class BorrowedList extends Component
 
     #[Url(as: 'tab')]
     public string $activeTab = 'all'; // 'active', 'overdue', 'returned', 'all'
+
+    #[Url(as: 'book')]
+    public string $bookDetailId = '';
 
     // Applied Filters
     public string $filterProgram = '';
@@ -112,10 +117,23 @@ class BorrowedList extends Component
 
     public function render()
     {
-        $query = BorrowingTransaction::query()
+        abort_unless(EmployeeRoleService::canManageCirculation(), 403);
+        $bookDetail = null;
+        if ($this->bookDetailId !== '') {
+            abort_unless(ctype_digit($this->bookDetailId) && (int) $this->bookDetailId > 0, 404);
+            $bookDetail = BookDetail::withTrashed()->with(['bookData' => fn ($q) => $q->withTrashed()])->findOrFail((int) $this->bookDetailId);
+        }
+        $base = BorrowingTransaction::query();
+        if ($bookDetail) {
+            $base->whereIn('borrowing_transactions.book_id', \App\Models\Book::withTrashed()->where('book_detail_id', $bookDetail->id)->select('id'));
+        }
+        $query = (clone $base)
             ->with([
+                'student' => fn ($q) => $q->withTrashed(),
                 'student.account',
-                'book.bookDetail.bookData',
+                'book' => fn ($q) => $q->withTrashed(),
+                'book.bookDetail' => fn ($q) => $q->withTrashed(),
+                'book.bookDetail.bookData' => fn ($q) => $q->withTrashed(),
                 'issuedBy',
                 'receivedBy'
             ]);
@@ -133,13 +151,13 @@ class BorrowedList extends Component
         // Dropdown Filters
         if (! empty($this->filterProgram)) {
             $query->whereHas('student', function ($sQ) {
-                $sQ->where('program', $this->filterProgram);
+                $sQ->withTrashed()->where('program', $this->filterProgram);
             });
         }
 
         if (! empty($this->filterYearLevel)) {
             $query->whereHas('student', function ($sQ) {
-                $sQ->where('year_level', $this->filterYearLevel);
+                $sQ->withTrashed()->where('year_level', $this->filterYearLevel);
             });
         }
 
@@ -148,12 +166,12 @@ class BorrowedList extends Component
             $term = '%' . trim($this->search) . '%';
             $query->where(function ($q) use ($term) {
                 $q->whereHas('book', function ($bQ) use ($term) {
-                    $bQ->where('accession_number', 'like', $term)
-                        ->orWhereHas('bookDetail.bookData', function ($bdQ) use ($term) {
-                            $bdQ->where('book_title', 'like', $term);
+                    $bQ->withTrashed()->where('accession_number', 'like', $term)
+                        ->orWhereHas('bookDetail', function ($detail) use ($term) {
+                            $detail->withTrashed()->whereHas('bookData', fn ($data) => $data->withTrashed()->where('book_title', 'like', $term));
                         });
                 })->orWhereHas('student', function ($sQ) use ($term) {
-                    $sQ->where('first_name', 'like', $term)
+                    $sQ->withTrashed()->where('first_name', 'like', $term)
                         ->orWhere('last_name', 'like', $term)
                         ->orWhere('school_id_number', 'like', $term);
                 });
@@ -179,15 +197,15 @@ class BorrowedList extends Component
         $borrowings = $query->paginate($this->perPage);
 
         // Counts for tabs
-        $activeCount = BorrowingTransaction::whereNull('return_date')->count();
-        $overdueCount = BorrowingTransaction::whereNull('return_date')->where('due_date', '<', Carbon::now())->count();
-        $returnedCount = BorrowingTransaction::whereNotNull('return_date')->count();
-        $totalHistoryCount = BorrowingTransaction::count();
+        $activeCount = (clone $base)->whereNull('return_date')->count();
+        $overdueCount = (clone $base)->whereNull('return_date')->where('due_date', '<', Carbon::now())->count();
+        $returnedCount = (clone $base)->whereNotNull('return_date')->count();
+        $totalHistoryCount = (clone $base)->count();
 
         // Available programs for filter dropdown
         $programs = Student::distinct()->whereNotNull('program')->orderBy('program')->pluck('program')->toArray();
 
-        $routePrefix = request()->is('librarian*') ? 'librarian.' : 'admin.';
+        $routePrefix = EmployeeRoleService::getRoutePrefix();
 
         return view('livewire.pages.dashboard.borrowed-list', [
             'borrowings' => $borrowings,
@@ -197,6 +215,7 @@ class BorrowedList extends Component
             'totalHistoryCount' => $totalHistoryCount,
             'programs' => $programs,
             'routePrefix' => $routePrefix,
+            'bookDetail' => $bookDetail,
         ]);
     }
 }

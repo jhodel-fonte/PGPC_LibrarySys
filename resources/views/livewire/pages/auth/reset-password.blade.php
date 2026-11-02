@@ -59,6 +59,8 @@ new #[Layout('components.layouts.app')] class extends Component
                     'password_hash' => Hash::make($this->password),
                     'remember_token' => Str::random(60),
                     'password_changed_at' => now(),
+                    'password_change_reminder' => false,
+                    'setup_password_prompt' => false,
                     'is_email_verified' => true,
                     'email_verified_at' => $user->email_verified_at ?? now(),
                 ])->save();

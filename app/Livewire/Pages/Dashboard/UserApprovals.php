@@ -70,7 +70,8 @@ class UserApprovals extends Component
     {
         $visibleIds = $this->applySearchFilter(
             $this->applyTabFilter($this->baseStudentsQuery(), $this->activeTab)
-        )->whereIn('accounts.id', array_map('intval', $ids))
+        )->where('accounts.status_id', 4)
+            ->whereIn('accounts.id', array_map('intval', $ids))
             ->pluck('accounts.id')
             ->map(fn ($id) => (string) $id)
             ->all();
@@ -111,14 +112,15 @@ class UserApprovals extends Component
             ->first();
 
         if (! $account || ! $account->student?->verification_document_path) {
-            $this->dispatch('toast', message: 'A valid student account with an uploaded document is required for approval.', type: 'error');
+            $this->closeReview();
+            $this->dispatch('toast', message: 'This account is no longer pending or has no verification document.', type: 'error');
             return;
         }
 
-        DB::transaction(function () use ($account) {
-            $account->update([
-                'status_id' => 1, // Active
-            ]);
+        $updated = DB::transaction(function () use ($account) {
+            $locked = Account::whereKey($account->id)->where('status_id', 4)->lockForUpdate()->first();
+            if (! $locked) return false;
+            $locked->update(['status_id' => 1]);
 
             $account->student->update([
                 'library_status_id' => 1,
@@ -126,7 +128,13 @@ class UserApprovals extends Component
                 'verified_by' => Auth::id(),
                 'verification_remarks' => null,
             ]);
+            return true;
         });
+        if (! $updated) {
+            $this->closeReview();
+            $this->dispatch('toast', message: 'This account is no longer pending review.', type: 'error');
+            return;
+        }
         Mail::to($account->email)->queue(new AccountApprovalResultEmail($account->fresh('student'), 'approved'));
 
         $this->selectedIds = array_values(array_diff(array_map('strval', $this->selectedIds), [(string) $accountId]));
@@ -154,10 +162,10 @@ class UserApprovals extends Component
             return;
         }
 
-        DB::transaction(function () use ($account, $remarks) {
-            $account->update([
-                'status_id' => 5, // Not Approved
-            ]);
+        $updated = DB::transaction(function () use ($account, $remarks) {
+            $locked = Account::whereKey($account->id)->where('status_id', 4)->lockForUpdate()->first();
+            if (! $locked) return false;
+            $locked->update(['status_id' => 5]);
 
             if ($account->student) {
                 $account->student->update([
@@ -166,7 +174,13 @@ class UserApprovals extends Component
                     'verification_remarks' => $remarks,
                 ]);
             }
+            return true;
         });
+        if (! $updated) {
+            $this->closeReview();
+            $this->dispatch('toast', message: 'This account is no longer pending review.', type: 'error');
+            return;
+        }
         Mail::to($account->email)->queue(new AccountApprovalResultEmail($account->fresh('student'), 'rejected', $remarks));
 
         $this->selectedIds = array_values(array_diff(array_map('strval', $this->selectedIds), [(string) $accountId]));
@@ -190,7 +204,9 @@ class UserApprovals extends Component
 
         $days = (int) config('settings.registration.email_block_days', 3);
         $block = DB::transaction(function () use ($account) {
-            $account->update(['status_id' => 2]); // Inactive
+            $locked = Account::whereKey($account->id)->where('status_id', 4)->lockForUpdate()->first();
+            if (! $locked) return null;
+            $locked->update(['status_id' => 2]);
 
             if ($account->student) {
                 $account->student->update([
@@ -203,6 +219,11 @@ class UserApprovals extends Component
             return RegistrationEmailBlocklist::ban($account->email);
         });
 
+        if (! $block) {
+            $this->closeReview();
+            $this->dispatch('toast', message: 'This account is no longer pending review.', type: 'error');
+            return;
+        }
         Mail::to($account->email)->queue(new AccountApprovalResultEmail(
             $account->fresh('student'),
             'blocked',
@@ -217,19 +238,10 @@ class UserApprovals extends Component
 
     public function bulkApprove(): void
     {
-        $ids = $this->selectedActionIds(requireDocument: true);
-        if (empty($ids)) {
-            $this->selectedIds = [];
-            return;
-        }
-
-        $accounts = $this->baseStudentsQuery()
-            ->with('student')
-            ->whereIn('accounts.id', $ids)
-            ->get()
-            ->keyBy('id');
-
-        DB::transaction(function () use ($ids) {
+        $requestedCount = count(array_unique($this->selectedIds));
+        $accounts = DB::transaction(function () {
+            $ids = $this->selectedActionIds(requireDocument: true, lock: true);
+            $accounts = $this->baseStudentsQuery()->with('student')->whereIn('accounts.id', $ids)->get();
             Account::whereIn('id', $ids)->get()->each->update(['status_id' => 1]);
 
             Student::whereIn('account_id', $ids)->update([
@@ -238,6 +250,7 @@ class UserApprovals extends Component
                 'verified_by' => Auth::id(),
                 'verification_remarks' => null,
             ]);
+            return $accounts;
         });
         foreach ($accounts as $account) {
             Mail::to($account->email)->queue(new AccountApprovalResultEmail($account->fresh('student'), 'approved'));
@@ -245,24 +258,16 @@ class UserApprovals extends Component
 
         $this->selectedIds = [];
         $this->pageCursors = [];
-        $this->dispatch('toast', message: count($ids) . ' student account(s) approved and activated.', type: 'success');
+        $skipped = $requestedCount - $accounts->count();
+        $this->dispatch('toast', message: $accounts->count() . ' student account(s) approved and activated.' . ($skipped ? " {$skipped} skipped (not pending or missing a document)." : ''), type: 'success');
     }
 
     public function bulkReject(): void
     {
-        $ids = $this->selectedActionIds();
-        if (empty($ids)) {
-            $this->selectedIds = [];
-            return;
-        }
-
-        $accounts = $this->baseStudentsQuery()
-            ->with('student')
-            ->whereIn('accounts.id', $ids)
-            ->get()
-            ->keyBy('id');
-
-        DB::transaction(function () use ($ids) {
+        $requestedCount = count(array_unique($this->selectedIds));
+        $accounts = DB::transaction(function () {
+            $ids = $this->selectedActionIds(requireDocument: false, lock: true);
+            $accounts = $this->baseStudentsQuery()->with('student')->whereIn('accounts.id', $ids)->get();
             Account::whereIn('id', $ids)->get()->each->update(['status_id' => 5]);
 
             Student::whereIn('account_id', $ids)->update([
@@ -270,6 +275,7 @@ class UserApprovals extends Component
                 'verified_by' => Auth::id(),
                 'verification_remarks' => 'Please upload a clearer verification document.',
             ]);
+            return $accounts;
         });
         foreach ($accounts as $account) {
             Mail::to($account->email)->queue(new AccountApprovalResultEmail(
@@ -281,7 +287,8 @@ class UserApprovals extends Component
 
         $this->selectedIds = [];
         $this->pageCursors = [];
-        $this->dispatch('toast', message: count($ids) . ' student account(s) marked as Not Approved.', type: 'info');
+        $skipped = $requestedCount - $accounts->count();
+        $this->dispatch('toast', message: $accounts->count() . ' student account(s) marked as Not Approved.' . ($skipped ? " {$skipped} skipped (no longer pending)." : ''), type: 'info');
     }
 
     /**
@@ -289,7 +296,7 @@ class UserApprovals extends Component
      *
      * @return array<int, int>
      */
-    protected function selectedActionIds(bool $requireDocument = false): array
+    protected function selectedActionIds(bool $requireDocument = false, bool $lock = false): array
     {
         $requestedIds = array_values(array_unique(array_filter(
             array_map('intval', $this->selectedIds),
@@ -307,6 +314,8 @@ class UserApprovals extends Component
         if ($requireDocument) {
             $query->whereHas('student', fn (Builder $studentQuery) => $studentQuery->whereNotNull('students.verification_document_path'));
         }
+
+        if ($lock) $query->lockForUpdate();
 
         return $query
             ->pluck('accounts.id')

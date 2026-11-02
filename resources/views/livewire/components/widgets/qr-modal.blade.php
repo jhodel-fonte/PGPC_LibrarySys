@@ -12,7 +12,7 @@
             x-cloak
             class="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 select-none"
             aria-modal="true"
-            aria-label="Library QR code"
+            :aria-label="title"
             role="dialog"
         >
             <!-- Backdrop Overlay with subtle blur -->
@@ -41,11 +41,11 @@
                 class="relative z-10 w-full max-w-md max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-2xl bg-white shadow-2xl border border-slate-200/90"
             >
                 <!-- Card Header with PGPC Institutional Branding -->
-                <div class="bg-[#102B70] px-5 py-4 text-white relative">
+                <div class="bg-[#102B70] px-5 py-3 text-white relative">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-2.5 min-w-0">
                             <div class="min-w-0 flex-1">
-                                <h3 class="text-sm font-bold text-white leading-tight truncate" x-text="title">
+                                <h3 class="text-base font-bold text-white leading-tight break-words" x-text="title">
                                     PGPC Library QR Code
                                 </h3>
                             </div>
@@ -75,19 +75,19 @@
                     <!-- QR Code Container Box (Fixed dimensions to prevent any stacking or duplication) -->
                     <div
                         x-ref="qrContainer"
-                        role="img" aria-label="QR code for scanning at the library"
                         class="p-4 sm:p-5 rounded-xl bg-white border border-slate-200 flex items-center justify-center w-full max-w-xs aspect-square relative overflow-hidden"
                     >
                         <!-- 1. SVG Vector Display -->
                         <div
                             x-show="Boolean(qrSvg) && !isLoading"
+                            role="img" aria-label="QR code for scanning at the library"
                             class="w-full h-full flex items-center justify-center [&>svg]:w-full [&>svg]:h-full"
                             x-html="qrSvg"
                         ></div>
 
                         <!-- 2. Loading State while generating -->
                         <div
-                            x-show="isLoading"
+                            x-show="isLoading" role="status"
                             class="absolute inset-0 flex flex-col items-center justify-center gap-2.5 text-[#102B70] bg-white"
                         >
                             <svg class="w-8 h-8 animate-spin text-[#102B70]" fill="none" viewBox="0 0 24 24">
@@ -113,20 +113,20 @@
                             <svg class="w-8 h-8 text-slate-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
                             </svg>
-                            <span>No QR payload provided</span>
+                            <span class="px-5 text-center text-sm text-slate-600">QR code unavailable. Please ask library staff for assistance.</span>
                         </div>
                     </div>
 
                     <!-- Value Display & Copy Button -->
                     <div x-show="value" class="mt-4 flex flex-wrap items-center justify-center gap-2 w-full min-w-0">
-                        <span class="text-xs font-semibold text-slate-400" x-text="label"></span>
+                        <span class="text-sm font-semibold text-slate-600" x-text="label"></span>
                         <span class="max-w-full break-all font-mono text-base font-extrabold text-[#102B70] tracking-wider select-all" x-text="value"></span>
                         <button
                             type="button"
                             @click="copyValue()"
                             class="min-w-11 min-h-11 flex items-center justify-center rounded-lg text-slate-400 hover:text-[#102B70] hover:bg-slate-100 transition cursor-pointer"
-                            title="Copy Value"
-                            aria-label="Copy Value"
+                            title="Copy code"
+                            aria-label="Copy code"
                         >
                             <span x-show="!copied">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
@@ -141,8 +141,11 @@
                         </button>
                     </div>
 
+                    <p class="sr-only" role="status" aria-live="polite" x-text="copyMessage"></p>
+                    <p x-show="copyMessage" x-text="copyMessage" class="text-sm text-slate-600"></p>
+
                     <!-- Usage Instruction -->
-                    <p x-show="instruction" class="text-[11.5px] text-slate-500 mt-2 max-w-[270px] leading-relaxed" x-text="instruction"></p>
+                    <p x-show="instruction" class="text-sm text-slate-600 mt-2 max-w-xs leading-relaxed" x-text="instruction"></p>
 
                     <!-- Action Buttons in Footer -->
                     <div class="mt-5 w-full pt-4 border-t border-slate-100 flex flex-col gap-2">
@@ -174,13 +177,6 @@
                             </button>
                         </div>
 
-                        <button
-                            type="button"
-                            @click="closeModal()"
-                            class="w-full min-h-11 rounded-xl bg-[#102B70] hover:bg-[#0B225E] text-white text-sm font-bold transition shadow-xs cursor-pointer flex items-center justify-center gap-1.5"
-                        >
-                            <span>Close</span>
-                        </button>
                     </div>
                     <p x-show="saveError" x-text="saveError" role="alert" class="mt-3 text-sm text-rose-700"></p>
                 </div>
@@ -224,6 +220,7 @@
             return {
                 isOpen: false,
                 copied: false,
+                copyMessage: '',
                 value: '',
                 title: 'PGPC Library QR Code',
                 subtitle: 'Digital Identification Pass',
@@ -244,6 +241,7 @@
 
                     // 1. Immediately wipe previous active data so no prior QR code or text flickers
                     this.copied = false;
+                    this.copyMessage = '';
                     this.saveError = '';
                     this.qrSvg = '';
                     this.isLoading = false;
@@ -334,27 +332,23 @@
                     this.instruction = '';
                     this.isLoading = false;
                     this.copied = false;
+                    this.copyMessage = '';
 
                     if (this.$wire && typeof this.$wire.closeQrModal === 'function') {
                         this.$wire.closeQrModal();
                     }
                 },
 
-                copyValue() {
-                    const textToCopy = this.value;
-                    if (!textToCopy) return;
-                    if (navigator.clipboard && navigator.clipboard.writeText) {
-                        navigator.clipboard.writeText(textToCopy);
-                    } else {
-                        const el = document.createElement('textarea');
-                        el.value = textToCopy;
-                        document.body.appendChild(el);
-                        el.select();
-                        document.execCommand('copy');
-                        document.body.removeChild(el);
+                async copyValue() {
+                    if (!this.value) return;
+                    try {
+                        if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
+                        await navigator.clipboard.writeText(this.value);
+                        this.copied = true;
+                        this.copyMessage = 'Copied to clipboard.';
+                    } catch (error) {
+                        this.copyMessage = 'Could not copy. Select the code and copy it manually.';
                     }
-                    this.copied = true;
-                    setTimeout(() => this.copied = false, 2000);
                 },
 
                 async downloadQr() {

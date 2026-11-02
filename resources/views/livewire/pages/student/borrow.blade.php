@@ -102,7 +102,6 @@
                             $bookData = $bookDetail?->bookData;
                             $authors = $bookData?->authors ? $bookData->authors->map(fn($a) => $a->first_name . ' ' . $a->last_name)->join(', ') : 'Unknown Author';
                             $isOverdue = $loan->due_date && $loan->due_date->isPast();
-                            $daysRemaining = $loan->due_date ? (int) ceil(now()->diffInDays($loan->due_date, false)) : null;
                             $coverUrl = $bookDetail?->cover_url ?: asset('images/' . config('settings.book_covers.default', 'book-cover.webp'));
                         @endphp
                         <div class="p-4 space-y-3 hover:bg-slate-50/60 transition-colors">
@@ -124,7 +123,7 @@
                                     </p>
                                     @if($loan->isInsideLibrary())<p class="text-xs font-semibold text-blue-700">Inside library</p>@endif
                                     <p class="text-xs text-slate-400 mt-0.5">
-                                        {{ $loan->borrowType?->name ?? 'Regular Loan' }} &bull; {{ $loan->issuedCondition?->status ?? 'Good' }}
+                                        {{ $loan->borrowType?->name ?? 'Regular Loan' }} &bull; {{ $loan->issuedCondition?->status ?? 'Not recorded' }}
                                     </p>
                                 </div>
                             </div>
@@ -146,23 +145,7 @@
                                         </span>
                                     </div>
                                     <div>
-                                        @if ($isOverdue)
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-red-100 text-red-700 border border-red-200">
-                                                Overdue ({{ abs($daysRemaining) }}d)
-                                            </span>
-                                        @elseif ($daysRemaining === 0)
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
-                                                Due Today
-                                            </span>
-                                        @elseif ($daysRemaining <= 2)
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                                                Due in {{ $daysRemaining }}d
-                                            </span>
-                                        @else
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                                Due in {{ $daysRemaining }}d
-                                            </span>
-                                        @endif
+                                        <x-student.loan-status :loan="$loan" />
                                     </div>
                                 </div>
                             </div>
@@ -194,7 +177,6 @@
                                     $bookData = $bookDetail?->bookData;
                                     $authors = $bookData?->authors ? $bookData->authors->map(fn($a) => $a->first_name . ' ' . $a->last_name)->join(', ') : 'Unknown Author';
                                     $isOverdue = $loan->due_date && $loan->due_date->isPast();
-                                    $daysRemaining = $loan->due_date ? (int) ceil(now()->diffInDays($loan->due_date, false)) : null;
                                     $coverUrl = $bookDetail?->cover_url ?: asset('images/' . config('settings.book_covers.default', 'book-cover.webp'));
                                 @endphp
                                 <tr class="hover:bg-slate-50/80 transition-colors">
@@ -213,7 +195,7 @@
                                                 </p>
                                                 @if($loan->isInsideLibrary())<p class="text-xs font-semibold text-blue-700">Inside library</p>@endif
                                                 <p class="text-xs text-slate-500 mt-1">
-                                                    Type: {{ $loan->borrowType?->name ?? 'Regular Loan' }} • Condition: {{ $loan->issuedCondition?->status ?? 'Good' }}
+                                                    Type: {{ $loan->borrowType?->name ?? 'Regular Loan' }} • Condition: {{ $loan->issuedCondition?->status ?? 'Not recorded' }}
                                                 </p>
                                             </div>
                                         </div>
@@ -228,23 +210,7 @@
                                         {{ $loan->due_date ? $loan->due_date->copy()->setTimezone('Asia/Manila')->format($loan->isInsideLibrary() ? 'M d, Y h:i A' : 'M d, Y') : '—' }}
                                     </td>
                                     <td class="px-6 sm:px-7 py-4 text-right whitespace-nowrap">
-                                        @if ($isOverdue)
-                                            <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs sm:text-sm font-bold bg-red-100 text-red-700 border border-red-200">
-                                                Overdue by {{ abs($daysRemaining) }} {{ abs($daysRemaining) === 1 ? 'day' : 'days' }}
-                                            </span>
-                                        @elseif ($daysRemaining === 0)
-                                            <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs sm:text-sm font-bold bg-amber-100 text-amber-800 border border-amber-200">
-                                                Due Today
-                                            </span>
-                                        @elseif ($daysRemaining <= 2)
-                                            <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs sm:text-sm font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                                                Due in {{ $daysRemaining }} {{ $daysRemaining === 1 ? 'day' : 'days' }}
-                                            </span>
-                                        @else
-                                            <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs sm:text-sm font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                                Due in {{ $daysRemaining }} days
-                                            </span>
-                                        @endif
+                                        <x-student.loan-status :loan="$loan" />
                                     </td>
                                 </tr>
                             @empty
@@ -319,7 +285,7 @@
                                 <div>
                                     <span class="text-slate-400 font-medium block">Condition</span>
                                     <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-slate-200/80 text-slate-700 mt-0.5">
-                                        {{ $record->returnCondition?->condition ?? 'Good' }}
+                                        {{ $record->returnCondition?->status ?? 'Not recorded' }}
                                     </span>
                                 </div>
                             </div>
@@ -384,7 +350,7 @@
                                     </td>
                                     <td class="px-6 sm:px-7 py-4 text-right whitespace-nowrap">
                                         <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs sm:text-sm font-semibold bg-slate-100 text-slate-700">
-                                            {{ $record->returnCondition?->condition ?? 'Good' }}
+                                            {{ $record->returnCondition?->status ?? 'Not recorded' }}
                                         </span>
                                     </td>
                                 </tr>

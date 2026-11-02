@@ -22,6 +22,13 @@ class StudentImportTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_student_import_dispatch_uses_import_queue(): void
+    {
+        Queue::fake();
+        ProcessStudentImport::dispatch(1)->onConnection('database');
+        Queue::assertPushed(ProcessStudentImport::class, fn ($job) => $job->queue === 'imports' && $job->connection === 'database');
+    }
+
     public function test_import_detects_columns_validates_rows_and_sends_an_invitation(): void
     {
         Storage::fake('local');
@@ -45,7 +52,7 @@ class StudentImportTest extends TestCase
         $this->assertSame('IMP-100', $account->username);
         $this->assertTrue(\Illuminate\Support\Facades\Hash::check('doeimp-100', $account->password_hash));
         $this->assertSame('pending', $row->email_status);
-        Queue::assertPushed(SendStudentImportInvitation::class);
+        Queue::assertPushed(SendStudentImportInvitation::class, fn ($job) => $job->queue === null);
         (new SendStudentImportInvitation($row->id))->handle();
         $this->assertSame('sent', $row->fresh()->email_status);
         Mail::assertSent(StudentImportInvitation::class, fn ($mail) => $mail->hasTo('student-import@example.com'));
@@ -91,7 +98,7 @@ class StudentImportTest extends TestCase
         (new ProcessStudentImport($import->id))->handle();
         $this->assertSame(100, $import->rows()->where('status', 'imported')->count());
         $this->assertSame(1, $import->rows()->where('status', 'pending')->count());
-        Queue::assertPushed(ProcessStudentImport::class);
+        Queue::assertPushedOn('imports', ProcessStudentImport::class);
     }
 
     public function test_invited_student_can_set_password_and_verify_email(): void
@@ -155,8 +162,7 @@ class StudentImportTest extends TestCase
         $this->actingAs($user)->get($link)->assertRedirect(route('student.setup'));
         $this->assertFalse($user->fresh()->setup_email_required);
         $this->assertSame('verified', $row->fresh()->email_status);
-        Livewire::actingAs($user->fresh())->test(\App\Livewire\Pages\Auth\StudentSetup::class)
-            ->call('skipPassword')->assertRedirect(route('student.dashboard'));
+        $this->assertTrue($user->fresh()->password_change_reminder);
         $this->assertFalse($user->fresh()->setup_password_prompt);
     }
 

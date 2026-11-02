@@ -167,7 +167,7 @@ class ForgotPassword extends Component
                     || ! hash_equals($auth['session'], hash('sha256', session()->getId()))
                     || ! hash_equals($auth['password'], hash_hmac('sha256', (string) $account->password_hash, config('app.key')))
                     || ! hash_equals($auth['destination'], hash_hmac('sha256', $destination, config('app.key')))) return false;
-                $values = ['password_hash' => Hash::make($this->password), 'remember_token' => Str::random(60), 'password_changed_at' => now()];
+                $values = ['password_hash' => Hash::make($this->password), 'remember_token' => Str::random(60), 'password_changed_at' => now(), 'password_change_reminder' => false, 'setup_password_prompt' => false];
                 if ($this->sentChannel === 'email') $values += ['is_email_verified' => true, 'email_verified_at' => $account->email_verified_at ?? now()];
                 $account->forceFill($values)->save();
                 Password::broker()->deleteToken($account);

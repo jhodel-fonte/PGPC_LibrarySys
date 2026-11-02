@@ -123,6 +123,35 @@ class PeriodicalIssueTest extends TestCase
             ->call('submit')->assertHasNoErrors()->assertSet('showFeedback', true);
     }
 
+    public function test_switching_item_type_does_not_save_or_validate_inapplicable_fields(): void
+    {
+        \Livewire\Livewire::test(\App\Livewire\Forms\AddBookForm::class)
+            ->set('catalogKind', 'journal')->set('issueDate', 'not-a-date')
+            ->set('catalogKind', 'equipment')->set('bookTitle', 'Microscope')
+            ->set('accessionNumber', 'TYPE-SWITCH')->set('issueDate', 'not-a-date')
+            ->set('isbn', 'unrelated')->set('authorSearch', 'Unrelated author')
+            ->set('manufacturer', 'Example maker')->call('submit')->assertHasNoErrors()
+            ->assertSet('showFeedback', true);
+
+        $detail = BookDetail::where('catalog_kind', 'equipment')->whereHas('bookData', fn ($q) => $q->where('book_title', 'Microscope'))->firstOrFail();
+        $this->assertNull($detail->isbn);
+        $this->assertSame('Example maker', $detail->manufacturer);
+        $this->assertCount(0, $detail->bookData->authors);
+        $this->assertNull($detail->periodicalIssue);
+    }
+
+    public function test_existing_issue_is_rejected_with_copy_guidance(): void
+    {
+        $title = BookData::create(['book_title' => 'Existing journal', 'language_id' => Language::query()->value('id')]);
+        $detail = BookDetail::create(['book_data_id' => $title->id, 'catalog_kind' => 'journal', 'format' => 'Journal', 'call_number' => 'TEST', 'book_type_id' => BookType::query()->value('id'), 'publisher_id' => Publisher::query()->value('id')]);
+        $detail->periodicalIssue()->create(['issue_number' => '2']);
+        \Livewire\Livewire::test(\App\Livewire\Forms\AddBookForm::class)
+            ->set('catalogKind', 'journal')->set('periodicalTitleId', $title->id)
+            ->set('accessionNumber', 'DUPLICATE-ISSUE')->set('issueNumber', '2')
+            ->call('submit')->assertHasErrors(['issueNumber'])->assertSee('Add another copy');
+        $this->assertDatabaseMissing('books', ['accession_number' => 'DUPLICATE-ISSUE']);
+    }
+
     public function test_physical_item_does_not_receive_book_metadata_defaults(): void
     {
         \Livewire\Livewire::test(\App\Livewire\Forms\AddBookForm::class)

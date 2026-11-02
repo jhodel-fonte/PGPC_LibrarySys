@@ -10,10 +10,22 @@
         <div class="relative z-10 flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-start sm:justify-between lg:shrink-0">
             <div class="flex min-w-0 items-start gap-3.5">
                 <div class="min-w-0 pl-0 sm:pl-2">
-                    <h1 class="text-xl font-bold tracking-[-0.02em] text-[#102B70] sm:text-2xl">Active Borrowers</h1>
+                    <h1 class="text-xl font-bold tracking-[-0.02em] text-[#102B70] sm:text-2xl">{{ $bookDetail ? 'Borrowing history' : 'Active Borrowers' }}</h1>
                     <p class="mt-0.5 max-w-2xl text-xs sm:text-sm font-medium text-slate-600">
-                        View and manage students with books currently on loan, check due dates, and review circulation history.
+                        @if($bookDetail)
+                            {{ $bookDetail->bookData?->book_title ?? 'Title unavailable' }} · All copies of this edition
+                        @else
+                            View and manage students with books currently on loan, check due dates, and review circulation history.
+                        @endif
                     </p>
+                    @if($bookDetail)
+                        <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold">
+                            <a href="{{ route($routePrefix . 'circulation-desk.borrowed-books') }}" wire:navigate class="text-[#102B70] underline underline-offset-2">Clear book filter</a>
+                            @can('viewAny', \App\Models\Book::class)
+                                @if(!$bookDetail->trashed())<a href="{{ route($routePrefix . 'book-management.index', ['detail' => $bookDetail->id]) }}" wire:navigate class="text-[#102B70] underline underline-offset-2">Back to book details</a>@endif
+                            @endcan
+                        </div>
+                    @endif
                 </div>
             </div>
 
@@ -122,7 +134,7 @@
                 @php
                     $student = $item->student;
                     $studentAccount = $student?->account;
-                    $fullName = $student ? "{$student->first_name} {$student->last_name}" : 'Student Member';
+                    $fullName = $student ? "{$student->first_name} {$student->last_name}" : 'Student unavailable';
                     $idNumber = $student?->school_id_number ?? '—';
                     $programInfo = $student ? trim(($student->program ?? '') . ($student->year_level ? " - Year {$student->year_level}" : '')) : '';
                     $initials = $student ? strtoupper(substr($student->first_name, 0, 1) . substr($student->last_name, 0, 1)) : 'ST';
@@ -131,7 +143,7 @@
                     $bDetail = $bBook?->bookDetail;
                     $bData = $bDetail?->bookData;
                     $bTitle = $bData?->book_title ?? 'Untitled Book';
-                    $bAccession = $bBook?->accession_number ?? ('ACC-' . str_pad($item->book_id, 4, '0', STR_PAD_LEFT));
+                    $bAccession = $bBook?->accession_number ?? 'Unavailable';
 
                     $isReturned = !empty($item->return_date);
                     $isOverdue = !$isReturned && $item->due_date && $item->due_date->isPast();
@@ -145,10 +157,10 @@
                     <td class="mobile-cell" colspan="6">
                         <article class="rounded-xl border border-slate-200 bg-white p-4 text-sm shadow-sm">
                             <div class="flex flex-wrap items-start justify-between gap-2">
-                                <div class="min-w-0"><p class="font-bold text-[#102B70] break-words">{{ $fullName }}</p><p class="text-xs text-slate-500 break-words">{{ $idNumber }} @if($programInfo) · {{ $programInfo }} @endif</p></div>
+                                <div class="min-w-0"><p class="font-bold text-[#102B70] break-words">{{ $fullName }} @if($student?->trashed()) <span class="text-slate-500">(deleted)</span> @endif</p><p class="text-xs text-slate-500 break-words">{{ $idNumber }} @if($programInfo) · {{ $programInfo }} @endif</p></div>
                                 <span class="rounded-full px-2.5 py-1 text-xs font-semibold {{ $isOverdue ? 'bg-red-50 text-red-700' : ($isReturned ? 'bg-slate-100 text-slate-600' : 'bg-emerald-50 text-emerald-700') }}">{{ $isReturned ? 'Returned' : ($isOverdue ? 'Overdue' : 'On Loan') }}</span>
                             </div>
-                            <p class="mt-3 font-semibold text-slate-900 break-words">{{ $bTitle }}</p><p class="text-xs text-slate-500 break-words">Accession: {{ $bAccession }}</p>
+                            <p class="mt-3 font-semibold text-slate-900 break-words">{{ $bTitle }}</p><p class="text-xs text-slate-500 break-words">Accession: {{ $bAccession }} @if($bBook?->trashed()) · Deleted copy @endif</p>
                             <div class="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-600"><p>Borrowed: {{ $item->issued_date?->format('M d, Y') ?? '—' }}</p><p>Due: {{ $item->due_date?->format('M d, Y') ?? '—' }}</p>@if($isReturned)<p>Returned: {{ $item->return_date?->format('M d, Y') }}</p>@endif</div>
                             <div class="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3">
                                 @if(!$isReturned)<a href="{{ route($routePrefix . 'circulation-desk.return', ['loan' => $item->id]) }}" wire:navigate class="rounded-lg bg-[#102B70] px-3 py-2 text-xs font-semibold text-white">Process Return</a>@endif
@@ -180,6 +192,7 @@
                                 @endif
                                 <div class="flex items-center gap-1.5 text-xs text-slate-500 font-medium truncate mt-0.5">
                                     <span class="font-mono">{{ $idNumber }}</span>
+                                    @if($student?->trashed())<span>· Deleted student</span>@endif
                                     @if($programInfo)
                                         <span>•</span>
                                         <span class="truncate">{{ $programInfo }}</span>
@@ -199,6 +212,7 @@
                                     <span class="font-mono text-[11px] font-semibold text-[#102B70] px-2 py-0.5 rounded-md">
                                         {{ $bAccession }}
                                     </span>
+                                    @if($bBook?->trashed())<span class="text-xs text-slate-500">Deleted copy</span>@endif
                                 </div>
                             </div>
                     </td>
@@ -225,7 +239,7 @@
                                     {{ $item->due_date ? $item->due_date->format('M d, Y') : '—' }}
                                 </span>
                                 <span class="text-xs text-emerald-600 font-medium mt-0.5">
-                                    Returned {{ $item->return_date ? $item->return_date->format('M d') : '' }}
+                                    Returned {{ $item->return_date ? $item->return_date->format('M d, Y') : '' }}
                                 </span>
                             </div>
                         @elseif($isOverdue)

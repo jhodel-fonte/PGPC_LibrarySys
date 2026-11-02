@@ -163,7 +163,9 @@ Outstanding loans are reminded once per due date, starting three calendar days b
 
 Run `php artisan migrate` after updating. The Laravel scheduler must run continuously (`php artisan schedule:work`), or run `php artisan schedule:run` every minute via cron. Docker Compose includes a scheduler service. A queue worker (`php artisan queue:work`) is also required for asynchronous delivery. To run the reminder check manually, use `php artisan loans:send-due-reminders`.
 
-Catalog spreadsheet imports are processed on the database queue. Run `php artisan queue:work database --timeout=1800` continuously (Docker Compose includes this worker). Canceling an import stops after the current row; catalog records already created remain in place. The database queue retry interval must exceed the worker timeout.
+Catalog and student imports use a dedicated database queue. Run both `php artisan queue:work database --timeout=1800` and `php artisan queue:work database --queue=imports --timeout=1800` continuously; Docker Compose includes both workers. The first worker must consume the configured `DB_QUEUE` used by notifications, and `QUEUE_CONNECTION` must match their worker connection. Canceling an import stops after the current row; catalog records already created remain in place. The database queue retry interval must exceed the worker timeout.
+
+For an existing systemd deployment, install `deploy/pgpc-lib-import-queue.service` and the updated `deploy/pgpc-lib.target` under `/etc/systemd/system`, run `sudo systemctl daemon-reload`, and start `pgpc-lib-import-queue.service` before restarting the existing queue worker with the updated application code. The management update command does not overwrite installed service definitions. Check both workers with `systemctl status pgpc-lib-queue pgpc-lib-import-queue`. Import jobs already waiting on the old queue will finish there; their new continuation jobs use `imports`.
 
 ### Reservation waitlist
 

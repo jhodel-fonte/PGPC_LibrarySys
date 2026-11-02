@@ -53,6 +53,12 @@ Route::get('/account/deactivated', function () {
 Route::redirect('/account-deactivated', '/account/deactivated');
 
 Route::middleware('auth')->group(function () {
+    Route::post('/account/password-recovery', function (\Illuminate\Http\Request $request) {
+        \Illuminate\Support\Facades\Auth::guard('web')->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+        return redirect()->route('password.request');
+    })->name('password.change.recovery');
     Route::get('/account/verify-contact/google', [\App\Http\Controllers\Auth\GoogleAuthController::class, 'verifyEmail'])->name('student.contact.google');
     Route::get('/account/verify-contact', \App\Livewire\Pages\Auth\VerifyContact::class)->name('student.contact.verify');
     Route::get('/account/setup', \App\Livewire\Pages\Auth\StudentSetup::class)->name('student.setup');

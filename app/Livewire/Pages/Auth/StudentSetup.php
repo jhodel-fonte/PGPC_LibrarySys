@@ -57,7 +57,7 @@ class StudentSetup extends Component
         $user = auth()->user();
         abort_unless($user?->isStudent() && ! $user->setup_email_required && $user->setup_password_prompt, 403);
         $this->validate(['password' => ['required', 'confirmed', Password::min(8)->letters()->mixedCase()->numbers()]]);
-        $user->forceFill(['password_hash' => Hash::make($this->password), 'password_changed_at' => now(), 'setup_password_prompt' => false])->save();
+        $user->forceFill(['password_hash' => Hash::make($this->password), 'password_changed_at' => now(), 'setup_password_prompt' => false, 'password_change_reminder' => false])->save();
         session()->regenerate();
         $this->redirectRoute('student.dashboard', navigate: false);
     }

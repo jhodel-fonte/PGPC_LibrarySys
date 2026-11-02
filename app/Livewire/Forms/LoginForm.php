@@ -154,6 +154,7 @@ class LoginForm extends Form
         ]);
 
         Auth::login($account, $this->remember);
+        session()->put('password_reminder_account', $account->password_change_reminder ? $account->id : null);
 
         RateLimiter::clear($this->throttleKey());
     }

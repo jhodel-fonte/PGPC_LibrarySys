@@ -4,6 +4,7 @@ namespace App\Livewire\Pages\Dashboard;
 
 use App\Models\Book;
 use App\Models\BookDetail as BookDetailModel;
+use App\Models\BorrowingTransaction;
 use Linkxtr\QrCode\Facades\QrCode;
 use Livewire\Attributes\On;
 use Livewire\Component;
@@ -115,7 +116,12 @@ class BookDetail extends Component
                 'publisher',
                 'bookType',
                 'periodicalIssue',
-                'books' => fn ($q) => $q->whereNull('deleted_at')->with('condition'),
+                'books' => fn ($q) => $q->whereNull('deleted_at')->with('condition')
+                    ->when(auth()->user()?->can('viewAny', Book::class), fn ($query) => $query->addSelect([
+                        'last_return_condition_note' => BorrowingTransaction::select('return_condition_note')
+                            ->whereColumn('book_id', 'books.id')->whereNotNull('return_date')
+                            ->orderByDesc('return_date')->orderByDesc('id')->limit(1),
+                    ])),
             ])->find($this->bookDetailId)
             : null;
 

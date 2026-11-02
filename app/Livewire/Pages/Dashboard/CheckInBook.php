@@ -368,7 +368,7 @@ class CheckInBook extends Component
             $overdueDays = 0;
             if ($t->due_date && Carbon::now()->isAfter($t->due_date)) {
                 $isOverdue = true;
-                $overdueDays = Carbon::now()->diffInDays($t->due_date);
+                $overdueDays = app(\App\Services\FineService::class)->overdueDays($t->due_date);
             }
 
             return [

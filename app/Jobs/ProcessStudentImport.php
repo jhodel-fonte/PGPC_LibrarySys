@@ -20,7 +20,10 @@ class ProcessStudentImport implements ShouldQueue
     public int $tries = 1;
     public int $timeout = 300;
 
-    public function __construct(public int $importId) {}
+    public function __construct(public int $importId)
+    {
+        $this->onQueue('imports');
+    }
 
     public function handle(): void
     {
@@ -46,9 +49,9 @@ class ProcessStudentImport implements ShouldQueue
                     }
                     $account = Account::create(['role_id' => $role, 'status_id' => $status, 'username' => $username,
                         'email' => $email, 'password_hash' => Hash::make($credentials['password']),
-                        'password_changed_at' => $credentials['force_change'] ? null : now(), 'is_email_verified' => false]);
+                        'password_changed_at' => $credentials['force_change'] ? null : now(), 'password_change_reminder' => $credentials['force_change'], 'is_email_verified' => false]);
                     if (! $email) {
-                        $account->forceFill(['setup_email_required' => true, 'setup_password_prompt' => true])->save();
+                        $account->forceFill(['setup_email_required' => true])->save();
                     }
                     Student::create(array_merge(collect($data)->only(['school_id_number', 'first_name', 'middle_name', 'last_name', 'program', 'year_level', 'contact_num', 'gender', 'date_of_birth'])->all(),
                         ['account_id' => $account->id, 'library_status_id' => $libraryStatus]));

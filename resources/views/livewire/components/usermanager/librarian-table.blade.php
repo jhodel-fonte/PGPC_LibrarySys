@@ -322,11 +322,11 @@
                                 <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Role</span>
                                 <div class="mt-0.5">
                                     @if($user->role?->name === 'Head Librarian')
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-[#EFF6FF] text-[#102B70] border border-[#BFDBFE]">
+                                        <span class="text-[11px] font-semibold text-[#102B70]">
                                             Head Librarian
                                         </span>
                                     @else
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]">
+                                        <span class="text-[11px] font-semibold text-slate-700">
                                             Librarian
                                         </span>
                                     @endif
@@ -336,20 +336,20 @@
                             <div x-show="cols['status'] !== false">
                                 <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Status</span>
                                 @if($isTrashed)
-                                    <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+                                    <span class="text-[11px] font-semibold text-rose-700">
                                         Deleted
                                     </span>
                                 @else
                                     @php
                                         $statusName = $user->status?->status_name ?? 'Unknown';
                                         $statusClass = match(strtolower($statusName)) {
-                                            'active' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
-                                            'locked', 'suspended' => 'bg-red-50 text-red-700 border-red-200',
-                                            'pending' => 'bg-amber-50 text-amber-700 border-amber-200',
-                                            default => 'bg-slate-100 text-slate-600 border-slate-200'
+                                            'active' => 'text-emerald-700',
+                                            'locked', 'suspended' => 'text-red-700',
+                                            'pending' => 'text-amber-700',
+                                            default => 'text-slate-600'
                                         };
                                     @endphp
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border {{ $statusClass }}">
+                                    <span class="text-[11px] font-semibold {{ $statusClass }}">
                                         {{ $statusName }}
                                     </span>
                                 @endif
@@ -407,11 +407,11 @@
                 <!-- ROLE / DESIGNATION (Desktop) -->
                 <td x-show="cols['role'] !== false" class="desktop-cell px-6 py-4 align-middle">
                     @if($user->role?->name === 'Head Librarian')
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#EFF6FF] text-[#102B70] border border-[#BFDBFE]">
+                        <span class="text-xs font-semibold text-[#102B70]">
                             Head Librarian
                         </span>
                     @else
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]">
+                        <span class="text-xs font-semibold text-slate-700">
                             Librarian
                         </span>
                     @endif
@@ -425,21 +425,20 @@
                 <!-- ACCOUNT STATUS (Desktop) -->
                 <td x-show="cols['status'] !== false" class="desktop-cell px-6 py-4 align-middle">
                     @if($isTrashed)
-                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
-                            <span class="h-1.5 w-1.5 rounded-full bg-rose-500"></span>
+                        <span class="text-xs font-semibold text-rose-700">
                             Deleted
                         </span>
                     @else
                         @php
                             $statusName = $user->status?->status_name ?? 'Unknown';
                             $statusClass = match(strtolower($statusName)) {
-                                'active' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
-                                'locked', 'suspended' => 'bg-red-50 text-red-700 border-red-200',
-                                'pending' => 'bg-amber-50 text-amber-700 border-amber-200',
-                                default => 'bg-slate-100 text-slate-600 border-slate-200'
+                                'active' => 'text-emerald-700',
+                                'locked', 'suspended' => 'text-red-700',
+                                'pending' => 'text-amber-700',
+                                default => 'text-slate-600'
                             };
                         @endphp
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border {{ $statusClass }}">
+                        <span class="text-xs font-semibold {{ $statusClass }}">
                             {{ $statusName }}
                         </span>
                     @endif

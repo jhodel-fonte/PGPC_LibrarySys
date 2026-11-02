@@ -59,6 +59,7 @@
         });
     </script>
 
+    @auth <livewire:components.change-password /> @endauth
     @livewireScripts
 </body>
 

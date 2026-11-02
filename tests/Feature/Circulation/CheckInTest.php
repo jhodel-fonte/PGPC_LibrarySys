@@ -117,6 +117,33 @@ class CheckInTest extends TestCase
             ->assertCount('borrowedBooks', 1);
     }
 
+    public function test_overdue_days_are_whole_calendar_days(): void
+    {
+        $this->travelTo(now()->startOfDay()->addHours(12));
+        $this->transaction->update(['due_date' => now()->subDays(3)->addHours(2)]);
+        Livewire::actingAs($this->librarian)->test(CheckInBook::class)
+            ->call('handleSearchCode', '2026-0001')
+            ->assertSet('borrowedBooks.0.overdue_days', 3);
+    }
+
+    public function test_return_failure_hides_database_details_and_rolls_back(): void
+    {
+        session(['confirm_return_student_id' => $this->student->id, 'confirm_return_transaction_ids' => [$this->transaction->id]]);
+        \Illuminate\Support\Facades\DB::listen(function ($query) {
+            if (str_contains(strtolower($query->sql), 'update "borrowing_transactions"')) {
+                throw new \RuntimeException('secret SQL database details');
+            }
+        });
+
+        Livewire::actingAs($this->librarian)->test(\App\Livewire\Pages\Dashboard\ConfirmReturn::class)
+            ->set('returnConditions.'.$this->transaction->id, 2)->call('confirmReturn')
+            ->assertSet('errorMessage', 'The return could not be completed. No changes were saved. Please try again or contact the system administrator.')
+            ->assertDontSee('secret SQL database details')->assertDispatched('return-failed');
+
+        $this->assertNull($this->transaction->fresh()->return_date);
+        $this->assertSame('borrowed', $this->book->fresh()->status);
+    }
+
     public function test_scan_book_adds_to_returned_queue(): void
     {
         Livewire::actingAs($this->librarian)
@@ -158,10 +185,12 @@ class CheckInTest extends TestCase
 
         Livewire::actingAs($this->librarian)
             ->test(\App\Livewire\Pages\Dashboard\ConfirmReturn::class)
+            ->set('returnConditions.'.$this->transaction->id, 2)
             ->call('confirmReturn')
             ->assertDispatched('return-completed', redirectUrl: route('librarian.circulation-desk.return'));
 
         $this->assertNotNull($this->transaction->fresh()->return_date);
+        $this->assertSame(2, $this->transaction->fresh()->return_condition_id);
         $this->assertSame('available', $this->book->fresh()->status);
     }
 
@@ -173,6 +202,7 @@ class CheckInTest extends TestCase
 
         Livewire::actingAs($this->librarian)->test(\App\Livewire\Pages\Dashboard\ConfirmReturn::class)
             ->assertSet('totalFine', 0)
+            ->set('returnConditions.'.$this->transaction->id, 2)
             ->call('confirmReturn')
             ->assertDispatched('return-completed');
 
@@ -201,10 +231,112 @@ class CheckInTest extends TestCase
 
         Livewire::actingAs($this->librarian)
             ->test(\App\Livewire\Pages\Dashboard\ConfirmReturn::class)
+            ->set('returnConditions.'.$this->transaction->id, 2)
             ->call('confirmReturn')
             ->assertDispatched('return-failed');
 
         $this->assertNull($this->transaction->fresh()->return_date);
         $this->assertSame('borrowed', $this->book->fresh()->status);
+    }
+
+    public function test_damaged_return_records_condition_and_is_not_available(): void
+    {
+        $damaged = BookCondition::firstOrCreate(['status' => 'Damaged']);
+        session(['confirm_return_student_id' => $this->student->id, 'confirm_return_transaction_ids' => [$this->transaction->id]]);
+        Livewire::actingAs($this->librarian)->test(\App\Livewire\Pages\Dashboard\ConfirmReturn::class)
+            ->set('returnConditions.'.$this->transaction->id, $damaged->id)
+            ->set('returnNotes.'.$this->transaction->id, 'Back cover torn')
+            ->call('confirmReturn')->assertDispatched('return-completed');
+        $this->assertSame($damaged->id, $this->transaction->fresh()->return_condition_id);
+        $this->assertSame('Back cover torn', $this->transaction->fresh()->return_condition_note);
+        $this->assertSame($damaged->id, $this->book->fresh()->book_condition_id);
+        $this->assertSame('damaged', $this->book->fresh()->status);
+    }
+
+    public function test_damaged_return_requires_a_comment_and_saves_nothing_on_failure(): void
+    {
+        $damaged = BookCondition::firstOrCreate(['status' => 'Damaged']);
+        session(['confirm_return_student_id' => $this->student->id, 'confirm_return_transaction_ids' => [$this->transaction->id]]);
+        Livewire::actingAs($this->librarian)->test(\App\Livewire\Pages\Dashboard\ConfirmReturn::class)
+            ->set('returnConditions.'.$this->transaction->id, $damaged->id)
+            ->set('returnNotes.'.$this->transaction->id, '   ')
+            ->call('confirmReturn')->assertHasErrors(['returnNotes.'.$this->transaction->id]);
+        $this->assertNull($this->transaction->fresh()->return_condition_note);
+        $this->assertNull($this->transaction->fresh()->return_date);
+        $this->assertSame('borrowed', $this->book->fresh()->status);
+    }
+
+    public function test_good_return_allows_an_optional_comment_and_hides_it_from_serialization(): void
+    {
+        session(['confirm_return_student_id' => $this->student->id, 'confirm_return_transaction_ids' => [$this->transaction->id]]);
+        Livewire::actingAs($this->librarian)->test(\App\Livewire\Pages\Dashboard\ConfirmReturn::class)
+            ->set('returnConditions.'.$this->transaction->id, 2)
+            ->set('returnNotes.'.$this->transaction->id, 'Minor scuff')
+            ->call('confirmReturn')->assertDispatched('return-completed');
+        $this->assertSame('Minor scuff', $this->transaction->fresh()->return_condition_note);
+        $this->assertArrayNotHasKey('return_condition_note', $this->transaction->fresh()->toArray());
+    }
+
+    public function test_multiple_return_comments_stay_with_their_own_loans(): void
+    {
+        $secondBook = $this->book->replicate();
+        $secondBook->accession_number = 'ACC-997';
+        $secondBook->code = 'BAR-997';
+        $secondBook->save();
+        $secondLoan = $this->transaction->replicate();
+        $secondLoan->book_id = $secondBook->id;
+        $secondLoan->save();
+        $damaged = BookCondition::firstOrCreate(['status' => 'Damaged']);
+        session(['confirm_return_student_id' => $this->student->id, 'confirm_return_transaction_ids' => [$this->transaction->id, $secondLoan->id]]);
+
+        Livewire::actingAs($this->librarian)->test(\App\Livewire\Pages\Dashboard\ConfirmReturn::class)
+            ->set('returnConditions.'.$this->transaction->id, 2)
+            ->set('returnNotes.'.$this->transaction->id, 'Minor scuff')
+            ->set('returnConditions.'.$secondLoan->id, $damaged->id)
+            ->set('returnNotes.'.$secondLoan->id, 'Torn cover')
+            ->call('confirmReturn')->assertDispatched('return-completed');
+        $this->assertSame('Minor scuff', $this->transaction->fresh()->return_condition_note);
+        $this->assertSame('Torn cover', $secondLoan->fresh()->return_condition_note);
+    }
+
+    public function test_return_requires_a_valid_condition(): void
+    {
+        session(['confirm_return_student_id' => $this->student->id, 'confirm_return_transaction_ids' => [$this->transaction->id]]);
+        Livewire::actingAs($this->librarian)->test(\App\Livewire\Pages\Dashboard\ConfirmReturn::class)
+            ->call('confirmReturn')->assertHasErrors(['returnConditions']);
+        $this->assertNull($this->transaction->fresh()->return_date);
+        $this->assertSame('borrowed', $this->book->fresh()->status);
+    }
+
+    public function test_active_loan_cannot_be_made_available_by_editing_the_copy(): void
+    {
+        $this->expectException(\Illuminate\Validation\ValidationException::class);
+        $this->book->validateCopyState(2, 'available');
+    }
+
+    public function test_multiple_returns_require_a_condition_for_each_copy(): void
+    {
+        $secondBook = $this->book->replicate();
+        $secondBook->accession_number = 'ACC-998';
+        $secondBook->code = 'BAR-998';
+        $secondBook->save();
+        $secondLoan = $this->transaction->replicate();
+        $secondLoan->book_id = $secondBook->id;
+        $secondLoan->save();
+        session(['confirm_return_student_id' => $this->student->id, 'confirm_return_transaction_ids' => [$this->transaction->id, $secondLoan->id]]);
+
+        Livewire::actingAs($this->librarian)->test(\App\Livewire\Pages\Dashboard\ConfirmReturn::class)
+            ->set('returnConditions.'.$this->transaction->id, 2)->call('confirmReturn')
+            ->assertHasErrors(['returnConditions.'.$secondLoan->id]);
+        $this->assertNull($this->transaction->fresh()->return_date);
+        $this->assertNull($secondLoan->fresh()->return_date);
+    }
+
+    public function test_damaged_copy_cannot_be_marked_available(): void
+    {
+        $damaged = BookCondition::firstOrCreate(['status' => 'Damaged']);
+        $this->transaction->update(['return_date' => now()]);
+        $this->expectException(\Illuminate\Validation\ValidationException::class);
+        $this->book->validateCopyState($damaged->id, 'available');
     }
 }

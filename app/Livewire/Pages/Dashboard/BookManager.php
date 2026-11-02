@@ -244,14 +244,15 @@ class BookManager extends Component
 
     public function saveCopy()
     {
-        if (auth()->check() && !auth()->user()->can('update', Book::class)) {
+        if (!auth()->user()?->can('update', Book::class)) {
             abort(403, 'Unauthorized action. You do not have permission to update book copies.');
         }
 
         $this->validate();
 
-        $book = Book::find($this->editingBookId);
-        if ($book) {
+        \Illuminate\Support\Facades\DB::transaction(function () {
+            $book = Book::lockForUpdate()->findOrFail($this->editingBookId);
+            $book->validateCopyState((int) $this->editConditionId, $this->editStatus, 'editStatus');
             $book->update([
                 'code' => trim($this->editCode) ?: null,
                 'location' => trim($this->editLocation) ?: null,
@@ -261,18 +262,18 @@ class BookManager extends Component
 
             $this->dispatch('toast', message: 'Book copy "' . $book->accession_number . '" updated successfully.', type: 'success');
             $this->closeEditModal();
-        }
+        });
     }
 
     public function markCondition($bookId, $conditionId)
     {
-        if (auth()->check() && !auth()->user()->can('update', Book::class)) {
+        if (!auth()->user()?->can('update', Book::class)) {
             abort(403, 'Unauthorized action. You do not have permission to update book condition.');
         }
 
-        $book = Book::find($bookId);
-        if ($book) {
-            $condition = BookCondition::find($conditionId);
+        \Illuminate\Support\Facades\DB::transaction(function () use ($bookId, $conditionId) {
+            $book = Book::lockForUpdate()->findOrFail($bookId);
+            $condition = BookCondition::findOrFail($conditionId);
             $condName = $condition ? $condition->status : 'Condition';
 
             $newStatus = $book->status;
@@ -282,13 +283,14 @@ class BookManager extends Component
                 $newStatus = 'lost';
             }
 
+            $book->validateCopyState((int) $conditionId, $newStatus);
             $book->update([
                 'book_condition_id' => $conditionId,
                 'status' => $newStatus,
             ]);
 
             $this->dispatch('toast', message: 'Copy "' . $book->accession_number . '" marked as ' . $condName . '.', type: 'info');
-        }
+        });
     }
 
     public function deleteCopy($bookId): void
@@ -377,22 +379,25 @@ class BookManager extends Component
     {
         if (empty($this->selectedCopies) || empty($this->bulkConditionId)) return;
 
-        if (auth()->check() && !auth()->user()->can('update', Book::class)) {
+        if (!auth()->user()?->can('update', Book::class)) {
             abort(403, 'Unauthorized action. You do not have permission to update book copies.');
         }
 
         $count = count($this->selectedCopies);
+        $this->validate(['bulkConditionId' => ['required', 'integer', 'exists:book_conditions,id']]);
         $newStatus = match((int)$this->bulkConditionId) {
             4 => 'damaged',
             5 => 'lost',
-            default => 'available'
+            default => null
         };
 
         \Illuminate\Support\Facades\DB::transaction(function () use ($newStatus) {
-            foreach (Book::whereIn('id', $this->selectedCopies)->get() as $book) {
+            foreach (Book::whereIn('id', $this->selectedCopies)->orderBy('id')->lockForUpdate()->get() as $book) {
+                $status = $newStatus ?? $book->status;
+                $book->validateCopyState((int) $this->bulkConditionId, $status, 'bulkConditionId');
                 $book->update([
                     'book_condition_id' => $this->bulkConditionId,
-                    'status' => $book->status === 'borrowed' ? 'borrowed' : $newStatus,
+                    'status' => $status,
                 ]);
             }
         });

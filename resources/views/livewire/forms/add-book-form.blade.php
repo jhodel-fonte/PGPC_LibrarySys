@@ -13,7 +13,7 @@
     <div class="col-span-1 lg:col-span-12 flex flex-wrap items-end justify-between gap-3">
         <div>
             <h1 class=" text-2xl font-bold text-[#102B70] sm:text-3xl">Add a catalog item</h1>
-            <p class="mt-1 text-sm text-slate-700">Choose an item type, then enter its catalog and copy details.</p>
+            <p class="mt-1 text-sm text-slate-700">Choose an item type, then enter its catalog and copy details. Fields marked * are required.</p>
         </div>
         <span class="rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-semibold text-[#102B70]">{{ $itemLabel }}</span>
     </div>
@@ -56,16 +56,17 @@
 
             <!-- Accession Number -->
             <div class="space-y-1.5">
-                <label class="text-[0.9375rem] font-semibold text-slate-900">
-                    Accession Number
+                <label for="catalog-accession" class="text-[0.9375rem] font-semibold text-slate-900">
+                    Accession Number <span aria-hidden="true" class="text-red-700">*</span>
                 </label>
                 <input
                     wire:model="accessionNumber"
+                    id="catalog-accession" aria-required="true" @error('accessionNumber') aria-invalid="true" aria-describedby="accession-error" @enderror
                     type="text"
                     placeholder="Required"
                     class="w-full h-12 px-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-600 outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all"
                 >
-                @error('accessionNumber') <span class="text-xs font-semibold text-[#EF4444]">{{ $message }}</span> @enderror
+                @error('accessionNumber') <span id="accession-error" role="alert" class="text-xs font-semibold text-[#EF4444]">{{ $message }}</span> @enderror
             </div>
 
             <!-- Barcode with inline Generate button -->
@@ -91,10 +92,11 @@
 
             <!-- Status -->
             <div class="space-y-1.5">
-                <label class="text-[0.9375rem] font-semibold text-slate-900">Status</label>
+                <label for="catalog-status" class="text-[0.9375rem] font-semibold text-slate-900">Status <span aria-hidden="true" class="text-red-700">*</span></label>
                 <div class="relative">
                     <select
                         wire:model="status"
+                        id="catalog-status" aria-required="true"
                         class="w-full h-12 px-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all appearance-none cursor-pointer"
                     >
                         <option value="Available">Available</option>
@@ -311,7 +313,7 @@
         @endif
 
         @if($catalogKind === 'book')
-        <!-- ISBN & ISSN Row -->
+        <!-- ISBN -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div class="space-y-1.5">
                 <label class="text-[0.9375rem] font-semibold text-slate-900" for="catalog-isbn">ISBN</label>
@@ -344,33 +346,24 @@
                     <p role="status" class="text-sm font-medium text-emerald-700">{{ $isbnLookupSuccess }}</p>
                 @endif
             </div>
-            <div class="space-y-1.5">
-                <label class="text-[0.9375rem] font-semibold text-slate-900">ISSN</label>
-                <input
-                    wire:model="issn"
-                    type="text"
-                    placeholder="Optional"
-                    class="w-full h-12 px-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-600 outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all"
-                >
-                @error('issn') <span class="text-xs font-semibold text-[#EF4444]">{{ $message }}</span> @enderror
-            </div>
         </div>
 
         @endif
 
         <!-- Title / Item Name -->
         <div class="space-y-1.5">
-            <label class="text-[0.9375rem] font-semibold text-slate-900">
+            <label for="catalog-title" class="text-[0.9375rem] font-semibold text-slate-900">
                 {{ $catalogKind === 'equipment' ? 'Item Name' : $itemLabel.' Title' }} <span class="text-[#EF4444] font-bold">*</span>
             </label>
             <input
                 wire:model="bookTitle"
+                id="catalog-title" aria-required="true" @error('bookTitle') aria-invalid="true" aria-describedby="catalog-title-error" @enderror
                 type="text"
                 @readonly($isPeriodical && $periodicalTitleId)
                 placeholder="{{ $catalogKind === 'equipment' ? 'Enter the name of the physical item' : 'Enter the '.strtolower($itemLabel).' title' }}"
                 class="w-full h-12 px-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-600 outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all"
             >
-            @error('bookTitle') <span class="text-xs font-semibold text-[#EF4444]">{{ $message }}</span> @enderror
+            @error('bookTitle') <span id="catalog-title-error" role="alert" class="text-xs font-semibold text-[#EF4444]">{{ $message }}</span> @enderror
         </div>
 
         @if(!$isPeriodical || !$periodicalTitleId)
@@ -505,7 +498,7 @@
              @click.outside="isOpen = false"
         >
             <div class="flex items-center justify-between">
-                <label class="text-[0.9375rem] font-semibold text-slate-900">
+                <label for="catalog-author" class="text-[0.9375rem] font-semibold text-slate-900">
                     Author <span class="text-[#EF4444] font-bold">*</span>
                 </label>
                 <button
@@ -527,6 +520,7 @@
                     </div>
 
                     <input
+                        id="catalog-author" aria-required="true" @error('authorSearch') aria-invalid="true" @enderror
                         type="text"
                         x-model="query"
                         @input="searchAuthors()"
@@ -725,6 +719,8 @@
             />
         </div>
 
+        <details class="rounded-lg border border-slate-200 p-4" @if($errors->hasAny(['publicationYear', 'copyrightYear', 'edition', 'pages'])) open @endif>
+        <summary class="cursor-pointer text-sm font-semibold text-slate-900">Additional publication details (optional)</summary>
         <!-- Publication Year, Copyright Year, Edition, Pages Row -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             <div class="space-y-1.5">
@@ -768,6 +764,7 @@
                 @error('pages') <span class="text-xs font-semibold text-[#EF4444]">{{ $message }}</span> @enderror
             </div>
         </div>
+        </details>
 
         <!-- Categories & Language Multi-Select Comboboxes Row -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
