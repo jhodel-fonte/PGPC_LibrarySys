@@ -5,6 +5,7 @@ APP_DIR=/opt/pgpc-lib
 BACKUP_DIR=/var/backups/pgpc-lib
 PHP=/usr/bin/php8.4
 QUEUE=pgpc-lib-queue.service
+IMPORT_QUEUE=pgpc-lib-import-queue.service
 SCHEDULER=pgpc-lib-scheduler.service
 TARGET=pgpc-lib.target
 FPM=php8.4-fpm.service
@@ -41,7 +42,7 @@ git_cmd() { repo_command git -c "safe.directory=$APP_DIR" "$@"; }
 show_status() {
     local unit
     echo
-    for unit in "$TARGET" "$QUEUE" "$SCHEDULER" "$FPM" nginx.service; do
+    for unit in "$TARGET" "$QUEUE" "$IMPORT_QUEUE" "$SCHEDULER" "$FPM" nginx.service; do
         printf '%-30s active=%-12s boot=%s\n' "$unit" "$(systemctl is-active "$unit" 2>/dev/null || true)" "$(systemctl is-enabled "$unit" 2>/dev/null || true)"
     done
     echo
@@ -64,14 +65,14 @@ stop_stack() {
     echo 'Putting PGPC Library into maintenance mode; shared Nginx and PHP-FPM remain running.'
     artisan down --no-ansi || return 1
     echo 'Stopping scheduler and queue. The current queue job may take up to 30 minutes to finish.'
-    systemctl stop "$SCHEDULER" "$QUEUE" "$TARGET" || return 1
+    systemctl stop "$SCHEDULER" "$QUEUE" "$IMPORT_QUEUE" "$TARGET" || return 1
     echo 'PGPC Library is in maintenance mode and its workers are stopped.'
 }
 
 start_stack() {
     require_app || return 1
     systemctl start "$TARGET" || return 1
-    systemctl start "$QUEUE" "$SCHEDULER" || return 1
+    systemctl start "$QUEUE" "$IMPORT_QUEUE" "$SCHEDULER" || return 1
     artisan up --no-ansi || return 1
     echo 'PGPC Library stack started and maintenance mode cleared.'
 }
@@ -102,7 +103,7 @@ server_menu() {
 }
 
 update_application() {
-    local upstream target head branch changes before_down path queue_was_active=0 scheduler_was_active=0 fpm_was_active=0
+    local upstream target head branch changes before_down path queue_was_active=0 import_queue_was_active=0 scheduler_was_active=0 fpm_was_active=0
     require_app || return 1
     [[ -d "$APP_DIR/.git" ]] || { echo 'This update requires a normal Git checkout in /opt/pgpc-lib.'; return 1; }
     repo_owner=$(stat -c '%U' "$APP_DIR/.git") || return 1
@@ -142,12 +143,14 @@ update_application() {
     before_down=$(helper maintenance) || { echo 'Cannot determine maintenance state.'; return 1; }
     [[ "$before_down" == up || "$before_down" == down ]] || { echo 'Unexpected maintenance state.'; return 1; }
     systemctl is-active --quiet "$QUEUE" && queue_was_active=1
+    systemctl is-active --quiet "$IMPORT_QUEUE" && import_queue_was_active=1
     systemctl is-active --quiet "$SCHEDULER" && scheduler_was_active=1
     systemctl is-active --quiet "$FPM" && fpm_was_active=1
     if [[ "$before_down" == up ]]; then artisan down --no-ansi || return 1; fi
     echo 'Waiting for active queue work to finish...'
     if [[ $scheduler_was_active == 1 ]]; then systemctl stop "$SCHEDULER" || return 1; fi
     if [[ $queue_was_active == 1 ]]; then systemctl stop "$QUEUE" || return 1; fi
+    if [[ $import_queue_was_active == 1 ]]; then systemctl stop "$IMPORT_QUEUE" || return 1; fi
     git_cmd merge --ff-only "$target" || return 1
     repo_command env COMPOSER_ALLOW_SUPERUSER=1 "$PHP" "$(command -v composer)" install --no-interaction --no-dev --optimize-autoloader --no-scripts || return 1
     runuser -u www-data -- rm -f -- "$APP_DIR/bootstrap/cache/config.php" "$APP_DIR/bootstrap/cache/services.php" "$APP_DIR/bootstrap/cache/packages.php" || return 1
@@ -164,6 +167,7 @@ update_application() {
     artisan view:cache --no-ansi || return 1
     if [[ $fpm_was_active == 1 ]]; then systemctl reload "$FPM" || return 1; fi
     if [[ $queue_was_active == 1 ]]; then systemctl start "$QUEUE" || return 1; fi
+    if [[ $import_queue_was_active == 1 ]]; then systemctl start "$IMPORT_QUEUE" || return 1; fi
     if [[ $scheduler_was_active == 1 ]]; then systemctl start "$SCHEDULER" || return 1; fi
     if [[ "$before_down" == up ]]; then artisan up --no-ansi || return 1; fi
     echo 'Update completed. Check system health and application logs. Review any changed deploy files against the installed system configuration.'
@@ -206,6 +210,7 @@ edit_environment() {
     echo 'Applying settings to long-running workers may wait up to 30 minutes. PHP-FPM reload may affect other sites.'
     if confirm 'Restart active PGPC workers and reload PHP-FPM now?'; then
         if systemctl is-active --quiet "$QUEUE"; then systemctl restart "$QUEUE" || return 1; fi
+        if systemctl is-active --quiet "$IMPORT_QUEUE"; then systemctl restart "$IMPORT_QUEUE" || return 1; fi
         if systemctl is-active --quiet "$SCHEDULER"; then systemctl restart "$SCHEDULER" || return 1; fi
         systemctl reload "$FPM" || return 1
     else
@@ -245,7 +250,7 @@ create_backup() {
     cp -p -- "$APP_DIR/.env" "$STAGING_DIR/.env" || { cleanup_staging; STAGING_DIR=; return 1; }
     mkdir -p "$STAGING_DIR/storage" || { cleanup_staging; STAGING_DIR=; return 1; }
     cp -a -- "$APP_DIR/storage/app" "$STAGING_DIR/storage/" || { echo 'Could not copy uploaded files.'; cleanup_staging; STAGING_DIR=; return 1; }
-    for path in /etc/nginx/sites-available/pgpc-lib /etc/systemd/system/pgpc-lib.target /etc/systemd/system/pgpc-lib-queue.service /etc/systemd/system/pgpc-lib-scheduler.service /etc/php/8.4/fpm/conf.d/99-pgpc-lib.ini; do
+    for path in /etc/nginx/sites-available/pgpc-lib /etc/systemd/system/pgpc-lib.target /etc/systemd/system/pgpc-lib-queue.service /etc/systemd/system/pgpc-lib-import-queue.service /etc/systemd/system/pgpc-lib-scheduler.service /etc/php/8.4/fpm/conf.d/99-pgpc-lib.ini; do
         if [[ -f "$path" ]]; then mkdir -p "$STAGING_DIR/server$(dirname "$path")" && cp -p -- "$path" "$STAGING_DIR/server$path" || { cleanup_staging; STAGING_DIR=; return 1; }; fi
     done
     if ! tar -czf "$STAGING_DIR/backup.tar.gz" --exclude='./backup.tar.gz' -C "$STAGING_DIR" . || ! tar -tzf "$STAGING_DIR/backup.tar.gz" >/dev/null; then
@@ -285,10 +290,10 @@ queue_menu() {
         echo; echo 'Queue and scheduler: 1 Status  2 Start queue  3 Stop queue  4 Restart queue  5 Start scheduler  6 Stop scheduler  7 Restart scheduler  8 Failed jobs  9 Retry one job  0 Back'
         read -r -p 'Choose: ' choice || return
         case "$choice" in
-            1) systemctl --no-pager --full status "$QUEUE" "$SCHEDULER" || true ;;
-            2) confirm 'Start the queue worker?' && systemctl start "$QUEUE" ;;
-            3) echo 'A running job may take up to 30 minutes to finish.'; confirm 'Stop the queue worker?' && systemctl stop "$QUEUE" ;;
-            4) echo 'A running job may take up to 30 minutes to finish.'; confirm 'Restart the queue worker?' && systemctl restart "$QUEUE" ;;
+            1) systemctl --no-pager --full status "$QUEUE" "$IMPORT_QUEUE" "$SCHEDULER" || true ;;
+            2) confirm 'Start both queue workers?' && systemctl start "$QUEUE" "$IMPORT_QUEUE" ;;
+            3) echo 'A running job may take up to 30 minutes to finish.'; confirm 'Stop both queue workers?' && systemctl stop "$QUEUE" "$IMPORT_QUEUE" ;;
+            4) echo 'A running job may take up to 30 minutes to finish.'; confirm 'Restart both queue workers?' && systemctl restart "$QUEUE" "$IMPORT_QUEUE" ;;
             5) confirm 'Start the scheduler?' && systemctl start "$SCHEDULER" ;;
             6) echo 'Stopping the scheduler can interrupt scheduled work.'; confirm 'Stop the scheduler?' && systemctl stop "$SCHEDULER" ;;
             7) echo 'Restarting the scheduler can interrupt scheduled work.'; confirm 'Restart the scheduler?' && systemctl restart "$SCHEDULER" ;;
@@ -330,7 +335,7 @@ logs_menu() {
         read -r -p 'Choose: ' choice || return
         case "$choice" in
             1) if [[ -f "$APP_DIR/storage/logs/laravel.log" ]]; then tail -n 100 "$APP_DIR/storage/logs/laravel.log"; else echo 'No laravel.log found; check for daily log files.'; fi ;;
-            2) journalctl --no-pager -u "$QUEUE" -n 100 ;;
+            2) journalctl --no-pager -u "$QUEUE" -u "$IMPORT_QUEUE" -n 100 ;;
             3) journalctl --no-pager -u "$SCHEDULER" -n 100 ;;
             4) journalctl --no-pager -u nginx.service -n 100 ;;
             5) journalctl --no-pager -u "$FPM" -n 100 ;;

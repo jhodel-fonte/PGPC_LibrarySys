@@ -52,6 +52,7 @@ PHPINI
 install -m 644 deploy/pgpc-lib-nginx.conf /etc/nginx/sites-available/pgpc-lib
 ln -sfn /etc/nginx/sites-available/pgpc-lib /etc/nginx/sites-enabled/pgpc-lib
 install -m 644 deploy/pgpc-lib-queue.service /etc/systemd/system/pgpc-lib-queue.service
+install -m 644 deploy/pgpc-lib-import-queue.service /etc/systemd/system/pgpc-lib-import-queue.service
 install -m 644 deploy/pgpc-lib-scheduler.service /etc/systemd/system/pgpc-lib-scheduler.service
 install -m 644 deploy/pgpc-lib.target /etc/systemd/system/pgpc-lib.target
 nginx -t

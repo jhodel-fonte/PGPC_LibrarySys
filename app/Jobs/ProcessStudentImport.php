@@ -20,7 +20,10 @@ class ProcessStudentImport implements ShouldQueue
     public int $tries = 1;
     public int $timeout = 300;
 
-    public function __construct(public int $importId) {}
+    public function __construct(public int $importId)
+    {
+        $this->onQueue('imports');
+    }
 
     public function handle(): void
     {

@@ -34,7 +34,9 @@ class ProcessCatalogImportJob implements ShouldQueue
         public int $catalogImportId,
         public ?int $userId = null,
         public ?string $actionUrl = null
-    ) {}
+    ) {
+        $this->onQueue('imports');
+    }
 
     /**
      * Execute the job in the background.

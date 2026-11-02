@@ -69,7 +69,7 @@ class CatalogImportProgressTest extends TestCase
         $job->handle(app(CatalogSpreadsheetImportService::class));
         $this->assertSame('importing', $import->fresh()->status);
         $this->assertSame(1, $import->rows()->where('status', 'pending')->count());
-        Queue::assertPushed(ProcessCatalogImportJob::class, 1);
+        Queue::assertPushedOn('imports', ProcessCatalogImportJob::class);
 
         $job->handle(app(CatalogSpreadsheetImportService::class));
         $this->assertSame('completed', $import->fresh()->status);
@@ -103,7 +103,7 @@ class CatalogImportProgressTest extends TestCase
 
         Livewire::actingAs($user)->test(CatalogSpreadsheetImport::class)
             ->call('startMarcImport', $import->id)->assertSee('Importing Records');
-        Queue::assertPushed(ProcessCatalogImportJob::class, fn ($job) => $job->catalogImportId === $import->id && $job->connection === 'database');
+        Queue::assertPushed(ProcessCatalogImportJob::class, fn ($job) => $job->catalogImportId === $import->id && $job->connection === 'database' && $job->queue === 'imports');
         (new ProcessCatalogImportJob($import->id, $user->id))->handle(app(CatalogSpreadsheetImportService::class));
         $this->assertSame('completed', $import->fresh()->status);
         $this->assertSame('imported', $import->rows()->first()->status);
@@ -181,7 +181,7 @@ class CatalogImportProgressTest extends TestCase
             ->assertSee('Title is required.');
 
         $this->assertSame('importing', $import->fresh()->status);
-        Queue::assertPushed(ProcessCatalogImportJob::class, fn ($job) => $job->catalogImportId === $import->id && $job->actionUrl === route('admin.book-management.index') && $job->connection === 'database');
+        Queue::assertPushed(ProcessCatalogImportJob::class, fn ($job) => $job->catalogImportId === $import->id && $job->actionUrl === route('admin.book-management.index') && $job->connection === 'database' && $job->queue === 'imports');
     }
 
     public function test_cancelled_batch_keeps_imported_rows_and_queued_job_does_not_import_remaining_rows(): void
