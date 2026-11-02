@@ -65,6 +65,7 @@ def main():
                     rows = list(csv.DictReader(stream))
                 eligible = candidates(rows)
                 print(f'{len(rows)} rows; {len(eligible)} unambiguous descriptions eligible for checking against the database.')
+                print('Only empty descriptions will be filled. School-assigned accession numbers will not be changed.')
                 if input('Backup completed and ready to update this database? Type YES: ').strip() != 'YES':
                     print('Cancelled. No database changes made.')
                     return

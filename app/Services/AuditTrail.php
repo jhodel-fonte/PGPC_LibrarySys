@@ -29,6 +29,9 @@ class AuditTrail
         foreach (self::FIELDS as $model => $fields) {
             $model::created(fn (Model $record) => self::record($record, 'created', [], Arr::only($record->getAttributes(), $fields)));
             $model::updated(function (Model $record) use ($fields) {
+                if ($record instanceof \App\Models\SystemSetting && in_array($record->setting_key, ['library_config.max_loan_limit', 'library_config.loan_period', 'reservation.max_pickup_days', 'reservation.auto_approve', 'reservation.auto_approve_delay_minutes', 'notifications.due_reminder_days'], true)) {
+                    $fields[] = 'setting_value';
+                }
                 $changes = Arr::only($record->getChanges(), $fields);
                 if ($changes !== [] && ! array_key_exists('deleted_at', $changes)) {
                     self::record($record, 'updated', Arr::only($record->getRawOriginal(), array_keys($changes)), $changes);

@@ -80,6 +80,42 @@ Follow these steps to set up the PGPC Library System in your local development e
 
 ## Start the application on the Ubuntu VM
 
+### Refresh the local PostgreSQL database from the VM
+
+Install PostgreSQL client tools (`pg_dump` and `pg_restore`) locally, with a
+version at least as new as the VM's PostgreSQL server. Keep your existing VM
+connection in the `DB_*` settings, with `APP_ENV=local` and
+`DB_CONNECTION=pgsql`; do not set `DB_URL`. The local database must already exist.
+
+Keep the VM database private. If your existing connection uses an SSH tunnel,
+keep that tunnel open while running the command. For example (replace the SSH
+user, VM address, and local port to match your `DB_PORT`):
+
+```bash
+ssh -L 15432:127.0.0.1:5432 user@vm-address
+```
+
+Add the local database credentials to `.env` (never commit them):
+
+```ini
+LOCAL_DB_PORT=5432
+LOCAL_DB_DATABASE=your_local_database
+LOCAL_DB_USERNAME=your_local_database_user
+LOCAL_DB_PASSWORD=your_local_database_password
+```
+
+Run `php artisan config:clear` after changing `.env`, then run:
+
+```bash
+php artisan db:refresh-from-vm
+```
+
+Confirm the prompt to replace local objects and data included in the snapshot.
+The restore runs in one transaction; the local user needs permissions to drop
+and create the restored objects. Objects existing only locally are not removed.
+Back up local changes first. This copies the database, not uploaded files; the
+snapshot can contain sensitive student information. Protect your local machine.
+
 For the native Ubuntu deployment, place the repository at `/opt/pgpc-lib` and
 copy the existing production `.env` there from a secure backup. Do not commit
 that file. Use Ubuntu 24.04, set `APP_ENV=production` and `APP_DEBUG=false`,

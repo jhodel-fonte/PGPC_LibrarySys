@@ -82,6 +82,7 @@ Route::middleware(['auth', 'verified', 'role:Admin'])->prefix('admin')->name('ad
             Route::get('/return/confirm', \App\Livewire\Pages\Dashboard\ConfirmReturn::class)->name('return.confirm');
             Route::get('/borrow', \App\Livewire\Pages\Dashboard\CheckOutBook::class)->name('borrow');
             Route::get('/borrowed-books', \App\Livewire\Pages\Dashboard\BorrowedList::class)->name('borrowed-books');
+            Route::get('/historical-borrowing-log', \App\Livewire\Pages\Dashboard\HistoricalBorrowingLogs::class)->name('historical-borrowing-log');
             Route::get('/fine-payments', \App\Livewire\Pages\Dashboard\ProcessFinePayment::class)->name('fine-payments');
             Route::get('/reservations', \App\Livewire\Pages\Reservation\AdminDashboard::class)->name('reservations');
         });

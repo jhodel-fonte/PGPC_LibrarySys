@@ -108,7 +108,7 @@ class CheckOutBook extends Component
 
     private function maxLoanDays(): int
     {
-        return max(1, (int) config('settings.library_config.loan_period', config('settings.loan_period', 5)));
+        return max(1, (int) \App\Services\LibrarySettings::get('library_config.loan_period'));
     }
 
     private function validDueDate(): bool
@@ -552,7 +552,7 @@ class CheckOutBook extends Component
             ->whereNull('return_date')->whereNull('lost_at')
             ->count();
         $totalQueued = count($this->checkoutBooks);
-        $maxCapacity = (int) config('settings.library_config.max_loan_limit', 3);
+        $maxCapacity = (int) \App\Services\LibrarySettings::get('library_config.max_loan_limit');
         if (($activeBorrowedCount + $totalQueued) >= $maxCapacity) {
             $this->errorMessage = "Cannot add item: Max borrowing capacity reached (limit is {$maxCapacity} active loans).";
             return;

@@ -14,7 +14,7 @@ class SendDueReminders extends Command
 
     public function handle(): int
     {
-        $days = max(1, (int) config('settings.notifications.due_reminder_days', 3));
+        $days = max(1, (int) \App\Services\LibrarySettings::get('notifications.due_reminder_days'));
         $now = now();
 
         BorrowingTransaction::query()

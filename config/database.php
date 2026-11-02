@@ -30,6 +30,13 @@ return [
     |
     */
 
+    'local_snapshot_target' => [
+        'port' => env('LOCAL_DB_PORT', '5432'),
+        'database' => env('LOCAL_DB_DATABASE'),
+        'username' => env('LOCAL_DB_USERNAME'),
+        'password' => env('LOCAL_DB_PASSWORD', ''),
+    ],
+
     'connections' => [
 
         'sqlite' => [

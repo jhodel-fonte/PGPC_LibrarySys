@@ -28,7 +28,7 @@
             <div class="grid grid-cols-2 xl:grid-cols-4 gap-3 mt-5">
                 <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-100">
                     <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Currently Borrowed</p>
-                    <p class="text-xl sm:text-2xl font-bold text-slate-900 mt-0.5">{{ $activeCount }} <span class="text-sm text-slate-500 font-normal">/ {{ config('settings.library_config.max_loan_limit', 3) }} books</span></p>
+                    <p class="text-xl sm:text-2xl font-bold text-slate-900 mt-0.5">{{ $activeCount }} <span class="text-sm text-slate-500 font-normal">/ {{ \App\Services\LibrarySettings::get('library_config.max_loan_limit') }} books</span></p>
                 </div>
 
                 <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-100">

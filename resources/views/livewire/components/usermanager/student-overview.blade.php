@@ -86,8 +86,8 @@
                         ? $authors->map(fn($a) => trim($a->first_name . ' ' . $a->last_name))->filter()->join(', ')
                         : 'Paulo Coelho';
                     $accessionNo = $book?->accession_number ?? ('ACC-' . date('Y') . '-' . str_pad($loan->id, 4, '0', STR_PAD_LEFT));
-                    $borrowedDateStr = $loan->issued_date ? $loan->issued_date->format('M d, Y') : now()->subDays(config('settings.library_config.loan_period', 5))->format('M d, Y');
-                    $dueDateStr = $loan->due_date ? $loan->due_date->format('M d, Y') : now()->addDays(config('settings.library_config.loan_period', 5))->format('M d, Y');
+                    $borrowedDateStr = $loan->issued_date ? $loan->issued_date->format('M d, Y') : now()->subDays(\App\Services\LibrarySettings::get('library_config.loan_period'))->format('M d, Y');
+                    $dueDateStr = $loan->due_date ? $loan->due_date->format('M d, Y') : now()->addDays(\App\Services\LibrarySettings::get('library_config.loan_period'))->format('M d, Y');
                     $isOverdue = $loan->due_date && $loan->due_date->isPast();
                     $coverUrl = $bookDetail?->cover_url ?? asset('images/book-cover.webp');
                 @endphp
@@ -183,8 +183,8 @@
                                 ? $authors->map(fn($a) => trim($a->first_name . ' ' . $a->last_name))->filter()->join(', ')
                                 : 'Paulo Coelho';
                             $accessionNo = $book?->accession_number ?? ('ACC-' . date('Y') . '-' . str_pad($loan->id, 4, '0', STR_PAD_LEFT));
-                            $borrowedDateStr = $loan->issued_date ? $loan->issued_date->format('M d, Y') : now()->subDays(config('settings.library_config.loan_period', 5))->format('M d, Y');
-                            $dueDateStr = $loan->due_date ? $loan->due_date->format('M d, Y') : now()->addDays(config('settings.library_config.loan_period', 5))->format('M d, Y');
+                            $borrowedDateStr = $loan->issued_date ? $loan->issued_date->format('M d, Y') : now()->subDays(\App\Services\LibrarySettings::get('library_config.loan_period'))->format('M d, Y');
+                            $dueDateStr = $loan->due_date ? $loan->due_date->format('M d, Y') : now()->addDays(\App\Services\LibrarySettings::get('library_config.loan_period'))->format('M d, Y');
                             $isOverdue = $loan->due_date && $loan->due_date->isPast();
                             $coverUrl = $bookDetail?->cover_url ?? asset('images/book-cover.webp');
                         @endphp

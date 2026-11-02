@@ -55,7 +55,7 @@
                 <label for="checkout-due-date" class="block text-xs font-bold uppercase tracking-wider text-[#334155]">Due date</label>
                 <input id="checkout-due-date" type="date" x-model="selectedDueDate"
                     min="{{ now('Asia/Manila')->toDateString() }}"
-                    max="{{ now('Asia/Manila')->addDays(max(1, (int) config('settings.library_config.loan_period', config('settings.loan_period', 5))))->toDateString() }}"
+                    max="{{ now('Asia/Manila')->addDays(max(1, (int) \App\Services\LibrarySettings::get('library_config.loan_period')))->toDateString() }}"
                     class="mt-1.5 h-11 w-full rounded-xl border border-slate-300 px-3 text-sm text-slate-800">
                 <p class="mt-1 text-xs text-slate-600">Some items may have a shorter loan period.</p>
             </div>
