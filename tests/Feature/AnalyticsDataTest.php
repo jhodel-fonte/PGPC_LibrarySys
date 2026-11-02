@@ -44,6 +44,7 @@ class AnalyticsDataTest extends TestCase
         $this->assertSame(1, $data['overdueCount']);
         $this->assertSame(1, $data['buckets']['2026-03-15']['loans']);
         $this->assertContains('At issue', $data['programs']->pluck('label')->all());
+        $this->assertContains('Not recorded at issue', $data['programs']->pluck('label')->all());
         $this->assertSame('Unspecified', $data['genders']->first()->label);
     }
 

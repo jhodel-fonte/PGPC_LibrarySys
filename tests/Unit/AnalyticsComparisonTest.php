@@ -22,6 +22,13 @@ class AnalyticsComparisonTest extends TestCase
         $this->assertSame('2023-02-28', $end->toDateString());
     }
 
+    public function test_last_month_compares_the_previous_calendar_month(): void
+    {
+        [$start, $end] = Analytics::previousRange('last_month', CarbonImmutable::parse('2026-03-01'), CarbonImmutable::parse('2026-03-31'));
+        $this->assertSame('2026-02-01', $start->toDateString());
+        $this->assertSame('2026-02-28', $end->toDateString());
+    }
+
     public function test_custom_range_compares_the_preceding_equal_length(): void
     {
         [$start, $end] = Analytics::previousRange('custom', CarbonImmutable::parse('2026-03-01'), CarbonImmutable::parse('2026-03-03'));

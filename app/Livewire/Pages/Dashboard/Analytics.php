@@ -68,6 +68,10 @@ class Analytics extends Component
             $previousStart = $start->subMonthNoOverflow()->startOfMonth();
             return [$previousStart, $previousStart->day(min($end->day, $previousStart->daysInMonth))];
         }
+        if ($period === 'last_month') {
+            $previousStart = $start->subMonthNoOverflow()->startOfMonth();
+            return [$previousStart, $previousStart->endOfMonth()];
+        }
         if ($period === 'year') {
             return [$start->subYearNoOverflow(), $end->subYearNoOverflow()];
         }
@@ -130,7 +134,7 @@ class Analytics extends Component
 
         $base = DB::table('borrowing_transactions as loans')->leftJoin('students', 'students.id', '=', 'loans.school_id')
             ->where('loans.issued_date', '>=', $from)->where('loans.issued_date', '<', $to);
-        $programExpression = "COALESCE(NULLIF(TRIM(loans.program_at_issue), ''), NULLIF(TRIM(students.program), ''), 'Unspecified')";
+        $programExpression = "COALESCE(NULLIF(TRIM(loans.program_at_issue), ''), 'Not recorded at issue')";
         $programs = (clone $base)->selectRaw("$programExpression as label, count(*) as total")->groupByRaw($programExpression)->orderByDesc('total')->limit(8)->get();
         $genderExpression = "COALESCE(NULLIF(TRIM(students.gender), ''), 'Unspecified')";
         $genders = (clone $base)->selectRaw("$genderExpression as label, count(*) as total")->groupByRaw($genderExpression)->orderByDesc('total')->get();
