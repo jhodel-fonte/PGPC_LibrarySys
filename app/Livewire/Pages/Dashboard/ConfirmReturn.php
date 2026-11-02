@@ -56,7 +56,7 @@ class ConfirmReturn extends Component
             'book.bookDetail.bookData',
             'book.bookDetail.bookData.authors',
             'issuedCondition'
-        ])->where('school_id', $this->studentId)->whereNull('return_date')->whereIn('id', $this->transactionIds)->get();
+        ])->where('school_id', $this->studentId)->whereNull('return_date')->whereNull('lost_at')->whereIn('id', $this->transactionIds)->get();
 
         $this->totalFine = 0.00;
         $this->overdueCount = 0;
@@ -152,7 +152,7 @@ class ConfirmReturn extends Component
                 $transactions = BorrowingTransaction::with(['book' => fn ($q) => $q->withTrashed(), 'book.bookDetail' => fn ($q) => $q->withTrashed()])
                     ->where('school_id', $this->studentId)
                     ->whereIn('id', $this->transactionIds)
-                    ->whereNull('return_date')
+                    ->whereNull('return_date')->whereNull('lost_at')
                     ->lockForUpdate()
                     ->get();
 

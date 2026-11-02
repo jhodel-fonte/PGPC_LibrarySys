@@ -166,7 +166,7 @@ class StudentDetail extends Component
     public function activeLoans()
     {
         return $this->allTransactions
-            ->whereNull('return_date')
+            ->whereNull('return_date')->whereNull('lost_at')
             ->sortByDesc('issued_date')
             ->values();
     }

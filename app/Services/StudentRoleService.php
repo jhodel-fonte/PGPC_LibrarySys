@@ -197,7 +197,7 @@ class StudentRoleService
         }
 
         return $student->borrowingTransactions()
-            ->whereNull('return_date')
+            ->whereNull('return_date')->whereNull('lost_at')
             ->count();
     }
 
@@ -212,7 +212,7 @@ class StudentRoleService
         }
 
         return $student->borrowingTransactions()
-            ->whereNull('return_date')
+            ->whereNull('return_date')->whereNull('lost_at')
             ->where('due_date', '<', Carbon::now())
             ->count();
     }

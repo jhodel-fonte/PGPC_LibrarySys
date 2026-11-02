@@ -247,7 +247,7 @@ class Dashboard extends Component
         $booksThisMonth = Book::where('created_at', '>=', $startOfMonth)->count();
 
         // 3. Due Books Today and books returned today
-        $dueTodayCount = BorrowingTransaction::whereNull('return_date')
+        $dueTodayCount = BorrowingTransaction::whereNull('return_date')->whereNull('lost_at')
             ->whereDate('due_date', Carbon::today())
             ->count();
         $returnedTodayCount = BorrowingTransaction::whereNotNull('return_date')
@@ -314,7 +314,7 @@ class Dashboard extends Component
 
         return view('livewire.pages.dashboard.index', [
             'currentBorrowers' => BorrowingTransaction::with(['student.account', 'book.bookDetail.bookData'])
-                ->whereNull('return_date')
+                ->whereNull('return_date')->whereNull('lost_at')
                 ->orderBy('issued_date', 'desc')
                 ->take(7)
                 ->get(),

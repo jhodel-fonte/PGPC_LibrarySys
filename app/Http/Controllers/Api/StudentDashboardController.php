@@ -20,7 +20,7 @@ class StudentDashboardController extends Controller
 
         $loans = $student->borrowingTransactions()
             ->with(['book.bookDetail.bookData.authors', 'borrowType', 'issuedCondition'])
-            ->whereNull('return_date')
+            ->whereNull('return_date')->whereNull('lost_at')
             ->orderBy('due_date')
             ->orderBy('id')
             ->get();

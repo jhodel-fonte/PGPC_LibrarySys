@@ -26,11 +26,11 @@ class FineService
     public function paymentCalculation(Fine $fine, string $paymentDate): array
     {
         $loan = $fine->transaction;
-        if (! $loan || ! $loan->return_date || ! $loan->due_date || $fine->fineType?->name !== 'Overdue') {
-            throw new \DomainException('Only overdue fines for returned items can be processed here.');
+        if (! $loan || (! $loan->return_date && ! $loan->lost_at) || ! $loan->due_date || $fine->fineType?->name !== 'Overdue') {
+            throw new \DomainException('Only overdue fines for returned or lost items can be processed here.');
         }
         $due = $loan->due_date->copy()->startOfDay();
-        $returned = $loan->return_date->copy()->startOfDay();
+        $returned = ($loan->lost_at ?? $loan->return_date)->copy()->startOfDay();
         $paid = Carbon::parse($paymentDate)->startOfDay();
         if ($paid->greaterThan(now()->startOfDay()) || $paid->lessThan($due)) {
             throw new \DomainException('The payment date must be on or after the due date and not in the future.');

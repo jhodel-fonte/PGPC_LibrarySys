@@ -36,26 +36,24 @@
     }
 
     // Calculate Max Value for scale
-    $maxBarVal = 10;
+    $maxBarVal = 0;
     foreach ($barSeries as $bs) {
         foreach ($bs['data'] as $v) {
             if ($v > $maxBarVal) $maxBarVal = $v;
         }
     }
-    if ($maxBarVal <= 10) $maxScale = 10;
+    if ($maxBarVal <= 1) $maxScale = 1;
+    elseif ($maxBarVal <= 4) $maxScale = 4;
+    elseif ($maxBarVal <= 10) $maxScale = 10;
     elseif ($maxBarVal <= 20) $maxScale = 20;
     elseif ($maxBarVal <= 30) $maxScale = 30;
     elseif ($maxBarVal <= 50) $maxScale = 50;
     else $maxScale = ceil($maxBarVal / 20) * 20;
 
-    $ticks = [
-        $maxScale,
-        round($maxScale * 0.8),
-        round($maxScale * 0.6),
-        round($maxScale * 0.4),
-        round($maxScale * 0.2),
-        0
-    ];
+    $ticks = $maxScale <= 1 ? [1, 0] : ($maxScale <= 4 ? [4, 2, 0] : [
+        $maxScale, round($maxScale * 0.75), round($maxScale * 0.5), round($maxScale * 0.25), 0,
+    ]);
+    $labelStep = max(1, (int) ceil(count($rawLabels) / 6));
 
     $padLeft = $grid ? 36 : 14;
     $padRight = 16;
@@ -124,7 +122,7 @@
                 @foreach ($barSeries as $sIdx => $bs)
                     @php
                         $val = $bs['data'][$catIdx] ?? 0;
-                        $barH = max(2, ($val / $maxScale) * $plotH);
+                        $barH = max(0, ($val / $maxScale) * $plotH);
                         $bX = $groupStartX + ($sIdx * ($barW + $barGap));
                         $bY = ($padTop + $plotH) - $barH;
                     @endphp
@@ -148,15 +146,17 @@
 
         <!-- X-Axis Labels -->
         @foreach ($rawLabels as $catIdx => $label)
+            @if ($catIdx % $labelStep === 0)
             <text 
                 x="{{ $padLeft + ($catIdx * $slotW) + ($slotW / 2) }}" 
                 y="{{ $renderHeight - 6 }}" 
                 text-anchor="middle" 
-                style="font-size: 16px;"
+                style="font-size: 12px;"
                 class="fill-slate-800 font-medium select-none"
             >
                 {{ $label }}
             </text>
+            @endif
         @endforeach
     </svg>
 

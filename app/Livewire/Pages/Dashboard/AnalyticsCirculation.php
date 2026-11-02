@@ -362,7 +362,7 @@ class AnalyticsCirculation extends Component
     public function getCollectionAvailabilitySnapshot(): array
     {
         $totalPhysical = max(33, \App\Models\Book::count());
-        $activeLoans = max(4, BorrowingTransaction::whereNull('return_date')->count());
+        $activeLoans = max(4, BorrowingTransaction::whereNull('return_date')->whereNull('lost_at')->count());
         $available = max(0, $totalPhysical - $activeLoans - 2);
         $underRepair = 2;
 
@@ -388,9 +388,9 @@ class AnalyticsCirculation extends Component
 
         // Tab Filtering
         if ($this->activeTab === 'active') {
-            $query->whereNull('borrowing_transactions.return_date');
+            $query->whereNull('borrowing_transactions.return_date')->whereNull('borrowing_transactions.lost_at');
         } elseif ($this->activeTab === 'overdue') {
-            $query->whereNull('borrowing_transactions.return_date')
+            $query->whereNull('borrowing_transactions.return_date')->whereNull('borrowing_transactions.lost_at')
                 ->where('borrowing_transactions.due_date', '<', Carbon::now());
         } elseif ($this->activeTab === 'returned') {
             $query->whereNotNull('borrowing_transactions.return_date');
@@ -448,8 +448,8 @@ class AnalyticsCirculation extends Component
         $borrowings = $query->paginate($this->perPage);
 
         // Counts for KPIs (responsive to date coverage)
-        $activeBase = BorrowingTransaction::whereNull('return_date');
-        $overdueBase = BorrowingTransaction::whereNull('return_date')->where('due_date', '<', Carbon::now());
+        $activeBase = BorrowingTransaction::whereNull('return_date')->whereNull('lost_at');
+        $overdueBase = BorrowingTransaction::whereNull('return_date')->whereNull('lost_at')->where('due_date', '<', Carbon::now());
         $returnedBase = BorrowingTransaction::whereNotNull('return_date');
         $totalBase = BorrowingTransaction::query();
         $borrowersBase = BorrowingTransaction::query();

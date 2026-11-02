@@ -71,7 +71,7 @@ class CheckOutBook extends Component
 
             // 1. Calculate overdue books count
             $overdueCount = BorrowingTransaction::where('school_id', $studentId)
-                ->whereNull('return_date')
+                ->whereNull('return_date')->whereNull('lost_at')
                 ->where('due_date', '<', Carbon::now())
                 ->count();
             $this->stats['overdue_count'] = $overdueCount;
@@ -84,7 +84,7 @@ class CheckOutBook extends Component
 
             // 3. Max active borrow limits check
             $activeBorrowedCount = BorrowingTransaction::where('school_id', $studentId)
-                ->whereNull('return_date')
+                ->whereNull('return_date')->whereNull('lost_at')
                 ->count();
 
             $maxLimit = 3;
@@ -449,6 +449,8 @@ class CheckOutBook extends Component
         // Proactively set warnings for the librarian to address eligibility issues
         if (strtolower($statusName) !== 'active') {
             $this->errorMessage = 'Warning: This student profile is currently blocked or inactive. Borrowing is suspended.';
+        } elseif (BorrowingTransaction::where('school_id', $student->id)->whereNotNull('lost_at')->whereNull('lost_resolved_at')->exists()) {
+            $this->errorMessage = 'Warning: Borrowing is blocked until the lost book case is resolved.';
         } elseif ($this->stats['overdue_count'] > 0) {
             $this->errorMessage = 'Warning: Student has ' . $this->stats['overdue_count'] . ' overdue book(s) on their account. Return overdue items first.';
         } elseif ($this->stats['unpaid_fines'] > 0) {
@@ -547,7 +549,7 @@ class CheckOutBook extends Component
 
         // Validation 6: Borrow slots limit capacity check
         $activeBorrowedCount = BorrowingTransaction::where('school_id', $this->scannedMember['id'])
-            ->whereNull('return_date')
+            ->whereNull('return_date')->whereNull('lost_at')
             ->count();
         $totalQueued = count($this->checkoutBooks);
         $maxCapacity = (int) config('settings.library_config.max_loan_limit', 3);
@@ -662,7 +664,7 @@ class CheckOutBook extends Component
 
         // Verify overdue count again
         $overdueCount = BorrowingTransaction::where('school_id', $studentId)
-            ->whereNull('return_date')
+            ->whereNull('return_date')->whereNull('lost_at')
             ->where('due_date', '<', Carbon::now())
             ->count();
         if ($overdueCount > 0) {
@@ -693,6 +695,9 @@ class CheckOutBook extends Component
             $borrowedItems = [];
             \App\Services\AuditTrail::transaction('Books checked out', function () use ($studentId, $bookIds, &$borrowedItems) {
                 $checkoutStudent = Student::lockForUpdate()->findOrFail($studentId);
+                if (BorrowingTransaction::where('school_id', $studentId)->whereNotNull('lost_at')->whereNull('lost_resolved_at')->exists()) {
+                    throw new \DomainException('Borrowing is blocked until the lost book case is resolved.');
+                }
                 $now = Carbon::now();
                 $insideLibrary = $this->loanLocation === 'inside_library';
                 $borrowType = \App\Models\BorrowType::firstOrCreate(['name' => $insideLibrary ? 'Room Use Only' : 'Regular Check-out']);
@@ -726,7 +731,7 @@ class CheckOutBook extends Component
                     }
 
                     $exists = BorrowingTransaction::where('book_id', $bookId)
-                        ->whereNull('return_date')
+                        ->whereNull('return_date')->whereNull('lost_at')
                         ->exists();
 
                     if ($exists) {

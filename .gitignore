@@ -27,6 +27,9 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+/scripts/matches.csv
+/scripts/openlibrary_cache.json*
+/scripts/__pycache__/
 bootstrap/providers.php
 public/vendor/telescope
 app/Providers/TelescopeServiceProvider.php

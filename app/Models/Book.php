@@ -58,7 +58,7 @@ class Book extends Model
         $condition = BookCondition::findOrFail($conditionId);
         $status = strtolower($status);
         $conditionName = strtolower($condition->status);
-        $activeLoan = $this->exists && $this->borrowingTransactions()->whereNull('return_date')->exists();
+        $activeLoan = $this->exists && $this->borrowingTransactions()->whereNull('return_date')->whereNull('lost_at')->exists();
         $activeReservation = $this->exists && $this->reservations()->whereIn('reservation_status_id', [1, 2])->exists();
 
         if (($activeLoan && $status !== 'borrowed') || ($activeReservation && $status !== 'reserved')

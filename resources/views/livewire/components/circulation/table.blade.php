@@ -89,6 +89,9 @@
                                             </span>
                                         </div>
                                     </div>
+                                    @if($mode === 'check-in' && !$isReturned && !empty($item['transaction_id']))
+                                        <button type="button" @click.stop="$dispatch('report-lost', { loanId: {{ (int) $item['transaction_id'] }} })" class="self-start rounded-lg border border-amber-300 px-3 py-2 text-xs font-semibold text-amber-800 hover:bg-amber-50">Report lost</button>
+                                    @endif
                                 </div>
                             </td>
 
@@ -132,6 +135,9 @@
                                         <span class="inline-flex items-center px-2.5 py-1 text-xs font-semibold text-[#475569] bg-slate-100 rounded-md">
                                             Active Loan
                                         </span>
+                                    @endif
+                                    @if(!$isReturned && !empty($item['transaction_id']))
+                                        <button type="button" @click.stop="$dispatch('report-lost', { loanId: {{ (int) $item['transaction_id'] }} })" class="mt-2 block ml-auto rounded-lg border border-amber-300 px-3 py-2 text-xs font-semibold text-amber-800 hover:bg-amber-50">Report lost</button>
                                     @endif
                                 @endif
                             </td>

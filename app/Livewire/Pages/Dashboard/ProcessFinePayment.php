@@ -73,7 +73,7 @@ class ProcessFinePayment extends Component
     {
         return Fine::with(['fineType', 'transaction.book.bookDetail.bookData'])
             ->where('student_id', $this->studentId)->where('fine_status', 'unpaid')
-            ->whereHas('transaction', fn ($query) => $query->whereNotNull('return_date'))
+            ->whereHas('transaction', fn ($query) => $query->where(fn ($q) => $q->whereNotNull('return_date')->orWhereNotNull('lost_at')))
             ->whereHas('fineType', fn ($query) => $query->where('name', 'Overdue'))
             ->findOrFail($this->fineId);
     }
@@ -132,10 +132,10 @@ class ProcessFinePayment extends Component
         })->limit(10)->get() : collect();
         $student = $this->studentId ? Student::find($this->studentId) : null;
         $activeLoans = $student ? $student->borrowingTransactions()
-            ->with('book.bookDetail.bookData')->whereNull('return_date')->orderBy('due_date')->get() : collect();
+            ->with('book.bookDetail.bookData')->whereNull('return_date')->whereNull('lost_at')->orderBy('due_date')->get() : collect();
         $fines = $student ? Fine::with(['transaction.book.bookDetail.bookData', 'fineType'])
             ->where('student_id', $student->id)->where('fine_status', 'unpaid')
-            ->whereHas('transaction', fn ($query) => $query->whereNotNull('return_date'))
+            ->whereHas('transaction', fn ($query) => $query->where(fn ($q) => $q->whereNotNull('return_date')->orWhereNotNull('lost_at')))
             ->whereHas('fineType', fn ($query) => $query->where('name', 'Overdue'))->get() : collect();
         $fine = $fines->firstWhere('id', $this->fineId);
         $calculation = null;

@@ -141,11 +141,11 @@ class UserDetails extends Component
         $total = BorrowingTransaction::where('school_id', $studentId)->count();
         $returned = BorrowingTransaction::where('school_id', $studentId)->whereNotNull('return_date')->count();
         $active = BorrowingTransaction::where('school_id', $studentId)
-            ->whereNull('return_date')
+            ->whereNull('return_date')->whereNull('lost_at')
             ->where('due_date', '>=', $now)
             ->count();
         $overdue = BorrowingTransaction::where('school_id', $studentId)
-            ->whereNull('return_date')
+            ->whereNull('return_date')->whereNull('lost_at')
             ->where('due_date', '<', $now)
             ->count();
 
@@ -214,9 +214,9 @@ class UserDetails extends Component
         $now = Carbon::now();
 
         if ($this->borrowingFilter === 'active') {
-            $query->whereNull('return_date')->where('due_date', '>=', $now);
+            $query->whereNull('return_date')->whereNull('lost_at')->where('due_date', '>=', $now);
         } elseif ($this->borrowingFilter === 'overdue') {
-            $query->whereNull('return_date')->where('due_date', '<', $now);
+            $query->whereNull('return_date')->whereNull('lost_at')->where('due_date', '<', $now);
         } elseif ($this->borrowingFilter === 'returned') {
             $query->whereNotNull('return_date');
         }

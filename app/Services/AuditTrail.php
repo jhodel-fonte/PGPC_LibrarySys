@@ -18,7 +18,7 @@ class AuditTrail
         \App\Models\BookDetail::class => ['book_data_id', 'isbn', 'issn', 'edition', 'publisher_id', 'call_number', 'daily_fine', 'deleted_at'],
         \App\Models\Book::class => ['book_detail_id', 'accession_number', 'code', 'location', 'status', 'book_condition_id', 'deleted_at'],
         \App\Models\BookReservation::class => ['book_id', 'student_id', 'account_id', 'reservation_status_id', 'reservation_date', 'due_date', 'approved_date', 'fulfilled_date', 'cancelled_date', 'comment', 'deleted_at'],
-        \App\Models\BorrowingTransaction::class => ['book_id', 'school_id', 'book_reservation_id', 'issued_by_id', 'issued_date', 'due_date', 'return_date', 'received_by_id', 'borrow_type_id'],
+        \App\Models\BorrowingTransaction::class => ['book_id', 'school_id', 'book_reservation_id', 'issued_by_id', 'issued_date', 'due_date', 'return_date', 'received_by_id', 'borrow_type_id', 'lost_at', 'lost_reported_by_id', 'lost_note', 'lost_resolved_at', 'lost_resolved_by_id', 'lost_resolution_note'],
         \App\Models\Fine::class => ['student_id', 'borrowing_transaction_id', 'fine_type_id', 'amount', 'fine_status', 'paid_at'],
         \App\Models\FinePayment::class => ['fine_id', 'received_by_id', 'payment_date', 'payment_amount', 'receipt_number'],
         \App\Models\SystemSetting::class => ['setting_key'],

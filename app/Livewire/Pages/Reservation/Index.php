@@ -341,8 +341,8 @@ class Index extends Component
                 ->join('book_details', 'book_details.id', '=', 'reservation_waitlist.book_detail_id')
                 ->join('book_datas', 'book_datas.id', '=', 'book_details.book_data_id')
                 ->where('reservation_waitlist.account_id', Auth::id())
-                ->where('reservation_waitlist.status', 'waiting')
-                ->select('reservation_waitlist.id', 'book_datas.book_title')
+                ->whereIn('reservation_waitlist.status', ['waiting', 'lost_unavailable'])
+                ->select('reservation_waitlist.id', 'reservation_waitlist.status', 'book_datas.book_title')
                 ->orderBy('reservation_waitlist.id')->get(),
         ]);
     }
@@ -350,6 +350,6 @@ class Index extends Component
     public function leaveWaitlist(int $id): void
     {
         \App\Models\ReservationWaitlist::whereKey($id)->where('account_id', Auth::id())
-            ->where('status', 'waiting')->update(['status' => 'cancelled']);
+            ->whereIn('status', ['waiting', 'lost_unavailable'])->update(['status' => 'cancelled']);
     }
 }

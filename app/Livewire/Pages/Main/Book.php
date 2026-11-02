@@ -92,7 +92,7 @@ class Book extends Component
             },
             'books.condition',
             'books.borrowingTransactions' => function ($q) {
-                $q->whereNull('return_date')->orderBy('due_date', 'asc');
+                $q->whereNull('return_date')->whereNull('lost_at')->orderBy('due_date', 'asc');
             },
             'books.reservations' => function ($q) {
                 $q->whereNull('cancelled_date')->whereNull('fulfilled_date')->orderBy('due_date', 'asc');

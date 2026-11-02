@@ -81,7 +81,7 @@ class SearchEntityModal extends Component
         // Count Members
         if ($isCheckIn) {
             $this->memberCount = Student::whereHas('borrowingTransactions', function($q) {
-                $q->whereNull('return_date');
+                $q->whereNull('return_date')->whereNull('lost_at');
             })->count();
             if ($this->memberCount === 0) {
                 $this->memberCount = Student::count();
@@ -93,7 +93,7 @@ class SearchEntityModal extends Component
         // Count Books
         if ($isCheckIn) {
             $this->bookCount = Book::whereHas('borrowingTransactions', function($q) {
-                $q->whereNull('return_date');
+                $q->whereNull('return_date')->whereNull('lost_at');
             })->count();
             if ($this->bookCount === 0) {
                 $this->bookCount = Book::count();
@@ -112,7 +112,7 @@ class SearchEntityModal extends Component
             if ($isCheckIn) {
                 $students = Student::with(['libraryStatus', 'account'])
                     ->whereHas('borrowingTransactions', function($q) {
-                        $q->whereNull('return_date');
+                        $q->whereNull('return_date')->whereNull('lost_at');
                     })
                     ->orderBy('last_name')
                     ->orderBy('first_name')
@@ -160,7 +160,7 @@ class SearchEntityModal extends Component
                 $books = Book::with(['bookDetail.bookData.authors'])
                     ->whereHas('bookDetail.bookData')
                     ->whereHas('borrowingTransactions', function($q) {
-                        $q->whereNull('return_date');
+                        $q->whereNull('return_date')->whereNull('lost_at');
                     })
                     ->join('book_details', 'books.book_detail_id', '=', 'book_details.id')
                     ->join('book_datas', 'book_details.book_data_id', '=', 'book_datas.id')
