@@ -217,7 +217,8 @@ class ReservationWaitlistService
             ->contains(function ($entry) {
                 $account = Account::find($entry->account_id);
                 return $account && $account->student && $account->isApprovedStudent() && ! $account->reservations_blocked
-                    && BookReservation::where('student_id', $entry->student_id)->whereIn('reservation_status_id', [1, 2])->count() < 3;
+                    && BookReservation::where('student_id', $entry->student_id)->whereIn('reservation_status_id', [1, 2])->count() < 3
+                    && ReservationSettings::hasCapacity($entry->student_id);
             });
     }
 
@@ -245,6 +246,9 @@ class ReservationWaitlistService
                 continue;
             }
             if (BookReservation::where('student_id', $entry->student_id)->whereIn('reservation_status_id', [1, 2])->count() >= 3) {
+                continue;
+            }
+            if (! ReservationSettings::hasCapacity($entry->student_id)) {
                 continue;
             }
             $reservation = BookReservation::create([

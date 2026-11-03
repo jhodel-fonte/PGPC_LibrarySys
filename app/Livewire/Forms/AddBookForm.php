@@ -323,7 +323,7 @@ class AddBookForm extends Component
             'newAuthorLastName' => ($isBook ? '' : 'exclude|').'nullable|string|max:100',
             'newAuthorFirstName' => ($isBook ? '' : 'exclude|').'nullable|string|max:100',
 
-            'isbn' => ($isBook ? '' : 'exclude|').'nullable|string|max:15',
+            'isbn' => [($isBook ? 'nullable' : 'exclude'), 'string', 'max:255', 'regex:/^(?:-*[^-]){0,15}-*$/u'],
             'issn' => [($isPeriodical ? 'nullable' : 'exclude'), 'nullable', 'regex:/^\d{4}-?\d{3}[\dXx]$/'],
             'resourceUrl' => ['nullable', 'url:http,https', 'max:255'],
             'callNumber' => ($isBook ? 'required' : ($isEquipment ? 'exclude|nullable' : 'nullable')).'|string|max:30',
@@ -348,6 +348,7 @@ class AddBookForm extends Component
             'callNumber.required' => 'The Call Number is required.',
             'issueNumber.required_without_all' => 'Enter a volume, issue number, issue label, or publication date.',
             'issn.regex' => 'Enter an ISSN in the format 1234-567X.',
+            'isbn.regex' => 'The ISBN may not be greater than 15 characters, excluding dashes.',
         ]);
 
         if ($isBook && !$hasAuthorId && !$hasAuthorSearch && !$hasNewNames) {

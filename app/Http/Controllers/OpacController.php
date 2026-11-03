@@ -198,6 +198,10 @@ class OpacController extends Controller
 
                 $user = Auth::user();
                 $student = $user?->student;
+                \App\Models\Student::whereKey($student->id)->lockForUpdate()->firstOrFail();
+                if (! \App\Services\ReservationSettings::hasCapacity($student->id)) {
+                    throw new \RuntimeException('borrowing_capacity');
+                }
                 if (BookReservation::where('student_id', $student->id)->whereIn('reservation_status_id', [1, 2])->count() >= 3) {
                     throw new \RuntimeException('reservation_limit');
                 }
@@ -238,6 +242,7 @@ class OpacController extends Controller
             $message = match ($e->getMessage()) {
                 'not_found' => 'The requested resource copy was not found.',
                 'reservation_limit' => 'You have reached the limit of 3 active reservations.',
+                'borrowing_capacity' => 'Return overdue books or reduce your active loans and reservations before reserving.',
                 'duplicate_reservation' => 'You already have an active reservation for this item.',
                 default => 'This resource is currently not available for reservation.',
             };

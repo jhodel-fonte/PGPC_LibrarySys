@@ -26,6 +26,10 @@ class ReservationApprovalService
             if (! $account || ! $account->isApprovedStudent() || $account->reservations_blocked) {
                 throw new \RuntimeException('This account cannot place reservations.');
             }
+            \App\Models\Student::whereKey($reservation->student_id)->lockForUpdate()->firstOrFail();
+            if (! ReservationSettings::hasCapacity($reservation->student_id, $reservation->id)) {
+                throw new \RuntimeException('The student has overdue books or has reached the combined loan and reservation limit.');
+            }
             if ($book->bookDetail->periodicalIssue && ! $book->bookDetail->periodicalIssue->borrowable) {
                 throw new \RuntimeException('This issue is for library use only.');
             }

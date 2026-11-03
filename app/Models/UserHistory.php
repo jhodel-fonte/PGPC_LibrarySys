@@ -55,9 +55,17 @@ class UserHistory extends Model
         if (! $history->exists) {
             $history->encrypter_id = $encrypterId;
             $history->rating = $newRating;
+            if ($newRating === self::RATING_VIEW) {
+                $history->last_viewed_at = now();
+            }
             $history->save();
         } else {
             $needsSave = false;
+
+            if ($newRating === self::RATING_VIEW) {
+                $history->last_viewed_at = now();
+                $needsSave = true;
+            }
 
             if ($history->is_seeded) {
                 $history->rating = $newRating;

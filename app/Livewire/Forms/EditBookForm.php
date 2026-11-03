@@ -349,7 +349,7 @@ class EditBookForm extends Component
     {
         if (auth()->check() && !auth()->user()->can('update', Book::class)) {
             $this->errorMessage = 'Unauthorized action. You do not have permission to edit catalog books.';
-            $this->dispatch('toast', message: $this->errorMessage, type: 'error');
+            $this->dispatch('open-modal', title: 'Unable to save changes', message: $this->errorMessage, type: 'error', options: ['showCancelButton' => false, 'confirmButtonText' => 'OK']);
             return;
         }
 
@@ -360,67 +360,76 @@ class EditBookForm extends Component
         $hasAuthorSearch = !empty(trim($this->authorSearch));
         $hasNewNames = !empty(trim($this->newAuthorLastName)) || !empty(trim($this->newAuthorFirstName));
 
-        if ($this->catalogKind === 'book' && !$hasAuthorId && !$hasAuthorSearch && !$hasNewNames) {
-            $this->addError('authorSearch', 'The Author field is required.');
-        }
-
         // Validation
         $maxSetting = config('settings.book_covers.max_size', config('settings.coverFile_max_size', '5MB'));
         $maxKb = $this->parseSizeToKilobytes($maxSetting);
 
         $bookCopyId = $this->bookId ?: 'NULL';
 
-        $this->validate([
-            'accessionNumber' => 'required|string|max:50|unique:books,accession_number,' . $bookCopyId . ',id',
-            'barcode' => 'nullable|string|max:50|unique:books,code,' . $bookCopyId . ',id',
-            'status' => 'required|string',
-            'location' => 'nullable|string|max:100',
-            'dateAcquired' => 'nullable|date',
+        try {
+            $this->validate([
+                'accessionNumber' => 'required|string|max:50|unique:books,accession_number,' . $bookCopyId . ',id',
+                'barcode' => 'nullable|string|max:50|unique:books,code,' . $bookCopyId . ',id',
+                'status' => 'required|string',
+                'location' => 'nullable|string|max:100',
+                'dateAcquired' => 'nullable|date',
 
-            'bookTitle' => 'required|string|max:255',
-            'catalogKind' => 'required|in:book,magazine,journal,equipment,multimedia,periodical,specimen',
-            'dailyFine' => 'nullable|numeric|min:0|max:999999.99',
-            'issueVolume' => 'nullable|string|max:50',
-            'issueNumber' => 'nullable|string|max:50',
-            'issueLabel' => 'nullable|string|max:255',
-            'issueDate' => 'nullable|date',
-            'issueBorrowable' => 'boolean',
-            'issueLoanDays' => 'nullable|integer|min:1|max:3650',
-            'manufacturer' => 'nullable|string|max:255',
-            'modelNumber' => 'nullable|string|max:255',
-            'packageContents' => 'nullable|string|max:3000',
-            'subtitle' => 'nullable|string|max:255',
-            'authorId' => 'nullable|exists:authors,id',
-            'authorSearch' => 'nullable|string|max:200',
-            'newAuthorLastName' => 'nullable|string|max:100',
-            'newAuthorFirstName' => 'nullable|string|max:100',
+                'bookTitle' => 'required|string|max:255',
+                'catalogKind' => 'required|in:book,magazine,journal,equipment,multimedia,periodical,specimen',
+                'dailyFine' => 'nullable|numeric|min:0|max:999999.99',
+                'issueVolume' => 'nullable|string|max:50',
+                'issueNumber' => 'nullable|string|max:50',
+                'issueLabel' => 'nullable|string|max:255',
+                'issueDate' => 'nullable|date',
+                'issueBorrowable' => 'boolean',
+                'issueLoanDays' => 'nullable|integer|min:1|max:3650',
+                'manufacturer' => 'nullable|string|max:255',
+                'modelNumber' => 'nullable|string|max:255',
+                'packageContents' => 'nullable|string|max:3000',
+                'subtitle' => 'nullable|string|max:255',
+                'authorId' => 'nullable|exists:authors,id',
+                'authorSearch' => 'nullable|string|max:200',
+                'newAuthorLastName' => 'nullable|string|max:100',
+                'newAuthorFirstName' => 'nullable|string|max:100',
 
-            'isbn' => 'nullable|string|max:15',
-            'issn' => ['nullable', 'regex:/^\d{4}-?\d{3}[\dXx]$/'],
-            'resourceUrl' => ['nullable', 'url:http,https', 'max:255'],
-            'callNumber' => ($this->catalogKind === 'book' ? 'required' : 'nullable').'|string|max:30',
-            'classification' => 'nullable|string|max:30',
-            'publisherName' => 'nullable|string|max:150',
-            'publicationYear' => 'nullable|integer|min:1000|max:' . (date('Y') + 1),
-            'edition' => 'nullable|string|max:30',
-            'pages' => 'nullable|integer|min:1|max:50000',
+                'isbn' => ['nullable', 'string', 'max:255', 'regex:/^(?:-*[^-]){0,15}-*$/u'],
+                'issn' => ['nullable', 'regex:/^\d{4}-?\d{3}[\dXx]$/'],
+                'resourceUrl' => ['nullable', 'url:http,https', 'max:255'],
+                'callNumber' => ($this->catalogKind === 'book' ? 'required' : 'nullable').'|string|max:30',
+                'classification' => 'nullable|string|max:30',
+                'publisherName' => 'nullable|string|max:150',
+                'publicationYear' => 'nullable|integer|min:1000|max:' . (date('Y') + 1),
+                'edition' => 'nullable|string|max:30',
+                'pages' => 'nullable|integer|min:1|max:50000',
 
-            'selectedCategories' => 'nullable|array',
-            'selectedCategories.*' => 'exists:categories,id',
-            'selectedLanguages' => 'nullable|array',
-            'language' => 'nullable|string|max:150',
-            'copyrightYear' => 'nullable|integer|min:1000|max:' . (date('Y') + 1),
+                'selectedCategories' => 'nullable|array',
+                'selectedCategories.*' => 'exists:categories,id',
+                'selectedLanguages' => 'nullable|array',
+                'language' => 'nullable|string|max:150',
+                'copyrightYear' => 'nullable|integer|min:1000|max:' . (date('Y') + 1),
 
-            'bookDescription' => 'nullable|string|max:3000',
-            'notes' => 'nullable|string|max:1000',
-            'coverImage' => is_string($this->coverImage) ? ['regex:/^cover_openlib_[a-z0-9]+_[0-9]+\.webp$/'] : 'nullable|image|mimes:png,jpg,jpeg,webp|max:' . $maxKb,
-        ], [
-            'accessionNumber.required' => 'The Accession Number is required.',
-            'accessionNumber.unique' => 'This Accession Number is already in use.',
-            'bookTitle.required' => 'The Book Title is required.',
-            'callNumber.required' => 'The Call Number is required.',
-            'issn.regex' => 'Enter an ISSN in the format 1234-567X.',
-        ]);
+                'bookDescription' => 'nullable|string|max:3000',
+                'notes' => 'nullable|string|max:1000',
+                'coverImage' => is_string($this->coverImage) ? ['regex:/^cover_openlib_[a-z0-9]+_[0-9]+\.webp$/'] : 'nullable|image|mimes:png,jpg,jpeg,webp|max:' . $maxKb,
+            ], [
+                'accessionNumber.required' => 'The Accession Number is required.',
+                'accessionNumber.unique' => 'This Accession Number is already in use.',
+                'bookTitle.required' => 'The Book Title is required.',
+                'callNumber.required' => 'The Call Number is required.',
+                'issn.regex' => 'Enter an ISSN in the format 1234-567X.',
+                'isbn.regex' => 'The ISBN may not be greater than 15 characters, excluding dashes.',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $this->setErrorBag($e->validator->errors());
+            $this->dispatch('open-modal', title: 'Unable to save changes', message: $e->validator->errors()->first(), type: 'error', options: ['showCancelButton' => false, 'confirmButtonText' => 'OK']);
+            return;
+        }
+
+        if ($this->catalogKind === 'book' && !$hasAuthorId && !$hasAuthorSearch && !$hasNewNames) {
+            $this->addError('authorSearch', 'The Author field is required.');
+            $this->dispatch('open-modal', title: 'Unable to save changes', message: $this->getErrorBag()->first('authorSearch'), type: 'error', options: ['showCancelButton' => false, 'confirmButtonText' => 'OK']);
+            return;
+        }
 
         try {
             \App\Services\AuditTrail::transaction('Catalog entry updated', function () {
@@ -663,7 +672,7 @@ class EditBookForm extends Component
             ]);
 
             $this->errorMessage = 'Failed to update book: ' . $e->getMessage();
-            $this->dispatch('toast', message: 'Failed to update book. Please check the form errors.', type: 'error');
+            $this->dispatch('open-modal', title: 'Unable to save changes', message: 'Failed to update book. Please try again.', type: 'error', options: ['showCancelButton' => false, 'confirmButtonText' => 'OK']);
         }
     }
 

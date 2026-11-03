@@ -36,6 +36,13 @@ class ReservationWaitlistTest extends TestCase
         Schema::create('books', function (Blueprint $t) { $t->id(); $t->unsignedBigInteger('book_detail_id'); $t->string('status'); $t->timestamps(); $t->softDeletes(); });
         Schema::create('book_reservations', function (Blueprint $t) { $t->id(); $t->unsignedBigInteger('book_id'); $t->unsignedBigInteger('student_id'); $t->unsignedBigInteger('account_id'); $t->unsignedBigInteger('reservation_status_id'); $t->dateTime('reservation_date'); $t->dateTime('due_date'); $t->dateTime('approved_date')->nullable(); $t->dateTime('cancelled_date')->nullable(); $t->text('comment')->nullable(); $t->timestamps(); $t->softDeletes(); });
         Schema::create('reservation_waitlist', function (Blueprint $t) { $t->id(); $t->unsignedBigInteger('book_detail_id'); $t->unsignedBigInteger('account_id'); $t->unsignedBigInteger('student_id'); $t->string('status')->default('waiting'); $t->unsignedBigInteger('book_reservation_id')->nullable(); $t->timestamps(); });
+        Schema::create('borrowing_transactions', function (Blueprint $t) {
+            $t->id(); $t->unsignedBigInteger('school_id'); $t->unsignedBigInteger('book_id'); $t->unsignedBigInteger('borrow_type_id');
+            $t->dateTime('due_date'); $t->dateTime('return_date')->nullable(); $t->dateTime('lost_at')->nullable();
+            $t->unsignedBigInteger('lost_reported_by_id')->nullable(); $t->text('lost_note')->nullable();
+            $t->dateTime('lost_resolved_at')->nullable(); $t->unsignedBigInteger('lost_resolved_by_id')->nullable(); $t->text('lost_resolution_note')->nullable();
+            $t->unsignedBigInteger('received_by_id')->nullable(); $t->unsignedBigInteger('return_condition_id')->nullable(); $t->text('return_condition_note')->nullable(); $t->timestamps();
+        });
         (require database_path('migrations/2026_10_28_111951_create_notifications_table.php'))->up();
         (require database_path('migrations/2026_11_01_000004_create_reservation_notification_deliveries.php'))->up();
         (require database_path('migrations/2026_11_01_000005_add_notification_query_indexes.php'))->up();
@@ -52,13 +59,6 @@ class ReservationWaitlistTest extends TestCase
         Schema::table('books', fn (Blueprint $t) => $t->unsignedBigInteger('book_condition_id')->nullable());
         Schema::create('book_conditions', function (Blueprint $t) { $t->id(); $t->string('status'); });
         Schema::create('borrow_types', function (Blueprint $t) { $t->id(); $t->string('name'); });
-        Schema::create('borrowing_transactions', function (Blueprint $t) {
-            $t->id(); $t->unsignedBigInteger('school_id'); $t->unsignedBigInteger('book_id'); $t->unsignedBigInteger('borrow_type_id');
-            $t->dateTime('due_date'); $t->dateTime('return_date')->nullable(); $t->dateTime('lost_at')->nullable();
-            $t->unsignedBigInteger('lost_reported_by_id')->nullable(); $t->text('lost_note')->nullable();
-            $t->dateTime('lost_resolved_at')->nullable(); $t->unsignedBigInteger('lost_resolved_by_id')->nullable(); $t->text('lost_resolution_note')->nullable();
-            $t->unsignedBigInteger('received_by_id')->nullable(); $t->unsignedBigInteger('return_condition_id')->nullable(); $t->text('return_condition_note')->nullable(); $t->timestamps();
-        });
         DB::table('book_conditions')->insert([['id' => 1, 'status' => 'Good'], ['id' => 5, 'status' => 'Lost']]);
         DB::table('borrow_types')->insert(['id' => 1, 'name' => 'Regular Check-out']);
         DB::table('borrowing_transactions')->insert(['id' => 1, 'school_id' => 1, 'book_id' => 1, 'borrow_type_id' => 1, 'due_date' => now()->addDay()]);
@@ -286,6 +286,24 @@ class ReservationWaitlistTest extends TestCase
         $approval->approveDue();
         $this->assertSame(2, (int) $reservation->fresh()->reservation_status_id);
         $this->assertSame($deadline, $reservation->fresh()->due_date->toDateTimeString());
+    }
+
+    public function test_automatic_approval_waits_when_student_has_overdue_loan(): void
+    {
+        app(ReservationWaitlistService::class)->join(1, Account::findOrFail(1));
+        Book::findOrFail(1)->update(['status' => 'available']);
+        $reservation = \App\Models\BookReservation::firstOrFail();
+        DB::table('borrowing_transactions')->insert([
+            'school_id' => 1, 'book_id' => 1, 'borrow_type_id' => 1, 'due_date' => now()->subDay(),
+        ]);
+        config(['settings.reservation.auto_approve' => true, 'settings.reservation.auto_approve_delay_minutes' => 0]);
+
+        app(ReservationApprovalService::class)->approveDue();
+
+        $this->assertSame(1, (int) $reservation->fresh()->reservation_status_id);
+        DB::table('borrowing_transactions')->update(['return_date' => now()]);
+        app(ReservationApprovalService::class)->approveDue();
+        $this->assertSame(2, (int) $reservation->fresh()->reservation_status_id);
     }
 
     public function test_settings_fall_back_to_config_and_use_database_values_when_present(): void

@@ -515,6 +515,9 @@ class AdminDashboard extends Component
                 if (BookReservation::where('student_id', $student->id)->whereIn('reservation_status_id', [1, 2])->count() >= 3) {
                     throw new \RuntimeException('This student has reached the maximum limit of 3 active reservations.');
                 }
+                if (! \App\Services\ReservationSettings::hasCapacity($student->id)) {
+                    throw new \RuntimeException('The student has overdue books or has reached the combined loan and reservation limit.');
+                }
 
                 $reservation = BookReservation::create([
                     'book_id' => $book->id,

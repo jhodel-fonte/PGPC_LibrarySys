@@ -250,7 +250,13 @@ class EditStudentForm extends Component
 
         $this->errorMessage = '';
         $this->sanitizeInputs();
-        $this->validate();
+        try {
+            $this->validate();
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $this->setErrorBag($e->validator->errors());
+            $this->dispatch('open-modal', title: 'Unable to save changes', message: $e->validator->errors()->first(), type: 'error', options: ['showCancelButton' => false, 'confirmButtonText' => 'OK']);
+            return;
+        }
 
         $disk = config('settings.user_images.disk', 'public');
         $imagePathToSave = $student->getRawOriginal('image_url');
@@ -312,6 +318,7 @@ class EditStudentForm extends Component
         } catch (\Throwable $e) {
             Log::error('Failed to update student: ' . $e->getMessage(), ['exception' => $e]);
             $this->errorMessage = 'Failed to update student record. ' . $e->getMessage();
+            $this->dispatch('open-modal', title: 'Unable to save changes', message: 'Failed to update student record. Please try again.', type: 'error', options: ['showCancelButton' => false, 'confirmButtonText' => 'OK']);
         }
     }
 

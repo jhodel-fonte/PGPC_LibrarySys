@@ -259,6 +259,43 @@ class CheckOutTest extends TestCase
         $this->assertSame('available', $this->book->fresh()->status);
     }
 
+    public function test_checkout_rechecks_loan_limit_after_queue_is_loaded(): void
+    {
+        config(['settings.library_config.max_loan_limit' => 1]);
+        $component = Livewire::actingAs($this->librarian)->test(CheckOutBook::class)
+            ->call('handleSearchCode', '2026-0001')->call('handleSearchCode', 'BAR-999');
+        $other = Book::create([
+            'book_detail_id' => $this->book->book_detail_id, 'book_condition_id' => 2,
+            'accession_number' => 'OTHER-LOAN', 'status' => 'borrowed',
+        ]);
+        BorrowingTransaction::create([
+            'book_id' => $other->id, 'school_id' => $this->student->id,
+            'issued_by_id' => $this->librarian->librarian->id,
+            'borrow_type_id' => \App\Models\BorrowType::firstOrCreate(['name' => 'Regular Check-out'])->id,
+            'issued_condition_id' => 2, 'issued_date' => now(), 'due_date' => now()->addDay(),
+        ]);
+
+        $component->call('confirmCheckout')->assertDispatched('checkout-failed')->assertNotDispatched('checkout-completed');
+        $this->assertSame('available', $this->book->fresh()->status);
+    }
+
+    public function test_reservation_capacity_counts_loans_and_rejects_overdue_books(): void
+    {
+        config(['settings.library_config.max_loan_limit' => 2]);
+        $loan = BorrowingTransaction::create([
+            'book_id' => $this->book->id, 'school_id' => $this->student->id,
+            'issued_by_id' => $this->librarian->librarian->id,
+            'borrow_type_id' => \App\Models\BorrowType::firstOrCreate(['name' => 'Regular Check-out'])->id,
+            'issued_condition_id' => 2, 'issued_date' => now(), 'due_date' => now()->addDay(),
+        ]);
+        $this->assertTrue(\App\Services\ReservationSettings::hasCapacity($this->student->id));
+        $loan->update(['due_date' => now()->subDay()]);
+        $this->assertFalse(\App\Services\ReservationSettings::hasCapacity($this->student->id));
+        $loan->update(['due_date' => now()->addDay()]);
+        config(['settings.library_config.max_loan_limit' => 1]);
+        $this->assertFalse(\App\Services\ReservationSettings::hasCapacity($this->student->id));
+    }
+
     public function test_librarian_can_report_and_resolve_a_lost_loan_from_the_return_screen(): void
     {
         BookCondition::firstOrCreate(['status' => 'Lost']);
