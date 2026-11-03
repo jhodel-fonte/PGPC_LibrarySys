@@ -72,4 +72,17 @@ class EditBookOpenLibraryTest extends TestCase
             ->assertNoRedirect();
     }
 
+    public function test_invalid_book_edit_shows_error_modal(): void
+    {
+        $admin = Account::factory()->create(['role_id' => Role::where('name', 'Admin')->value('id')]);
+        $data = BookData::create(['book_title' => 'Old title', 'language_id' => Language::query()->value('id')]);
+        $detail = BookDetail::create(['book_data_id' => $data->id, 'catalog_kind' => 'book', 'call_number' => 'TEST', 'book_type_id' => BookType::query()->value('id'), 'publisher_id' => Publisher::query()->value('id')]);
+
+        Livewire::actingAs($admin)->test(EditBookForm::class, ['id' => $detail->id])
+            ->set('bookTitle', '')
+            ->call('save')
+            ->assertHasErrors(['bookTitle' => 'required'])
+            ->assertDispatched('open-modal');
+    }
+
 }

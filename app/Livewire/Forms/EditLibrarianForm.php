@@ -218,8 +218,9 @@ class EditLibrarianForm extends Component
             $firstField = array_key_first($e->errors());
             $firstMessage = $e->validator->errors()->first();
             $this->dispatch('scroll-to-error', field: $firstField, message: $firstMessage);
-            $this->dispatch('toast', message: $firstMessage ?: 'Please check required fields.', type: 'error');
-            throw $e;
+            $this->setErrorBag($e->validator->errors());
+            $this->dispatch('open-modal', title: 'Unable to save changes', message: $firstMessage ?: 'Please check required fields.', type: 'error', options: ['showCancelButton' => false, 'confirmButtonText' => 'OK']);
+            return;
         }
 
         $disk = config('settings.user_images.disk', 'public');
@@ -314,7 +315,7 @@ class EditLibrarianForm extends Component
             Log::error('Failed to update librarian: ' . $e->getMessage(), ['exception' => $e]);
             $this->errorMessage = 'Failed to update librarian profile. ' . $e->getMessage();
             $this->dispatch('scroll-to-error', field: 'error-banner', message: $this->errorMessage);
-            $this->dispatch('toast', message: $this->errorMessage, type: 'error');
+            $this->dispatch('open-modal', title: 'Unable to save changes', message: 'Failed to update librarian profile. Please try again.', type: 'error', options: ['showCancelButton' => false, 'confirmButtonText' => 'OK']);
         }
     }
 

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Livewire\Forms\AddBookForm;
+use App\Livewire\Forms\EditBookForm;
 use App\Models\BookCondition;
 use App\Models\BookData;
 use App\Models\BookDetail;
@@ -39,6 +40,20 @@ class CatalogAddWorkflowTest extends TestCase
         $this->assertNull($detail->isbn);
         $this->assertCount(0, $detail->bookData->authors);
         $this->assertNull($detail->periodicalIssue);
+    }
+
+    public function test_isbn_dashes_do_not_count_toward_length_on_add_or_edit(): void
+    {
+        $isbn = '978-0-14-032872-1';
+        Livewire::test(AddBookForm::class)->set('bookTitle', 'Example')->set('accessionNumber', 'ISBN-1')
+            ->set('callNumber', 'QA1')->set('authorSearch', 'Example Author')->set('isbn', $isbn)
+            ->call('submit')->assertHasNoErrors()->assertSet('errorMessage', '');
+        $detail = BookDetail::where('isbn', $isbn)->firstOrFail();
+
+        $form = Livewire::test(EditBookForm::class, ['id' => $detail->id]);
+        $form->set('isbn', '978-1-23-456789-0')->call('save')->assertHasNoErrors()->assertSet('errorMessage', '');
+        $this->assertSame('978-1-23-456789-0', $detail->fresh()->isbn);
+        $form->set('isbn', '1234-5678-9012-3456')->call('save')->assertHasErrors(['isbn']);
     }
 
     public function test_duplicate_issue_preserves_existing_record(): void

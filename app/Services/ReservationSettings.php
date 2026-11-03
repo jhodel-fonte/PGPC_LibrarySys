@@ -4,6 +4,21 @@ namespace App\Services;
 
 class ReservationSettings
 {
+    public static function hasCapacity(int $studentId, ?int $excludeReservation = null): bool
+    {
+        $loans = \App\Models\BorrowingTransaction::where('school_id', $studentId)
+            ->whereNull('return_date')->whereNull('lost_at');
+        if ((clone $loans)->where('due_date', '<', now())->exists()) {
+            return false;
+        }
+
+        $reservations = \App\Models\BookReservation::where('student_id', $studentId)
+            ->whereIn('reservation_status_id', [1, 2])
+            ->when($excludeReservation, fn ($query) => $query->where('id', '!=', $excludeReservation));
+
+        return $loans->count() + $reservations->count() < (int) LibrarySettings::get('library_config.max_loan_limit');
+    }
+
     private static function value(string $key): mixed
     {
         return LibrarySettings::get('reservation.' . $key);

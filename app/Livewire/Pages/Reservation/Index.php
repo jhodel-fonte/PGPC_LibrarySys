@@ -49,7 +49,11 @@ class Index extends Component
         }
 
         try {
-            app(\App\Services\RecommendationService::class)->refreshFor($account);
+            $lastViewedIsbn = $account->userHistories()->where('is_seeded', false)
+                ->whereNotNull('last_viewed_at')->orderByDesc('last_viewed_at')->orderByDesc('id')->value('isbn');
+            app(\App\Services\RecommendationService::class)->refreshFor(
+                $account, $lastViewedIsbn, $lastViewedIsbn ? \App\Models\UserHistory::RATING_VIEW : null
+            );
             $account->unsetRelation('recommendation');
             unset($this->recommendedBooks);
         } catch (\Throwable $e) {
@@ -283,6 +287,9 @@ class Index extends Component
                 }
                 $book = Book::lockForUpdate()->findOrFail($this->selectedBookCopyId);
                 \App\Models\Student::lockForUpdate()->findOrFail($student->id);
+                if (! \App\Services\ReservationSettings::hasCapacity($student->id)) {
+                    throw new \RuntimeException('Return overdue books or reduce your active loans and reservations before reserving.');
+                }
                 if (BookReservation::where('student_id', $student->id)->whereIn('reservation_status_id', [1, 2])->count() >= 3) {
                     throw new \RuntimeException('You have reached the maximum limit of 3 active book reservations.');
                 }

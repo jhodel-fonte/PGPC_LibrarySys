@@ -54,6 +54,8 @@
             $routePrefix = request()->is('librarian*') ? 'librarian.' : 'admin.';
             $canCreateBook = auth()->check() && auth()->user()->can('create', \App\Models\Book::class);
             $canUpdateBook = auth()->check() && auth()->user()->can('update', \App\Models\Book::class);
+            $canProcessLost = \App\Services\EmployeeRoleService::canReturn()
+                && \App\Services\EmployeeRoleService::can(['manage_circulation', 'view_circulation']);
             $canDeleteBook = auth()->check() && auth()->user()->can('delete', \App\Models\Book::class);
         @endphp
 
@@ -375,6 +377,7 @@
                 };
 
                 $coverUrl = $detail && $detail->cover_image ? $detail->cover_url : null;
+                $lostCopies = $inventoryView === 'Titles' ? ($detail?->books ?? collect()) : collect([$book]);
                 $initials = collect(explode(' ', $data ? $data->book_title : 'BOOK'))->map(fn($n) => substr($n, 0, 1))->take(2)->join('');
             @endphp
             <tr
@@ -437,6 +440,7 @@
                             <!-- 3-Dots Actions Menu -->
                             <div class="shrink-0 -mr-1">
                                 <x-widget.table-action-dot>
+                                    @include('livewire.pages.dashboard.partials.catalog-lost-actions')
                                     <button
                                         type="button"
                                         @click="open = false; $dispatch('open-book-details', { id: {{ $book->book_detail_id ?? $book->id }}, bookId: {{ $book->id }} })"
@@ -633,6 +637,7 @@
                 <td class="desktop-cell px-4 py-3 align-middle text-right pr-6">
                     <div class="flex items-center justify-end gap-3">
                         <x-widget.table-action-dot>
+                            @include('livewire.pages.dashboard.partials.catalog-lost-actions')
                             <button
                                 type="button"
                                 @click="open = false; $dispatch('open-book-details', { id: {{ $book->book_detail_id ?? $book->id }}, bookId: {{ $book->id }} })"

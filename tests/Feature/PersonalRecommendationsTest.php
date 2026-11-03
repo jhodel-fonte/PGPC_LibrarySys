@@ -74,6 +74,27 @@ class PersonalRecommendationsTest extends TestCase
         Http::assertNothingSent();
     }
 
+    public function test_reservation_refresh_uses_latest_view_even_when_book_was_borrowed(): void
+    {
+        $user = Account::factory()->create(['role_id' => 4]);
+        $recommended = $this->catalogBook('3333333333', 'Related book');
+        $this->travelTo(now()->subMinutes(2));
+        UserHistory::upsertHighestRating($user->id, '1111111111', UserHistory::RATING_BORROWED);
+        UserHistory::upsertHighestRating($user->id, '1111111111', UserHistory::RATING_VIEW);
+        $this->travel(1)->minutes();
+        UserHistory::upsertHighestRating($user->id, '2222222222', UserHistory::RATING_VIEW);
+        $this->travel(1)->minutes();
+        UserHistory::upsertHighestRating($user->id, '1111111111', UserHistory::RATING_VIEW);
+        Http::fake(['*' => Http::response(['recommendations' => [['isbn' => $recommended->isbn]]])]);
+
+        Livewire::actingAs($user)->test(\App\Livewire\Pages\Reservation\Index::class)
+            ->call('refreshRecommendations')->assertSee('Related book');
+
+        Http::assertSent(fn ($request) => $request['interaction']['isbn'] === '1111111111'
+            && $request['interaction']['rating'] === UserHistory::RATING_VIEW);
+        $this->assertDatabaseHas('user_histories', ['user_id' => $user->id, 'isbn' => '1111111111', 'rating' => UserHistory::RATING_BORROWED]);
+    }
+
     public function test_only_exact_isbn_matches_are_shown_without_filler(): void
     {
         $user = Account::factory()->create(['role_id' => 4]);

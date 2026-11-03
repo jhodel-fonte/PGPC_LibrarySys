@@ -695,6 +695,11 @@ class CheckOutBook extends Component
             $borrowedItems = [];
             \App\Services\AuditTrail::transaction('Books checked out', function () use ($studentId, $bookIds, &$borrowedItems) {
                 $checkoutStudent = Student::lockForUpdate()->findOrFail($studentId);
+                $activeLoans = BorrowingTransaction::where('school_id', $studentId)
+                    ->whereNull('return_date')->whereNull('lost_at')->count();
+                if ($activeLoans + count($this->checkoutBooks) > (int) \App\Services\LibrarySettings::get('library_config.max_loan_limit')) {
+                    throw new \DomainException('The student has reached the active loan limit.');
+                }
                 if (BorrowingTransaction::where('school_id', $studentId)->whereNotNull('lost_at')->whereNull('lost_resolved_at')->exists()) {
                     throw new \DomainException('Borrowing is blocked until the lost book case is resolved.');
                 }

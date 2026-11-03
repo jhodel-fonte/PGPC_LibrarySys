@@ -47,7 +47,7 @@
                         $rDue = $res->due_date?->copy()->setTimezone('Asia/Manila');
                         $rIsDueSoon = $rDue && $rDue->diffInDays(now()) <= 1;
                     @endphp
-                    <div class="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 flex flex-col gap-4">
+                    <div x-data="{ confirmCancel: false }" class="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 flex flex-col gap-4">
                         <div class="flex items-start gap-3 sm:gap-4">
                             <img
                                 src="{{ $rCover }}"
@@ -109,12 +109,28 @@
 
                             <button
                                 type="button"
-                                wire:click="cancelReservation({{ $res->id }})"
-                                wire:confirm="Are you sure you want to cancel this reservation? The held copy will be released."
+                                x-on:click="confirmCancel = true; $nextTick(() => $refs.keepHold.focus())"
                                 class="min-h-11 px-4 rounded-lg border border-slate-300 bg-white text-sm font-semibold text-slate-700 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#102B70]"
                             >
                                 Cancel Hold
                             </button>
+                        </div>
+
+                        <div x-show="confirmCancel" x-cloak x-trap.inert.noscroll="confirmCancel"
+                            x-on:keydown.escape.window="confirmCancel = false"
+                            class="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/60 p-4"
+                            role="dialog" aria-modal="true" aria-labelledby="cancel-hold-title-{{ $res->id }}" aria-describedby="cancel-hold-description-{{ $res->id }}">
+                            <div class="my-auto w-full max-w-md space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-2xl">
+                                <h3 id="cancel-hold-title-{{ $res->id }}" class="text-base font-bold text-slate-900">Cancel Hold?</h3>
+                                <p id="cancel-hold-description-{{ $res->id }}" class="text-sm text-slate-600">Cancel your reservation for <strong>{{ $rTitle }}</strong>? The held copy will be released.</p>
+                                <div class="flex flex-wrap justify-end gap-3 pt-2">
+                                    <button type="button" x-ref="keepHold" x-on:click="confirmCancel = false"
+                                        class="min-h-11 rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#102B70]">Keep Hold</button>
+                                    <button type="button" wire:click="cancelReservation({{ $res->id }})" wire:loading.attr="disabled" wire:target="cancelReservation"
+                                        x-on:click="confirmCancel = false"
+                                        class="min-h-11 rounded-xl bg-[#102B70] px-5 text-sm font-semibold text-white hover:bg-[#0B225E] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#102B70] disabled:opacity-50">Confirm Cancellation</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 @endforeach

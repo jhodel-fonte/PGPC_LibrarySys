@@ -259,6 +259,43 @@ class CheckOutTest extends TestCase
         $this->assertSame('available', $this->book->fresh()->status);
     }
 
+    public function test_checkout_rechecks_loan_limit_after_queue_is_loaded(): void
+    {
+        config(['settings.library_config.max_loan_limit' => 1]);
+        $component = Livewire::actingAs($this->librarian)->test(CheckOutBook::class)
+            ->call('handleSearchCode', '2026-0001')->call('handleSearchCode', 'BAR-999');
+        $other = Book::create([
+            'book_detail_id' => $this->book->book_detail_id, 'book_condition_id' => 2,
+            'accession_number' => 'OTHER-LOAN', 'status' => 'borrowed',
+        ]);
+        BorrowingTransaction::create([
+            'book_id' => $other->id, 'school_id' => $this->student->id,
+            'issued_by_id' => $this->librarian->librarian->id,
+            'borrow_type_id' => \App\Models\BorrowType::firstOrCreate(['name' => 'Regular Check-out'])->id,
+            'issued_condition_id' => 2, 'issued_date' => now(), 'due_date' => now()->addDay(),
+        ]);
+
+        $component->call('confirmCheckout')->assertDispatched('checkout-failed')->assertNotDispatched('checkout-completed');
+        $this->assertSame('available', $this->book->fresh()->status);
+    }
+
+    public function test_reservation_capacity_counts_loans_and_rejects_overdue_books(): void
+    {
+        config(['settings.library_config.max_loan_limit' => 2]);
+        $loan = BorrowingTransaction::create([
+            'book_id' => $this->book->id, 'school_id' => $this->student->id,
+            'issued_by_id' => $this->librarian->librarian->id,
+            'borrow_type_id' => \App\Models\BorrowType::firstOrCreate(['name' => 'Regular Check-out'])->id,
+            'issued_condition_id' => 2, 'issued_date' => now(), 'due_date' => now()->addDay(),
+        ]);
+        $this->assertTrue(\App\Services\ReservationSettings::hasCapacity($this->student->id));
+        $loan->update(['due_date' => now()->subDay()]);
+        $this->assertFalse(\App\Services\ReservationSettings::hasCapacity($this->student->id));
+        $loan->update(['due_date' => now()->addDay()]);
+        config(['settings.library_config.max_loan_limit' => 1]);
+        $this->assertFalse(\App\Services\ReservationSettings::hasCapacity($this->student->id));
+    }
+
     public function test_librarian_can_report_and_resolve_a_lost_loan_from_the_return_screen(): void
     {
         BookCondition::firstOrCreate(['status' => 'Lost']);
@@ -273,12 +310,21 @@ class CheckOutTest extends TestCase
             ->call('reportLost', $loan->id);
         $this->assertNotNull($loan->fresh()->lost_at);
         $this->assertSame('lost', $this->book->fresh()->status);
+        Livewire::actingAs($this->librarian)->test(\App\Livewire\Pages\Dashboard\BookManager::class)
+            ->assertSee('Resolve lost book')->assertSee('ACC-999')
+            ->set('inventoryView', 'Copies')->assertSee('Resolve lost book');
+        Livewire::actingAs($this->librarian)->withQueryParams(['loan' => $loan->id])
+            ->test(\App\Livewire\Pages\Dashboard\CheckInBook::class)
+            ->assertSet('lostModalLoanId', $loan->id)->assertSet('lostModalMode', 'resolve');
         $return->call('openLostCase', $loan->id)->assertSet('lostModalMode', 'resolve')
             ->set('resolutionNotes.'.$loan->id, 'Case settled')
             ->call('resolveLost', $loan->id);
         $this->assertNotNull($loan->fresh()->lost_resolved_at);
         $this->assertNull($loan->fresh()->return_date);
         $this->assertSame('lost', $this->book->fresh()->status);
+        Livewire::actingAs($this->librarian)->withQueryParams(['loan' => $loan->id])
+            ->test(\App\Livewire\Pages\Dashboard\CheckInBook::class)
+            ->assertSet('lostModalMode', 'found');
         $return->call('handleSearchCode', 'ACC-999')->assertSet('lostModalMode', 'found')
             ->set('resolutionNotes.'.$loan->id, 'Original copy found')
             ->call('resolveLost', $loan->id)->assertSet('lostModalError', 'Select the recovered book condition.')
