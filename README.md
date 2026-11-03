@@ -82,26 +82,19 @@ Follow these steps to set up the PGPC Library System in your local development e
 
 ### Refresh the local PostgreSQL database from the VM
 
-Install PostgreSQL client tools (`pg_dump` and `pg_restore`) locally, with a
-version at least as new as the VM's PostgreSQL server. Keep your existing VM
-connection in the `DB_*` settings, with `APP_ENV=local` and
-`DB_CONNECTION=pgsql`; do not set `DB_URL`. The local database must already exist.
+Install PostgreSQL client tools (`pg_dump`, `pg_restore`, and `psql`) locally, with a
+version at least as new as the VM's PostgreSQL server. Set `APP_ENV=local`,
+`DB_CONNECTION=pgsql`, and the local database's credentials in `DB_*`; set
+`DB_HOST=127.0.0.1` or `localhost` and do not set `DB_URL`. The local database
+must already exist. Do not point this local destination at an SSH tunnel: a
+localhost address alone cannot prove that the PostgreSQL server is local.
 
 Keep the VM database private. If your existing connection uses an SSH tunnel,
 keep that tunnel open while running the command. For example (replace the SSH
-user, VM address, and local port to match your `DB_PORT`):
+user and VM address):
 
 ```bash
 ssh -L 15432:127.0.0.1:5432 user@vm-address
-```
-
-Add the local database credentials to `.env` (never commit them):
-
-```ini
-LOCAL_DB_PORT=5432
-LOCAL_DB_DATABASE=your_local_database
-LOCAL_DB_USERNAME=your_local_database_user
-LOCAL_DB_PASSWORD=your_local_database_password
 ```
 
 Run `php artisan config:clear` after changing `.env`, then run:
@@ -110,9 +103,15 @@ Run `php artisan config:clear` after changing `.env`, then run:
 php artisan db:refresh-from-vm
 ```
 
-Confirm the prompt to replace local objects and data included in the snapshot.
-The restore runs in one transaction; the local user needs permissions to drop
-and create the restored objects. Objects existing only locally are not removed.
+The command asks for the VM host, port, database, username and password. For
+the tunnel above, enter host `127.0.0.1` and port `15432` as the VM source,
+while `DB_PORT` in `.env` must identify your actual local PostgreSQL server.
+It shows both endpoints before confirmation. You can also choose option 2 in
+`python library_menu.py`. The command removes local schemas and
+large objects and restores the snapshot in one transaction, including removal
+of objects that exist only locally. The local user needs permissions to drop
+and create all restored objects and extensions. Database-level settings and
+PostgreSQL roles are not copied.
 Back up local changes first. This copies the database, not uploaded files; the
 snapshot can contain sensitive student information. Protect your local machine.
 
@@ -156,7 +155,8 @@ After this version is present in the native Ubuntu checkout, run:
 sudo bash /opt/pgpc-lib/deploy/manage.sh
 ```
 
-The menu checks service and database status, starts or stops the library stack,
+Alternatively run `python3 /opt/pgpc-lib/library_menu.py` and choose option 1,
+then choose option 3 in the maintenance menu to update. The menu checks service and database status, starts or stops the library stack,
 updates a clean Git checkout, edits `.env`, runs pending migrations, creates
 local backups, manages the queue and scheduler, sends confirmed test messages,
 and shows recent logs. It is designed for the native `/opt/pgpc-lib` deployment,

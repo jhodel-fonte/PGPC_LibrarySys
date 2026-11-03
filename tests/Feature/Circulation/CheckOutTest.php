@@ -403,6 +403,35 @@ class CheckOutTest extends TestCase
 
         $this->assertSame(1, BorrowingTransaction::where('book_id', $this->book->id)->whereNull('return_date')->count());
     }
+    public function test_staff_cannot_exceed_the_active_reservation_limit(): void
+    {
+        foreach ([1, 2, 1] as $i => $status) {
+            $copy = Book::create([
+                'book_detail_id' => $this->book->book_detail_id,
+                'book_condition_id' => 2,
+                'accession_number' => 'RES-'. $i,
+                'code' => 'RES-'. $i,
+                'status' => 'reserved',
+                'location' => 'Shelf A',
+            ]);
+            \App\Models\BookReservation::create([
+                'book_id' => $copy->id, 'student_id' => $this->student->id,
+                'account_id' => $this->student->account_id, 'reservation_status_id' => $status,
+                'reservation_date' => now(), 'due_date' => now()->addDay(),
+            ]);
+        }
+
+        Livewire::actingAs($this->librarian)
+            ->test(\App\Livewire\Pages\Reservation\AdminDashboard::class)
+            ->set('createSelectedStudentId', $this->student->id)
+            ->set('createSelectedBookId', $this->book->id)
+            ->call('submitManualReservation')
+            ->assertDispatched('toast', fn ($event, $params) => str_contains($params['message'], 'maximum limit of 3 active reservations'));
+
+        $this->assertDatabaseMissing('book_reservations', ['book_id' => $this->book->id]);
+        $this->assertSame('available', $this->book->fresh()->status);
+    }
+
     public function test_staff_cannot_reserve_reference_only_issue(): void
     {
         $this->book->bookDetail->update(['catalog_kind' => 'journal']);

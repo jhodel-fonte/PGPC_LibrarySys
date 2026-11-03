@@ -124,7 +124,7 @@ update_application() {
     git_cmd fetch --quiet 2>/dev/null || { echo 'Git fetch failed; check the server repository credentials.'; return 1; }
     target=$(git_cmd rev-parse '@{upstream}') || return 1
     git_cmd merge-base --is-ancestor HEAD "$target" || { echo 'The local branch has diverged. Resolve it manually; no changes were made.'; return 1; }
-    [[ "$(git_cmd rev-parse HEAD)" != "$target" ]] || { echo 'Already up to date.'; return 0; }
+    [[ "$head" != "$target" ]] || echo 'Already up to date; continuing with dependency installation and deployment.'
     echo 'Incoming commits:'
     git_cmd log --oneline --max-count=20 "HEAD..$target" || return 1
     echo 'Migration files changed by this update (not necessarily pending):'
@@ -170,6 +170,8 @@ update_application() {
     if [[ $import_queue_was_active == 1 ]]; then systemctl start "$IMPORT_QUEUE" || return 1; fi
     if [[ $scheduler_was_active == 1 ]]; then systemctl start "$SCHEDULER" || return 1; fi
     if [[ "$before_down" == up ]]; then artisan up --no-ansi || return 1; fi
+    systemctl status "$FPM" "$QUEUE" "$SCHEDULER" --no-pager || true
+    curl --noproxy '*' -I --resolve library.pgpc.online:443:127.0.0.1 https://library.pgpc.online/ || echo 'HTTPS check failed; inspect the site and certificate.'
     echo 'Update completed. Check system health and application logs. Review any changed deploy files against the installed system configuration.'
 }
 

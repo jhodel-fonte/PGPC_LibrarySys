@@ -476,7 +476,7 @@
                     <div class="lg:col-span-6">
 
                         <!-- Tabs Navigation -->
-                        <div class="flex items-center gap-6 border-b border-[#E2E8F0] pb-0 text-[15px]">
+                        <div class="flex flex-wrap items-center gap-6 border-b border-[#E2E8F0] pb-0 text-[15px]">
                             <button
                                 type="button"
                                 wire:click="setTab('overview')"
@@ -490,6 +490,10 @@
                                 class="pb-2.5 font-bold transition-all border-b-2 cursor-pointer {{ $activeTab === 'details' ? 'border-[#FCC719] text-[#0B2454]' : 'border-transparent text-[#64748B] hover:text-[#0B2454]' }}"
                             >
                                 Details
+                            </button>
+                            <button type="button" wire:click="setTab('authors')"
+                                class="pb-2.5 font-bold transition-all border-b-2 cursor-pointer {{ $activeTab === 'authors' ? 'border-[#FCC719] text-[#0B2454]' : 'border-transparent text-[#64748B] hover:text-[#0B2454]' }}">
+                                More by Author
                             </button>
                         </div>
 
@@ -576,6 +580,20 @@
                                     <span class="col-span-2 text-[#0B2454] font-medium">{{ $book['classification'] }}</span>
                                 </div>
                                 @endif
+                            </div>
+                        @elseif($activeTab === 'authors')
+                            <div class="pt-5">
+                                <h3 class="mb-3 font-bold text-[#0B2454]">Other works by the same author</h3>
+                                <ul class="space-y-3">
+                                    @forelse($otherWorks as $work)
+                                        <li>
+                                            <a href="{{ route('opac.book.detail', $work->books->first()->accession_number) }}" class="font-semibold text-[#102B70] hover:underline">{{ $work->bookData->book_title }}</a>
+                                            <p class="text-sm text-slate-500">{{ $work->bookData->authors->map(fn ($author) => trim($author->first_name.' '.$author->last_name))->filter()->join(', ') }}</p>
+                                        </li>
+                                    @empty
+                                        <li class="text-sm text-slate-500">No other works by these authors are available in the catalog.</li>
+                                    @endforelse
+                                </ul>
                             </div>
                         @endif
 

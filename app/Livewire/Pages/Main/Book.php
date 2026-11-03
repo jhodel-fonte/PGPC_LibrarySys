@@ -424,8 +424,20 @@ class Book extends Component
     public function render()
     {
         $title = $this->book['title'] ?? 'Book Details';
+        $otherWorks = collect();
+        if ($this->activeTab === 'authors' && $this->bookDetailId) {
+            $current = BookDetailModel::with('bookData.authors')->find($this->bookDetailId);
+            $authorIds = $current?->bookData?->authors->modelKeys() ?? [];
+            if ($authorIds) {
+                $otherWorks = BookDetailModel::publicCatalog()->with('bookData.authors')
+                    ->where('book_data_id', '!=', $current->book_data_id)
+                    ->whereHas('bookData.authors', fn ($q) => $q->whereIn('authors.id', $authorIds))
+                    ->withWhereHas('books', fn ($q) => $q->whereNotIn(\Illuminate\Support\Facades\DB::raw('LOWER(status)'), ['disabled', 'archived']))
+                    ->orderBy('id')->get();
+            }
+        }
 
-        return view('livewire.pages.main.book')->layout('components.layouts.home', [
+        return view('livewire.pages.main.book', compact('otherWorks'))->layout('components.layouts.home', [
             'title' => $title,
         ]);
     }
