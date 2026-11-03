@@ -153,7 +153,7 @@ class StudentTable extends Component
         $this->selectedStudentName = $student ? trim("{$student->first_name} {$student->last_name}") : $account->username;
         $this->selectedStudentSchoolId = $student?->school_id_number ?? '—';
         $this->selectedStudentActiveLoans = $student
-            ? $student->borrowingTransactions()->whereNull('return_date')->count()
+            ? $student->borrowingTransactions()->whereNull('return_date')->whereNull('lost_at')->count()
             : 0;
         $this->showDeleteModal = true;
     }
@@ -192,7 +192,7 @@ class StudentTable extends Component
         }
 
         $student = $user->student;
-        $activeLoans = $student ? $student->borrowingTransactions()->whereNull('return_date')->count() : 0;
+        $activeLoans = $student ? $student->borrowingTransactions()->whereNull('return_date')->whereNull('lost_at')->count() : 0;
         if ($activeLoans > 0) {
             $this->dispatch('toast', message: 'Cannot delete student with active borrowed books. Please return all borrowed items first.', type: 'error');
             $this->closeDeleteModal();
@@ -280,7 +280,7 @@ class StudentTable extends Component
             }
 
             $student = $account->student;
-            $hasActiveLoans = $student && $student->borrowingTransactions()->whereNull('return_date')->exists();
+            $hasActiveLoans = $student && $student->borrowingTransactions()->whereNull('return_date')->whereNull('lost_at')->exists();
             if ($hasActiveLoans) {
                 continue;
             }
@@ -371,6 +371,17 @@ class StudentTable extends Component
         if ($restoredCount > 0) {
             $this->dispatch('toast', message: "Restored {$restoredCount} student account(s) successfully.", type: 'success');
         }
+    }
+
+    public function exportExcel()
+    {
+        abort_unless(EmployeeRoleService::canViewStudents(), 403);
+        $rows = [['Student ID', 'First name', 'Last name', 'Email', 'Program', 'Year level', 'Status']];
+        foreach ($this->buildQuery()->get() as $account) {
+            $student = $account->student;
+            $rows[] = [$student?->school_id_number, $student?->first_name, $student?->last_name, $account->email, $student?->program, $student?->year_level, $account->status?->status_name];
+        }
+        return \App\Services\SpreadsheetExport::download('students.xlsx', ['Students' => $rows]);
     }
 
     protected function getCurrentPageStudentIds(): array

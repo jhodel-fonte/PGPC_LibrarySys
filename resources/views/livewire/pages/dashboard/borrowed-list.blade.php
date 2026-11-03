@@ -31,6 +31,9 @@
 
             <!-- Header Action Buttons -->
             <div class="flex flex-wrap items-center gap-2.5 sm:shrink-0">
+                @if($routePrefix === 'admin.')
+                    <a href="{{ route('admin.circulation-desk.historical-borrowing-log') }}" wire:navigate class="inline-flex h-10 items-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-[#102B70] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70]">Historical log</a>
+                @endif
                 <a href="{{ route($routePrefix . 'circulation-desk.borrow') }}" wire:navigate
                     class="inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-[#102B70] px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#0B225E] active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70] focus-visible:ring-offset-2">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
@@ -146,7 +149,8 @@
                     $bAccession = $bBook?->accession_number ?? 'Unavailable';
 
                     $isReturned = !empty($item->return_date);
-                    $isOverdue = !$isReturned && $item->due_date && $item->due_date->isPast();
+                    $isLost = !$isReturned && !empty($item->lost_at);
+                    $isOverdue = !$isReturned && !$isLost && $item->due_date && $item->due_date->isPast();
 
                     $issuedByStaff = $item->issuedBy
                         ? trim($item->issuedBy->first_name . ' ' . $item->issuedBy->last_name)
@@ -158,7 +162,7 @@
                         <article class="rounded-xl border border-slate-200 bg-white p-4 text-sm shadow-sm">
                             <div class="flex flex-wrap items-start justify-between gap-2">
                                 <div class="min-w-0"><p class="font-bold text-[#102B70] break-words">{{ $fullName }} @if($student?->trashed()) <span class="text-slate-500">(deleted)</span> @endif</p><p class="text-xs text-slate-500 break-words">{{ $idNumber }} @if($programInfo) · {{ $programInfo }} @endif</p></div>
-                                <span class="rounded-full px-2.5 py-1 text-xs font-semibold {{ $isOverdue ? 'bg-red-50 text-red-700' : ($isReturned ? 'bg-slate-100 text-slate-600' : 'bg-emerald-50 text-emerald-700') }}">{{ $isReturned ? 'Returned' : ($isOverdue ? 'Overdue' : 'On Loan') }}</span>
+                                <span class="rounded-full px-2.5 py-1 text-xs font-semibold {{ $isOverdue || $isLost ? 'bg-red-50 text-red-700' : ($isReturned ? 'bg-slate-100 text-slate-600' : 'bg-emerald-50 text-emerald-700') }}">{{ $isReturned ? 'Returned' : ($isLost ? 'Lost' : ($isOverdue ? 'Overdue' : 'On Loan')) }}</span>
                             </div>
                             <p class="mt-3 font-semibold text-slate-900 break-words">{{ $bTitle }}</p><p class="text-xs text-slate-500 break-words">Accession: {{ $bAccession }} @if($bBook?->trashed()) · Deleted copy @endif</p>
                             <div class="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-600"><p>Borrowed: {{ $item->issued_date?->format('M d, Y') ?? '—' }}</p><p>Due: {{ $item->due_date?->format('M d, Y') ?? '—' }}</p>@if($isReturned)<p>Returned: {{ $item->return_date?->format('M d, Y') }}</p>@endif</div>
@@ -242,6 +246,8 @@
                                     Returned {{ $item->return_date ? $item->return_date->format('M d, Y') : '' }}
                                 </span>
                             </div>
+                        @elseif($isLost)
+                            <span class="text-sm font-semibold text-amber-700">Reported lost {{ $item->lost_at->format('M d, Y') }}</span>
                         @elseif($isOverdue)
                             <div class="flex flex-col">
                                 <span class="text-sm font-bold text-red-600">
@@ -272,6 +278,8 @@
                                 </svg>
                                 Returned
                             </span>
+                        @elseif($isLost)
+                            <span class="inline-flex rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-800">Lost</span>
                         @elseif($isOverdue)
                             <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-200">
                                 <span class="w-1.5 h-1.5 rounded-full bg-red-600"></span>

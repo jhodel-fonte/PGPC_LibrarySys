@@ -18,7 +18,7 @@ class CatalogDeletionService
             ? Book::whereIn('book_detail_id', $ids)->get()
             : Book::whereIn('id', $ids)->get();
         $copyIds = $copies->modelKeys();
-        $loans = BorrowingTransaction::whereIn('book_id', $copyIds)->whereNull('return_date')->count();
+        $loans = BorrowingTransaction::whereIn('book_id', $copyIds)->whereNull('return_date')->whereNull('lost_at')->count();
         $reservations = BookReservation::whereIn('book_id', $copyIds)->whereIn('reservation_status_id', [1, 2])->count();
         $loanRecords = BorrowingTransaction::whereIn('book_id', $copyIds)->count();
         $reservationRecords = BookReservation::withTrashed()->whereIn('book_id', $copyIds)->count();

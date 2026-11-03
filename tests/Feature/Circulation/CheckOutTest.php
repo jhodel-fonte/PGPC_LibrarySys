@@ -97,7 +97,7 @@ class CheckOutTest extends TestCase
                 ->call('confirmCheckout', $date)
                 ->assertDispatched('checkout-failed');
         }
-        $this->assertDatabaseCount('borrowing_transactions', 0);
+        $this->assertDatabaseMissing('borrowing_transactions', ['book_id' => $this->book->id]);
     }
 
     public function test_periodical_keeps_its_shorter_loan_limit(): void
@@ -245,6 +245,132 @@ class CheckOutTest extends TestCase
         $this->assertEquals('borrowed', $this->book->fresh()->status);
     }
 
+    public function test_checkout_is_blocked_when_a_lost_case_is_reported_after_the_queue_was_loaded(): void
+    {
+        $component = Livewire::actingAs($this->librarian)->test(CheckOutBook::class)
+            ->call('handleSearchCode', '2026-0001')->call('handleSearchCode', 'BAR-999');
+        BorrowingTransaction::create([
+            'book_id' => $this->book->id, 'school_id' => $this->student->id,
+            'issued_by_id' => $this->librarian->librarian->id,
+            'borrow_type_id' => \App\Models\BorrowType::firstOrCreate(['name' => 'Regular Check-out'])->id,
+            'issued_condition_id' => 2, 'issued_date' => now(), 'due_date' => now()->addDay(), 'lost_at' => now(),
+        ]);
+        $component->call('confirmCheckout')->assertDispatched('checkout-failed')->assertNotDispatched('checkout-completed');
+        $this->assertSame('available', $this->book->fresh()->status);
+    }
+
+    public function test_librarian_can_report_and_resolve_a_lost_loan_from_the_return_screen(): void
+    {
+        BookCondition::firstOrCreate(['status' => 'Lost']);
+        Livewire::actingAs($this->librarian)->test(CheckOutBook::class)
+            ->call('handleSearchCode', '2026-0001')->call('handleSearchCode', 'BAR-999')
+            ->call('confirmCheckout')->assertDispatched('checkout-completed');
+        $loan = BorrowingTransaction::where('book_id', $this->book->id)->firstOrFail();
+        $return = Livewire::actingAs($this->librarian)->test(\App\Livewire\Pages\Dashboard\CheckInBook::class)
+            ->call('handleSearchCode', '2026-0001')
+            ->call('openLostReport', $loan->id)->assertSet('lostModalMode', 'report')
+            ->set('lostNotes.'.$loan->id, 'Student reported it missing')
+            ->call('reportLost', $loan->id);
+        $this->assertNotNull($loan->fresh()->lost_at);
+        $this->assertSame('lost', $this->book->fresh()->status);
+        $return->call('openLostCase', $loan->id)->assertSet('lostModalMode', 'resolve')
+            ->set('resolutionNotes.'.$loan->id, 'Case settled')
+            ->call('resolveLost', $loan->id);
+        $this->assertNotNull($loan->fresh()->lost_resolved_at);
+        $this->assertNull($loan->fresh()->return_date);
+        $this->assertSame('lost', $this->book->fresh()->status);
+        $return->call('handleSearchCode', 'ACC-999')->assertSet('lostModalMode', 'found')
+            ->set('resolutionNotes.'.$loan->id, 'Original copy found')
+            ->call('resolveLost', $loan->id)->assertSet('lostModalError', 'Select the recovered book condition.')
+            ->set('recoveredConditions.'.$loan->id, 2)
+            ->call('resolveLost', $loan->id)->assertSet('lostModalMode', '');
+        $this->assertNotNull($loan->fresh()->return_date);
+        $this->assertSame('available', $this->book->fresh()->status);
+    }
+
+    public function test_lost_copy_reassigns_an_approved_reservation_to_another_copy(): void
+    {
+        \Illuminate\Support\Facades\Notification::fake();
+        [$loan, $reservation] = $this->lostReservationFixture();
+        $other = $this->book->replicate();
+        $other->accession_number = 'ACC-OTHER'; $other->code = 'BAR-OTHER'; $other->status = 'available'; $other->save();
+        $deadline = $reservation->due_date->toDateTimeString();
+        Livewire::actingAs($this->librarian)->withQueryParams(['loan' => $loan->id])->test(\App\Livewire\Pages\Dashboard\CheckInBook::class)
+            ->call('openLostReport', $loan->id)->assertSee('1 active reservation');
+        $result = app(\App\Services\LostBookService::class)->report($this->student->id, $loan->id, $this->librarian->librarian, 'Reported missing');
+        $this->assertSame(['reassigned'], $result);
+        $this->assertDatabaseHas('book_reservations', ['id' => $reservation->id, 'book_id' => $other->id, 'reservation_status_id' => 2, 'due_date' => $deadline]);
+        $this->assertSame('reserved', $other->fresh()->status);
+        $this->assertSame('lost', $this->book->fresh()->status);
+        \Illuminate\Support\Facades\Notification::assertSentTo($this->student->account, \App\Notifications\Alerts::class);
+    }
+
+    public function test_lost_last_copy_cancels_reservation_and_preserves_request_time_on_paused_waitlist(): void
+    {
+        \Illuminate\Support\Facades\Notification::fake();
+        [$loan, $reservation] = $this->lostReservationFixture();
+        $result = app(\App\Services\LostBookService::class)->report($this->student->id, $loan->id, $this->librarian->librarian, 'Reported missing');
+        $this->assertSame(['waitlisted'], $result);
+        $this->assertDatabaseHas('book_reservations', ['id' => $reservation->id, 'reservation_status_id' => 4]);
+        $this->assertDatabaseHas('reservation_waitlist', ['account_id' => $this->student->account_id, 'book_reservation_id' => $reservation->id, 'status' => 'lost_unavailable', 'created_at' => $reservation->reservation_date->toDateTimeString()]);
+        \Illuminate\Support\Facades\Notification::assertSentTo($this->student->account, \App\Notifications\Alerts::class);
+        $other = $this->book->replicate();
+        $other->accession_number = 'ACC-OTHER'; $other->code = 'BAR-OTHER'; $other->status = 'available'; $other->save();
+        app(\App\Services\ReservationWaitlistService::class)->reopen($this->book->book_detail_id);
+        $newReservation = \App\Models\BookReservation::where('book_id', $other->id)->where('student_id', $this->student->id)->firstOrFail();
+        $this->assertSame(1, (int) $newReservation->reservation_status_id);
+        $this->assertTrue($newReservation->due_date->isFuture());
+    }
+
+    public function test_older_waiter_gets_available_copy_before_affected_reservation(): void
+    {
+        [$loan, $reservation] = $this->lostReservationFixture();
+        $other = $this->book->replicate();
+        $other->accession_number = 'ACC-OTHER'; $other->code = 'BAR-OTHER'; $other->status = 'available'; $other->save();
+        $account = Account::factory()->create(['role_id' => 4, 'status_id' => 1]);
+        $waiter = Student::create(['account_id' => $account->id, 'school_id_number' => 'WAIT-001', 'first_name' => 'Waiting', 'last_name' => 'Student', 'library_status_id' => 1]);
+        $entry = new \App\Models\ReservationWaitlist(['book_detail_id' => $this->book->book_detail_id, 'account_id' => $account->id, 'student_id' => $waiter->id]);
+        $entry->created_at = $reservation->reservation_date->copy()->subHour(); $entry->save();
+        $result = app(\App\Services\LostBookService::class)->report($this->student->id, $loan->id, $this->librarian->librarian, 'Reported missing');
+        $this->assertSame(['waitlisted'], $result);
+        $this->assertDatabaseHas('book_reservations', ['book_id' => $other->id, 'student_id' => $waiter->id, 'reservation_status_id' => 1]);
+        $this->assertDatabaseHas('reservation_waitlist', ['account_id' => $this->student->account_id, 'book_reservation_id' => $reservation->id, 'status' => 'waiting']);
+    }
+
+    public function test_lost_report_rolls_back_reservation_changes_if_fine_cannot_be_created(): void
+    {
+        [$loan, $reservation] = $this->lostReservationFixture();
+        \Illuminate\Support\Facades\DB::table('fine_types')->where('name', 'Overdue')->update(['name' => 'Unavailable']);
+        $this->mock(\App\Services\FineService::class)->shouldReceive('overdueAmount')->andReturn(100);
+        try {
+            app(\App\Services\LostBookService::class)->report($this->student->id, $loan->id, $this->librarian->librarian, 'Reported missing');
+            $this->fail('The report must fail if the overdue fine type is not configured.');
+        } catch (\DomainException $e) {
+            $this->assertSame('The Overdue fine type is not configured.', $e->getMessage());
+        }
+        $this->assertNull($loan->fresh()->lost_at);
+        $this->assertSame('borrowed', $this->book->fresh()->status);
+        $this->assertDatabaseHas('book_reservations', ['id' => $reservation->id, 'reservation_status_id' => 2]);
+        $this->assertDatabaseMissing('reservation_waitlist', ['book_reservation_id' => $reservation->id]);
+    }
+
+    private function lostReservationFixture(): array
+    {
+        BookCondition::firstOrCreate(['status' => 'Lost']);
+        $loan = BorrowingTransaction::create([
+            'book_id' => $this->book->id, 'school_id' => $this->student->id,
+            'issued_by_id' => $this->librarian->librarian->id,
+            'borrow_type_id' => \App\Models\BorrowType::firstOrCreate(['name' => 'Regular Check-out'])->id,
+            'issued_condition_id' => 2, 'issued_date' => now()->subDay(), 'due_date' => now()->addDay(),
+        ]);
+        $this->book->update(['status' => 'borrowed']);
+        $reservation = \App\Models\BookReservation::create([
+            'book_id' => $this->book->id, 'student_id' => $this->student->id, 'account_id' => $this->student->account_id,
+            'reservation_status_id' => 2, 'reservation_date' => now()->subHour()->startOfSecond(), 'due_date' => now()->addDay()->startOfSecond(),
+        ]);
+        return [$loan, $reservation];
+    }
+
     public function test_checkout_rejects_copy_with_active_loan_even_if_status_is_available(): void
     {
         Livewire::actingAs($this->librarian)
@@ -277,6 +403,35 @@ class CheckOutTest extends TestCase
 
         $this->assertSame(1, BorrowingTransaction::where('book_id', $this->book->id)->whereNull('return_date')->count());
     }
+    public function test_staff_cannot_exceed_the_active_reservation_limit(): void
+    {
+        foreach ([1, 2, 1] as $i => $status) {
+            $copy = Book::create([
+                'book_detail_id' => $this->book->book_detail_id,
+                'book_condition_id' => 2,
+                'accession_number' => 'RES-'. $i,
+                'code' => 'RES-'. $i,
+                'status' => 'reserved',
+                'location' => 'Shelf A',
+            ]);
+            \App\Models\BookReservation::create([
+                'book_id' => $copy->id, 'student_id' => $this->student->id,
+                'account_id' => $this->student->account_id, 'reservation_status_id' => $status,
+                'reservation_date' => now(), 'due_date' => now()->addDay(),
+            ]);
+        }
+
+        Livewire::actingAs($this->librarian)
+            ->test(\App\Livewire\Pages\Reservation\AdminDashboard::class)
+            ->set('createSelectedStudentId', $this->student->id)
+            ->set('createSelectedBookId', $this->book->id)
+            ->call('submitManualReservation')
+            ->assertDispatched('toast', fn ($event, $params) => str_contains($params['message'], 'maximum limit of 3 active reservations'));
+
+        $this->assertDatabaseMissing('book_reservations', ['book_id' => $this->book->id]);
+        $this->assertSame('available', $this->book->fresh()->status);
+    }
+
     public function test_staff_cannot_reserve_reference_only_issue(): void
     {
         $this->book->bookDetail->update(['catalog_kind' => 'journal']);

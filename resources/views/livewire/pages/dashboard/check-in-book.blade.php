@@ -126,6 +126,22 @@
                     />
 
                 </div>
+                @if($lostLoans->isNotEmpty())
+                    <section class="rounded-xl border border-slate-200 bg-white p-4 sm:p-5" aria-labelledby="lost-cases-heading">
+                        <h2 id="lost-cases-heading" class="font-bold text-slate-900">Lost-book cases</h2>
+                        <ul class="mt-3 divide-y divide-slate-100">
+                            @foreach($lostLoans as $loan)
+                                <li class="flex flex-wrap items-center justify-between gap-3 py-3" wire:key="lost-case-{{ $loan->id }}">
+                                    <div class="min-w-0 text-sm"><p class="font-semibold">{{ $loan->book?->bookDetail?->bookData?->book_title ?? 'Book' }}</p><p class="text-slate-500">{{ $loan->book?->accession_number }} · {{ $loan->return_date ? 'Recovered' : ($loan->lost_resolved_at ? 'Resolved; copy missing' : 'Unresolved') }}</p></div>
+                                    <div class="flex flex-wrap gap-2">
+                                        @if(!$loan->return_date)<button type="button" wire:click="openLostCase({{ $loan->id }})" class="rounded-lg bg-[#102B70] px-3 py-2 text-sm font-semibold text-white">{{ $loan->lost_resolved_at ? 'Record recovery' : 'Resolve case' }}</button>@endif
+                                        <button type="button" wire:click="reopenWaitlist({{ $loan->id }})" class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-[#102B70]">Reopen waitlist</button>
+                                    </div>
+                                </li>
+                            @endforeach
+                        </ul>
+                    </section>
+                @endif
             </div>
 
             
@@ -208,5 +224,6 @@
 
     <!-- Search Entity Modal Component -->
     <livewire:components.circulation.search-entity-modal service="check-in" />
+    @include('livewire.pages.dashboard.partials.lost-book-modal')
 </div>
 </div>

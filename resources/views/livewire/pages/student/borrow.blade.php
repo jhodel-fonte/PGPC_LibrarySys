@@ -1,5 +1,8 @@
 <div class="student-page min-w-0 w-full min-h-full bg-[#eef3f7] text-base text-slate-800">
     <div class="mx-auto w-full max-w-[1360px] space-y-5 px-3 py-4 sm:px-6 lg:px-8 lg:py-6">
+        @if($lostBorrowingBlocked)
+            <div role="status" class="rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-900">Borrowing is blocked until your lost-book case is resolved. Please contact the library.</div>
+        @endif
         
         <!-- Page Header -->
         <div>
@@ -25,7 +28,7 @@
             <div class="grid grid-cols-2 xl:grid-cols-4 gap-3 mt-5">
                 <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-100">
                     <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Currently Borrowed</p>
-                    <p class="text-xl sm:text-2xl font-bold text-slate-900 mt-0.5">{{ $activeCount }} <span class="text-sm text-slate-500 font-normal">/ {{ config('settings.library_config.max_loan_limit', 3) }} books</span></p>
+                    <p class="text-xl sm:text-2xl font-bold text-slate-900 mt-0.5">{{ $activeCount }} <span class="text-sm text-slate-500 font-normal">/ {{ \App\Services\LibrarySettings::get('library_config.max_loan_limit') }} books</span></p>
                 </div>
 
                 <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-100">
@@ -285,7 +288,7 @@
                                 <div>
                                     <span class="text-slate-400 font-medium block">Condition</span>
                                     <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-slate-200/80 text-slate-700 mt-0.5">
-                                        {{ $record->returnCondition?->status ?? 'Not recorded' }}
+                                        {{ $record->lost_at ? ($record->return_date ? 'Recovered · ' . ($record->returnCondition?->status ?? 'Not recorded') : ($record->lost_resolved_at ? 'Lost · resolved' : 'Lost · unresolved')) : ($record->returnCondition?->status ?? 'Not recorded') }}
                                     </span>
                                 </div>
                             </div>
@@ -350,7 +353,7 @@
                                     </td>
                                     <td class="px-6 sm:px-7 py-4 text-right whitespace-nowrap">
                                         <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs sm:text-sm font-semibold bg-slate-100 text-slate-700">
-                                            {{ $record->returnCondition?->status ?? 'Not recorded' }}
+                                            {{ $record->lost_at ? ($record->return_date ? 'Recovered · ' . ($record->returnCondition?->status ?? 'Not recorded') : ($record->lost_resolved_at ? 'Lost · resolved' : 'Lost · unresolved')) : ($record->returnCondition?->status ?? 'Not recorded') }}
                                         </span>
                                     </td>
                                 </tr>

@@ -99,7 +99,7 @@
                             <div class="flex items-center gap-2">
                                 <h2 class="text-lg sm:text-xl font-bold text-slate-900">Your loans</h2>
                                 <span class="bg-[#EFF6FF] text-[#102B70] text-xs sm:text-sm font-bold px-2.5 py-0.5 rounded-full">
-                                    {{ $activeCount }} / {{ config('settings.library_config.max_loan_limit', 3) }}
+                                    {{ $activeCount }} / {{ \App\Services\LibrarySettings::get('library_config.max_loan_limit') }}
                                 </span>
                             </div>
                             <p class="text-slate-500 text-xs sm:text-sm mt-1">Keep track of what you have checked out and when it is due.</p>
@@ -262,7 +262,7 @@
                     <ul class="grid gap-4 sm:grid-cols-2 text-sm text-slate-700 mt-4 leading-relaxed">
                         <li class="flex items-start gap-2.5">
                             <span class="text-[#FFC61A] font-bold text-lg leading-none">•</span>
-                            <span><strong>Loan Period:</strong> General circulation books may be borrowed for up to <strong>{{ config('settings.library_config.loan_period', 5) }} days</strong>.</span>
+                            <span><strong>Loan Period:</strong> General circulation books may be borrowed for up to <strong>{{ \App\Services\LibrarySettings::get('library_config.loan_period') }} days</strong>.</span>
                         </li>
                         <li class="flex items-start gap-2.5">
                             <span class="text-[#FFC61A] font-bold text-lg leading-none">•</span>
@@ -385,11 +385,11 @@
                         <div class="pt-2 border-t border-slate-100 space-y-2.5 text-sm sm:text-base">
                             <div class="flex flex-wrap gap-2 justify-between items-center text-slate-600">
                                 <span class="text-slate-500">Max Loan Limit:</span>
-                                <span class="font-bold text-slate-900">{{ config('settings.library_config.max_loan_limit', 3) }} Books</span>
+                                <span class="font-bold text-slate-900">{{ \App\Services\LibrarySettings::get('library_config.max_loan_limit') }} Books</span>
                             </div>
                             <div class="flex flex-wrap gap-2 justify-between items-center text-slate-600">
                                 <span class="text-slate-500">Loan Period:</span>
-                                <span class="font-bold text-slate-900">{{ config('settings.library_config.loan_period', 5) }} Calendar Days</span>
+                                <span class="font-bold text-slate-900">{{ \App\Services\LibrarySettings::get('library_config.loan_period') }} Calendar Days</span>
                             </div>
                             <div class="flex flex-wrap gap-2 justify-between items-center text-slate-600">
                                 <span class="text-slate-500">Library Desk Hours:</span>

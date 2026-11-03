@@ -44,7 +44,7 @@ class Borrow extends Component
                 'borrowType',
             ])
             ->where('school_id', $studentId ?? 0)
-            ->whereNull('return_date');
+            ->whereNull('return_date')->whereNull('lost_at');
 
         if ($searchTerm !== '') {
             $activeQuery->where(function ($query) use ($searchTerm) {
@@ -66,7 +66,7 @@ class Borrow extends Component
                 'borrowType',
             ])
             ->where('school_id', $studentId ?? 0)
-            ->whereNotNull('return_date');
+            ->where(fn ($q) => $q->whereNotNull('return_date')->orWhereNotNull('lost_at'));
 
         if ($searchTerm !== '') {
             $historyQuery->where(function ($query) use ($searchTerm) {
@@ -78,7 +78,7 @@ class Borrow extends Component
             });
         }
 
-        $historyLoans = $historyQuery->orderBy('return_date', 'desc')->orderBy('id', 'desc')->cursorPaginate(10, ['*'], 'history_page');
+        $historyLoans = $historyQuery->orderBy('id', 'desc')->cursorPaginate(10, ['*'], 'history_page');
 
         // 3. Fines Query
         $fines = $studentId
@@ -89,9 +89,9 @@ class Borrow extends Component
             : collect();
 
         // Totals
-        $activeCount = $studentId ? BorrowingTransaction::where('school_id', $studentId)->whereNull('return_date')->count() : 0;
-        $overdueCount = $studentId ? BorrowingTransaction::where('school_id', $studentId)->whereNull('return_date')->where('due_date', '<', now())->count() : 0;
-        $historyCount = $studentId ? BorrowingTransaction::where('school_id', $studentId)->whereNotNull('return_date')->count() : 0;
+        $activeCount = $studentId ? BorrowingTransaction::where('school_id', $studentId)->whereNull('return_date')->whereNull('lost_at')->count() : 0;
+        $overdueCount = $studentId ? BorrowingTransaction::where('school_id', $studentId)->whereNull('return_date')->whereNull('lost_at')->where('due_date', '<', now())->count() : 0;
+        $historyCount = $studentId ? BorrowingTransaction::where('school_id', $studentId)->where(fn ($q) => $q->whereNotNull('return_date')->orWhereNotNull('lost_at'))->count() : 0;
         $unpaidFinesTotal = (float) $fines->where('fine_status', 'unpaid')->sum('amount');
 
         return view('livewire.pages.student.borrow', [
@@ -103,6 +103,7 @@ class Borrow extends Component
             'overdueCount' => $overdueCount,
             'historyCount' => $historyCount,
             'unpaidFinesTotal' => $unpaidFinesTotal,
+            'lostBorrowingBlocked' => $studentId && BorrowingTransaction::where('school_id', $studentId)->whereNotNull('lost_at')->whereNull('lost_resolved_at')->exists(),
         ]);
     }
 }

@@ -16,8 +16,8 @@ class CirculationDesk extends Component
     {
         return view('livewire.pages.dashboard.circulation-desk', [
             'reservedCount' => BookReservation::whereIn('reservation_status_id', [1, 2])->count(),
-            'borrowedCount' => BorrowingTransaction::whereNull('return_date')->count(),
-            'dueTodayCount' => BorrowingTransaction::whereNull('return_date')->whereDate('due_date', today())->count(),
+            'borrowedCount' => BorrowingTransaction::whereNull('return_date')->whereNull('lost_at')->count(),
+            'dueTodayCount' => BorrowingTransaction::whereNull('return_date')->whereNull('lost_at')->whereDate('due_date', today())->count(),
             'unpaidFinesCount' => Fine::where('fine_status', 'unpaid')->count(),
         ]);
     }

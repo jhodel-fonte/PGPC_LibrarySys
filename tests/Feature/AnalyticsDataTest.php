@@ -19,7 +19,7 @@ class AnalyticsDataTest extends TestCase
         Schema::create('book_datas', function (Blueprint $table) { $table->id(); $table->string('book_title'); $table->softDeletes(); });
         Schema::create('book_details', function (Blueprint $table) { $table->id(); $table->integer('book_data_id'); $table->softDeletes(); });
         Schema::create('books', function (Blueprint $table) { $table->id(); $table->integer('book_detail_id'); $table->softDeletes(); });
-        Schema::create('borrowing_transactions', function (Blueprint $table) { $table->id(); $table->integer('school_id'); $table->integer('book_id'); $table->string('program_at_issue')->nullable(); $table->dateTime('issued_date'); $table->dateTime('due_date'); $table->dateTime('return_date')->nullable(); });
+        Schema::create('borrowing_transactions', function (Blueprint $table) { $table->id(); $table->integer('school_id'); $table->integer('book_id'); $table->integer('borrow_type_id')->nullable(); $table->string('program_at_issue')->nullable(); $table->string('year_level_at_issue')->nullable(); $table->dateTime('issued_date'); $table->dateTime('due_date'); $table->dateTime('return_date')->nullable(); });
     }
 
     public function test_real_counts_compare_ranges_and_current_due_status(): void
@@ -43,9 +43,53 @@ class AnalyticsDataTest extends TestCase
         $this->assertSame(1, $data['dueCount']);
         $this->assertSame(1, $data['overdueCount']);
         $this->assertSame(1, $data['buckets']['2026-03-15']['loans']);
+        $this->assertSame(1, $data['borrowerTrend']->last()->total);
+        $this->assertSame(1, $data['programTrend']->last()->total);
+        $this->assertSame(0, $data['borrowerTrend'][1]->total);
+        $analytics->trendProgram = 'BSCS - Bachelor of Science in Computer Science';
+        $this->assertSame(0, $analytics->render()->getData()['programTrend']->sum('total'));
+        $analytics->trendProgram = '';
         $this->assertContains('At issue', $data['programs']->pluck('label')->all());
         $this->assertContains('Not recorded at issue', $data['programs']->pluck('label')->all());
-        $this->assertSame('Unspecified', $data['genders']->first()->label);
+        $this->assertCount(0, $data['genders']);
+        $this->assertSame('A book', $data['topTitles']->first()->label);
+        $this->assertSame(2, $data['topTitles']->first()->total);
+        $this->assertContains('Not recorded at issue', $data['years']->pluck('label')->all());
+        $html = $analytics->render()->render();
+        $this->assertStringContainsString('Circulation trend', $html);
+        $this->assertStringContainsString('#102B70', $html);
+    }
+
+    public function test_hourly_chart_keeps_all_bars_but_samples_axis_labels(): void
+    {
+        $labels = array_map(fn ($hour) => sprintf('%02d:00', $hour), range(0, 23));
+        $html = $this->blade('<x-widget.graph.main :series="$series" :labels="$labels" bar grid />', [
+            'series' => [['name' => 'Loans', 'data' => array_fill(0, 24, 0)]],
+            'labels' => $labels,
+        ])->render();
+
+        $this->assertSame(24, substr_count($html, '<rect'));
+        $this->assertSame(6, preg_match_all('/>\s*\d{2}:00\s*<\/text>/', $html));
+        $this->assertStringContainsString('height="0"', $html);
+    }
+
+    public function test_column_chart_keeps_full_category_labels_and_zero_counts(): void
+    {
+        $rows = collect([(object) ['label' => 'BSCS - Computer Science', 'total' => 1], (object) ['label' => 'BPA - Public Administration', 'total' => 0]]);
+        $html = $this->blade('<x-analytics.bars title="Loans by program" description="Selected period" :rows="$rows" chart="column" />', ['rows' => $rows])->render();
+
+        $this->assertStringContainsString('BSCS - Computer Science', $html);
+        $this->assertStringContainsString('BPA - Public Administration', $html);
+        $this->assertSame(2, substr_count($html, '<rect'));
+        $this->assertStringContainsString('height="0"', $html);
+    }
+
+    public function test_academic_categories_include_zero_and_preserve_unknown_values(): void
+    {
+        $rows = collect([(object) ['label' => 'BSCS', 'total' => 2], (object) ['label' => 'BSCS - Computer Science', 'total' => 1], (object) ['label' => 'Former program', 'total' => 3], (object) ['label' => 'Not recorded at issue', 'total' => 1]]);
+        $data = Analytics::academicBreakdown($rows, ['BSCS - Computer Science' => ['BSCS', 'Computer Science'], 'BPA - Public Administration' => ['BPA']]);
+        $this->assertSame(['BSCS - Computer Science', 'BPA - Public Administration', 'Former program', 'Not recorded at issue'], $data->pluck('label')->all());
+        $this->assertSame([3, 0, 3, 1], $data->pluck('total')->all());
     }
 
     public function test_empty_database_returns_zero_without_sample_records(): void
@@ -57,6 +101,9 @@ class AnalyticsDataTest extends TestCase
         $this->assertSame(['loans' => 0, 'borrowers' => 0, 'returns' => 0], $data['current']);
         $this->assertSame(0, $data['dueCount']);
         $this->assertCount(0, $data['items']);
-        $this->assertCount(0, $data['programs']);
+        $this->assertCount(count(config('settings.college.programs')), $data['programs']);
+        $this->assertSame(0, $data['programs']->sum('total'));
+        $this->assertCount(4, $data['years']);
+        $this->assertSame(0, $data['years']->sum('total'));
     }
 }

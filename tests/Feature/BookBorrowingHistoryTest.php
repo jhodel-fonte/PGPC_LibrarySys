@@ -22,7 +22,7 @@ class BookBorrowingHistoryTest extends TestCase
         Schema::create('book_details', function (Blueprint $t) { $t->id(); $t->integer('book_data_id'); $t->softDeletes(); });
         Schema::create('books', function (Blueprint $t) { $t->id(); $t->integer('book_detail_id'); $t->string('accession_number'); $t->softDeletes(); });
         Schema::create('students', function (Blueprint $t) { $t->id(); $t->integer('account_id')->nullable(); $t->string('first_name'); $t->string('last_name'); $t->string('program')->nullable(); $t->string('year_level')->nullable(); $t->softDeletes(); });
-        Schema::create('borrowing_transactions', function (Blueprint $t) { $t->id(); $t->integer('school_id'); $t->integer('book_id'); $t->integer('issued_by_id')->nullable(); $t->integer('received_by_id')->nullable(); $t->dateTime('issued_date'); $t->dateTime('due_date'); $t->dateTime('return_date')->nullable(); });
+        Schema::create('borrowing_transactions', function (Blueprint $t) { $t->id(); $t->integer('school_id'); $t->integer('book_id'); $t->integer('issued_by_id')->nullable(); $t->integer('received_by_id')->nullable(); $t->dateTime('issued_date'); $t->dateTime('due_date'); $t->dateTime('return_date')->nullable(); $t->dateTime('lost_at')->nullable(); });
         $admin = new Account;
         $admin->setRelation('role', new Role(['name' => 'Admin']));
         Auth::setUser($admin);

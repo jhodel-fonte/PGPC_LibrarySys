@@ -24,7 +24,7 @@ class FinePaymentTest extends TestCase
             $table->timestamp('payment_date'); $table->decimal('payment_amount', 8, 2); $table->string('receipt_number')->nullable(); $table->timestamps();
         });
         Schema::create('fine_types', function (Blueprint $table) { $table->id(); $table->string('name'); $table->timestamps(); });
-        Schema::create('borrowing_transactions', function (Blueprint $table) { $table->id(); $table->timestamp('due_date'); $table->timestamp('return_date')->nullable(); $table->timestamps(); });
+        Schema::create('borrowing_transactions', function (Blueprint $table) { $table->id(); $table->timestamp('due_date'); $table->timestamp('return_date')->nullable(); $table->timestamp('lost_at')->nullable(); $table->timestamps(); });
         DB::table('fines')->insert(['id' => 1, 'student_id' => 7, 'amount' => 150, 'fine_status' => 'unpaid']);
     }
 
@@ -103,6 +103,14 @@ class FinePaymentTest extends TestCase
         DB::table('borrowing_transactions')->where('id', 1)->update(['return_date' => null]);
         $this->expectException(\DomainException::class);
         $service->paymentCalculation(\App\Models\Fine::find(1), '2026-03-08');
+    }
+    public function test_lost_book_overdue_payment_is_capped_at_the_report_date_even_if_found_later(): void
+    {
+        $this->travelTo(\Carbon\Carbon::parse('2026-03-10'));
+        DB::table('fine_types')->insert(['id' => 1, 'name' => 'Overdue']);
+        DB::table('borrowing_transactions')->insert(['id' => 1, 'due_date' => '2026-03-01', 'lost_at' => '2026-03-05', 'return_date' => '2026-03-09']);
+        DB::table('fines')->where('id', 1)->update(['fine_type_id' => 1, 'borrowing_transaction_id' => 1, 'amount' => 200]);
+        $this->assertSame(200.0, app(FineService::class)->paymentCalculation(\App\Models\Fine::find(1), '2026-03-10')['amount']);
     }
     public function test_scanning_student_qr_selects_student_and_unknown_code_does_not_change_selection(): void
     {

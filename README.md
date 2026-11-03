@@ -80,6 +80,41 @@ Follow these steps to set up the PGPC Library System in your local development e
 
 ## Start the application on the Ubuntu VM
 
+### Refresh the local PostgreSQL database from the VM
+
+Install PostgreSQL client tools (`pg_dump`, `pg_restore`, and `psql`) locally, with a
+version at least as new as the VM's PostgreSQL server. Set `APP_ENV=local`,
+`DB_CONNECTION=pgsql`, and the local database's credentials in `DB_*`; set
+`DB_HOST=127.0.0.1` or `localhost` and do not set `DB_URL`. The local database
+must already exist. Do not point this local destination at an SSH tunnel: a
+localhost address alone cannot prove that the PostgreSQL server is local.
+
+Keep the VM database private. If your existing connection uses an SSH tunnel,
+keep that tunnel open while running the command. For example (replace the SSH
+user and VM address):
+
+```bash
+ssh -L 15432:127.0.0.1:5432 user@vm-address
+```
+
+Run `php artisan config:clear` after changing `.env`, then run:
+
+```bash
+php artisan db:refresh-from-vm
+```
+
+The command asks for the VM host, port, database, username and password. For
+the tunnel above, enter host `127.0.0.1` and port `15432` as the VM source,
+while `DB_PORT` in `.env` must identify your actual local PostgreSQL server.
+It shows both endpoints before confirmation. You can also choose option 2 in
+`python library_menu.py`. The command removes local schemas and
+large objects and restores the snapshot in one transaction, including removal
+of objects that exist only locally. The local user needs permissions to drop
+and create all restored objects and extensions. Database-level settings and
+PostgreSQL roles are not copied.
+Back up local changes first. This copies the database, not uploaded files; the
+snapshot can contain sensitive student information. Protect your local machine.
+
 For the native Ubuntu deployment, place the repository at `/opt/pgpc-lib` and
 copy the existing production `.env` there from a secure backup. Do not commit
 that file. Use Ubuntu 24.04, set `APP_ENV=production` and `APP_DEBUG=false`,
@@ -120,7 +155,8 @@ After this version is present in the native Ubuntu checkout, run:
 sudo bash /opt/pgpc-lib/deploy/manage.sh
 ```
 
-The menu checks service and database status, starts or stops the library stack,
+Alternatively run `python3 /opt/pgpc-lib/library_menu.py` and choose option 1,
+then choose option 3 in the maintenance menu to update. The menu checks service and database status, starts or stops the library stack,
 updates a clean Git checkout, edits `.env`, runs pending migrations, creates
 local backups, manages the queue and scheduler, sends confirmed test messages,
 and shows recent logs. It is designed for the native `/opt/pgpc-lib` deployment,

@@ -68,7 +68,7 @@ class SystemSettingSeeder extends Seeder
 
         // 3. Insert or Update Settings
         foreach ($settings as $setting) {
-            SystemSetting::updateOrCreate(
+            SystemSetting::firstOrCreate(
                 ['setting_key' => $setting['setting_key']],
                 $setting
             );

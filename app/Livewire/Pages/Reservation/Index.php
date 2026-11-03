@@ -11,7 +11,6 @@ use App\Models\Student;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Url;
@@ -45,8 +44,7 @@ class Index extends Component
     public function refreshRecommendations(): void
     {
         $account = Auth::user();
-        if (! $account || ($account->recommendation?->generated_at?->gt(now()->subDay()))
-            || ! Cache::add('reservation-recommendations:'.$account->id, true, now()->addMinutes(5))) {
+        if (! $account) {
             return;
         }
 
@@ -341,8 +339,8 @@ class Index extends Component
                 ->join('book_details', 'book_details.id', '=', 'reservation_waitlist.book_detail_id')
                 ->join('book_datas', 'book_datas.id', '=', 'book_details.book_data_id')
                 ->where('reservation_waitlist.account_id', Auth::id())
-                ->where('reservation_waitlist.status', 'waiting')
-                ->select('reservation_waitlist.id', 'book_datas.book_title')
+                ->whereIn('reservation_waitlist.status', ['waiting', 'lost_unavailable'])
+                ->select('reservation_waitlist.id', 'reservation_waitlist.status', 'book_datas.book_title')
                 ->orderBy('reservation_waitlist.id')->get(),
         ]);
     }
@@ -350,6 +348,6 @@ class Index extends Component
     public function leaveWaitlist(int $id): void
     {
         \App\Models\ReservationWaitlist::whereKey($id)->where('account_id', Auth::id())
-            ->where('status', 'waiting')->update(['status' => 'cancelled']);
+            ->whereIn('status', ['waiting', 'lost_unavailable'])->update(['status' => 'cancelled']);
     }
 }

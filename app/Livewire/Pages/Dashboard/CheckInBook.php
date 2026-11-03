@@ -19,6 +19,12 @@ class CheckInBook extends Component
     public $returnedBooks = [];
     public $lastReturnedBook = null;
     public $errorMessage = '';
+    public array $lostNotes = [];
+    public array $resolutionNotes = [];
+    public array $recoveredConditions = [];
+    public ?int $lostModalLoanId = null;
+    public string $lostModalMode = '';
+    public string $lostModalError = '';
     public $showConfirmChangeMember = false;
     public $pendingStudentId = null;
     public $pendingStudentName = '';
@@ -271,6 +277,21 @@ class CheckInBook extends Component
         $book = $this->findBook($code, $borrowedIds);
 
         if ($book) {
+            $normalized = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $code));
+            $copyCodes = array_filter([$book->accession_number, $book->code]);
+            if ($book->status === 'lost' && collect($copyCodes)->contains(fn ($value) => strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $value)) === $normalized)) {
+                $loan = BorrowingTransaction::with('student')->where('book_id', $book->id)->whereNotNull('lost_at')->whereNull('return_date')->latest('id')->first();
+                if (! $loan || ! $loan->student) {
+                    $this->errorMessage = 'No recoverable lost-book case was found for this copy.';
+                } elseif ($this->scannedMember && $this->scannedMember['id'] !== $loan->school_id) {
+                    $this->errorMessage = 'This lost copy belongs to another student. Change student before recording recovery.';
+                } else {
+                    if (! $this->scannedMember) $this->loadMember($loan->student);
+                    $this->openLostCase($loan->id, true);
+                }
+                $this->dispatch('clear-search-input');
+                return;
+            }
             $this->processBookReturn($book);
             $this->dispatch('clear-search-input');
             return;
@@ -342,7 +363,7 @@ class CheckInBook extends Component
                 'book.bookDetail.bookData.categories',
             ])
             ->where('school_id', $student->id)
-            ->whereNull('return_date')
+            ->whereNull('return_date')->whereNull('lost_at')
             ->get();
 
         $this->borrowedBooks = $transactions->map(function ($t) {
@@ -459,7 +480,7 @@ class CheckInBook extends Component
                 'book.bookDetail.bookData.categories',
             ])
             ->where('book_id', $book->id)
-            ->whereNull('return_date')
+            ->whereNull('return_date')->whereNull('lost_at')
             ->first();
 
         if (!$transaction) {
@@ -557,7 +578,7 @@ class CheckInBook extends Component
         // Get the transaction IDs corresponding to the book IDs in our returnedBooks queue
         $transactionIds = BorrowingTransaction::whereIn('book_id', $this->returnedBooks)
             ->where('school_id', $this->scannedMember['id'])
-            ->whereNull('return_date')
+            ->whereNull('return_date')->whereNull('lost_at')
             ->pluck('id')
             ->toArray();
 
@@ -610,12 +631,12 @@ class CheckInBook extends Component
         if ($studentId) {
             // Count active borrowed books in database (which includes the ones in returnedBooks queue)
             $totalBorrowed = BorrowingTransaction::where('school_id', $studentId)
-                ->whereNull('return_date')
+                ->whereNull('return_date')->whereNull('lost_at')
                 ->count();
 
             // Get overdue transactions in database
             $overdueTransactions = BorrowingTransaction::where('school_id', $studentId)
-                ->whereNull('return_date')
+                ->whereNull('return_date')->whereNull('lost_at')
                 ->where('due_date', '<', Carbon::now())
                 ->with(['book' => fn ($q) => $q->withTrashed(), 'book.bookDetail' => fn ($q) => $q->withTrashed()])
                 ->get();
@@ -700,8 +721,99 @@ class CheckInBook extends Component
         $this->errorMessage = 'Change student operation was cancelled. Scanned returns preserved.';
     }
 
+    #[On('report-lost')]
+    public function openLostReport(int $loanId): void
+    {
+        \App\Services\EmployeeRoleService::authorizeReturn();
+        BorrowingTransaction::where('school_id', $this->scannedMember['id'] ?? null)->whereNull('return_date')->whereNull('lost_at')->findOrFail($loanId);
+        $this->lostModalLoanId = $loanId;
+        $this->lostModalMode = 'report';
+        $this->lostModalError = '';
+    }
+
+    public function openLostCase(int $loanId, bool $found = false): void
+    {
+        \App\Services\EmployeeRoleService::authorizeReturn();
+        $loan = BorrowingTransaction::where('school_id', $this->scannedMember['id'] ?? null)->whereNotNull('lost_at')->whereNull('return_date')->findOrFail($loanId);
+        $this->lostModalLoanId = $loanId;
+        $this->lostModalMode = $found || $loan->lost_resolved_at ? 'found' : 'resolve';
+        unset($this->recoveredConditions[$loanId]);
+        $this->lostModalError = '';
+    }
+
+    public function closeLostModal(): void
+    {
+        $this->lostModalLoanId = null;
+        $this->lostModalMode = '';
+        $this->lostModalError = '';
+    }
+
+    public function reportLost(int $loanId): void
+    {
+        \App\Services\EmployeeRoleService::authorizeReturn();
+        try {
+            $student = Student::findOrFail($this->scannedMember['id'] ?? null);
+            $librarian = auth()->user()?->librarian ?? throw new \DomainException('A librarian profile is required.');
+            $bookId = BorrowingTransaction::where('school_id', $student->id)->whereKey($loanId)->value('book_id');
+            if (in_array($bookId, $this->returnedBooks)) {
+                throw new \DomainException('Remove this copy from the return queue before reporting it lost.');
+            }
+            $outcomes = app(\App\Services\LostBookService::class)->report($student->id, $loanId, $librarian, $this->lostNotes[$loanId] ?? '');
+            $this->closeLostModal();
+            $this->loadMember($student);
+            $this->errorMessage = 'The book was reported lost. Borrowing is blocked until the case is resolved.'
+                . (in_array('reassigned', $outcomes, true) ? ' Affected reservation(s) were reassigned.' : '')
+                . (in_array('waitlisted', $outcomes, true) ? ' Affected reservation(s) were moved to the waitlist.' : '')
+                . (in_array('followup', $outcomes, true) ? ' Staff follow-up is required for a reservation with no linked student account.' : '');
+        } catch (\Throwable $e) {
+            report($e);
+            $this->errorMessage = $e instanceof \DomainException ? $e->getMessage() : 'The lost report could not be saved. Please review the loan and try again.';
+            $this->lostModalError = $this->errorMessage;
+        }
+    }
+
+    public function resolveLost(int $loanId): void
+    {
+        \App\Services\EmployeeRoleService::authorizeReturn();
+        try {
+            $student = Student::findOrFail($this->scannedMember['id'] ?? null);
+            $librarian = auth()->user()?->librarian ?? throw new \DomainException('A librarian profile is required.');
+            $condition = $this->recoveredConditions[$loanId] ?? '';
+            if ($this->lostModalMode === 'found' && $condition === '') throw new \DomainException('Select the recovered book condition.');
+            app(\App\Services\LostBookService::class)->resolve($student->id, $loanId, $librarian, $this->resolutionNotes[$loanId] ?? '', $condition === '' ? null : (int) $condition);
+            $this->closeLostModal();
+            $this->loadMember($student);
+            $this->errorMessage = 'The lost-book case was updated.';
+        } catch (\Throwable $e) {
+            report($e);
+            $this->errorMessage = $e instanceof \DomainException ? $e->getMessage() : 'The case could not be updated. Please review it and try again.';
+            $this->lostModalError = $this->errorMessage;
+        }
+    }
+
+    public function reopenWaitlist(int $loanId): void
+    {
+        \App\Services\EmployeeRoleService::authorizeReturn();
+        try {
+            $loan = BorrowingTransaction::with('book')->where('school_id', $this->scannedMember['id'] ?? null)->whereNotNull('lost_at')->findOrFail($loanId);
+            app(\App\Services\ReservationWaitlistService::class)->reopen($loan->book->book_detail_id);
+            $this->errorMessage = 'The waitlist was reopened.';
+        } catch (\Throwable $e) {
+            report($e);
+            $this->errorMessage = $e instanceof \DomainException ? $e->getMessage() : 'The waitlist could not be reopened.';
+        }
+    }
+
     public function render()
     {
-        return view('livewire.pages.dashboard.check-in-book');
+        $lostLoans = empty($this->scannedMember['id']) ? collect() : BorrowingTransaction::with('book.bookDetail.bookData')
+            ->where('school_id', $this->scannedMember['id'])->whereNotNull('lost_at')->latest('id')->get();
+        $modalLoan = $this->lostModalLoanId ? BorrowingTransaction::with(['book.bookDetail.bookData', 'borrowType'])->where('school_id', $this->scannedMember['id'] ?? null)->find($this->lostModalLoanId) : null;
+        return view('livewire.pages.dashboard.check-in-book', [
+            'lostLoans' => $lostLoans,
+            'modalLoan' => $modalLoan,
+            'modalReservationCount' => $this->lostModalMode === 'report' && $modalLoan?->book ? $modalLoan->book->reservations()->whereIn('reservation_status_id', [1, 2])->count() : 0,
+            'recoveryConditions' => \App\Models\BookCondition::whereIn('status', ['New', 'Good', 'Fair', 'Damaged'])->get(),
+        ]);
     }
 }

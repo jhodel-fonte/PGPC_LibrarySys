@@ -29,6 +29,19 @@ class SystemModuleWorkflowTest extends TestCase
     private Book $book;
     private BorrowingTransaction $transaction;
 
+    public function test_settings_save_validate_and_reset_to_config(): void
+    {
+        config(['settings.library_config.loan_period' => 5]);
+        $page = Livewire::actingAs($this->admin)->test(\App\Livewire\Pages\Dashboard\Settings::class);
+        $page->set('values.loan_period', 0)->call('save')->assertHasErrors(['values.loan_period']);
+        $page->set('values.loan_period', 9)->set('values.auto_approve', false)->call('save')->assertHasNoErrors();
+        $this->assertSame(9, \App\Services\LibrarySettings::get('library_config.loan_period'));
+        $this->assertFalse(\App\Services\ReservationSettings::autoApprove());
+        $page->call('resetSetting', 'loan_period');
+        $this->assertSame(5, \App\Services\LibrarySettings::get('library_config.loan_period'));
+        $this->assertDatabaseMissing('system_settings', ['setting_key' => 'library_config.loan_period']);
+    }
+
     protected function setUp(): void
     {
         parent::setUp();

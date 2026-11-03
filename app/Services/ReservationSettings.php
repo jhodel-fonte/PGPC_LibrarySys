@@ -2,23 +2,11 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
-
 class ReservationSettings
 {
     private static function value(string $key): mixed
     {
-        $default = config('settings.reservation.' . $key);
-        try {
-            if (Schema::hasTable('system_settings')) {
-                return DB::table('system_settings')->where('setting_key', 'reservation.' . $key)->value('setting_value') ?? $default;
-            }
-        } catch (\Illuminate\Database\QueryException $e) {
-            report($e);
-        }
-
-        return $default;
+        return LibrarySettings::get('reservation.' . $key);
     }
 
     public static function maxPickupDays(): int

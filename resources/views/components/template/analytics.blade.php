@@ -1,4 +1,4 @@
-@props(['start', 'end', 'previousStart', 'previousEnd', 'current', 'previous', 'buckets', 'hourly', 'programs', 'genders', 'dueCount', 'overdueCount', 'now'])
+@props(['start', 'end', 'previousStart', 'previousEnd', 'current', 'previous', 'buckets', 'hourly', 'programs', 'genders', 'dueCount', 'overdueCount', 'now', 'borrowerTrend', 'programTrend', 'trendProgram', 'previousAcquisitions', 'previousPayments', 'previousReservationCount', 'years', 'borrowTypes', 'topTitles', 'reservations', 'reservationCount', 'reservationStatuses', 'waitlistCount', 'copyStatuses', 'materialTypes', 'categories', 'acquisitions', 'missingAcquisitionDates', 'fines', 'payments', 'studentStatuses', 'studentImports', 'catalogImports', 'studentImportRows', 'catalogImportRows'])
 
 <style>
     @media print {
@@ -33,9 +33,45 @@
     <h2 class="mt-6 text-lg font-bold">Busiest borrowing hours</h2>
     <ul>@forelse ($hourly as $hour => $total)<li>{{ \Carbon\CarbonImmutable::createFromTime($hour, 0, 0, 'Asia/Manila')->format('g:i A') }}: {{ $total }} loans</li>@empty<li>No loans in this period.</li>@endforelse</ul>
     <h2 class="mt-6 text-lg font-bold">Loans by program</h2>
-    <p>Program recorded at issue; missing historical values are shown separately. Showing up to eight.</p>
+    <p>All configured programs; counts use program recorded at issue. Missing historical values are shown separately.</p>
     <ul>@forelse ($programs as $row)<li>{{ $row->label }}: {{ $row->total }}</li>@empty<li>No loans in this period.</li>@endforelse</ul>
+    @if (\App\Services\EmployeeRoleService::canViewStudents())
     <h2 class="mt-6 text-lg font-bold">Loans by gender</h2>
     <p>Based on current student records; historical values may have changed.</p>
     <ul>@forelse ($genders as $row)<li>{{ $row->label }}: {{ $row->total }}</li>@empty<li>No loans in this period.</li>@endforelse</ul>
+    @endif
+    @php
+        $summaries = [
+            ['Students who borrowed by day or month (students may appear in multiple periods)', $borrowerTrend], ['Loans over time: '.($trendProgram ?: 'All programs'), $programTrend], ['Loans by year at issue', $years], ['Loans by borrow type', $borrowTypes], ['Most borrowed titles (up to eight)', $topTitles],
+        ];
+        if (\App\Services\EmployeeRoleService::canManageCirculation()) {
+            $summaries[] = ['Reservations created in the selected period', $reservations];
+            $summaries[] = ['Current reservation statuses', $reservationStatuses];
+        }
+        if (\App\Services\EmployeeRoleService::canManageCatalog()) {
+            $summaries[] = ['Current copies by status', $copyStatuses];
+            $summaries[] = ['Current copies by material type', $materialTypes];
+            $summaries[] = ['Current title category assignments (categories may overlap)', $categories];
+            $summaries[] = ['Recorded acquisitions by selected period', $acquisitions];
+            $summaries[] = ['Catalog import jobs created in period: current status', $catalogImports];
+            $summaries[] = ['Catalog import rows in those jobs: current status', $catalogImportRows];
+        }
+        if (\App\Services\EmployeeRoleService::canViewStudents()) {
+            $summaries[] = ['Current student account status', $studentStatuses];
+            $summaries[] = ['Student import jobs created in period: current status', $studentImports];
+            $summaries[] = ['Student import rows in those jobs: current status', $studentImportRows];
+        }
+        if (\App\Services\EmployeeRoleService::canManageFines()) $summaries[] = ['Payments by recorded date (₱)', $payments];
+    @endphp
+    @if (\App\Services\EmployeeRoleService::canManageCirculation())<p class="mt-4">{{ $reservationCount }} reservations created in the selected period; {{ $previousReservationCount }} in the previous period; {{ $waitlistCount }} currently waiting.</p>@endif
+    @if (\App\Services\EmployeeRoleService::canManageCatalog())<p class="mt-4">{{ $missingAcquisitionDates }} current copies have no acquisition date; {{ $previousAcquisitions }} acquisitions were recorded in the previous period.</p>@endif
+    @foreach ($summaries as [$heading, $rows])
+        <h2 class="mt-6 text-lg font-bold">{{ $heading }}</h2>
+        <ul>@forelse ($rows as $row)<li>{{ $row->label }}: {{ $row->total }}</li>@empty<li>No recorded data.</li>@endforelse</ul>
+    @endforeach
+    @if (\App\Services\EmployeeRoleService::canManageFines())
+        <p class="mt-4">Payments in previous period: ₱{{ number_format($previousPayments, 2) }}, using recorded payment dates.</p>
+        <h2 class="mt-6 text-lg font-bold">Current fines</h2>
+        <ul>@forelse ($fines as $fine)<li>{{ $fine->label }}: {{ $fine->total }} fines, ₱{{ number_format($fine->amount, 2) }}</li>@empty<li>No fines recorded.</li>@endforelse</ul>
+    @endif
 </article>

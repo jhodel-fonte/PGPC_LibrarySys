@@ -140,9 +140,9 @@ class BorrowedList extends Component
 
         // Tab Filtering
         if ($this->activeTab === 'active') {
-            $query->whereNull('borrowing_transactions.return_date');
+            $query->whereNull('borrowing_transactions.return_date')->whereNull('borrowing_transactions.lost_at');
         } elseif ($this->activeTab === 'overdue') {
-            $query->whereNull('borrowing_transactions.return_date')
+            $query->whereNull('borrowing_transactions.return_date')->whereNull('borrowing_transactions.lost_at')
                 ->where('borrowing_transactions.due_date', '<', Carbon::now());
         } elseif ($this->activeTab === 'returned') {
             $query->whereNotNull('borrowing_transactions.return_date');
@@ -197,8 +197,8 @@ class BorrowedList extends Component
         $borrowings = $query->paginate($this->perPage);
 
         // Counts for tabs
-        $activeCount = (clone $base)->whereNull('return_date')->count();
-        $overdueCount = (clone $base)->whereNull('return_date')->where('due_date', '<', Carbon::now())->count();
+        $activeCount = (clone $base)->whereNull('return_date')->whereNull('lost_at')->count();
+        $overdueCount = (clone $base)->whereNull('return_date')->whereNull('lost_at')->where('due_date', '<', Carbon::now())->count();
         $returnedCount = (clone $base)->whereNotNull('return_date')->count();
         $totalHistoryCount = (clone $base)->count();
 

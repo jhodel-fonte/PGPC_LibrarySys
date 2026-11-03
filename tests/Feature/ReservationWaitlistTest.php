@@ -47,6 +47,51 @@ class ReservationWaitlistTest extends TestCase
         Notification::fake();
     }
 
+    public function test_lost_report_and_resolution_preserve_loan_and_copy_history(): void
+    {
+        Schema::table('books', fn (Blueprint $t) => $t->unsignedBigInteger('book_condition_id')->nullable());
+        Schema::create('book_conditions', function (Blueprint $t) { $t->id(); $t->string('status'); });
+        Schema::create('borrow_types', function (Blueprint $t) { $t->id(); $t->string('name'); });
+        Schema::create('borrowing_transactions', function (Blueprint $t) {
+            $t->id(); $t->unsignedBigInteger('school_id'); $t->unsignedBigInteger('book_id'); $t->unsignedBigInteger('borrow_type_id');
+            $t->dateTime('due_date'); $t->dateTime('return_date')->nullable(); $t->dateTime('lost_at')->nullable();
+            $t->unsignedBigInteger('lost_reported_by_id')->nullable(); $t->text('lost_note')->nullable();
+            $t->dateTime('lost_resolved_at')->nullable(); $t->unsignedBigInteger('lost_resolved_by_id')->nullable(); $t->text('lost_resolution_note')->nullable();
+            $t->unsignedBigInteger('received_by_id')->nullable(); $t->unsignedBigInteger('return_condition_id')->nullable(); $t->text('return_condition_note')->nullable(); $t->timestamps();
+        });
+        DB::table('book_conditions')->insert([['id' => 1, 'status' => 'Good'], ['id' => 5, 'status' => 'Lost']]);
+        DB::table('borrow_types')->insert(['id' => 1, 'name' => 'Regular Check-out']);
+        DB::table('borrowing_transactions')->insert(['id' => 1, 'school_id' => 1, 'book_id' => 1, 'borrow_type_id' => 1, 'due_date' => now()->addDay()]);
+        $librarian = new \App\Models\Librarian(); $librarian->id = 1;
+        $service = app(\App\Services\LostBookService::class);
+        $service->report(1, 1, $librarian, 'Student reported it missing');
+        $this->assertDatabaseHas('books', ['id' => 1, 'status' => 'lost', 'book_condition_id' => 5]);
+        $this->assertDatabaseHas('borrowing_transactions', ['id' => 1, 'return_date' => null, 'lost_resolved_at' => null]);
+        $service->resolve(1, 1, $librarian, 'Case settled');
+        $this->assertDatabaseHas('books', ['id' => 1, 'status' => 'lost']);
+        $this->assertDatabaseHas('borrowing_transactions', ['id' => 1, 'return_date' => null, 'lost_resolution_note' => 'Case settled']);
+        $service->resolve(1, 1, $librarian, 'Book found', 1);
+        $loan = \App\Models\BorrowingTransaction::findOrFail(1);
+        $this->assertNotNull($loan->lost_at);
+        $this->assertNotNull($loan->lost_resolved_at);
+        $this->assertNotNull($loan->return_date);
+        $this->assertSame('Case settled', $loan->lost_resolution_note);
+        $this->assertDatabaseHas('books', ['id' => 1, 'status' => 'available', 'book_condition_id' => 1]);
+    }
+
+    public function test_lost_copy_suspends_and_reopens_waitlist_in_original_order(): void
+    {
+        $service = app(ReservationWaitlistService::class);
+        $service->join(1, Account::findOrFail(1));
+        $service->join(1, Account::findOrFail(2));
+        DB::table('books')->where('id', 1)->update(['status' => 'lost']);
+        DB::transaction(fn () => $service->suspendUnavailable(1));
+        $this->assertSame(['lost_unavailable', 'lost_unavailable'], ReservationWaitlist::orderBy('id')->pluck('status')->all());
+        DB::table('books')->where('id', 1)->update(['status' => 'borrowed']);
+        $service->reopen(1);
+        $this->assertSame([1, 2], ReservationWaitlist::where('status', 'waiting')->orderBy('id')->pluck('account_id')->all());
+    }
+
     public function test_released_copy_goes_to_first_waiting_student(): void
     {
         $service = app(ReservationWaitlistService::class);

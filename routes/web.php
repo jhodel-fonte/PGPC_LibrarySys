@@ -82,6 +82,7 @@ Route::middleware(['auth', 'verified', 'role:Admin'])->prefix('admin')->name('ad
             Route::get('/return/confirm', \App\Livewire\Pages\Dashboard\ConfirmReturn::class)->name('return.confirm');
             Route::get('/borrow', \App\Livewire\Pages\Dashboard\CheckOutBook::class)->name('borrow');
             Route::get('/borrowed-books', \App\Livewire\Pages\Dashboard\BorrowedList::class)->name('borrowed-books');
+            Route::get('/historical-borrowing-log', \App\Livewire\Pages\Dashboard\HistoricalBorrowingLogs::class)->name('historical-borrowing-log');
             Route::get('/fine-payments', \App\Livewire\Pages\Dashboard\ProcessFinePayment::class)->name('fine-payments');
             Route::get('/reservations', \App\Livewire\Pages\Reservation\AdminDashboard::class)->name('reservations');
         });
@@ -100,7 +101,8 @@ Route::middleware(['auth', 'verified', 'role:Admin'])->prefix('admin')->name('ad
 
         Route::get('/settings', \App\Livewire\Pages\Dashboard\Settings::class)->name('settings');
         Route::get('/analytics', \App\Livewire\Pages\Dashboard\Analytics::class)->name('analytics');
-        Route::get('/analytics/ai', \App\Livewire\Pages\Dashboard\AiAnalytics::class)->name('analytics.ai');
+        Route::get('/analytics/ai', \App\Livewire\Pages\Dashboard\StudentInterestAnalytics::class)->name('analytics.ai');
+        Route::get('/analytics/ai/evaluation', \App\Livewire\Pages\Dashboard\AiAnalytics::class)->name('analytics.ai.evaluation');
         Route::get('/analytics/circulation', fn () => redirect()->route(request()->routeIs('admin.*') ? 'admin.analytics' : 'librarian.analytics', ['section' => 'operations']))->name('analytics.circulation');
         Route::get('/profile', \App\Livewire\Pages\Student\Profile::class)->name('profile');
 });
@@ -148,7 +150,8 @@ Route::middleware(['auth', 'verified', 'role:Librarian,Head Librarian,Admin'])->
 
         Route::get('/settings', \App\Livewire\Pages\Dashboard\Settings::class)->name('settings')->middleware('permission:manage_system,manage_settings');
         Route::get('/analytics', \App\Livewire\Pages\Dashboard\Analytics::class)->name('analytics')->middleware('permission:view_reports,manage_system');
-        Route::get('/analytics/ai', \App\Livewire\Pages\Dashboard\AiAnalytics::class)->name('analytics.ai')->middleware('permission:view_reports,manage_system');
+        Route::get('/analytics/ai', \App\Livewire\Pages\Dashboard\StudentInterestAnalytics::class)->name('analytics.ai')->middleware('permission:view_reports,manage_system');
+        Route::get('/analytics/ai/evaluation', \App\Livewire\Pages\Dashboard\AiAnalytics::class)->name('analytics.ai.evaluation')->middleware('permission:view_reports,manage_system');
         Route::get('/analytics/circulation', fn () => redirect()->route(request()->routeIs('admin.*') ? 'admin.analytics' : 'librarian.analytics', ['section' => 'operations']))->name('analytics.circulation')->middleware('permission:view_reports,manage_system');
         Route::get('/profile', \App\Livewire\Pages\Student\Profile::class)->name('profile');
 });

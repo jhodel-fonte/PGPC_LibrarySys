@@ -48,7 +48,7 @@
                 @foreach($fines as $item)
                 <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 p-4 has-[:checked]:border-[#102B70] has-[:checked]:bg-blue-50">
                     <input type="radio" wire:model.live="fineId" value="{{ $item->id }}" class="mt-1 text-[#102B70]">
-                    <span class="min-w-0 flex-1 text-sm"><strong class="block">{{ $item->transaction?->book?->bookDetail?->bookData?->book_title ?? 'Book unavailable' }}</strong><span class="mt-1 block text-slate-600">Due {{ $item->transaction->due_date?->format('M d, Y') ?? '—' }} &middot; Returned {{ $item->transaction->return_date?->format('M d, Y') }}</span></span>
+                    <span class="min-w-0 flex-1 text-sm"><strong class="block">{{ $item->transaction?->book?->bookDetail?->bookData?->book_title ?? 'Book unavailable' }}</strong><span class="mt-1 block text-slate-600">Due {{ $item->transaction->due_date?->format('M d, Y') ?? '—' }} &middot; {{ $item->transaction->lost_at ? 'Reported lost ' . $item->transaction->lost_at->format('M d, Y') : 'Returned ' . $item->transaction->return_date?->format('M d, Y') }}</span></span>
                     <span class="font-bold tabular-nums">&#8369;{{ number_format($item->amount, 2) }}</span>
                 </label>
                 @endforeach
@@ -73,7 +73,7 @@
                             <tr><th scope="row" class="w-2/5 px-4 py-3 font-semibold text-slate-600">Student</th><td class="break-words px-4 py-3 text-slate-900">{{ $student ? $student->first_name . ' ' . $student->last_name . ' · ' . $student->school_id_number : '—' }}</td></tr>
                             <tr><th scope="row" class="px-4 py-3 font-semibold text-slate-600">Book</th><td class="break-words px-4 py-3 text-slate-900">{{ $fine?->transaction?->book?->bookDetail?->bookData?->book_title ?? '—' }}</td></tr>
                             <tr><th scope="row" class="px-4 py-3 font-semibold text-slate-600">Due date</th><td class="px-4 py-3">{{ $fine?->transaction?->due_date?->format('M d, Y') ?? '—' }}</td></tr>
-                            <tr><th scope="row" class="px-4 py-3 font-semibold text-slate-600">Return date</th><td class="px-4 py-3">{{ $fine?->transaction?->return_date?->format('M d, Y') ?? '—' }}</td></tr>
+                            <tr><th scope="row" class="px-4 py-3 font-semibold text-slate-600">{{ $fine?->transaction?->lost_at ? 'Lost report date' : 'Return date' }}</th><td class="px-4 py-3">{{ ($fine?->transaction?->lost_at ?? $fine?->transaction?->return_date)?->format('M d, Y') ?? '—' }}</td></tr>
                             <tr><th scope="row" class="px-4 py-3 font-semibold text-slate-600">OR / receipt number</th><td class="break-all px-4 py-3">{{ $receiptNumber ?: '—' }}</td></tr>
                             <tr><th scope="row" class="px-4 py-3 font-semibold text-slate-600">Date paid</th><td class="px-4 py-3">{{ $calculation ? \Carbon\Carbon::parse($paymentDate)->format('M d, Y') : '—' }}</td></tr>
                             <tr><th scope="row" class="px-4 py-3 font-semibold text-slate-600">Overdue days</th><td class="px-4 py-3 tabular-nums">{{ $calculation ? $calculation['days'] : '—' }}</td></tr>

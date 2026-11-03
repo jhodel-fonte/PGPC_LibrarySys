@@ -514,7 +514,8 @@
                                 $bAccession = $bBook?->accession_number ?? ('ACC-' . str_pad($item->book_id, 4, '0', STR_PAD_LEFT));
 
                                 $isReturned = !empty($item->return_date);
-                                $isOverdue = !$isReturned && $item->due_date && $item->due_date->isPast();
+                                $isLost = !$isReturned && !empty($item->lost_at);
+                                $isOverdue = !$isReturned && !$isLost && $item->due_date && $item->due_date->isPast();
 
                                 $issuedByStaff = $item->issuedBy
                                     ? trim($item->issuedBy->first_name . ' ' . $item->issuedBy->last_name)
@@ -588,6 +589,8 @@
                                                 Returned {{ $item->return_date ? $item->return_date->format('M d') : '' }}
                                             </span>
                                         </div>
+                                    @elseif($isLost)
+                                        <span class="text-sm font-semibold text-amber-700">Reported lost {{ $item->lost_at->format('M d, Y') }}</span>
                                     @elseif($isOverdue)
                                         <div class="flex flex-col">
                                             <span class="text-sm font-bold text-red-600">
@@ -618,6 +621,8 @@
                                             </svg>
                                             Returned
                                         </span>
+                                    @elseif($isLost)
+                                        <span class="rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-800">Lost</span>
                                     @elseif($isOverdue)
                                         <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-200">
                                             <span class="w-1.5 h-1.5 rounded-full bg-red-600"></span>

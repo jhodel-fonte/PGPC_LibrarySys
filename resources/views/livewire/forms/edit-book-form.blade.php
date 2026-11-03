@@ -196,6 +196,7 @@
                     $wire.removeCoverImage();
                 }
             }"
+            x-on:cover-image-retrieved.window="previewUrl = $event.detail.url; fileName = 'Open Library Cover'; fileError = null;"
             x-on:livewire-upload-error="previewUrl = null; fileError = 'Upload failed on the server. The file may exceed PHP upload_max_filesize / post_max_size.'"
         >
             <!-- Header -->
@@ -304,13 +305,22 @@
         <!-- ISBN & ISSN Row -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div class="space-y-1.5">
-                <label class="text-sm font-semibold text-[#334155]">ISBN</label>
+                <label for="edit-isbn" class="text-sm font-semibold text-[#334155]">ISBN</label>
                 <input
                     wire:model="isbn"
+                    id="edit-isbn"
                     type="text"
                     placeholder="10 or 13-digit ISBN"
                     class="w-full h-14 px-4 rounded-2xl border border-[#E2E8F0] bg-white text-sm font-medium text-[#0F172A] placeholder-slate-400 outline-none focus:border-[#102B70] focus:ring-4 focus:ring-[#EFF6FF] transition-all"
                 >
+                @if($catalogKind === 'book')
+                    <button type="button" wire:click="lookupIsbn" wire:loading.attr="disabled" wire:target="lookupIsbn" class="px-4 py-2 rounded-xl bg-[#102B70] text-white text-sm font-semibold disabled:opacity-60" title="Auto-fill details from Open Library">
+                        <span wire:loading.remove wire:target="lookupIsbn">Auto-Fill</span>
+                        <span wire:loading wire:target="lookupIsbn">Fetching...</span>
+                    </button>
+                    @if($isbnLookupError)<p role="alert" class="text-sm text-red-700">{{ $isbnLookupError }}</p>
+                    @elseif($isbnLookupSuccess)<p role="status" class="text-sm text-emerald-700">{{ $isbnLookupSuccess }}</p>@endif
+                @endif
                 @error('isbn') <span class="text-xs font-semibold text-[#EF4444]">{{ $message }}</span> @enderror
             </div>
             <div class="space-y-1.5">

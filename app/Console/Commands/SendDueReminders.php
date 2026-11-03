@@ -14,11 +14,11 @@ class SendDueReminders extends Command
 
     public function handle(): int
     {
-        $days = max(1, (int) config('settings.notifications.due_reminder_days', 3));
+        $days = max(1, (int) \App\Services\LibrarySettings::get('notifications.due_reminder_days'));
         $now = now();
 
         BorrowingTransaction::query()
-            ->whereNull('return_date')
+            ->whereNull('return_date')->whereNull('lost_at')
             ->where('due_date', '>', $now)
             ->where('due_date', '<=', $now->copy()->addDays($days)->endOfDay())
             ->orderBy('id')
@@ -27,7 +27,7 @@ class SendDueReminders extends Command
                     DB::transaction(function () use ($loan, $now, $days) {
                         $loan = BorrowingTransaction::with(['student.account', 'book.bookDetail.bookData', 'borrowType'])
                             ->lockForUpdate()->find($loan->id);
-                        if (! $loan || $loan->return_date || ! $loan->due_date ||
+                        if (! $loan || $loan->return_date || $loan->lost_at || ! $loan->due_date ||
                             $loan->due_date->lte($now) || $loan->due_date->gt($now->copy()->addDays($days)->endOfDay()) ||
                             ($loan->due_reminder_for && $loan->due_reminder_for->equalTo($loan->due_date))) {
                             return;

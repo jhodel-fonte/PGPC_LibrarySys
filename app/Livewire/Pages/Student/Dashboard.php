@@ -36,7 +36,7 @@ class Dashboard extends Component
                     'borrowType',
                 ])
                 ->where('school_id', $studentId)
-                ->whereNull('return_date')
+                ->whereNull('return_date')->whereNull('lost_at')
                 ->orderBy('due_date', 'asc')
                 ->get()
             : collect();

@@ -30,15 +30,23 @@ class BorrowingTransaction extends Model
         'issued_date',
         'due_date',
         'return_date',
+        'lost_at',
+        'lost_reported_by_id',
+        'lost_note',
+        'lost_resolved_at',
+        'lost_resolved_by_id',
+        'lost_resolution_note',
         'received_by_id',
     ];
 
-    protected $hidden = ['return_condition_note'];
+    protected $hidden = ['return_condition_note', 'lost_note', 'lost_resolution_note'];
 
     protected $casts = [
         'issued_date' => 'datetime',
         'due_date' => 'datetime',
         'return_date' => 'datetime',
+        'lost_at' => 'datetime',
+        'lost_resolved_at' => 'datetime',
         'due_reminder_for' => 'datetime',
     ];
 

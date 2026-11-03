@@ -30,7 +30,7 @@
                 <ul class="mt-3 divide-y divide-slate-100">
                     @foreach($waitingEntries as $entry)
                         <li class="flex flex-wrap items-center justify-between gap-3 py-3">
-                            <span>{{ $entry->book_title }}</span>
+                            <span>{{ $entry->book_title }} @if($entry->status === 'lost_unavailable')<span class="text-amber-700">— unavailable; waitlist paused</span>@endif</span>
                             <button type="button" wire:click="leaveWaitlist({{ $entry->id }})" class="min-h-11 px-2 text-sm font-semibold text-[#102B70] underline">Leave waitlist</button>
                         </li>
                     @endforeach

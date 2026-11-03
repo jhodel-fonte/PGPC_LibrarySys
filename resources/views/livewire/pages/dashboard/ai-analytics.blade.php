@@ -12,9 +12,10 @@
                 <h1 class="mt-1 text-2xl font-bold text-[#0F172A] sm:text-3xl">Evaluation results</h1>
                 <p class="mt-2 max-w-2xl text-sm text-[#475569]">Compare how each recommendation strategy ranks books and review the data behind the latest evaluation.</p>
             </div>
+            <div class="flex flex-wrap gap-3"><a href="{{ route(request()->routeIs('admin.*') ? 'admin.analytics.ai' : 'librarian.analytics.ai') }}" class="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-5 text-sm font-semibold text-[#102B70] hover:bg-slate-50">Student interests</a>
             <button type="button" wire:click="refreshEvaluation" wire:loading.attr="disabled" wire:target="refreshEvaluation" class="inline-flex min-h-11 items-center justify-center rounded-lg bg-[#102B70] px-5 text-sm font-semibold text-white hover:bg-[#0B225E] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#102B70] disabled:opacity-60">
                 <span wire:loading.remove wire:target="refreshEvaluation">Refresh results</span><span wire:loading wire:target="refreshEvaluation">Refreshing…</span>
-            </button>
+            </button></div>
         </header>
 
         <div role="status" class="rounded-lg border px-4 py-3 text-sm {{ $evaluation['available'] ? 'border-[#BFDBFE] bg-[#EFF6FF] text-[#1E3A8A]' : 'border-[#FECACA] bg-[#FEF2F2] text-[#991B1B]' }}">

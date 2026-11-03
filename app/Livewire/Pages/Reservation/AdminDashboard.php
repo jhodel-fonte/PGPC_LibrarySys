@@ -508,9 +508,12 @@ class AdminDashboard extends Component
                     throw new \RuntimeException('Selected book copy is no longer available.');
                 }
 
-                $student = Student::findOrFail($this->createSelectedStudentId);
+                $student = Student::lockForUpdate()->findOrFail($this->createSelectedStudentId);
                 if ($student->account?->reservations_blocked) {
                     throw new \RuntimeException('This account cannot place reservations.');
+                }
+                if (BookReservation::where('student_id', $student->id)->whereIn('reservation_status_id', [1, 2])->count() >= 3) {
+                    throw new \RuntimeException('This student has reached the maximum limit of 3 active reservations.');
                 }
 
                 $reservation = BookReservation::create([
