@@ -373,6 +373,17 @@ class StudentTable extends Component
         }
     }
 
+    public function exportExcel()
+    {
+        abort_unless(EmployeeRoleService::canViewStudents(), 403);
+        $rows = [['Student ID', 'First name', 'Last name', 'Email', 'Program', 'Year level', 'Status']];
+        foreach ($this->buildQuery()->get() as $account) {
+            $student = $account->student;
+            $rows[] = [$student?->school_id_number, $student?->first_name, $student?->last_name, $account->email, $student?->program, $student?->year_level, $account->status?->status_name];
+        }
+        return \App\Services\SpreadsheetExport::download('students.xlsx', ['Students' => $rows]);
+    }
+
     protected function getCurrentPageStudentIds(): array
     {
         return $this->buildQuery()->paginate($this->perPage)->pluck('id')->toArray();

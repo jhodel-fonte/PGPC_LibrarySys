@@ -469,6 +469,19 @@ class BookManager extends Component
         }
     }
 
+    public function exportExcel()
+    {
+        abort_unless(auth()->user()?->can('viewAny', Book::class), 403);
+        $titles = $this->inventoryView === 'Titles';
+        $rows = [$titles ? ['Title', 'ISBN', 'Copies'] : ['Title', 'ISBN', 'Accession number', 'Code', 'Location', 'Condition', 'Status']];
+        foreach ($this->buildQuery()->get() as $book) {
+            $rows[] = $titles
+                ? [$book->bookDetail?->bookData?->book_title, $book->bookDetail?->isbn, $book->bookDetail?->books->count() ?? 0]
+                : [$book->bookDetail?->bookData?->book_title, $book->bookDetail?->isbn, $book->accession_number, $book->code, $book->location, $book->condition?->status, $book->status];
+        }
+        return \App\Services\SpreadsheetExport::download('catalog.xlsx', ['Catalog' => $rows]);
+    }
+
     protected function getCurrentPageBookIds(): array
     {
         return $this->buildQuery()->paginate($this->perPage)->pluck('id')->toArray();

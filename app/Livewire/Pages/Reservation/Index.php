@@ -11,7 +11,6 @@ use App\Models\Student;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Url;
@@ -45,8 +44,7 @@ class Index extends Component
     public function refreshRecommendations(): void
     {
         $account = Auth::user();
-        if (! $account || ($account->recommendation?->generated_at?->gt(now()->subDay()))
-            || ! Cache::add('reservation-recommendations:'.$account->id, true, now()->addMinutes(5))) {
+        if (! $account) {
             return;
         }
 

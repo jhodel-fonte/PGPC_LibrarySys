@@ -271,6 +271,7 @@ class RecommendationService
         $syncedRunsCount = 0;
         $latestHistoryMetrics = [];
         $latestHistoryEvaluatedAt = null;
+        $latestHistoryPayload = [];
 
         if ($historyEntries !== []) {
             // `/api/metrics/history` returns newest evaluations first; sync oldest-to-newest.
@@ -299,6 +300,7 @@ class RecommendationService
                 if ($idx === $lastIndex) {
                     $latestHistoryMetrics = $entryMetrics;
                     $latestHistoryEvaluatedAt = $entryEvaluatedAt;
+                    $latestHistoryPayload = $entry;
                 }
             }
         }
@@ -308,10 +310,10 @@ class RecommendationService
         $liveMetrics = $metricsPayload !== []
             ? $this->normalizeMetrics($metricsPayload)
             : [];
-        $liveEvaluatedAt = $metricsPayload['evaluated_at']
+        $liveEvaluatedAt = $liveMetrics === [] ? $latestHistoryEvaluatedAt : ($metricsPayload['evaluated_at']
             ?? $metricsPayload['timestamp']
             ?? ($metricsPayload['metrics']['evaluated_at'] ?? null)
-            ?? $latestHistoryEvaluatedAt;
+            ?? $latestHistoryEvaluatedAt);
 
         if ($liveMetrics !== []) {
             try {
@@ -335,7 +337,7 @@ class RecommendationService
                 'history_status' => $historyResponse?->status(),
                 'evaluated_at' => $liveEvaluatedAt,
                 'synced_runs' => $syncedRunsCount,
-                'raw' => $metricsPayload ?: ($metricsResponse?->json() ?? $metricsResponse?->body()),
+                'raw' => $liveMetrics !== [] ? $metricsPayload : $latestHistoryPayload,
                 'raw_history' => $historyPayload ?? ($historyResponse?->json() ?? $historyResponse?->body()),
                 'metrics' => $resolvedMetrics,
                 'checked_at' => $checkedAt,

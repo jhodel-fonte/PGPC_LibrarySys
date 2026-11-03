@@ -59,6 +59,17 @@ class AiAnalytics extends Component
 
         $latestRun = $recentRuns->first();
         $previousRun = $recentRuns->get(1);
+        if ($evaluation['available'] && is_array($evaluation['raw'] ?? null) && $evaluation['raw'] !== []) {
+            try {
+                $evaluatedAt = Carbon::parse($evaluation['evaluated_at'] ?? $evaluation['checked_at']);
+            } catch (\Throwable) {
+                $evaluatedAt = Carbon::parse($evaluation['checked_at']);
+            }
+            $latestRun = new MlEvaluationRun([
+                'payload' => $evaluation['raw'],
+                'evaluated_at' => $evaluatedAt,
+            ]);
+        }
         $evaluationDetails = $latestRun?->evaluationDetails() ?? [
             'training_interactions' => null,
             'training_users' => null,

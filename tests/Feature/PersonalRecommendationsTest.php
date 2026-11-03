@@ -46,6 +46,20 @@ class PersonalRecommendationsTest extends TestCase
             ->call('refreshRecommendations')->assertSee('Saved recommendation')->assertSee('Recommended for you');
     }
 
+    public function test_reservation_page_refreshes_even_when_recommendations_are_recent(): void
+    {
+        $user = Account::factory()->create(['role_id' => 4]);
+        $old = $this->catalogBook('4444444444', 'Old recommendation');
+        $new = $this->catalogBook('5555555555', 'Updated recommendation');
+        \App\Models\UserRecommendation::storeRecommendations($user->id, [$old->isbn]);
+        UserHistory::upsertHighestRating($user->id, '1111111111', UserHistory::RATING_BORROWED);
+        Http::fake(['*' => Http::response(['recommendations' => [['isbn' => $new->isbn]]])]);
+
+        Livewire::actingAs($user)->test(\App\Livewire\Pages\Reservation\Index::class)
+            ->call('refreshRecommendations')->assertSee('Updated recommendation')->assertDontSee('Old recommendation');
+        Http::assertSent(fn ($request) => in_array('1111111111', $request['borrowed_books']));
+    }
+
     public function test_missing_viewed_isbn_does_not_use_stale_recommendations_or_call_api(): void
     {
         $user = Account::factory()->create(['role_id' => 4]);

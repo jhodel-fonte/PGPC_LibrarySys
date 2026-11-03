@@ -120,6 +120,58 @@ class Analytics extends Component
         return ($change > 0 ? '+' : '').$change.'% vs previous period';
     }
 
+    public function exportExcel()
+    {
+        abort_unless(EmployeeRoleService::canViewReports(), 403);
+        $data = $this->render()->getData();
+        $summary = [
+            ['Metric', 'Current', 'Previous'],
+            ['Start date', $this->appliedStart, $data['previousStart']->toDateString()],
+            ['End date', $this->appliedEnd, $data['previousEnd']->toDateString()],
+        ];
+        foreach ($data['current'] as $name => $value) {
+            $summary[] = [ucfirst($name), $value, $data['previous'][$name]];
+        }
+        $summary[] = ['Due today', $data['dueCount']];
+        $summary[] = ['Overdue', $data['overdueCount']];
+        if (EmployeeRoleService::canManageCirculation()) {
+            $summary[] = ['Reservations', $data['reservationCount'], $data['previousReservationCount']];
+            $summary[] = ['Waiting list', $data['waitlistCount']];
+        }
+        if (EmployeeRoleService::canManageCatalog()) {
+            $summary[] = ['Acquisitions', $data['acquisitions']->sum('total'), $data['previousAcquisitions']];
+            $summary[] = ['Missing acquisition dates', $data['missingAcquisitionDates']];
+        }
+        if (EmployeeRoleService::canManageFines()) {
+            $summary[] = ['Payments', (float) $data['payments']->sum('total'), (float) $data['previousPayments']];
+        }
+        $sheets = ['Summary' => $summary, 'Circulation trend' => [['Period', 'Loans', 'Returns']], 'Hourly loans' => [['Hour', 'Loans']]];
+        foreach ($data['hourly'] as $hour => $total) {
+            $sheets['Hourly loans'][] = [sprintf('%02d:00', $hour), $total];
+        }
+        foreach ($data['buckets'] as $bucket) {
+            $sheets['Circulation trend'][] = [$bucket['label'], $bucket['loans'], $bucket['returns']];
+        }
+        $breakdowns = [
+            'Programs' => 'programs', 'Years' => 'years', 'Genders' => 'genders',
+            'Borrow types' => 'borrowTypes', 'Top titles' => 'topTitles',
+            'Borrower trend' => 'borrowerTrend', 'Program trend' => 'programTrend',
+            'Reservations' => 'reservations', 'Reservation statuses' => 'reservationStatuses',
+            'Copy statuses' => 'copyStatuses', 'Material types' => 'materialTypes',
+            'Categories' => 'categories', 'Acquisitions' => 'acquisitions',
+            'Fines' => 'fines', 'Payments' => 'payments', 'Student statuses' => 'studentStatuses',
+            'Student imports' => 'studentImports', 'Catalog imports' => 'catalogImports',
+            'Student import rows' => 'studentImportRows', 'Catalog import rows' => 'catalogImportRows',
+        ];
+        foreach ($breakdowns as $title => $key) {
+            $sheets[$title] = [['Label', 'Total', 'Amount']];
+            foreach ($data[$key] as $row) {
+                $sheets[$title][] = [$row->label, is_numeric($row->total) ? (float) $row->total : $row->total, isset($row->amount) ? (float) $row->amount : null];
+            }
+        }
+        return \App\Services\SpreadsheetExport::download('library-analytics-'.$this->appliedStart.'-to-'.$this->appliedEnd.'.xlsx', $sheets);
+    }
+
     public function render()
     {
         $start = CarbonImmutable::parse($this->appliedStart, 'Asia/Manila')->startOfDay();

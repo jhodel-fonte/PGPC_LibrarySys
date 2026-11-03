@@ -21,6 +21,7 @@
                     <label x-show="selectedPeriod === 'custom'" x-cloak class="grid gap-1 text-sm font-semibold text-slate-700">From<input type="date" wire:model="startDate" class="min-h-11 rounded-lg border-slate-300 text-sm"></label>
                     <label x-show="selectedPeriod === 'custom'" x-cloak class="grid gap-1 text-sm font-semibold text-slate-700">To<input type="date" wire:model="endDate" class="min-h-11 rounded-lg border-slate-300 text-sm"></label>
                     <button type="submit" class="min-h-11 rounded-lg bg-[#102B70] px-4 text-sm font-semibold text-white hover:bg-[#173d90] disabled:opacity-60" wire:loading.attr="disabled" wire:target="applyPeriod">Apply range</button>
+            <button type="button" wire:click="exportExcel" wire:loading.attr="disabled" wire:target="exportExcel" class="min-h-10 rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-[#102B70] disabled:opacity-60">Export Excel</button>
                     <button type="button" class="min-h-11 rounded-lg border border-slate-300 px-4 text-sm font-semibold text-[#102B70] hover:bg-slate-50" onclick="window.print()">Print report</button>
                     <span wire:loading wire:target="applyPeriod" role="status" class="sr-only">Updating analytics…</span>
                     @error('period') <p class="w-full text-sm text-red-700">{{ $message }}</p> @enderror
