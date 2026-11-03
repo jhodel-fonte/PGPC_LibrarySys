@@ -204,6 +204,9 @@
     <!-- TAB 3: ACCOUNT                                          -->
     <!-- ======================================================== -->
     <div x-show="activeTab === 'account'" x-cloak>
+        @if($this->isProfile)
+            <div class="mb-4 flex justify-end"><button type="button" x-on:click="$dispatch('open-change-password')" class="min-h-11 rounded-lg border border-[#102B70] bg-white px-4 text-sm font-semibold text-[#102B70] hover:bg-blue-50 focus-visible:ring-2 focus-visible:ring-[#102B70]">Change password</button></div>
+        @endif
         @include('livewire.components.usermanager.student-account')
     </div>
 

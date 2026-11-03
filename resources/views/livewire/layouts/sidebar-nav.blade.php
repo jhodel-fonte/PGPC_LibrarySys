@@ -53,11 +53,13 @@
             @endif
         </nav>
 
-        @if($isStudent)
-            <div class="shrink-0 px-3 pb-6">
+        <div class="shrink-0 px-3 pb-6">
+            @if($isStudent)
                 @include('livewire.components.navigation-bar.student-guide')
-            </div>
-        @endif
+            @else
+                @include('livewire.components.navigation-bar.librarian-guide')
+            @endif
+        </div>
 
     </aside>
 

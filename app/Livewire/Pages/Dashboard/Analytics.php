@@ -120,7 +120,16 @@ class Analytics extends Component
         return ($change > 0 ? '+' : '').$change.'% vs previous period';
     }
 
-    public function exportExcel()
+    public function exportExcel(): void
+    {
+        abort_unless(EmployeeRoleService::canViewReports(), 403);
+        \App\Jobs\ExportSpreadsheet::queueFor(auth()->user(), 'analytics', ['appliedPeriod' => $this->appliedPeriod, 'appliedStart' => $this->appliedStart, 'appliedEnd' => $this->appliedEnd, 'trendProgram' => $this->trendProgram]);
+        $this->dispatch('export-queued');
+        $this->dispatch('notifications-updated');
+        $this->dispatch('toast', message: 'Excel export queued. Track it in notifications.', type: 'success');
+    }
+
+    public function exportSheets(): array
     {
         abort_unless(EmployeeRoleService::canViewReports(), 403);
         $data = $this->render()->getData();
@@ -169,7 +178,7 @@ class Analytics extends Component
                 $sheets[$title][] = [$row->label, is_numeric($row->total) ? (float) $row->total : $row->total, isset($row->amount) ? (float) $row->amount : null];
             }
         }
-        return \App\Services\SpreadsheetExport::download('library-analytics-'.$this->appliedStart.'-to-'.$this->appliedEnd.'.xlsx', $sheets);
+        return $sheets;
     }
 
     public function render()

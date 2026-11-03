@@ -79,7 +79,7 @@
             <p class="mt-1 text-sm text-slate-500 font-medium">Manage student members, course enrollments, and accounts.</p>
         </div>
         <div class="flex flex-wrap items-center gap-3 shrink-0">
-            <button type="button" wire:click="exportExcel" wire:loading.attr="disabled" wire:target="exportExcel" class="min-h-10 rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-[#102B70] disabled:opacity-60">Export Excel</button>
+            <x-export-confirmation description="The file contains student IDs, names, email addresses, programs, year levels, and statuses." />
             @if($canCreateStudent)
                 <a href="{{ route($routePrefix . 'user-management.import') }}" wire:navigate class="inline-flex items-center justify-center h-10 px-4 rounded-lg border border-slate-300 text-[#102B70] text-sm font-semibold">Import Students</a>
                 <a href="{{ route($routePrefix . 'user-management.add', ['type' => 'student']) }}" wire:navigate class="inline-flex items-center justify-center gap-2 h-10 px-5 rounded-lg bg-[#102B70] hover:bg-[#0B225E] text-white text-sm font-semibold transition-colors shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70] focus-visible:ring-offset-2 w-full sm:w-auto">

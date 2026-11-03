@@ -44,6 +44,8 @@ class NotificationContent extends Component
             'due_date' => $data['due_date'] ?? null,
             'has_action' => ! empty($data['action_url']) || ! empty($data['reservation_id']),
             'action_text' => $data['action_text'] ?? 'View',
+            'status' => $data['status'] ?? null,
+            'download_url' => $notification->type === \App\Jobs\ExportSpreadsheet::class && ($data['status'] ?? null) === 'completed' ? route('exports.download', $notification->id) : null,
             'time' => $notification->created_at?->diffForHumans(),
             'unread' => $notification->read_at === null,
         ];
@@ -86,7 +88,11 @@ class NotificationContent extends Component
     public function deleteNotification(string $id): int
     {
         abort_unless(Auth::check(), 401);
-        Auth::user()->notifications()->where('id', $id)->delete();
+        $notification = Auth::user()->notifications()->where('id', $id)->first();
+        if ($notification?->type === \App\Jobs\ExportSpreadsheet::class) {
+            \Illuminate\Support\Facades\Storage::disk('local')->delete('exports/'.$notification->id.'.xlsx');
+        }
+        $notification?->delete();
         return $this->unreadCount();
     }
 

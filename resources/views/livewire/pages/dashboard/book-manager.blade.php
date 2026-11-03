@@ -68,7 +68,7 @@
 
             <!-- Primary Action -->
             <div class="grid grid-cols-2 gap-2 sm:flex sm:shrink-0 sm:items-center">
-            <button type="button" wire:click="exportExcel" wire:loading.attr="disabled" wire:target="exportExcel" class="min-h-10 rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-[#102B70] disabled:opacity-60">Export Excel</button>
+            <x-export-confirmation description="The file contains catalog titles or copies and their identifiers, based on the selected view." />
                 @if($canCreateBook)
                     <a href="{{ route($routePrefix . 'book-management.add') }}" wire:navigate
                         class="inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-[#102B70] px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#0B225E] active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70] focus-visible:ring-offset-2">

@@ -1,9 +1,13 @@
 export default function notificationCenter(wire) {
     return {
-        items: [], cursor: null, loaded: false, loading: false, busy: false, opened: false, version: 0, error: '', count: 0, timer: null,
+        items: [], cursor: null, loaded: false, loading: false, busy: false, opened: false, version: 0, error: '', count: 0, timer: null, ticks: 0,
         init() {
             this.refreshCount();
-            this.timer = setInterval(() => { if (!document.hidden && !this.busy) this.opened ? this.sync(false) : this.refreshCount(); }, 30000);
+            this.timer = setInterval(() => {
+                this.ticks++;
+                const pending = this.items.some(item => item.status === 'queued' || item.status === 'running');
+                if (!document.hidden && !this.busy && ((this.opened && pending) || this.ticks % 10 === 0)) this.opened ? this.sync(pending) : this.refreshCount();
+            }, 3000);
         },
         destroy() { clearInterval(this.timer); },
         setCount(count) {
