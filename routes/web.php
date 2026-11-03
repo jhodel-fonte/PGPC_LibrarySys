@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Route;
 Route::view('/', 'main.index')->name('index');
 Route::get('opac', [\App\Http\Controllers\OpacController::class, 'index'])->name('opac.index');
 Route::get('opac/advanced-search', [\App\Http\Controllers\OpacController::class, 'advancedSearch'])->name('opac.advanced');
+Route::get('opac/book/catalog/{identifier}', \App\Livewire\Pages\Main\Book::class)->whereNumber('identifier')->name('opac.book.catalog');
 Route::get('opac/book/{identifier?}', \App\Livewire\Pages\Main\Book::class)->name('opac.book.detail');
 Route::post('opac/reserve/{bookId}', [\App\Http\Controllers\OpacController::class, 'reserve'])->name('opac.reserve');
 

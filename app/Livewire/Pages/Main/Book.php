@@ -99,9 +99,14 @@ class Book extends Component
             }
         ];
 
-        if (!empty($this->identifier)) {
+        if (request()->routeIs('opac.book.catalog')) {
+            $record = BookDetailModel::with($eagerRelations)
+                ->whereNull('deleted_at')
+                ->whereHas('bookData', fn($q) => $q->whereNull('deleted_at'))
+                ->find((int) $this->identifier);
+        } elseif (!empty($this->identifier)) {
             try {
-                // 1. Lookup by physical copy accession number
+            // 1. Lookup by physical copy accession number
                 $copyByAccession = BookModel::where('accession_number', $this->identifier)
                     ->whereNull('deleted_at')
                     ->whereNotIn(\Illuminate\Support\Facades\DB::raw('LOWER(status)'), ['disabled', 'archived'])

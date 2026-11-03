@@ -7,7 +7,7 @@
             </div>
             <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                 @foreach ($books as $recommendedBook)
-                    <a href="{{ route('opac.book.detail', $recommendedBook['id']) }}" wire:key="recommendation-{{ $recommendedBook['id'] }}"
+                    <a href="{{ route('opac.book.catalog', $recommendedBook['id']) }}" wire:key="recommendation-{{ $recommendedBook['id'] }}"
                         class="group min-w-0 rounded-xl border border-slate-200 p-3 transition hover:border-[#102B70] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70]">
                         <div class="flex h-40 items-center justify-center overflow-hidden rounded-lg bg-slate-50 sm:h-44">
                             <img src="{{ $recommendedBook['cover_url'] ?: asset('images/' . config('settings.book_covers.default', 'book-cover.webp')) }}"

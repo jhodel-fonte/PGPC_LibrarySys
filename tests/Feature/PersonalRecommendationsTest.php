@@ -142,6 +142,22 @@ class PersonalRecommendationsTest extends TestCase
             && ! isset($request['encrypted_book_id']));
     }
 
+    public function test_recommendation_link_opens_its_title_when_an_accession_matches_its_id(): void
+    {
+        $user = Account::factory()->create(['role_id' => 4]);
+        $viewed = $this->catalogBook('1111111111', 'Viewed');
+        $recommended = $this->catalogBook('2222222222', 'Recommended title');
+        $other = $this->catalogBook('3333333333', 'Different title');
+        $other->books()->first()->update(['accession_number' => (string) $recommended->id]);
+        Http::fake(['*' => Http::response(['recommendations' => [['isbn' => $recommended->isbn]]])]);
+
+        $url = route('opac.book.catalog', $recommended->id);
+        Livewire::actingAs($user)->test(PersonalRecommendations::class, ['bookDetailId' => $viewed->id])
+            ->call('loadRecommendations')->assertSee($url);
+        $this->actingAs($user)->get($url)->assertOk()->assertSee('Recommended title');
+        $this->actingAs($user)->get(route('opac.book.detail', $recommended->id))->assertOk()->assertSee('Different title');
+    }
+
     public function test_recommender_failure_is_sent_to_console_and_views_keep_a_stable_user_identifier(): void
     {
         $user = Account::factory()->create(['role_id' => 4]);
