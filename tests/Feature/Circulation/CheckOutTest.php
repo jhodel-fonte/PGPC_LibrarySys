@@ -310,12 +310,21 @@ class CheckOutTest extends TestCase
             ->call('reportLost', $loan->id);
         $this->assertNotNull($loan->fresh()->lost_at);
         $this->assertSame('lost', $this->book->fresh()->status);
+        Livewire::actingAs($this->librarian)->test(\App\Livewire\Pages\Dashboard\BookManager::class)
+            ->assertSee('Resolve lost book')->assertSee('ACC-999')
+            ->set('inventoryView', 'Copies')->assertSee('Resolve lost book');
+        Livewire::actingAs($this->librarian)->withQueryParams(['loan' => $loan->id])
+            ->test(\App\Livewire\Pages\Dashboard\CheckInBook::class)
+            ->assertSet('lostModalLoanId', $loan->id)->assertSet('lostModalMode', 'resolve');
         $return->call('openLostCase', $loan->id)->assertSet('lostModalMode', 'resolve')
             ->set('resolutionNotes.'.$loan->id, 'Case settled')
             ->call('resolveLost', $loan->id);
         $this->assertNotNull($loan->fresh()->lost_resolved_at);
         $this->assertNull($loan->fresh()->return_date);
         $this->assertSame('lost', $this->book->fresh()->status);
+        Livewire::actingAs($this->librarian)->withQueryParams(['loan' => $loan->id])
+            ->test(\App\Livewire\Pages\Dashboard\CheckInBook::class)
+            ->assertSet('lostModalMode', 'found');
         $return->call('handleSearchCode', 'ACC-999')->assertSet('lostModalMode', 'found')
             ->set('resolutionNotes.'.$loan->id, 'Original copy found')
             ->call('resolveLost', $loan->id)->assertSet('lostModalError', 'Select the recovered book condition.')

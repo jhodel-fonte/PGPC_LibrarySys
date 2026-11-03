@@ -50,6 +50,9 @@ class CheckInBook extends Component
                 : null;
             if ($loan?->student && $loan->student->account) {
                 $this->loadMember($loan->student);
+                if ($loan->lost_at) {
+                    $this->openLostCase($loan->id);
+                }
             } else {
                 $this->errorMessage = 'This active loan or its student could not be found. Search for the member to continue.';
             }

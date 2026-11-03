@@ -507,6 +507,7 @@ class BookManager extends Component
 
         $relations = [
             'condition',
+            'borrowingTransactions' => fn ($q) => $q->whereNotNull('lost_at')->whereNull('return_date')->orderByDesc('id'),
             'bookDetail' => fn ($q) => $isDeletedTab ? $q->withTrashed() : $q->whereNull('deleted_at'),
             'bookDetail.periodicalIssue',
             'bookDetail.bookData.authors',
@@ -516,6 +517,7 @@ class BookManager extends Component
 
         if ($this->inventoryView === 'Titles') {
             $relations['bookDetail.books'] = fn ($q) => $isDeletedTab ? $q->onlyTrashed() : $q->whereNull('deleted_at');
+            $relations['bookDetail.books.borrowingTransactions'] = fn ($q) => $q->whereNotNull('lost_at')->whereNull('return_date')->orderByDesc('id');
         }
 
         $query = ($isDeletedTab ? Book::onlyTrashed() : Book::whereNull('books.deleted_at'))
