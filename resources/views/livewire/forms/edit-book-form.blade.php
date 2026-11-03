@@ -134,7 +134,7 @@
 <div
             class="rounded-2xl border border-[#E2E8F0] bg-white p-6 space-y-4 shadow-[0_4px_20px_rgba(0,0,0,0.02)]"
             x-data="{
-                previewUrl: null,
+                previewUrl: $wire.retrievedCoverUrl,
                 fileName: '',
                 fileSize: '',
                 isDragging: false,

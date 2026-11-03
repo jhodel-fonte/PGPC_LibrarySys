@@ -10,6 +10,18 @@ class SpreadsheetExport
 {
     public static function download(string $filename, array $sheets)
     {
+        $spreadsheet = self::workbook($sheets);
+        return response()->streamDownload(function () use ($spreadsheet) {
+            try {
+                (new Xlsx($spreadsheet))->save('php://output');
+            } finally {
+                $spreadsheet->disconnectWorksheets();
+            }
+        }, $filename, ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']);
+    }
+
+    public static function workbook(array $sheets): Spreadsheet
+    {
         $spreadsheet = new Spreadsheet();
         foreach ($sheets as $name => $rows) {
             $sheet = $spreadsheet->getSheetCount() === 1 && $spreadsheet->getActiveSheet()->getTitle() === 'Worksheet'
@@ -28,12 +40,6 @@ class SpreadsheetExport
             $sheet->freezePane('A2');
         }
         $spreadsheet->setActiveSheetIndex(0);
-        return response()->streamDownload(function () use ($spreadsheet) {
-            try {
-                (new Xlsx($spreadsheet))->save('php://output');
-            } finally {
-                $spreadsheet->disconnectWorksheets();
-            }
-        }, $filename, ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']);
+        return $spreadsheet;
     }
 }

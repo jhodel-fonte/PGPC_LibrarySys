@@ -112,7 +112,7 @@ trait OpenLibraryLookup
         }
     }
 
-    public function lookupIsbn(?string $inputIsbn = null): void
+    public function lookupIsbn(?string $inputIsbn = null, ?array $prefetched = null): void
     {
         $rawIsbn = $inputIsbn ?? $this->isbn;
         $cleanIsbn = preg_replace('/[^0-9X]/i', '', strtoupper(trim((string)$rawIsbn)));
@@ -136,11 +136,11 @@ trait OpenLibraryLookup
         try {
             // 1. Query Open Library Books API with jscmd=data
             $apiUrl = "https://openlibrary.org/api/books?bibkeys=ISBN:{$cleanIsbn}&jscmd=data&format=json";
-            $response = Http::timeout(12)->get($apiUrl);
+            $response = $prefetched === null ? Http::timeout(12)->get($apiUrl) : null;
 
-            $data = null;
+            $data = $prefetched;
             $fbJson = null;
-            if ($response->successful()) {
+            if ($response?->successful()) {
                 $json = $response->json();
                 $key = "ISBN:{$cleanIsbn}";
                 if (!empty($json[$key])) {

@@ -214,6 +214,12 @@ class EditBookForm extends Component
             $this->publisherName = $bookDetail->publisher->name;
             $this->selectedPublisherName = $bookDetail->publisher->name;
         }
+
+        $autofill = session()->get('open_library_autofill');
+        if (($autofill['detail_id'] ?? null) === $this->bookDetailId) {
+            session()->forget('open_library_autofill');
+            $this->lookupIsbn($autofill['isbn'], $autofill['data']);
+        }
     }
 
     public function generateBarcode(): void

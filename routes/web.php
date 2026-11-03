@@ -60,6 +60,14 @@ Route::get('/online-resources/{resource}', function (string $resource) use ($onl
 })->middleware('auth')->name('online-resources.show');
 
 
+Route::get('/exports/{notification}', function (string $notification) {
+    $entry = auth()->user()->notifications()->whereKey($notification)->where('type', \App\Jobs\ExportSpreadsheet::class)->firstOrFail();
+    abort_unless(($entry->data['status'] ?? null) === 'completed' && \App\Jobs\ExportSpreadsheet::allowed(auth()->user(), $entry->data['kind'] ?? ''), 403);
+    $path = 'exports/'.$entry->id.'.xlsx';
+    abort_unless(\Illuminate\Support\Facades\Storage::disk('local')->exists($path), 404);
+    return \Illuminate\Support\Facades\Storage::disk('local')->download($path, $entry->data['kind'].'.xlsx');
+})->middleware(['auth', 'verified'])->name('exports.download');
+
 Route::middleware(['auth', 'verified', 'role:Admin'])->prefix('admin')->name('admin.')->group(function () {
 
         Route::get('/', function () {

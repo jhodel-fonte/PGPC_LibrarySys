@@ -5,6 +5,8 @@ namespace App\Livewire\Pages\Dashboard;
 use App\Models\Book;
 use App\Models\BookDetail as BookDetailModel;
 use App\Models\BorrowingTransaction;
+use App\Services\EmployeeRoleService;
+use Illuminate\Support\Facades\Http;
 use Linkxtr\QrCode\Facades\QrCode;
 use Livewire\Attributes\On;
 use Livewire\Component;
@@ -15,6 +17,7 @@ class BookDetail extends Component
     public ?int $bookId = null;
     public bool $isOpen = false;
     public bool $isLoading = false;
+    public ?string $autofillError = null;
 
     // Delete copy confirmation modal properties
     public bool $showDeleteCopyModal = false;
@@ -32,6 +35,7 @@ class BookDetail extends Component
     #[On('open-book-details')]
     public function loadBookDetail($id = null, $bookDetailId = null, $bookId = null): void
     {
+        $this->autofillError = null;
         $this->isLoading = true;
         $this->bookDetailId = null; // Clear previous book data immediately
 
@@ -95,6 +99,46 @@ class BookDetail extends Component
             $this->dispatch('toast', message: "Physical copy '{$book->accession_number}' was restored successfully.", type: 'success');
             $this->dispatch('book-details-updated');
         }
+    }
+
+    public function autoFill(): void
+    {
+        abort_unless(auth()->user()?->can('update', Book::class), 403);
+        $detail = BookDetailModel::findOrFail($this->bookDetailId);
+        abort_unless($detail->catalog_kind === 'book', 404);
+        $isbn = preg_replace('/[^0-9X]/i', '', strtoupper(trim((string) $detail->isbn)));
+        $this->autofillError = null;
+        if (!in_array(strlen($isbn), [10, 13], true)) {
+            $this->autofillError = 'This book needs a valid ISBN before it can be auto-filled.';
+            return;
+        }
+
+        try {
+            $response = Http::timeout(12)->get('https://openlibrary.org/api/books', [
+                'bibkeys' => 'ISBN:'.$isbn, 'jscmd' => 'data', 'format' => 'json',
+            ]);
+            if (!$response->successful()) {
+                throw new \RuntimeException('Open Library request failed.');
+            }
+            $data = $response->json('ISBN:'.$isbn);
+            if (empty($data)) {
+                $fallback = Http::timeout(8)->get("https://openlibrary.org/isbn/{$isbn}.json");
+                if (!$fallback->successful() && $fallback->status() !== 404) {
+                    throw new \RuntimeException('Open Library request failed.');
+                }
+                $data = $fallback->json();
+                if (empty($data['title'])) {
+                    $this->autofillError = 'No Open Library match was found for this ISBN.';
+                    return;
+                }
+            }
+        } catch (\Throwable $e) {
+            $this->autofillError = 'Unable to reach Open Library. Please try again.';
+            return;
+        }
+
+        session()->flash('open_library_autofill', ['detail_id' => $detail->id, 'isbn' => $isbn, 'data' => $data]);
+        $this->dispatch('open-library-match-found', url: route(EmployeeRoleService::getRoutePrefix().'book-management.edit', ['id' => $detail->id]));
     }
 
     public function close(): void

@@ -469,7 +469,16 @@ class BookManager extends Component
         }
     }
 
-    public function exportExcel()
+    public function exportExcel(): void
+    {
+        abort_unless(auth()->user()?->can('viewAny', Book::class), 403);
+        \App\Jobs\ExportSpreadsheet::queueFor(auth()->user(), 'catalog', ['search' => $this->search, 'inventoryView' => $this->inventoryView, 'catalogFilter' => $this->catalogFilter, 'activeTab' => $this->activeTab, 'sort' => $this->sort, 'filterLocation' => $this->filterLocation, 'filterCondition' => $this->filterCondition, 'filterStatus' => $this->filterStatus, 'filterAuthor' => $this->filterAuthor, 'filterYear' => $this->filterYear]);
+        $this->dispatch('export-queued');
+        $this->dispatch('notifications-updated');
+        $this->dispatch('toast', message: 'Excel export queued. Track it in notifications.', type: 'success');
+    }
+
+    public function exportSheets(): array
     {
         abort_unless(auth()->user()?->can('viewAny', Book::class), 403);
         $titles = $this->inventoryView === 'Titles';
@@ -479,7 +488,7 @@ class BookManager extends Component
                 ? [$book->bookDetail?->bookData?->book_title, $book->bookDetail?->isbn, $book->bookDetail?->books->count() ?? 0]
                 : [$book->bookDetail?->bookData?->book_title, $book->bookDetail?->isbn, $book->accession_number, $book->code, $book->location, $book->condition?->status, $book->status];
         }
-        return \App\Services\SpreadsheetExport::download('catalog.xlsx', ['Catalog' => $rows]);
+        return ['Catalog' => $rows];
     }
 
     protected function getCurrentPageBookIds(): array

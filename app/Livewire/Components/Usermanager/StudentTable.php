@@ -373,7 +373,16 @@ class StudentTable extends Component
         }
     }
 
-    public function exportExcel()
+    public function exportExcel(): void
+    {
+        abort_unless(EmployeeRoleService::canViewStudents(), 403);
+        \App\Jobs\ExportSpreadsheet::queueFor(auth()->user(), 'students', ['search' => $this->search, 'activeTab' => $this->activeTab, 'sort' => $this->sort, 'filterStatus' => $this->filterStatus, 'filterProgram' => $this->filterProgram, 'filterYearLevel' => $this->filterYearLevel]);
+        $this->dispatch('export-queued');
+        $this->dispatch('notifications-updated');
+        $this->dispatch('toast', message: 'Excel export queued. Track it in notifications.', type: 'success');
+    }
+
+    public function exportSheets(): array
     {
         abort_unless(EmployeeRoleService::canViewStudents(), 403);
         $rows = [['Student ID', 'First name', 'Last name', 'Email', 'Program', 'Year level', 'Status']];
@@ -381,7 +390,7 @@ class StudentTable extends Component
             $student = $account->student;
             $rows[] = [$student?->school_id_number, $student?->first_name, $student?->last_name, $account->email, $student?->program, $student?->year_level, $account->status?->status_name];
         }
-        return \App\Services\SpreadsheetExport::download('students.xlsx', ['Students' => $rows]);
+        return ['Students' => $rows];
     }
 
     protected function getCurrentPageStudentIds(): array

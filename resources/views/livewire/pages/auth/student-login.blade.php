@@ -188,7 +188,9 @@
                 Create an account
             </a>
         </p>
-        <p class="text-[12px] text-slate-400">Staff Portal: <a href="{{ route('employee.login') }}" wire:navigate class="font-semibold text-[#102b70] underline decoration-[#fcc719] decoration-2 underline-offset-2 hover:text-blue-800 transition">Employee Login</a>.
-        </p>
+        @if (! $mobileView)
+            <p class="text-[12px] text-slate-400">Staff Portal: <a href="{{ route('employee.login') }}" wire:navigate class="font-semibold text-[#102b70] underline decoration-[#fcc719] decoration-2 underline-offset-2 hover:text-blue-800 transition">Employee Login</a>.
+            </p>
+        @endif
     </div>
 </div>
