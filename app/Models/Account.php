@@ -12,11 +12,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use App\Services\EmployeeRoleService;
 use App\Services\StudentRoleService;
 use Laravel\Scout\Searchable;
-use Laravel\Sanctum\HasApiTokens;
 
 class Account extends Authenticatable
 {
-    use HasFactory, SoftDeletes, Notifiable, Searchable, HasApiTokens;
+    use HasFactory, SoftDeletes, Notifiable, Searchable;
 
     protected static function booted(): void
     {

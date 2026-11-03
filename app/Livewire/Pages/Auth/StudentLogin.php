@@ -3,6 +3,7 @@
 namespace App\Livewire\Pages\Auth;
 
 use App\Livewire\Forms\LoginForm;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Session;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -12,11 +13,18 @@ class StudentLogin extends Component
 {
     public LoginForm $form;
 
+    public bool $mobileView = false;
+
     /**
      * If user is already logged in, redirect immediately.
      */
     public function mount(): void
     {
+        $this->mobileView = request()->query('mobileview') === '1' || request()->cookie('pgpc_mobile_view') === '1';
+        if (request()->query('mobileview') === '1') {
+            Cookie::queue('pgpc_mobile_view', '1', 525600);
+        }
+
         if (auth()->check()) {
             $user = auth()->user();
             $roleName = strtolower(str_replace(' ', '', $user->role?->name ?? ''));

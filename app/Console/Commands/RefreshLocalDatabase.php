@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use Symfony\Component\Process\ExecutableFinder;
 use Symfony\Component\Process\Process;
 use Throwable;
 
@@ -52,6 +53,22 @@ class RefreshLocalDatabase extends Command
             return self::FAILURE;
         }
 
+        $directories = [];
+        if (PHP_OS_FAMILY === 'Windows') {
+            $directories = glob((getenv('ProgramFiles') ?: 'C:\\Program Files').'\\PostgreSQL\\*\\bin', GLOB_ONLYDIR) ?: [];
+            natsort($directories);
+            $directories = array_reverse($directories);
+        }
+        $finder = new ExecutableFinder;
+        $tools = [];
+        foreach (['pg_dump', 'pg_restore', 'psql'] as $name) {
+            $tools[$name] = $finder->find($name, null, $directories);
+            if (! $tools[$name]) {
+                $this->error("PostgreSQL tool {$name} was not found. Install PostgreSQL client tools and add their bin directory to PATH.");
+                return self::FAILURE;
+            }
+        }
+
         $dump = tempnam(sys_get_temp_dir(), 'pgpc-db-');
         if ($dump === false) {
             $this->error('Could not create a temporary snapshot file.');
@@ -65,10 +82,10 @@ class RefreshLocalDatabase extends Command
             return self::FAILURE;
         }
         try {
-            $backup = new Process(['pg_dump', '--format=custom', '--no-owner', '--no-privileges', '--no-password', '--host', $source['host'], '--port', (string) $source['port'], '--username', $source['username'], '--dbname', $source['database'], '--file', $dump], base_path(), ['PGPASSWORD' => $source['password'], 'PGSSLMODE' => $source['sslmode'] ?? 'prefer', 'PGHOSTADDR' => false], null, null);
+            $backup = new Process([$tools['pg_dump'], '--format=custom', '--no-owner', '--no-privileges', '--no-password', '--host', $source['host'], '--port', (string) $source['port'], '--username', $source['username'], '--dbname', $source['database'], '--file', $dump], base_path(), ['PGPASSWORD' => $source['password'], 'PGSSLMODE' => $source['sslmode'] ?? 'prefer', 'PGHOSTADDR' => false], null, null);
             $backup->mustRun();
 
-            (new Process(['pg_restore', '--no-owner', '--no-privileges', '--file', $sql, $dump], base_path(), null, null, null))->mustRun();
+            (new Process([$tools['pg_restore'], '--no-owner', '--no-privileges', '--file', $sql, $dump], base_path(), null, null, null))->mustRun();
             $prefix = <<<'SQL'
 DO $$ DECLARE s record; BEGIN
   FOR s IN SELECT nspname FROM pg_namespace WHERE nspname !~ '^pg_' AND nspname <> 'information_schema' LOOP
@@ -104,7 +121,7 @@ SQL;
                 }
                 fclose($input);
                 fclose($output);
-                $restore = new Process(['psql', '--no-psqlrc', '--single-transaction', '--set', 'ON_ERROR_STOP=1', '--no-password', '--host', '127.0.0.1', '--port', (string) $local['port'], '--username', $local['username'], '--dbname', $local['database'], '--file', $restoreSql], base_path(), ['PGPASSWORD' => $local['password'], 'PGHOSTADDR' => '127.0.0.1'], null, null);
+                $restore = new Process([$tools['psql'], '--no-psqlrc', '--single-transaction', '--set', 'ON_ERROR_STOP=1', '--no-password', '--host', '127.0.0.1', '--port', (string) $local['port'], '--username', $local['username'], '--dbname', $local['database'], '--file', $restoreSql], base_path(), ['PGPASSWORD' => $local['password'], 'PGHOSTADDR' => '127.0.0.1'], null, null);
                 $restore->mustRun();
             } finally {
                 @unlink($restoreSql);

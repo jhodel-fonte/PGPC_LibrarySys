@@ -3,6 +3,7 @@
         open: @entangle('isOpen'),
         isFetching: true,
         isAddingCopy: false,
+        autofillRedirecting: false,
         previousFocus: null,
         fallbackCover: '{{ asset('images/book-cover.webp') }}',
         show() {
@@ -31,6 +32,7 @@
         });
     "
     x-on:open-book-details.window="show()"
+    x-on:open-library-match-found="autofillRedirecting = true; setTimeout(() => window.location.assign($event.detail.url), 1800)"
     x-on:book-details-loaded.window="isFetching = false; isAddingCopy = false"
     x-on:open-add-copy.window="isAddingCopy = true"
     x-on:open-edit-copy.window="isAddingCopy = true"
@@ -67,6 +69,9 @@
             aria-describedby="book-details-description"
             class="my-auto flex max-h-[92dvh] w-full max-w-[1480px] flex-col overflow-hidden rounded-xl bg-white shadow-[0_24px_70px_rgba(7,25,67,0.28)]"
         >
+            <div x-show="autofillRedirecting" x-cloak role="status" aria-live="polite" class="shrink-0 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-800 sm:px-6">
+                Book found on Open Library. Redirecting to the edit page...
+            </div>
             <header class="flex shrink-0 items-start justify-between border-b border-slate-200 px-5 py-4 sm:px-6">
                 <div>
                     <h2 id="book-details-title" class="text-xl font-bold tracking-[-0.02em] text-[#102B70]">Catalog Item Details</h2>
@@ -556,7 +561,8 @@
                 @endif
             </div>
 
-            <footer class="flex shrink-0 items-center justify-end gap-2 border-t border-slate-200 bg-white px-5 py-3.5 sm:px-6">
+            @if($autofillError)<p role="alert" class="px-5 pt-3 text-right text-sm text-red-700">{{ $autofillError }}</p>@endif
+            <footer class="flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-slate-200 bg-white px-5 py-3.5 sm:px-6">
                 <button
                     type="button"
                     x-on:click="hide()"
@@ -568,6 +574,12 @@
                     $editPrefix = \App\Services\EmployeeRoleService::getRoutePrefix();
                     $canEditBook = \App\Services\EmployeeRoleService::canEditBook();
                 @endphp
+                @if($canEditBook && $bookDetail?->catalog_kind === 'book')
+                    <button type="button" wire:click="autoFill" wire:loading.attr="disabled" wire:target="autoFill" :disabled="isFetching || autofillRedirecting" class="inline-flex h-9 items-center rounded-lg border border-[#102B70] bg-white px-4 text-sm font-semibold text-[#102B70] transition-colors hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#102B70] disabled:opacity-50">
+                        <span wire:loading.remove wire:target="autoFill">Auto-Fill</span>
+                        <span wire:loading wire:target="autoFill">Searching...</span>
+                    </button>
+                @endif
                 @if($canEditBook)
                     <a
                         href="{{ $bookDetail ? route($editPrefix . 'book-management.edit', $bookDetail->id) : '#' }}"
