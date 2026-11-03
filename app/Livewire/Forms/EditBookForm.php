@@ -22,7 +22,7 @@ use Livewire\WithFileUploads;
 
 class EditBookForm extends Component
 {
-    use WithFileUploads;
+    use WithFileUploads, OpenLibraryLookup;
 
     public int $bookDetailId;
     public ?int $bookId = null;
@@ -253,6 +253,7 @@ class EditBookForm extends Component
         $this->selectedPublisherName = $name;
         $this->publisherName = $name;
         $this->resetErrorBag('publisherName');
+        $this->dispatch('publisher-auto-filled', id: $id, name: $name);
     }
 
     #[On('publisher-cleared')]
@@ -326,7 +327,7 @@ class EditBookForm extends Component
         $maxKb = $this->parseSizeToKilobytes($maxSetting);
 
         $this->validate([
-            'coverImage' => 'nullable|image|mimes:png,jpg,jpeg,webp|max:' . $maxKb,
+            'coverImage' => is_string($this->coverImage) ? ['regex:/^cover_openlib_[a-z0-9]+_[0-9]+\.webp$/'] : 'nullable|image|mimes:png,jpg,jpeg,webp|max:' . $maxKb,
         ]);
 
         $this->removeExistingCover = false;
@@ -406,7 +407,7 @@ class EditBookForm extends Component
 
             'bookDescription' => 'nullable|string|max:3000',
             'notes' => 'nullable|string|max:1000',
-            'coverImage' => 'nullable|image|mimes:png,jpg,jpeg,webp|max:' . $maxKb,
+            'coverImage' => is_string($this->coverImage) ? ['regex:/^cover_openlib_[a-z0-9]+_[0-9]+\.webp$/'] : 'nullable|image|mimes:png,jpg,jpeg,webp|max:' . $maxKb,
         ], [
             'accessionNumber.required' => 'The Accession Number is required.',
             'accessionNumber.unique' => 'This Accession Number is already in use.',
@@ -535,7 +536,10 @@ class EditBookForm extends Component
 
                 if ($this->coverImage) {
                     $filename = 'cover_' . uniqid() . '_' . time() . '.webp';
-                    $newCoverStored = false;
+                    $newCoverStored = is_string($this->coverImage) && Storage::disk('public')->exists('book_cover/' . $this->coverImage);
+                    if ($newCoverStored) {
+                        $coverPath = $this->coverImage;
+                    }
 
                     try {
                         $image = null;
