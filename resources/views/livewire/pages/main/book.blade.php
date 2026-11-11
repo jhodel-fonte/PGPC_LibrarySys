@@ -523,7 +523,7 @@
                                             @foreach($book['keywords'] as $keyword)
                                                 <a
                                                     href="{{ route('opac.index', ['search' => $keyword]) }}"
-                                                    class="inline-block px-3 py-1 rounded-full text-[12.5px] font-medium bg-[#F1F5F9] text-[#334155] hover:bg-[#E2E8F0] hover:text-[#102B70] transition cursor-pointer"
+                                                    class="inline-block px-3 py-1 rounded-md text-[12.5px] font-medium bg-[#F1F5F9] text-[#334155] hover:bg-[#E2E8F0] hover:text-[#102B70] transition cursor-pointer"
                                                 >
                                                     {{ $keyword }}
                                                 </a>

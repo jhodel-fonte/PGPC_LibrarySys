@@ -4,7 +4,7 @@
             <h2 class="text-xl font-bold text-[#102B70]">General Institution Settings</h2>
             <p class="mt-1 text-xs sm:text-sm text-[#64748B]">Basic information and operating schedule for the library.</p>
         </div>
-        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#F8FAFC] text-[#334155] border border-[#E2E8F0]">
+        <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-[#334155]">
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[#102B70]"><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/></svg>
             Institution Profile
         </span>
@@ -20,7 +20,6 @@
                 </div>
                 @if($this->dirtyState['sections']['general.library_name'] ?? false || $this->dirtyState['sections']['general.email'] ?? false || $this->dirtyState['sections']['general.phone'] ?? false || $this->dirtyState['sections']['general.address'] ?? false)
                     <div class="flex items-center gap-1.5 text-xs font-bold text-amber-800 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
-                        <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
                         Modified
                     </div>
                 @endif
@@ -83,7 +82,6 @@
                 </div>
                 @if($this->dirtyState['sections']['general.operating_hours'] ?? false)
                     <div class="flex items-center gap-1.5 text-xs font-bold text-amber-800 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
-                        <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
                         Modified
                     </div>
                 @endif
@@ -103,7 +101,6 @@
                         @foreach(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as $day)
                             <tr class="hover:bg-[#F8FAFC]/80 transition-colors">
                                 <td class="px-5 py-3.5 font-bold text-[#0F172A] capitalize flex items-center gap-2">
-                                    <span class="w-1.5 h-1.5 rounded-full {{ ($settings['general']['operating_hours'][$day]['status'] ?? '') === 'Open' ? 'bg-[#3B82F6]' : 'bg-slate-300' }}"></span>
                                     {{ $day }}
                                 </td>
                                 <td class="px-5 py-3.5">
@@ -169,7 +166,6 @@
                 </div>
                 @if($this->dirtyState['sections']['general.closures'] ?? false)
                     <div class="flex items-center gap-1.5 text-xs font-bold text-amber-800 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
-                        <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
                         Modified
                     </div>
                 @endif

@@ -420,11 +420,11 @@
                         <span
                             x-show="isCustom"
                             x-transition.opacity
-                            class="inline-flex items-center h-6 px-2.5 rounded-full bg-[#FCC719]/20 text-[#7A5A00] text-[11px] font-bold"
+                            class="inline-flex items-center text-[#7A5A00] text-[11px] font-bold"
                         >
                             Customized
                         </span>
-                        <span class="inline-flex items-center h-6 px-2.5 rounded-full bg-[#EFF6FF] text-[#102B70] text-[11px] font-bold tabular-nums">
+                        <span class="inline-flex items-center h-6 text-[#102B70] text-[11px] font-bold tabular-nums">
                             <span x-text="enabledCount"></span>&nbsp;of&nbsp;<span x-text="totalCount"></span>&nbsp;enabled
                         </span>
                     </div>
@@ -558,11 +558,11 @@
                         <span
                             x-show="isCustom"
                             x-transition.opacity
-                            class="inline-flex items-center h-6 px-2.5 rounded-full bg-[#FCC719]/20 text-[#7A5A00] text-[11px] font-bold"
+                            class="inline-flex items-center text-[#7A5A00] text-[11px] font-bold"
                         >
                             Customized
                         </span>
-                        <span class="inline-flex items-center h-6 px-2.5 rounded-full bg-[#EFF6FF] text-[#102B70] text-[11px] font-bold tabular-nums">
+                        <span class="inline-flex items-center h-6 text-[#102B70] text-[11px] font-bold tabular-nums">
                             <span x-text="enabledCount"></span>&nbsp;of&nbsp;<span x-text="totalCount"></span>&nbsp;enabled
                         </span>
                     </div>
@@ -606,7 +606,6 @@
                                 <template x-if="role === 'librarian'">
                                     <div>
                                         <div class="flex items-center gap-2">
-                                            <span class="h-2 w-2 rounded-full bg-blue-500"></span>
                                             <p class="text-sm font-bold text-[#0F172A]">Librarian Role</p>
                                         </div>
                                         <p class="text-xs font-medium text-slate-500 mt-1 leading-relaxed">
@@ -617,7 +616,6 @@
                                 <template x-if="role === 'librarian_head' || role === 'head_librarian'">
                                     <div>
                                         <div class="flex items-center gap-2">
-                                            <span class="h-2 w-2 rounded-full bg-[#FCC719]"></span>
                                             <p class="text-sm font-bold text-[#0F172A]">Head Librarian Role</p>
                                         </div>
                                         <p class="text-xs font-medium text-slate-500 mt-1 leading-relaxed">
@@ -697,7 +695,7 @@
 
                                     <div class="flex items-center gap-2.5 self-end sm:self-auto" x-show="role" x-cloak>
                                         <span
-                                            class="text-[11px] font-bold tabular-nums px-2 py-0.5 rounded-full"
+                                            class="text-[11px] font-bold tabular-nums px-2 py-0.5 rounded-md"
                                             :class="categoryActiveCount({{ $catKeysJson }}) > 0 ? 'bg-[#EFF6FF] text-[#102B70]' : 'bg-slate-100 text-slate-500'"
                                         >
                                             <span x-text="categoryActiveCount({{ $catKeysJson }})"></span>/{{ count($category['permissions']) }} active

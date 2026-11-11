@@ -115,7 +115,7 @@
                             <div class="flex items-center gap-2 text-[13.5px] font-semibold transition-colors {{ $isItemActive ? 'text-[#102B70]' : 'text-white group-hover/item:text-[#FCC719]' }}">
                                 <span>{{ $itemName }}</span>
                                 @if ($itemBadge)
-                                    <span class="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider {{ $isItemActive ? 'bg-[#102B70] text-white' : 'bg-[#FCC719]/20 text-[#FCC719]' }}">
+                                    <span class="text-[10px] font-bold uppercase tracking-wider text-current">
                                         {{ $itemBadge }}
                                     </span>
                                 @endif

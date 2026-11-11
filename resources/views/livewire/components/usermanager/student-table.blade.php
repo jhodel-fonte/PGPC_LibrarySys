@@ -158,7 +158,7 @@
                         <h3 class="text-sm font-bold text-[#102B70]">Filter Students</h3>
                     </div>
                     @if($this->activeFilterCount > 0)
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EFF6FF] text-[#102B70] border border-[#BFDBFE]">
+                        <span class="inline-flex items-center text-[10px] font-bold text-[#102B70]">
                             {{ $this->activeFilterCount }} Active
                         </span>
                     @endif

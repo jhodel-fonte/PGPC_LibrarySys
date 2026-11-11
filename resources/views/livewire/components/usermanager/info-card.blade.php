@@ -23,11 +23,11 @@
             <div class="flex min-w-0 flex-wrap items-center gap-2 sm:justify-end">
                 <span class="break-all text-sm font-semibold text-slate-800">{{ $user->email ?? 'Not provided' }}</span>
                 @if($user?->is_email_verified)
-                    <span class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                    <span class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700">
                         Verified
                     </span>
                 @else
-                    <span class="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+                    <span class="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700">
                         Unverified
                     </span>
                 @endif

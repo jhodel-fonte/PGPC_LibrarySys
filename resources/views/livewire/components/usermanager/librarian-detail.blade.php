@@ -332,12 +332,12 @@
                                         </div>
                                         <div class="shrink-0 mt-0.5">
                                             @if($perm['allowed'])
-                                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                                <span class="inline-flex items-center gap-1 text-xs font-bold text-emerald-700">
                                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                                                     <span>Allowed</span>
                                                 </span>
                                             @else
-                                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-500 border border-slate-200">
+                                                <span class="inline-flex items-center gap-1 text-xs font-bold text-slate-500">
                                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                                                     <span>Restricted</span>
                                                 </span>
@@ -467,7 +467,6 @@
                                         >
                                         <span class="text-xs font-bold text-slate-800">{{ $statusOption->status_name }}</span>
                                     </div>
-                                    <span class="h-2.5 w-2.5 rounded-full shrink-0 {{ $stName === 'active' ? 'bg-emerald-500' : (($stName === 'suspended' || $stName === 'locked') ? 'bg-red-500' : 'bg-amber-500') }}"></span>
                                 </label>
                             @endforeach
                         </div>

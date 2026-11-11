@@ -23,7 +23,6 @@
             <!-- Event 1: Suspended -->
             <div class="flex items-start justify-between gap-3">
                 <div class="flex items-start gap-2.5 sm:gap-3 min-w-0">
-                    <span class="h-2 w-2 rounded-full bg-red-500 mt-1.5 shrink-0"></span>
                     <div class="min-w-0">
                         <p class="text-xs sm:text-sm font-bold text-slate-800">Account suspended</p>
                         <p class="text-[11px] sm:text-xs text-slate-500">Account has been suspended.</p>
@@ -39,7 +38,6 @@
         <!-- Event 2: Created -->
         <div class="flex items-start justify-between gap-3">
             <div class="flex items-start gap-2.5 sm:gap-3 min-w-0">
-                <span class="h-2 w-2 rounded-full bg-blue-500 mt-1.5 shrink-0"></span>
                 <div class="min-w-0">
                     <p class="text-xs sm:text-sm font-bold text-slate-800">Account created</p>
                     <p class="text-[11px] sm:text-xs text-slate-500">User account was created.</p>
@@ -54,7 +52,6 @@
         <!-- Event 3: Verification status -->
         <div class="flex items-start justify-between gap-3">
             <div class="flex items-start gap-2.5 sm:gap-3 min-w-0">
-                <span class="h-2 w-2 rounded-full {{ $user->is_email_verified ? 'bg-emerald-500' : 'bg-slate-400' }} mt-1.5 shrink-0"></span>
                 <div class="min-w-0">
                     <p class="text-xs sm:text-sm font-bold text-slate-800">
                         {{ $user->is_email_verified ? 'Email verified' : 'Email verification pending' }}

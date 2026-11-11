@@ -61,7 +61,7 @@
                     @foreach (['Data Structures', 'Python Programming', 'Educational Research', 'Management'] as $term)
                         <a
                             href="{{ Route::has('opac.index') ? route('opac.index', ['search' => $term]) : url('/#opac?search=' . urlencode($term)) }}"
-                            class="rounded-full bg-white/10 px-3 py-1 text-slate-200 backdrop-blur-xs transition hover:bg-[#FCC719] hover:text-[#071943] hover:font-semibold"
+                            class="rounded-md bg-white/10 px-3 py-1 text-slate-200 backdrop-blur-xs transition hover:bg-[#FCC719] hover:text-[#071943] hover:font-semibold"
                         >
                             {{ $term }}
                         </a>

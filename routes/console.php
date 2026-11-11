@@ -8,6 +8,22 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
+Artisan::command('dev', function () {
+    $command = 'npm exec --no -- concurrently --kill-others'
+        .' "php artisan serve" "php artisan queue:work --tries=1"'
+        .' "php artisan queue:work --queue=imports --tries=1 --timeout=1800" "npm run dev"';
+    $names = 'server,queue,imports,vite';
+
+    if (function_exists('pcntl_fork')) {
+        $command .= ' "php artisan pail --timeout=0"';
+        $names .= ',logs';
+    }
+
+    return Process::fromShellCommandline($command.' --names='.$names, base_path())
+        ->setTimeout(null)
+        ->run(fn ($type, $output) => $this->output->write($output));
+})->purpose('Start the local server, Vite, and application queue workers');
+
 Artisan::command('local:start', function () {
     foreach (['npm run build', 'npm exec --no -- concurrently --kill-others "php artisan serve" "php artisan queue:work"'] as $command) {
         $process = Process::fromShellCommandline($command, base_path())->setTimeout(null);

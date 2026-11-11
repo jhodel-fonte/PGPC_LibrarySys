@@ -131,7 +131,7 @@
                         <span class="text-2xl font-bold text-[#102B70] tracking-tight tabular-nums">
                             {{ $summary['activeLoans']['count'] }}
                         </span>
-                        <span class="inline-flex items-center text-[11px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md shrink-0">
+                        <span class="inline-flex items-center text-[11px] font-semibold text-blue-700 shrink-0">
                             {{ $summary['activeLoans']['badge'] }}
                         </span>
                     </div>
@@ -156,7 +156,7 @@
                         <span class="text-2xl font-bold text-red-700 tracking-tight tabular-nums">
                             {{ $summary['overdueItems']['count'] }}
                         </span>
-                        <span class="inline-flex items-center text-[11px] font-semibold text-red-700 bg-red-50 px-2 py-0.5 rounded-md border border-red-200 shrink-0">
+                        <span class="inline-flex items-center text-[11px] font-semibold text-red-700 shrink-0">
                             {{ $summary['overdueItems']['badge'] }}
                         </span>
                     </div>
@@ -181,7 +181,7 @@
                         <span class="text-2xl font-bold text-amber-800 tracking-tight tabular-nums">
                             {{ $summary['pendingReservations']['count'] }}
                         </span>
-                        <span class="inline-flex items-center text-[11px] font-semibold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200 shrink-0">
+                        <span class="inline-flex items-center text-[11px] font-semibold text-amber-800 shrink-0">
                             {{ $summary['pendingReservations']['badge'] }}
                         </span>
                     </div>
@@ -304,11 +304,11 @@
                 <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
                     <div class="flex items-center gap-4">
                         <div class="flex items-center gap-1.5">
-                            <span class="w-2.5 h-2.5 rounded-full bg-[#102B70]"></span>
+                            <span class="w-2.5 h-2.5 bg-[#102B70]"></span>
                             <span class="font-medium text-slate-700">Borrowed (190 total)</span>
                         </div>
                         <div class="flex items-center gap-1.5">
-                            <span class="w-2.5 h-2.5 rounded-full bg-[#3B82F6]"></span>
+                            <span class="w-2.5 h-2.5 bg-[#3B82F6]"></span>
                             <span class="font-medium text-slate-700">Returned (162 total)</span>
                         </div>
                     </div>
@@ -435,12 +435,12 @@
                                 <!-- Transaction Type (Borrow vs Return) -->
                                 <td class="py-3.5 px-4 text-center">
                                     @if($act['type'] === 'borrow')
-                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                                        <span class="inline-flex items-center gap-1 text-[11px] font-bold text-blue-700">
                                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7" /></svg>
                                             Loan / Borrow
                                         </span>
                                     @else
-                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                        <span class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700">
                                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14" /></svg>
                                             Return / Check-In
                                         </span>
@@ -460,15 +460,15 @@
                                 <!-- Status Badge -->
                                 <td class="py-3.5 px-4 text-right whitespace-nowrap">
                                     @if($act['status_color'] === 'blue')
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                                        <span class="inline-flex items-center text-[11px] font-semibold text-blue-700">
                                             {{ $act['status'] }}
                                         </span>
                                     @elseif($act['status_color'] === 'emerald')
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                        <span class="inline-flex items-center text-[11px] font-semibold text-emerald-700">
                                             {{ $act['status'] }}
                                         </span>
                                     @elseif($act['status_color'] === 'red')
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-red-50 text-red-700 border border-red-200 animate-pulse">
+                                        <span class="inline-flex items-center text-[11px] font-bold text-red-700">
                                             {{ $act['status'] }}
                                         </span>
                                     @else

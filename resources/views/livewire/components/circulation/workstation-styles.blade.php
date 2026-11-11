@@ -11,27 +11,15 @@
         .circulation-table thead, .circulation-table .circulation-desktop-cell { display: none !important; }
         .circulation-table .circulation-mobile-cell { display: block !important; }
     }
+    @media (min-width: 1024px) {
+        .circulation-workstation .workstation-summary { grid-area: 2 / 3; min-width: 0; overflow-y: auto; }
+    }
     @media (max-width: 1023px) {
-        .circulation-workstation .workstation-main,
-        .circulation-workstation .workstation-sidebar { display: contents; }
-        .circulation-workstation .workstation-search { order: 0; }
-        .circulation-workstation .workstation-student { order: 1; min-height: 0; }
-        .circulation-workstation .workstation-details { order: 2; }
-        .circulation-workstation .workstation-summary { order: 3; }
         .circulation-workstation .workstation-table { min-height: 200px; }
     }
     @media (max-width: 767px) {
-        .circulation-workstation .workstation-details { display: contents; }
-        .circulation-workstation .workstation-scanner { display: contents; }
-        .circulation-workstation .workstation-camera { order: 1; }
-        .circulation-workstation .workstation-student { order: 2; }
-        .circulation-workstation .workstation-table { order: 3; }
-        .circulation-workstation .workstation-preview { order: 4; min-height: 0; }
-        .circulation-workstation .workstation-summary { order: 5; }
         .circulation-workstation .workstation-camera button { min-height: 44px; }
         .circulation-workstation .workstation-table button { min-height: 44px; }
-        .circulation-workstation .workstation-student button { min-height: 44px; }
-        .circulation-workstation .workstation-student h3 { max-width: none; white-space: normal; overflow-wrap: anywhere; }
         .circulation-workstation .workstation-search-row { flex-wrap: wrap; gap: 0.5rem; }
         .circulation-workstation .workstation-search-row input { padding-right: 0.75rem; font-size: 1rem; }
         .circulation-workstation .workstation-modal-search { font-size: 1rem; }
@@ -46,13 +34,9 @@
         .circulation-workstation { flex: 1 1 0%; min-height: 0; }
         .circulation-workstation .workstation-content { flex: 1 1 0%; min-height: 0; }
         .circulation-workstation .workstation-header { margin: 0 0 0.75rem; }
-        .circulation-workstation .workstation-grid { flex: 1 1 0%; min-height: 0; align-items: stretch; gap: 1rem; }
-        .circulation-workstation .workstation-main { min-height: 0; gap: 0.75rem; }
-        .circulation-workstation .workstation-details { flex: 1 1 0%; min-height: 0; }
+        .circulation-workstation .workstation-grid { flex: 1 1 0%; min-height: 0; grid-template-rows: auto minmax(0, 1fr); }
         .circulation-workstation .workstation-scanner { min-height: 0; overflow-y: auto; }
-        .circulation-workstation .workstation-sidebar { min-height: 0; overflow-y: auto; gap: 0.75rem; }
-        .circulation-workstation .workstation-student { min-height: 0; padding: 1rem; }
-        .circulation-workstation .workstation-table { min-height: 0; height: 100%; }
+        .circulation-workstation .workstation-table { min-height: 0; }
         .circulation-workstation .workstation-preview, .circulation-workstation .workstation-preview-card { min-height: 0; }
     }
 </style>

@@ -4,7 +4,7 @@
             <h2 class="text-xl font-bold text-[#102B70]">System & Audit Logs</h2>
             <p class="mt-1 text-xs sm:text-sm text-[#64748B]">Review administrative actions, catalog imports, security events, and audit trails.</p>
         </div>
-        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#F8FAFC] text-[#334155] border border-[#E2E8F0]">
+        <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-[#334155]">
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[#102B70]"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
             Audit Trail
         </span>
@@ -50,13 +50,13 @@
                                 </td>
                                 <td class="px-5 py-3.5">
                                     @if($log['level'] === 'INFO')
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#EFF6FF] text-[#102B70] border border-[#BFDBFE]">INFO</span>
+                                        <span class="inline-flex items-center text-[10px] font-bold text-[#102B70]">INFO</span>
                                     @elseif($log['level'] === 'SUCCESS')
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">SUCCESS</span>
+                                        <span class="inline-flex items-center text-[10px] font-bold text-emerald-800">SUCCESS</span>
                                     @elseif($log['level'] === 'WARNING')
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">WARNING</span>
+                                        <span class="inline-flex items-center text-[10px] font-bold text-amber-800">WARNING</span>
                                     @elseif($log['level'] === 'ERROR')
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-red-50 text-red-800 border border-red-200">ERROR</span>
+                                        <span class="inline-flex items-center text-[10px] font-bold text-red-800">ERROR</span>
                                     @endif
                                 </td>
                                 <td class="px-5 py-3.5 text-[#0F172A] font-semibold text-xs truncate max-w-md">

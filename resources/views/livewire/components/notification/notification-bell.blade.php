@@ -6,7 +6,7 @@
 
     <!-- Notification Badge (Only shows if there are unread notifications) -->
     @if($unreadCount > 0)
-        <span class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center shadow">
+        <span class="absolute -top-1 -right-1 bg-slate-700 text-white text-[10px] font-bold h-4 w-4 rounded-sm flex items-center justify-center shadow">
             {{ $unreadCount > 99 ? '99+' : $unreadCount }}
         </span>
     @endif

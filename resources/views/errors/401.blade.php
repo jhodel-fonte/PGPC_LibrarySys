@@ -25,7 +25,7 @@
     @if($isDeactivated)
         <!-- ERROR BADGES -->
         <div class="mt-2 flex flex-wrap items-center justify-center gap-2">
-            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ">
+            <span class="inline-flex items-center gap-1.5 text-xs font-bold">
                 <span>401</span>
                 <span class="text-rose-300">·</span>
                 <span class="font-mono">{{ $effectiveType }}</span>

@@ -253,7 +253,6 @@
         <!-- Column Title / Header -->
         <div class="pb-2 border-b border-slate-100 font-bold text-xs sm:text-[13px] text-[#0F172A] flex items-center justify-between gap-3">
             <span x-text="tooltipTitle"></span>
-            <span class="w-1.5 h-1.5 rounded-full bg-[#102B70]"></span>
         </div>
 
         <!-- Multiple items in that column (e.g. Both Borrowed and Returned) -->
@@ -262,7 +261,7 @@
                 <template x-for="(item, idx) in tooltipItems" :key="idx">
                     <div class="flex items-center justify-between gap-6 text-xs sm:text-[13px]">
                         <div class="flex items-center gap-2 min-w-0">
-                            <span class="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm" :style="`background-color: ${item.color}`"></span>
+                            <span class="w-2.5 h-2.5 shrink-0 shadow-sm" :style="`background-color: ${item.color}`"></span>
                             <span class="text-slate-600 font-medium truncate" x-text="item.name"></span>
                         </div>
                         <span class="font-bold text-[#0F172A] tabular-nums shrink-0" x-text="item.value"></span>
@@ -275,7 +274,7 @@
         <template x-if="!tooltipItems || tooltipItems.length === 0">
             <div class="pt-2.5 flex items-center justify-between gap-6 text-xs sm:text-[13px]">
                 <div class="flex items-center gap-2 min-w-0">
-                    <span class="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm" :style="`background-color: ${tooltipColor || '#102B70'}`"></span>
+                    <span class="w-2.5 h-2.5 shrink-0 shadow-sm" :style="`background-color: ${tooltipColor || '#102B70'}`"></span>
                     <span class="text-slate-600 font-medium truncate" x-text="tooltipSeries"></span>
                 </div>
                 <span class="font-bold text-[#0F172A] tabular-nums shrink-0" x-text="tooltipValue"></span>

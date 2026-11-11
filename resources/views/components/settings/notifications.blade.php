@@ -4,7 +4,7 @@
             <h2 class="text-xl font-bold text-[#102B70]">Notification & Communications</h2>
             <p class="mt-1 text-xs sm:text-sm text-[#64748B]">Control delivery channels, templates, global banners, and scheduled jobs.</p>
         </div>
-        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#F8FAFC] text-[#334155] border border-[#E2E8F0]">
+        <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-[#334155]">
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[#102B70]"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
             Alerts Hub
         </span>
@@ -20,7 +20,6 @@
                 </div>
                 @if($this->dirtyState['sections']['notifications.channels'] ?? false)
                     <div class="flex items-center gap-1.5 text-xs font-bold text-amber-800 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
-                        <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
                         Modified
                     </div>
                 @endif
@@ -93,7 +92,6 @@
                 </div>
                 @if($this->dirtyState['sections']['notifications.templates'] ?? false)
                     <div class="flex items-center gap-1.5 text-xs font-bold text-amber-800 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
-                        <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
                         Modified
                     </div>
                 @endif
@@ -119,8 +117,7 @@
                                     </span>
                                 </td>
                                 <td class="px-5 py-3.5">
-                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                    <span class="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700">
                                         {{ $template['status'] }}
                                     </span>
                                 </td>
@@ -141,7 +138,6 @@
                             <h4 class="text-sm font-bold text-[#0F172A]">{{ $template['name'] }}</h4>
                             <div class="mt-1 flex items-center gap-2">
                                 <span class="text-xs text-[#64748B]">{{ $template['channel'] }}</span>
-                                <span class="w-1 h-1 rounded-full bg-slate-300"></span>
                                 <span class="text-xs font-bold text-emerald-600">{{ $template['status'] }}</span>
                             </div>
                         </div>
@@ -175,7 +171,7 @@
                         <div>
                             <div class="flex items-center gap-2">
                                 <h4 class="text-sm font-bold text-[#102B70]">Semester Book Borrowing Deadline Reminder</h4>
-                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Active</span>
+                                <span class="text-[10px] font-bold text-emerald-800">Active</span>
                             </div>
                             <p class="text-xs text-[#334155] mt-1 leading-relaxed">All patrons must return checked out items prior to the term-end exam week on Nov 15.</p>
                             <span class="text-[11px] text-[#64748B] mt-1 block">Visible to: All Registered Students & Faculty</span>
@@ -195,7 +191,7 @@
                         <div>
                             <div class="flex items-center gap-2">
                                 <h4 class="text-sm font-bold text-[#0F172A]">Annual Inventory Scheduled Maintenance</h4>
-                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600">Draft</span>
+                                <span class="text-[10px] font-bold text-slate-600">Draft</span>
                             </div>
                             <p class="text-xs text-[#64748B] mt-1 leading-relaxed">Circulation desk will be limited to counter inquiry on Friday afternoon.</p>
                             <span class="text-[11px] text-[#64748B] mt-1 block">Scheduled: Dec 01, 2026</span>
@@ -220,7 +216,6 @@
                 </div>
                 @if($this->dirtyState['sections']['notifications.daily_cron'] ?? false)
                     <div class="flex items-center gap-1.5 text-xs font-bold text-amber-800 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
-                        <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
                         Modified
                     </div>
                 @endif
@@ -243,8 +238,7 @@
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[#102B70]"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                         Next scheduled run: <span class="font-bold text-[#0F172A]">Tomorrow at {{ \Carbon\Carbon::parse($settings['notifications']['daily_cron'] ?? '00:00')->format('g:i A') }}</span>
                     </p>
-                    <span class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    <span class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700">
                         Cron Service Ready
                     </span>
                 </div>

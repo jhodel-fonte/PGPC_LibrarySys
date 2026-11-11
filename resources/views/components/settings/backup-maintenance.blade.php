@@ -15,7 +15,7 @@
             <h2 class="text-xl font-bold text-[#102B70]">Backup & Maintenance</h2>
             <p class="mt-1 text-xs sm:text-sm text-[#64748B]">Create administrative snapshots, manage automated retention, and disaster recovery.</p>
         </div>
-        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#F8FAFC] text-[#334155] border border-[#E2E8F0]">
+        <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-[#334155]">
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[#102B70]"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 12a9 3 0 0 0 5 2.69"/><path d="M21 9.3V5"/><path d="M3 5v14a9 3 0 0 0 6.47 2.88"/><path d="M12 12v4h4"/><path d="M13 20a5 5 0 0 0 9-3 4.5 4.5 0 0 0-4.5-4.5c-1.33 0-2.54.54-3.41 1.41L12 16"/></svg>
             System Health
         </span>
@@ -56,7 +56,6 @@
                     <div x-show="isBackingUp" style="display: none;" class="bg-[#F8FAFC] rounded-xl p-4 border border-[#BFDBFE]">
                         <div class="flex items-center justify-between mb-2">
                             <span class="text-xs font-bold text-[#102B70] flex items-center gap-2">
-                                <span class="w-2 h-2 rounded-full bg-[#102B70] animate-ping"></span>
                                 Generating snapshot package...
                             </span>
                             <span class="text-xs text-[#64748B] font-mono">Compressing .sql.gz</span>
@@ -113,7 +112,7 @@
                         <h4 class="text-sm font-bold text-[#0F172A]">Automated Daily Export</h4>
                         <p class="text-xs text-[#64748B] mt-0.5">Executes automatically at 01:00 AM</p>
                     </div>
-                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <span class="inline-flex items-center text-xs font-bold text-emerald-700">
                         Enabled
                     </span>
                 </div>

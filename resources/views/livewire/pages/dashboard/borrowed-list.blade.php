@@ -70,7 +70,7 @@
                             <h3 class="text-sm font-bold text-[#102B70]">Filter Borrowers</h3>
                         </div>
                         @if($this->activeFilterCount > 0)
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EFF6FF] text-[#102B70] border border-[#BFDBFE]">
+                            <span class="inline-flex items-center text-[10px] font-bold text-[#102B70]">
                                 {{ $this->activeFilterCount }} Active
                             </span>
                         @endif
@@ -162,7 +162,7 @@
                         <article class="rounded-xl border border-slate-200 bg-white p-4 text-sm shadow-sm">
                             <div class="flex flex-wrap items-start justify-between gap-2">
                                 <div class="min-w-0"><p class="font-bold text-[#102B70] break-words">{{ $fullName }} @if($student?->trashed()) <span class="text-slate-500">(deleted)</span> @endif</p><p class="text-xs text-slate-500 break-words">{{ $idNumber }} @if($programInfo) · {{ $programInfo }} @endif</p></div>
-                                <span class="rounded-full px-2.5 py-1 text-xs font-semibold {{ $isOverdue || $isLost ? 'bg-red-50 text-red-700' : ($isReturned ? 'bg-slate-100 text-slate-600' : 'bg-emerald-50 text-emerald-700') }}">{{ $isReturned ? 'Returned' : ($isLost ? 'Lost' : ($isOverdue ? 'Overdue' : 'On Loan')) }}</span>
+                                <span class="text-xs font-semibold {{ $isOverdue || $isLost ? 'text-red-700' : ($isReturned ? 'text-slate-600' : 'text-emerald-700') }}">{{ $isReturned ? 'Returned' : ($isLost ? 'Lost' : ($isOverdue ? 'Overdue' : 'On Loan')) }}</span>
                             </div>
                             <p class="mt-3 font-semibold text-slate-900 break-words">{{ $bTitle }}</p><p class="text-xs text-slate-500 break-words">Accession: {{ $bAccession }} @if($bBook?->trashed()) · Deleted copy @endif</p>
                             <div class="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-600"><p>Borrowed: {{ $item->issued_date?->format('M d, Y') ?? '—' }}</p><p>Due: {{ $item->due_date?->format('M d, Y') ?? '—' }}</p>@if($isReturned)<p>Returned: {{ $item->return_date?->format('M d, Y') }}</p>@endif</div>
@@ -272,22 +272,20 @@
                     <!-- 5. LOAN STATUS BADGE -->
                     <td x-show="cols['status'] !== false" class="desktop-cell px-6 py-4 align-middle">
                         @if($isReturned)
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                            <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600">
                                 <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                                 </svg>
                                 Returned
                             </span>
                         @elseif($isLost)
-                            <span class="inline-flex rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-800">Lost</span>
+                            <span class="inline-flex text-xs font-semibold text-amber-800">Lost</span>
                         @elseif($isOverdue)
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-200">
-                                <span class="w-1.5 h-1.5 rounded-full bg-red-600"></span>
+                            <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-red-700">
                                 Overdue
                             </span>
                         @else
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                            <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700">
                                 On Loan
                             </span>
                         @endif

@@ -237,15 +237,15 @@
                                 </td>
                                 <td class="px-4 sm:px-5 py-4 align-middle whitespace-nowrap">
                                     @if($applicant['status'] === 'Pending')
-                                        <span class="inline-flex rounded-full bg-[#EFF6FF] px-3 py-1 text-xs sm:text-sm font-bold text-[#102B70]">
+                                        <span class="inline-flex text-xs sm:text-sm font-bold text-[#102B70]">
                                             Pending
                                         </span>
                                     @elseif($applicant['status'] === 'Not Approved')
-                                        <span class="inline-flex rounded-full border border-[#FECACA] bg-[#FEF2F2] px-3 py-1 text-xs sm:text-sm font-bold text-[#B91C1C]">
+                                        <span class="inline-flex text-xs sm:text-sm font-bold text-[#B91C1C]">
                                             Not Approved
                                         </span>
                                     @else
-                                        <span class="inline-flex rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-xs sm:text-sm font-bold text-emerald-700">
+                                        <span class="inline-flex text-xs sm:text-sm font-bold text-emerald-700">
                                             Approved
                                         </span>
                                     @endif

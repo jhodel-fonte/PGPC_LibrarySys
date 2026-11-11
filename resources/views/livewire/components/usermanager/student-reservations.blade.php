@@ -180,19 +180,19 @@
                                 #RES-{{ str_pad($past->id, 5, '0', STR_PAD_LEFT) }}
                             </span>
                             @if($pStatusId === 3)
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+                                <span class="inline-flex items-center text-xs font-bold text-emerald-700 shrink-0">
                                     Fulfilled
                                 </span>
                             @elseif($pStatusId === 4)
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200 shrink-0">
+                                <span class="inline-flex items-center text-xs font-bold text-slate-600 shrink-0">
                                     Cancelled
                                 </span>
                             @elseif($pStatusId === 5)
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200 shrink-0">
+                                <span class="inline-flex items-center text-xs font-bold text-rose-700 shrink-0">
                                     Expired
                                 </span>
                             @else
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-700 shrink-0">
+                                <span class="inline-flex items-center text-xs font-bold text-slate-700 shrink-0">
                                     {{ $pStatusName }}
                                 </span>
                             @endif
@@ -262,19 +262,19 @@
                                 </td>
                                 <td class="py-3.5 px-4 text-right">
                                     @if($pStatusId === 3)
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                        <span class="inline-flex items-center text-xs font-bold text-emerald-700">
                                             Fulfilled
                                         </span>
                                     @elseif($pStatusId === 4)
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                                        <span class="inline-flex items-center text-xs font-bold text-slate-600">
                                             Cancelled
                                         </span>
                                     @elseif($pStatusId === 5)
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                                        <span class="inline-flex items-center text-xs font-bold text-rose-700">
                                             Expired
                                         </span>
                                     @else
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-700">
+                                        <span class="inline-flex items-center text-xs font-bold text-slate-700">
                                             {{ $pStatusName }}
                                         </span>
                                     @endif

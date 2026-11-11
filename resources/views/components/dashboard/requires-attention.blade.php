@@ -17,8 +17,7 @@
                 Items requiring action
             </p>
         </div>
-        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
-            <span class="w-1.5 h-1.5 rounded-full {{ ($overdueCount + $pendingCount) > 0 ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500' }}"></span>
+        <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600">
             {{ $overdueCount + $pendingCount }} total
         </span>
     </div>
@@ -69,7 +68,6 @@
     <!-- Footer -->
     <div class="pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
         <span class="flex items-center gap-1.5">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
             Updated live
         </span>
         <span class="font-semibold text-[#102B70]">Circulation Desk &rarr;</span>

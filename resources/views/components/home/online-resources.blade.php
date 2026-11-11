@@ -56,7 +56,7 @@
                 <!-- View All Action Button -->
                 <a
                     href="{{ $viewAllUrl }}"
-                    class="inline-flex shrink-0 items-center gap-2 rounded-full border border-white/20 bg-white/10 px-5 py-2.5 text-[13.5px] font-semibold text-white backdrop-blur-md shadow-xs transition-all duration-200 hover:border-white hover:bg-white hover:text-[#091b45] hover:shadow-md self-start sm:self-auto"
+                    class="inline-flex shrink-0 items-center gap-2 rounded-md border border-white/20 bg-white/10 px-5 py-2.5 text-[13.5px] font-semibold text-white backdrop-blur-md shadow-xs transition-all duration-200 hover:border-white hover:bg-white hover:text-[#091b45] hover:shadow-md self-start sm:self-auto"
                 >
                     <span>View all e-journals</span>
                     <svg class="h-3.5 w-3.5 text-white/70 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:text-[#091b45]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">

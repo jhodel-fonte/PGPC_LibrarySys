@@ -321,7 +321,7 @@
                             </h4>
                             <div class="flex flex-wrap gap-2">
                                 @foreach($book['keywords'] as $keyword)
-                                    <span class="inline-block px-3 py-1 rounded-full text-[12.5px] font-medium bg-[#F1F5F9] text-[#334155] hover:bg-[#E2E8F0] transition cursor-pointer">
+                                    <span class="inline-block px-3 py-1 rounded-md text-[12.5px] font-medium bg-[#F1F5F9] text-[#334155] hover:bg-[#E2E8F0] transition cursor-pointer">
                                         {{ $keyword }}
                                     </span>
                                 @endforeach
@@ -435,7 +435,6 @@
                                     <!-- Status with colored dot -->
                                     <td class="py-3 px-3.5 whitespace-nowrap">
                                         <div class="inline-flex items-center gap-1.5">
-                                            <span class="h-2 w-2 rounded-full {{ $copy['dot_color'] }}"></span>
                                             <span class="font-semibold {{ $copy['status_color'] }}">
                                                 {{ $copy['status_label'] }}
                                             </span>
