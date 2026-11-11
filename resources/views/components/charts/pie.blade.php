@@ -234,7 +234,7 @@
         >
             <div class="pb-1.5 border-b border-slate-100 flex items-center justify-between gap-3">
                 <div class="flex items-center gap-2">
-                    <span class="w-2.5 h-2.5 rounded-full shrink-0 shadow-xs" :style="`background-color: ${tooltipColor}`"></span>
+                    <span class="w-2.5 h-2.5 shrink-0 shadow-xs" :style="`background-color: ${tooltipColor}`"></span>
                     <span class="font-bold text-xs sm:text-[13px] text-[#0F172A]" x-text="tooltipTitle"></span>
                 </div>
                 <span class="text-xs font-black text-[#102B70]" x-text="tooltipPct"></span>
@@ -325,7 +325,7 @@
                         @mousemove="moveTooltip($event)"
                         @mouseleave="hideTooltip()"
                     >
-                        <span class="w-2.5 h-2.5 rounded-full shrink-0 shadow-xs" style="background-color: {{ $slice['color'] }}"></span>
+                        <span class="w-2.5 h-2.5 shrink-0 shadow-xs" style="background-color: {{ $slice['color'] }}"></span>
                         <span class="font-semibold text-slate-700 {{ $legendTextSize }}" title="{{ $slice['label'] }}">
                             {{ $slice['label'] }}
                         </span>

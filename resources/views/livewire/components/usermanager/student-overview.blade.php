@@ -130,13 +130,11 @@
                             </div>
                             <div>
                                 @if($isOverdue)
-                                    <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-bold text-red-700 bg-red-50 border border-red-200">
-                                        <span class="h-1.5 w-1.5 rounded-full bg-red-500"></span>
+                                    <span class="inline-flex items-center gap-1.5 text-xs font-bold text-red-700">
                                         Overdue
                                     </span>
                                 @else
-                                    <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200">
-                                        <span class="h-1.5 w-1.5 rounded-full bg-blue-500"></span>
+                                    <span class="inline-flex items-center gap-1.5 text-xs font-bold text-blue-700">
                                         Borrowed
                                     </span>
                                 @endif
@@ -220,13 +218,11 @@
                             </td>
                             <td class="py-3.5 px-4 whitespace-nowrap">
                                 @if($isOverdue)
-                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs sm:text-sm font-bold text-red-700 bg-red-50 border border-red-200">
-                                        <span class="h-1.5 w-1.5 rounded-full bg-red-500"></span>
+                                    <span class="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-red-700">
                                         Overdue
                                     </span>
                                 @else
-                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs sm:text-sm font-bold text-blue-700 bg-blue-50 border border-blue-200">
-                                        <span class="h-1.5 w-1.5 rounded-full bg-blue-500"></span>
+                                    <span class="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-blue-700">
                                         Borrowed
                                     </span>
                                 @endif

@@ -1,5 +1,36 @@
 <div wire:loading.class="opacity-65 transition-opacity duration-300" class="{{ $class }} bg-white rounded-2xl border border-[#E2E8F0] p-4 sm:p-5 shadow-xs flex flex-col lg:overflow-hidden">
-    <div class="flex flex-col gap-3 h-full overflow-hidden">
+    <div class="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
+        <div class="shrink-0 rounded-lg border border-l-4 px-3 py-2 {{ $scannedMember ? 'border-blue-200 border-l-[#102B70] bg-blue-50' : 'border-slate-200 bg-slate-50' }}">
+            <div class="flex min-w-0 items-center gap-2">
+                <div class="min-w-0 flex-1 leading-tight">
+                    <p class="truncate" title="{{ $scannedMember['name'] ?? '' }}">
+                        @if($scannedMember)
+                            <span class="mr-1.5 text-sm font-bold uppercase tracking-wide text-[#102B70]">Student</span>
+                            <span class="text-lg font-bold text-[#102B70]">{{ $scannedMember['name'] }}</span>
+                        @else
+                            <span class="text-sm font-medium text-slate-600">No student selected</span>
+                        @endif
+                    </p>
+                    @if($scannedMember)
+                        <p class="mt-0.5 truncate text-sm text-slate-700" title="{{ $scannedMember['school_id'] }} · {{ $scannedMember['course'] }} · {{ $scannedMember['status'] }}">
+                            <span class="font-semibold tabular-nums">{{ $scannedMember['school_id'] }}</span> · {{ $scannedMember['course'] }} · {{ $scannedMember['status'] }}
+                        </p>
+                    @endif
+                </div>
+                @if($scannedMember)
+                    <div x-data="{ confirmChange: false }" class="flex shrink-0 items-center gap-2 text-xs font-semibold">
+                        <button type="button" x-ref="changeStudent" x-show="!confirmChange" @click="confirmChange = true; $nextTick(() => $refs.cancelChange.focus())" class="min-h-8 rounded-md border border-blue-200 bg-white px-2.5 text-[#102B70] hover:bg-blue-100" aria-label="Change student">Change</button>
+                        <div x-show="confirmChange" x-cloak class="flex gap-1">
+                            <button type="button" x-ref="cancelChange" @click="confirmChange = false; $nextTick(() => $refs.changeStudent.focus())" class="rounded-md px-1 text-slate-700 hover:bg-slate-100">Cancel</button>
+                            <button type="button" wire:click="$parent.clearMember" @click="confirmChange = false" class="rounded-md px-1 text-red-700 hover:bg-red-50" aria-label="Confirm change student">Confirm</button>
+                        </div>
+                    </div>
+                @endif
+            </div>
+            @if($scannedMember['reservations_blocked'] ?? false)
+                <p class="mt-2 rounded-md bg-amber-50 px-2 py-1 text-xs text-amber-900">This student cannot reserve items. Circulation remains available.</p>
+            @endif
+        </div>
         <!-- Card Header (shrink-0) -->
         <div class="flex justify-between items-center shrink-0">
             <h3 class="text-xs font-bold text-[#334155] uppercase tracking-wider">{{ $displayTitle }} ({{ count($borrowedBooks ?? []) }})</h3>

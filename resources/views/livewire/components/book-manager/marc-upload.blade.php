@@ -342,7 +342,7 @@
                         No records to display
                     @endif
                     @if(count($selectedRecords) > 0)
-                        <span class="ml-2 font-bold text-[#102B70] bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200 text-xs">
+                        <span class="ml-2 font-bold text-[#102B70] text-xs">
                             {{ count($selectedRecords) }} selected
                         </span>
                     @endif

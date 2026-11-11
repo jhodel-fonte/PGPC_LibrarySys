@@ -124,7 +124,7 @@
                                 loading="lazy" width="80" height="120" class="h-28 w-20 object-contain"
                                 onerror="this.src='{{ asset('images/book-cover.webp') }}'"
                             >
-                            <span class="absolute top-2 left-2 px-2 py-1 rounded-full text-xs font-bold bg-white text-[#102B70] border border-[#CBD5E1] ">
+                            <span class="absolute top-2 left-2 px-2 py-1 rounded-md text-xs font-bold bg-white text-[#102B70] border border-[#CBD5E1] ">
                                 {{ $availableCopiesCount ? $availableCopiesCount . ' ' . \Illuminate\Support\Str::plural('copy', $availableCopiesCount) . ' available' : 'No copies available' }}
                             </span>
                         </div>

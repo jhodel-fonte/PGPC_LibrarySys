@@ -68,8 +68,7 @@
                     </div>
                     <div class="h-14 w-full pl-11 pr-4 rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] text-base font-semibold text-[#0F172A] flex items-center justify-between">
                         <span>{{ $statusName }}</span>
-                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold {{ $statusLower === 'active' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200' }}">
-                            <span class="h-1.5 w-1.5 rounded-full {{ $statusLower === 'active' ? 'bg-emerald-500' : 'bg-amber-500' }}"></span>
+                        <span class="inline-flex items-center gap-1.5 text-xs font-bold {{ $statusLower === 'active' ? 'text-emerald-700' : 'text-amber-700' }}">
                             {{ $statusName }}
                         </span>
                     </div>
@@ -87,8 +86,7 @@
                     </div>
                     <div class="h-14 w-full pl-11 pr-4 rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] text-base font-semibold text-[#0F172A] flex items-center justify-between">
                         <span>{{ $libStatusName }}</span>
-                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold {{ $libStatusLower === 'active' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200' }}">
-                            <span class="h-1.5 w-1.5 rounded-full {{ $libStatusLower === 'active' ? 'bg-emerald-500' : 'bg-rose-500' }}"></span>
+                        <span class="inline-flex items-center gap-1.5 text-xs font-bold {{ $libStatusLower === 'active' ? 'text-emerald-700' : 'text-rose-700' }}">
                             {{ $libStatusName }}
                         </span>
                     </div>

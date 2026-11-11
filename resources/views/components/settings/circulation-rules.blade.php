@@ -4,7 +4,7 @@
             <h2 class="text-xl font-bold text-[#102B70]">Circulation & Rule Configurations</h2>
             <p class="mt-1 text-xs sm:text-sm text-[#64748B]">Configure borrowing limits, loan durations, overdue penalties, and renewals.</p>
         </div>
-        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#F8FAFC] text-[#334155] border border-[#E2E8F0]">
+        <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-[#334155]">
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[#102B70]"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/><path d="m9 9.5 2 2 4-4"/></svg>
             Policy Engine
         </span>
@@ -20,7 +20,6 @@
                 </div>
                 @if($this->dirtyState['sections']['circulation.borrowing_limits'] ?? false)
                     <div class="flex items-center gap-1.5 text-xs font-bold text-amber-800 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
-                        <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
                         Modified
                     </div>
                 @endif
@@ -58,7 +57,6 @@
                 </div>
                 @if($this->dirtyState['sections']['circulation.loan_durations'] ?? false)
                     <div class="flex items-center gap-1.5 text-xs font-bold text-amber-800 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
-                        <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
                         Modified
                     </div>
                 @endif
@@ -126,7 +124,6 @@
                 </div>
                 @if($this->dirtyState['sections']['circulation.fine_rules'] ?? false)
                     <div class="flex items-center gap-1.5 text-xs font-bold text-amber-800 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
-                        <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
                         Modified
                     </div>
                 @endif
@@ -160,7 +157,6 @@
                 </div>
                 @if($this->dirtyState['sections']['circulation.renewal_limits'] ?? false)
                     <div class="flex items-center gap-1.5 text-xs font-bold text-amber-800 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
-                        <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
                         Modified
                     </div>
                 @endif

@@ -7,7 +7,7 @@
     <p x-show="loading && !loaded" class="px-6 py-8 text-sm text-slate-600" role="status">Loading notifications…</p>
     <template x-for="item in items" :key="item.id">
         <article class="px-6 py-4" :class="item.unread ? 'bg-slate-50' : 'bg-white'">
-            <div class="flex items-start gap-2"><span x-show="item.unread" class="mt-2 h-2 w-2 shrink-0 rounded-full bg-blue-600" aria-label="Unread"></span><h3 x-text="item.title" class="font-bold text-slate-900"></h3></div>
+            <div class="flex items-start gap-2"><span x-show="item.unread" class="text-xs font-semibold text-slate-600">Unread</span><h3 x-text="item.title" class="font-bold text-slate-900"></h3></div>
             <p x-show="item.status === 'queued' || item.status === 'running'" role="status" class="mt-2 text-xs font-semibold text-[#102B70]">Export in progress...</p>
             <p x-text="item.message" class="mt-1 break-words text-sm text-slate-700"></p>
             <p x-show="item.book_title" x-text="item.book_title" class="mt-2 break-words text-sm font-semibold text-[#102B70]"></p>

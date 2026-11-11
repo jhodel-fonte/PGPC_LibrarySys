@@ -173,7 +173,7 @@
                 </svg>
                 <span>Reservations</span>
                 @if($this->activeReservationsCount > 0)
-                    <span class="px-2 py-0.5 rounded-full text-xs font-extrabold bg-[#FCC719] text-[#102B70]">
+                    <span class="text-xs font-extrabold text-[#102B70]">
                         {{ $this->activeReservationsCount }}
                     </span>
                 @endif
@@ -299,7 +299,6 @@
                                         >
                                         <span class="text-sm font-bold text-slate-800">{{ $statusOption->status_name }}</span>
                                     </div>
-                                    <span class="h-2.5 w-2.5 rounded-full shrink-0 {{ $stName === 'active' ? 'bg-emerald-500' : (($stName === 'suspended' || $stName === 'locked') ? 'bg-red-500' : 'bg-amber-500') }}"></span>
                                 </label>
                             @endforeach
                         </div>

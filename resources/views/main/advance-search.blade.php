@@ -137,7 +137,7 @@
                                 <h3 class="text-xl sm:text-2xl font-bold text-[#0B2454] tracking-tight">
                                     Search Results
                                 </h3>
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#EFF6FF] text-[#102B70] border border-[#DBEAFE]">
+                                <span class="inline-flex items-center gap-1.5 text-xs font-bold text-[#102B70]">
                                     <span x-text="totalCount">{{ $totalResults }}</span>
                                     <span>found</span>
                                 </span>

@@ -31,7 +31,7 @@
                 <div>
                     <h4 class="font-semibold text-sm text-slate-900 leading-tight mb-1">{{ Str::limit($title->book_title, 50) }}</h4>
                 </div>
-                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-100 text-emerald-700 border border-emerald-200 shrink-0">{{ $title->borrowing_transactions_count }} {{ Str::plural('Borrow', $title->borrowing_transactions_count) }}</span>
+                <span class="inline-flex items-center text-[10px] font-semibold text-emerald-700 shrink-0">{{ $title->borrowing_transactions_count }} {{ Str::plural('Borrow', $title->borrowing_transactions_count) }}</span>
             </div>
         @empty
             <div class="px-6 py-8 text-center text-slate-500 text-sm flex-1 flex items-center justify-center">

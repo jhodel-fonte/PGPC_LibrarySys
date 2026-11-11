@@ -117,7 +117,7 @@
                                         {{ $bookData->book_title ?? 'Untitled Book' }}
                                     </p>
                                     @if($loan->book?->bookDetail?->catalog_kind !== 'book')
-                                        <span class="inline-block mt-0.5 text-xs font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                                        <span class="inline-block mt-0.5 text-xs font-semibold text-blue-700">
                                             Physical item &bull; {{ ucfirst($loan->book?->bookDetail?->catalog_kind ?? 'item') }}
                                         </span>
                                     @endif
@@ -259,7 +259,7 @@
                                         {{ $bookData->book_title ?? 'Untitled Book' }}
                                     </p>
                                     @if($record->book?->bookDetail?->catalog_kind !== 'book')
-                                        <span class="inline-block mt-0.5 text-xs font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                                        <span class="inline-block mt-0.5 text-xs font-semibold text-blue-700">
                                             Physical item &bull; {{ ucfirst($record->book?->bookDetail?->catalog_kind ?? 'item') }}
                                         </span>
                                     @endif
@@ -412,7 +412,7 @@
                                 <div>
                                     <span class="text-slate-400 font-medium block">Status</span>
                                     @if($isPaid)
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                        <span class="inline-flex items-center text-xs font-bold text-emerald-800">
                                             Paid
                                         </span>
                                     @elseif($fine->fine_status === 'waived')
@@ -420,7 +420,7 @@
                                             Waived
                                         </span>
                                     @else
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                                        <span class="inline-flex items-center text-xs font-bold text-amber-800">
                                             Unpaid
                                         </span>
                                     @endif
@@ -476,13 +476,13 @@
                                     </td>
                                     <td class="px-6 sm:px-7 py-4 text-right whitespace-nowrap">
                                         @if($isPaid)
-                                            <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs sm:text-sm font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                            <span class="inline-flex items-center text-xs sm:text-sm font-bold text-emerald-800">
                                                 Paid{{ $fine->paid_at ? ' on ' . $fine->paid_at->format('M d, Y') : '' }}
                                             </span>
                                         @elseif($fine->fine_status === 'waived')
                                             <span class="inline-flex items-center px-2.5 py-1 rounded-md text-sm font-bold bg-slate-100 text-slate-700">Waived</span>
                                         @else
-                                            <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs sm:text-sm font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                                            <span class="inline-flex items-center text-xs sm:text-sm font-bold text-amber-800">
                                                 Unpaid Balance
                                             </span>
                                         @endif

@@ -149,7 +149,7 @@
                     @mouseleave="hideTooltip()"
                 >
                     <div class="flex items-center gap-2.5 min-w-0 flex-1">
-                        <span class="w-2.5 h-2.5 rounded-full shrink-0 shadow-xs" style="background-color: {{ $slice['color'] }}"></span>
+                        <span class="w-2.5 h-2.5 shrink-0 shadow-xs" style="background-color: {{ $slice['color'] }}"></span>
                         <span class="font-semibold text-slate-700 truncate text-[13px] sm:text-sm" title="{{ $slice['label'] }}">
                             {{ $slice['label'] }}
                         </span>

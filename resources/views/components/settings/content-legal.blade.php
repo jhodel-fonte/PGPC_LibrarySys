@@ -56,7 +56,6 @@
                     </div>
                     @if($this->dirtyState['sections']["content_legal.{$type}"] ?? false)
                         <div class="flex items-center gap-1.5 text-xs font-bold text-amber-800 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
-                            <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
                             Modified
                         </div>
                     @endif

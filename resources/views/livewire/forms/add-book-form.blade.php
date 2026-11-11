@@ -15,7 +15,7 @@
             <h1 class=" text-2xl font-bold text-[#102B70] sm:text-3xl">Add a catalog item</h1>
             <p class="mt-1 text-sm text-slate-700">Choose an item type, then enter its catalog and copy details. Fields marked * are required.</p>
         </div>
-        <span class="rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-semibold text-[#102B70]">{{ $itemLabel }}</span>
+        <span class="text-xs font-semibold text-[#102B70]">{{ $itemLabel }}</span>
     </div>
 
     <fieldset class="lg:col-span-12 rounded-xl border border-slate-200 bg-white px-5 py-4 sm:px-6">

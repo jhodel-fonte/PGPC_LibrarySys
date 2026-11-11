@@ -118,7 +118,6 @@
                             x-model="selectedAvailabilities"
                             class="rounded border-slate-300 text-[#0B2454] focus:ring-[#0B2454]/20 h-4 w-4 cursor-pointer"
                         >
-                        <span class="h-2 w-2 rounded-full {{ $item['color'] }} shrink-0"></span>
                         <span
                             class="group-hover:text-[#0B2454] transition-colors font-medium"
                             :class="selectedAvailabilities.includes('{{ $item['id'] }}') ? 'font-bold text-[#0B2454]' : 'text-slate-700'"

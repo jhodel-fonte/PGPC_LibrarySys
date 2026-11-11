@@ -51,7 +51,7 @@
                                 </svg>
                                 <span>My Reservations</span>
                                 @if($activeReservationsCount > 0)
-                                    <span class="px-2 py-0.5 rounded-full text-xs font-extrabold bg-[#FFC61A] text-[#102B70]">
+                                    <span class="text-xs font-extrabold text-[#102B70]">
                                         {{ $activeReservationsCount }}
                                     </span>
                                 @endif
@@ -98,7 +98,7 @@
                         <div>
                             <div class="flex items-center gap-2">
                                 <h2 class="text-lg sm:text-xl font-bold text-slate-900">Your loans</h2>
-                                <span class="bg-[#EFF6FF] text-[#102B70] text-xs sm:text-sm font-bold px-2.5 py-0.5 rounded-full">
+                                <span class="text-[#102B70] text-xs sm:text-sm font-bold">
                                     {{ $activeCount }} / {{ \App\Services\LibrarySettings::get('library_config.max_loan_limit') }}
                                 </span>
                             </div>
@@ -129,7 +129,7 @@
                                             {{ $bookData->book_title ?? 'Untitled Book' }}
                                         </p>
                                         @if($bookDetail?->catalog_kind && $bookDetail->catalog_kind !== 'book')
-                                            <span class="inline-block mt-0.5 text-xs font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                                            <span class="inline-block mt-0.5 text-xs font-semibold text-blue-700">
                                                 Physical item &bull; {{ ucfirst($bookDetail->catalog_kind) }}
                                             </span>
                                         @endif
@@ -208,7 +208,7 @@
                                                         {{ $bookData->book_title ?? 'Untitled Book' }}
                                                     </p>
                                                     @if($bookDetail?->catalog_kind && $bookDetail->catalog_kind !== 'book')
-                                                        <span class="inline-block mt-0.5 text-xs font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                                                        <span class="inline-block mt-0.5 text-xs font-semibold text-blue-700">
                                                             Physical item &bull; {{ ucfirst($bookDetail->catalog_kind) }}
                                                         </span>
                                                     @endif
@@ -411,7 +411,7 @@
                         <h2 class="text-lg font-bold text-slate-900">My reservations</h2>
                         <p class="mt-1 text-sm text-slate-600">View your active reservations</p>
                     </div>
-                    <span class="shrink-0 rounded-full bg-blue-50 px-3 py-1 text-sm font-bold text-[#102B70]">{{ $activeReservationsCount }} active <span aria-hidden="true">&rarr;</span></span>
+                    <span class="shrink-0 text-sm font-bold text-[#102B70]">{{ $activeReservationsCount }} active <span aria-hidden="true">&rarr;</span></span>
                 </a>
 
                 <!-- Library Help & Operating Info -->

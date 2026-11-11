@@ -69,7 +69,7 @@
                         <div>
                             <span class="text-slate-400 font-medium">Fine:</span>
                             @if($hFine > 0)
-                                <span class="font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 text-xs ml-1">
+                                <span class="font-bold text-amber-700 text-xs ml-1">
                                     ₱{{ number_format($hFine, 2) }}
                                 </span>
                             @else
@@ -78,15 +78,15 @@
                         </div>
                         <div>
                             @if($hIsReturned)
-                                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200">
+                                <span class="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700">
                                     Returned
                                 </span>
                             @elseif($hIsOverdue)
-                                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-bold text-red-700 bg-red-50 border border-red-200">
+                                <span class="inline-flex items-center gap-1.5 text-xs font-bold text-red-700">
                                     Overdue
                                 </span>
                             @else
-                                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200">
+                                <span class="inline-flex items-center gap-1.5 text-xs font-bold text-blue-700">
                                     Active
                                 </span>
                             @endif
@@ -168,7 +168,7 @@
                         </td>
                         <td class="py-3.5 px-4 whitespace-nowrap">
                             @if($hFine > 0)
-                                <span class="font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-md border border-amber-200 text-xs sm:text-sm">
+                                <span class="font-bold text-amber-700 text-xs sm:text-sm">
                                     ₱{{ number_format($hFine, 2) }}
                                 </span>
                             @else
@@ -177,15 +177,15 @@
                         </td>
                         <td class="py-3.5 px-4 text-right whitespace-nowrap">
                             @if($hIsReturned)
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs sm:text-sm font-bold text-emerald-700 bg-emerald-50 border border-emerald-200">
+                                <span class="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-emerald-700">
                                     Returned
                                 </span>
                             @elseif($hIsOverdue)
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs sm:text-sm font-bold text-red-700 bg-red-50 border border-red-200">
+                                <span class="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-red-700">
                                     Overdue
                                 </span>
                             @else
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs sm:text-sm font-bold text-blue-700 bg-blue-50 border border-blue-200">
+                                <span class="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-blue-700">
                                     Active
                                 </span>
                             @endif

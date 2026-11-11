@@ -11,12 +11,12 @@
 ])
 
 @php
-    $badgeClasses = match($changeColor) {
-        'emerald' => 'text-emerald-700 bg-emerald-50 border border-emerald-200/60',
-        'amber' => 'text-amber-800 bg-amber-50 border border-amber-200/60',
-        'red' => 'text-[#B91C1C] bg-[#FEF2F2] border border-[#FECACA]',
-        'slate' => 'text-[#334155] bg-slate-100 border border-slate-200/60',
-        default => 'text-[#102B70] bg-[#EFF6FF] border border-[#DBEAFE]',
+    $changeTextColor = match($changeColor) {
+        'emerald' => 'text-emerald-700',
+        'amber' => 'text-amber-800',
+        'red' => 'text-[#B91C1C]',
+        'slate' => 'text-[#334155]',
+        default => 'text-[#102B70]',
     };
 @endphp
 
@@ -43,7 +43,7 @@
             <div class="border-t border-[#F1F5F9] my-2"></div>
             <div class="flex items-center gap-1.5 min-w-0">
                 @if($change !== null && $change !== '')
-                    <span class="{{ $changeSize }} font-semibold {{ $badgeClasses }} px-1.5 py-0.5 rounded shrink-0">
+                    <span class="{{ $changeSize }} font-semibold {{ $changeTextColor }} shrink-0">
                         {{ $change }}
                     </span>
                 @endif

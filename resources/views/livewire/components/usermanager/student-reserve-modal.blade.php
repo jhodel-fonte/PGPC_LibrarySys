@@ -63,7 +63,7 @@
                                         <div class="text-xs text-slate-500 truncate">{{ $bkAuthors }}</div>
                                         <div class="text-xs font-mono text-slate-400">Acc: {{ $bk->accession_number }} | {{ $bk->location ?: 'Main Library' }}</div>
                                     </div>
-                                    <span class="px-2 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-800 shrink-0">Available</span>
+                                    <span class="text-xs font-bold text-emerald-800 shrink-0">Available</span>
                                 </button>
                             @endforeach
                         </div>

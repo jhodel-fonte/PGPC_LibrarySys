@@ -201,7 +201,6 @@
                     </template>
                 @else
                     <div class="inline-flex items-center gap-1.5 font-bold text-[13px] {{ $book['status_color'] }}">
-                        <span class="h-2 w-2 rounded-full {{ $book['dot_color'] }} shrink-0"></span>
                         <span>{{ $book['status_label'] }}</span>
                     </div>
 

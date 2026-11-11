@@ -38,11 +38,11 @@
                         </td>
                         <td data-label="Status" class="px-6 sm:px-7 text-right whitespace-nowrap">
                             @if ($borrowing->due_date && $borrowing->due_date < now())
-                                <span class="inline-flex items-center gap-1 rounded-md px-2.5 py-0.5 text-xs font-semibold bg-red-50 text-red-700 border border-red-200">
+                                <span class="inline-flex items-center gap-1 text-xs font-semibold text-red-700">
                                     Overdue
                                 </span>
                             @else
-                                <span class="inline-flex items-center gap-1 rounded-md px-2.5 py-0.5 text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                <span class="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700">
                                     
                                     Borrowed
                                 </span>

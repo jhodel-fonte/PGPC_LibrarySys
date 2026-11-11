@@ -15,7 +15,7 @@
             <h2 class="text-xl font-bold text-[#102B70]">AI & Machine Learning Services</h2>
             <p class="mt-1 text-xs sm:text-sm text-[#64748B]">Configure endpoints and predictive confidence thresholds for recommendation services.</p>
         </div>
-        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#F8FAFC] text-[#334155] border border-[#E2E8F0]">
+        <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-[#334155]">
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[#102B70]"><path d="M12 5a3 3 0 1 0-3 3"/><path d="M9 8a3 3 0 1 0 3 3"/><path d="M12 11a3 3 0 1 0 3-3"/><path d="M15 8a3 3 0 1 0-3-3"/><path d="M12 2v3"/><path d="M12 19v3"/><path d="M22 12h-3"/><path d="M5 12H2"/><path d="M19 5l-2 2"/><path d="M7 17l-2 2"/><path d="M19 19l-2-2"/><path d="M7 7l-2-2"/></svg>
             AI Engine
         </span>
@@ -30,8 +30,7 @@
                     <p class="mt-0.5 text-xs text-[#64748B]">Internal microservice connection parameters for personalized book suggestions.</p>
                 </div>
                 @if($this->dirtyState['sections']['ai_integrations.recommendation_service'] ?? false)
-                    <div class="flex items-center gap-1.5 text-xs font-bold text-amber-800 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
-                        <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+                    <div class="flex items-center gap-1.5 text-xs font-bold text-amber-800">
                         Modified
                     </div>
                 @endif
@@ -70,11 +69,7 @@
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-[#E2E8F0]">
                     <div class="flex items-center gap-2">
                         <span class="text-xs font-bold text-[#334155]">Current Status:</span>
-                        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200">
-                            <span class="relative flex h-2 w-2">
-                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                            </span>
+                        <div class="flex items-center gap-1.5">
                             <span class="text-xs font-bold text-emerald-800" x-show="!tested">Connected</span>
                             <span class="text-xs font-bold text-emerald-800" x-show="tested" style="display: none;">Verified (22ms latency)</span>
                         </div>
@@ -111,8 +106,7 @@
                     <p class="mt-0.5 text-xs text-[#64748B]">Minimum similarity score required before displaying automated book suggestions</p>
                 </div>
                 @if($this->dirtyState['sections']['ai_integrations.confidence_threshold'] ?? false)
-                    <div class="flex items-center gap-1.5 text-xs font-bold text-amber-800 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
-                        <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+                    <div class="flex items-center gap-1.5 text-xs font-bold text-amber-800">
                         Modified
                     </div>
                 @endif

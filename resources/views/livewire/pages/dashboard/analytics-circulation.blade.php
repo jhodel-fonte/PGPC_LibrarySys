@@ -107,7 +107,6 @@
                     <div class="flex items-center justify-between pb-3 border-b border-slate-100">
                         <div>
                             <div class="flex items-center gap-2">
-                                <span class="w-2 h-2 rounded-full bg-[#102B70]"></span>
                                 <h2 class="text-base font-bold text-[#0F172A] tracking-tight">7-Day Lending Velocity</h2>
                             </div>
                             <p class="text-sm text-[#64748B] mt-0.5">Daily volume of loans issued vs. returns received</p>
@@ -136,7 +135,6 @@
                 <div class="flex items-center justify-between pb-3 border-b border-slate-100">
                     <div>
                         <div class="flex items-center gap-2">
-                            <span class="w-2 h-2 rounded-full bg-[#102B70]"></span>
                             <h2 class="text-base font-bold text-[#0F172A] tracking-tight">Loan Status Ratio</h2>
                         </div>
                         <p class="text-sm text-[#64748B] mt-0.5">Distribution of all active & archived loans</p>
@@ -163,21 +161,18 @@
                 <div class="pt-3.5 border-t border-slate-100 grid grid-cols-3 gap-2.5 text-center">
                     <div class="p-2.5 rounded-xl bg-slate-50/80 border border-slate-200/80 flex flex-col">
                         <div class="flex items-center justify-center gap-1.5">
-                            <span class="w-2 h-2 rounded-full bg-[#102B70]"></span>
                             <span class="text-xs text-slate-500 font-semibold">Active</span>
                         </div>
                         <span class="text-sm font-bold text-[#102B70] mt-0.5">{{ $statusBreakdown['series'][0] ?? 0 }} loans</span>
                     </div>
                     <div class="p-2.5 rounded-xl bg-red-50/60 border border-red-100 flex flex-col">
                         <div class="flex items-center justify-center gap-1.5">
-                            <span class="w-2 h-2 rounded-full bg-[#EF4444]"></span>
                             <span class="text-xs text-red-600 font-semibold">Overdue</span>
                         </div>
                         <span class="text-sm font-bold text-red-700 mt-0.5">{{ $statusBreakdown['series'][1] ?? 0 }} loans</span>
                     </div>
                     <div class="p-2.5 rounded-xl bg-emerald-50/60 border border-emerald-100 flex flex-col">
                         <div class="flex items-center justify-center gap-1.5">
-                            <span class="w-2 h-2 rounded-full bg-[#10B981]"></span>
                             <span class="text-xs text-emerald-600 font-semibold">Returned</span>
                         </div>
                         <span class="text-sm font-bold text-emerald-700 mt-0.5">{{ $statusBreakdown['series'][2] ?? 0 }} records</span>
@@ -192,7 +187,6 @@
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3.5 border-b border-slate-100">
                 <div>
                     <div class="flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-[#102B70]"></span>
                         <h2 class="text-base font-bold text-[#0F172A] tracking-tight">Most Borrowed Books & Acquisition Needs</h2>
                     </div>
                     <p class="text-sm text-[#64748B] mt-0.5">High-demand titles ranked by circulation frequency, highlighting books requiring additional copies.</p>
@@ -227,7 +221,7 @@
                                     </div>
                                 </td>
                                 <td data-label="Category" class="py-3.5 px-4 whitespace-nowrap">
-                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-[#EFF6FF] text-[#102B70] border border-[#BFDBFE]">
+                                    <span class="inline-flex items-center text-xs font-bold text-[#102B70]">
                                         {{ $book['category'] }}
                                     </span>
                                 </td>
@@ -244,13 +238,11 @@
                                 </td>
                                 <td data-label="Recommendation" class="py-3.5 px-4 text-right whitespace-nowrap">
                                     @if($book['needs_copies'])
-                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200">
-                                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                        <span class="inline-flex items-center gap-1.5 text-xs font-bold text-amber-800">
                                             Needs Additional Copies
                                         </span>
                                     @else
-                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                        <span class="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700">
                                             Adequate Copies in Stacks
                                         </span>
                                     @endif
@@ -271,7 +263,6 @@
                     <div class="flex items-center justify-between pb-3 border-b border-slate-100">
                         <div>
                             <div class="flex items-center gap-2">
-                                <span class="w-2 h-2 rounded-full bg-[#102B70]"></span>
                                 <h2 class="text-base font-bold text-[#0F172A] tracking-tight">Borrowing by Academic Degree Program</h2>
                             </div>
                             <p class="text-sm text-[#64748B] mt-0.5">Comparison of active patron reach and total borrowing volume per program</p>
@@ -366,7 +357,6 @@
                     <div class="flex items-center justify-between pb-3.5 border-b border-slate-100">
                         <div>
                             <div class="flex items-center gap-2">
-                                <span class="w-2 h-2 rounded-full bg-[#102B70]"></span>
                                 <h2 class="text-base font-bold text-[#0F172A] tracking-tight">Return Performance & Overdue Analysis</h2>
                             </div>
                             <p class="text-sm text-[#64748B] mt-0.5">Borrower punctuality, on-time turnaround, and overdue aging breakdown</p>
@@ -411,12 +401,11 @@
                     <div class="flex items-center justify-between pb-3.5 border-b border-slate-100">
                         <div>
                             <div class="flex items-center gap-2">
-                                <span class="w-2 h-2 rounded-full bg-[#102B70]"></span>
                                 <h2 class="text-base font-bold text-[#0F172A] tracking-tight">Collection & Inventory Availability</h2>
                             </div>
                             <p class="text-sm text-[#64748B] mt-0.5">Physical copy availability, active circulation volume, and shelf capacity</p>
                         </div>
-                        <span class="text-sm font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                        <span class="text-sm font-bold text-emerald-700">
                             {{ $collectionSnapshot['availableRate'] }}% Available
                         </span>
                     </div>
@@ -437,27 +426,27 @@
                     <!-- 4 Category Breakdown Cards -->
                     <div class="grid grid-cols-2 gap-3 text-sm pt-1">
                         <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center gap-3">
-                            <span class="w-3 h-3 rounded-full bg-emerald-500 shrink-0"></span>
+                            <span class="w-3 h-3 bg-emerald-500 shrink-0"></span>
                             <div class="min-w-0">
                                 <span class="text-slate-500 text-xs block">Available on Shelves</span>
                                 <span class="font-bold text-[#0F172A] text-sm">{{ $collectionSnapshot['available'] }} copies</span>
                             </div>
                         </div>
                         <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center gap-3">
-                            <span class="w-3 h-3 rounded-full bg-[#102B70] shrink-0"></span>
+                            <span class="w-3 h-3 bg-[#102B70] shrink-0"></span>
                             <div class="min-w-0">
                                 <span class="font-bold text-[#0F172A] text-sm">{{ $collectionSnapshot['borrowed'] }} copies</span>
                             </div>
                         </div>
                         <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center gap-3">
-                            <span class="w-3 h-3 rounded-full bg-amber-400 shrink-0"></span>
+                            <span class="w-3 h-3 bg-amber-400 shrink-0"></span>
                             <div class="min-w-0">
                                 <span class="text-slate-500 text-xs block">Reserved / Staged</span>
                                 <span class="font-bold text-[#0F172A] text-sm">{{ $collectionSnapshot['maintenance'] }} copies</span>
                             </div>
                         </div>
                         <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center gap-3">
-                            <span class="w-3 h-3 rounded-full bg-slate-300 shrink-0"></span>
+                            <span class="w-3 h-3 bg-slate-300 shrink-0"></span>
                             <div class="min-w-0">
                                 <span class="text-slate-500 text-xs block">In Maintenance</span>
                                 <span class="font-bold text-[#0F172A] text-sm">0 copies</span>
@@ -476,7 +465,6 @@
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-slate-100">
                 <div>
                     <div class="flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-[#102B70]"></span>
                         <h2 class="text-base font-bold text-[#0F172A] tracking-tight">Borrower Log & Lending Records</h2>
                     </div>
                     <p class="text-sm text-[#64748B] mt-0.5">Comprehensive student borrowing records and circulation status</p>
@@ -615,22 +603,20 @@
                                 <!-- 5. LOAN STATUS BADGE -->
                                 <td data-label="Status" class="px-6 py-4 align-middle">
                                     @if($isReturned)
-                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                                        <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600">
                                             <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                                             </svg>
                                             Returned
                                         </span>
                                     @elseif($isLost)
-                                        <span class="rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-800">Lost</span>
+                                        <span class="text-xs font-semibold text-amber-800">Lost</span>
                                     @elseif($isOverdue)
-                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-200">
-                                            <span class="w-1.5 h-1.5 rounded-full bg-red-600"></span>
+                                        <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-red-700">
                                             Overdue
                                         </span>
                                     @else
-                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                                        <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700">
                                             On Loan
                                         </span>
                                     @endif
